@@ -126,6 +126,17 @@ Progress: 2/8 passed · 0 failed · 6 remaining
 - Show current progress bar/counts
 - If steps include curl commands or code, format them clearly for copy-paste
 
+### Puppeteer Assist for UI Tests
+
+If the test is a **UI/layout test** (identified by `UAT-UI-*` prefix, or having `Page:` / `Components:` metadata), use Puppeteer MCP to give the user visual context:
+
+1. **Launch browser** (if not already running): `puppeteer_launch` with headless mode
+2. **Navigate** to the page URL from the test's `Page:` field: `puppeteer_navigate`
+3. **Take a screenshot**: `puppeteer_screenshot` and present it to the user alongside the test briefing
+4. **Keep the browser open** for the duration of the walkthrough — reuse it across UI tests
+
+This gives the user a live visual to compare against expected results. Skip this for non-UI tests (API, edge case, integration tests without a `Page:` field).
+
 ---
 
 ## Step 4: Record the User's Verdict
@@ -210,11 +221,46 @@ Instructions:
 5. Report what was changed and why
 ```
 
+### UI/Layout Fix Workflow (Puppeteer-Assisted)
+
+For **UI/layout tests** (`UAT-UI-*` or tests with `Page:` / `Components:` metadata), the fix subagent should use Puppeteer MCP to diagnose and verify visually:
+
+**Before fixing** — Capture the current broken state:
+1. `puppeteer_navigate` to the test's page URL
+2. `puppeteer_screenshot` to capture the broken state
+3. `puppeteer_evaluate` or `puppeteer_get_text` to inspect DOM state, computed styles, or element visibility
+4. Use findings to inform the root cause analysis
+
+**After fixing** — Capture the new state (do NOT judge pass/fail):
+1. Reload the page: `puppeteer_navigate` to the same URL
+2. `puppeteer_screenshot` to capture the post-fix state
+3. Include the before and after screenshots in the subagent's report
+4. **Do NOT determine if the fix is correct** — that is the user's job
+
+**Subagent prompt addition for UI tests**:
+```
+This is a UI/layout test. Use Puppeteer MCP tools to diagnose:
+- Navigate to the page and screenshot the current (broken) state
+- Inspect the DOM with puppeteer_evaluate to identify layout/style issues
+- After implementing the fix, screenshot the new state
+- Report what you changed and include before/after screenshots
+- IMPORTANT: Do NOT mark the test as passing. Do NOT judge whether the fix is correct.
+  The user will verify the fix manually after you report back.
+```
+
 ### Fix Rules
+
+**⚠️ NEVER AUTO-PASS AFTER A FIX — this is the most important rule in the fix workflow.**
+
 - **Max 1 fix subagent at a time** — wait for it to complete before continuing
-- **Do not auto-pass** — after the fix, always re-present the test to the user for manual verification
+- **After ANY fix (code or UI), you MUST**:
+  1. Reset the test status to `- [ ] Pass`
+  2. Re-present the test to the user (Step 3) — for UI tests, take a fresh `puppeteer_screenshot` and show it
+  3. Ask the user for their verdict via `AskUserQuestion` (Step 4) — Pass / Fail / Fix now / Skip
+  4. Only the **user** can mark a test as passing — the agent never decides pass/fail
 - If the fix subagent reports failure or cannot resolve the issue, inform the user and present normal verdict options (Fail / Skip)
 - The `[FIXING: ...]` marker is temporary — it must be replaced with either `[x] Pass`, `[FAIL: ...]`, or `[ ] Pass` before moving to the next test
+- A successful fix does NOT mean the test passes — the user must manually confirm
 
 ---
 
@@ -272,7 +318,7 @@ Failed Tests:
 
 ### User Interaction
 - **Never skip the user prompt** — every test requires explicit pass/fail from the user
-- **Never auto-pass or auto-fail** — the user is the tester, the agent is the facilitator
+- **Never auto-pass or auto-fail** — the user is the tester, the agent is the facilitator. This applies **especially after a fix** — a successful code fix does NOT mean the test passes. Always re-present and ask.
 - Present one test at a time — do not batch multiple tests into one question
 - Keep the test presentation clean and scannable
 
@@ -286,6 +332,11 @@ Failed Tests:
 - Walk through prerequisites first, one at a time
 - For each prerequisite, ask the user to confirm it's ready
 - If a prerequisite fails, warn the user that subsequent tests may be affected but let them decide whether to continue
+
+### Puppeteer Browser Lifecycle
+- Launch the browser **once** on the first UI test encountered — reuse for all subsequent UI tests
+- Close the browser (`puppeteer_close_browser`) when the walkthrough ends (completion or abort)
+- If no UI tests are present, never launch the browser
 
 ### Progress Persistence
 - Every verdict is written to the file immediately — if the user aborts or the session ends, progress is preserved
