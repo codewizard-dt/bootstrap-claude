@@ -32,4 +32,8 @@ $ARGUMENTS
 
 7) **Update `PROJECT_STATUS.md`**: Update any references to this task, or add the task if it's not there. Assess the proper location and place it in an existing phase or note it as a standalone task.
 
-8) **Confirm completion**: Report the created task file path and summary to the user.
+8) **Confirm completion**: Report the created task file path and summary to the user. Suggest next steps:
+   ```
+   To implement this task:  /tackle .docs/tasks/active/<number>-<slug>.md
+   To generate UAT tests:   /uat-generator .docs/tasks/active/<number>-<slug>.md
+   ```

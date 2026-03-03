@@ -23,6 +23,8 @@ Follow `basic-project-setup.md` to configure a new project:
 | `/now <task>` | Plan and delegate task to subagents (max 3 concurrent) |
 | `/tackle <path>` | Execute outlined task file step-by-step with subagent delegation |
 | `/add-task <desc>` | Create structured task in `.docs/tasks/active/` |
+| `/uat-generator <target>` | Generate UAT tests in `.docs/uat/pending/` mirroring task naming conventions |
+| `/uat-walkthrough <path>` | Interactively walk through a pending UAT file test-by-test with the user |
 | `/git-commit` | Stage all changes and commit with auto-generated message |
 | `/update` | Update all project documentation after implementation work |
 

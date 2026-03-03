@@ -233,6 +233,9 @@ Now execute the cycle:
 3. Delegate to the appropriate agent(s)
 4. Update the outline
 5. Repeat until done
-6. When finished run the '/update' skill
+6. When finished run the `/update` skill
+7. Ask the user: **"Generate UAT tests for this task?"** using `AskUserQuestion`:
+   - **Yes** — Run `/uat-generator $ARGUMENTS` to create a UAT file in `.docs/uat/pending/` matching this task's naming, then suggest: `/uat-walkthrough .docs/uat/pending/<file>.uat.md`
+   - **No** — Skip UAT generation
 
 **Start now - read the outline and begin the first cycle.**
