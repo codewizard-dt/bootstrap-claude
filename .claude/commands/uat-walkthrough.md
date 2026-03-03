@@ -132,10 +132,26 @@ If the test is a **UI/layout test** (identified by `UAT-UI-*` prefix, or having 
 
 1. **Launch browser** (if not already running): `puppeteer_launch` with headless mode
 2. **Navigate** to the page URL from the test's `Page:` field: `puppeteer_navigate`
-3. **Take a screenshot**: `puppeteer_screenshot` and present it to the user alongside the test briefing
-4. **Keep the browser open** for the duration of the walkthrough — reuse it across UI tests
+3. **Take a screenshot**: `puppeteer_screenshot` — save to `.docs/uat/screenshots/` using the naming convention below
+4. **Present** the screenshot to the user alongside the test briefing
+5. **Keep the browser open** for the duration of the walkthrough — reuse it across UI tests
 
 This gives the user a live visual to compare against expected results. Skip this for non-UI tests (API, edge case, integration tests without a `Page:` field).
+
+### Screenshot Naming Convention
+
+All screenshots are saved to `.docs/uat/screenshots/` (create if it doesn't exist) and **prefixed with the task number** derived from the UAT filename.
+
+**Format**: `<task-number>-<UAT-ID>-<context>.png`
+
+| UAT File | Test ID | Context | Screenshot Path |
+|----------|---------|---------|-----------------|
+| `5-positions.uat.md` | `UAT-UI-001` | present | `.docs/uat/screenshots/5-UAT-UI-001-present.png` |
+| `5-positions.uat.md` | `UAT-UI-002` | before-fix | `.docs/uat/screenshots/5-UAT-UI-002-before-fix.png` |
+| `5-positions.uat.md` | `UAT-UI-002` | after-fix | `.docs/uat/screenshots/5-UAT-UI-002-after-fix.png` |
+| `12-api-refactor.uat.md` | `UAT-UI-001` | present | `.docs/uat/screenshots/12-UAT-UI-001-present.png` |
+
+Extract the task number from the UAT filename: `<number>-<slug>.uat.md` → prefix is `<number>`.
 
 ---
 
@@ -227,13 +243,13 @@ For **UI/layout tests** (`UAT-UI-*` or tests with `Page:` / `Components:` metada
 
 **Before fixing** — Capture the current broken state:
 1. `puppeteer_navigate` to the test's page URL
-2. `puppeteer_screenshot` to capture the broken state
+2. `puppeteer_screenshot` — save as `.docs/uat/screenshots/<task-number>-<UAT-ID>-before-fix.png`
 3. `puppeteer_evaluate` or `puppeteer_get_text` to inspect DOM state, computed styles, or element visibility
 4. Use findings to inform the root cause analysis
 
 **After fixing** — Capture the new state (do NOT judge pass/fail):
 1. Reload the page: `puppeteer_navigate` to the same URL
-2. `puppeteer_screenshot` to capture the post-fix state
+2. `puppeteer_screenshot` — save as `.docs/uat/screenshots/<task-number>-<UAT-ID>-after-fix.png`
 3. Include the before and after screenshots in the subagent's report
 4. **Do NOT determine if the fix is correct** — that is the user's job
 
@@ -304,13 +320,16 @@ Failed Tests:
 
 ### Post-Walkthrough Actions
 
-- **All passed**: Move file from `.docs/uat/pending/` to `.docs/uat/complete/` and report the new path
-- **Some failed**: Keep file in `pending/`. Suggest next steps:
+- **All passed**:
+  1. Move file from `.docs/uat/pending/` to `.docs/uat/complete/`
+  2. **Delete all screenshots** for this task: `git rm .docs/uat/screenshots/<task-number>-*` (they are no longer needed once all tests pass)
+  3. Report the new file path
+- **Some failed**: Keep file in `pending/`. Keep screenshots (useful for debugging). Suggest next steps:
   ```
   To fix failures and re-test:  /uat-walkthrough .docs/uat/pending/<file>.uat.md
   To create fix tasks:          /add-task "Fix UAT failures in <feature>"
   ```
-- **Aborted**: Keep file in `pending/`, note progress was saved
+- **Aborted**: Keep file in `pending/`, keep screenshots, note progress was saved
 
 ---
 
@@ -337,6 +356,9 @@ Failed Tests:
 - Launch the browser **once** on the first UI test encountered — reuse for all subsequent UI tests
 - Close the browser (`puppeteer_close_browser`) when the walkthrough ends (completion or abort)
 - If no UI tests are present, never launch the browser
+- All screenshots go to `.docs/uat/screenshots/` with `<task-number>-` prefix
+- On **all passed**: delete all `<task-number>-*` screenshots via `git rm .docs/uat/screenshots/<task-number>-*`
+- On **failed/aborted**: keep screenshots for debugging reference
 
 ### Progress Persistence
 - Every verdict is written to the file immediately — if the user aborts or the session ends, progress is preserved
