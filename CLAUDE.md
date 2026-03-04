@@ -25,6 +25,7 @@ Follow `basic-project-setup.md` to configure a new project:
 | `/add-task <desc>` | Create structured task in `.docs/tasks/active/` |
 | `/uat-generator <target>` | Generate UAT tests in `.docs/uat/pending/` mirroring task naming conventions |
 | `/uat-walkthrough <path>` | Interactively walk through a pending UAT file test-by-test with the user |
+| `/lint` | Get IDE diagnostics, fix issues one-by-one in verify cycles |
 | `/git-commit` | Stage all changes and commit with auto-generated message |
 | `/update` | Update all project documentation after implementation work |
 

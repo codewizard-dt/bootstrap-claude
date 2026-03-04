@@ -32,9 +32,7 @@ Parse `$ARGUMENTS` to determine the source and output file:
      - Or assign a standalone UAT number and slug: `.docs/uat/pending/<next-number>-<slug>.uat.md`
    - To determine `<next-number>`, scan existing files in `.docs/uat/pending/`, `.docs/uat/complete/`, and `.docs/tasks/active/` for the highest number
 
-3. **Create directories** if they do not exist:
-   - `.docs/uat/pending/`
-   - `.docs/uat/complete/`
+3. Assume `.docs/uat/pending/`, `.docs/uat/complete/`, and `.docs/uat/screenshots/` directories already exist.
 
 4. **Check for existing UAT file** in both `pending/` and `complete/`:
    - If it exists in `pending/`, ask the user: replace, append, or abort?

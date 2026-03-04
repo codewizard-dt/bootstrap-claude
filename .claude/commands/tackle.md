@@ -16,20 +16,24 @@ IMPORTANT: Adhere to all rules in '.docs/guides/mcp-tools.md'
 
 ## Cycle Overview
 
+> **MANDATORY**: Every step in this cycle MUST be delegated to a sub-agent. The main agent orchestrates only — it reads sub-agent results, decides what to do next, and delegates again. This keeps the main context window clean and prevents token bloat.
+
 This command runs in a continuous loop until all tasks are complete or interrupted:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  1. READ OUTLINE → 2. FIND NEXT STEP → 3. DELEGATE TO AGENT │
-│         ↑                                         │         │
-│         │                                         ↓         │
-│         └────────── 4. UPDATE OUTLINE ────────────┘         │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│  1. DELEGATE: READ  → 2. DELEGATE: PLAN → 3. DELEGATE: EXECUTE  │
+│         ↑                                           │            │
+│         │                                           ↓            │
+│         └──────────── 4. DELEGATE: UPDATE ──────────┘            │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## Step 1: Read and Parse the Outline
+
+**Delegate this step** to an `Explore` sub-agent. The sub-agent reads and parses the outline, then returns a structured summary of task statuses. The main agent should NOT read the outline directly.
 
 - Use MCP Serena to read the outline file at: `$ARGUMENTS`
 - If the file does not exist or is empty, STOP and report the error
@@ -43,7 +47,9 @@ This command runs in a continuous loop until all tasks are complete or interrupt
 
 ## Step 2: Find the Smallest Next Step
 
-Analyze the outline to find the next actionable task:
+**Delegate this step** to a `Plan` sub-agent. Provide the sub-agent with the parsed summary from Step 1. The sub-agent analyzes priorities and returns the next actionable task with a recommended agent type. The main agent should NOT analyze the outline directly.
+
+The sub-agent analyzes the outline to find the next actionable task:
 
 ### Priority Order
 1. **Fix blockers first**: If any item is marked blocked, investigate why
@@ -68,6 +74,8 @@ Analyze the outline to find the next actionable task:
 ---
 
 ## Step 3: Delegate to Appropriate Subagent(s)
+
+**Delegate this step** to the appropriate specialized sub-agent identified in Step 2. All implementation work runs in a sub-agent — never in the main context.
 
 ### Research Before Implementing
 
@@ -131,6 +139,8 @@ Task tool invocation:
 
 ## Step 4: Update the Outline with Status
 
+**Delegate this step** to a `general-purpose` sub-agent. Provide the sub-agent with the completion status from Step 3 and instruct it to update the outline file. The main agent should NOT edit the outline directly.
+
 After the subagent completes (or fails), update the outline file:
 
 ### Status Markers to Use
@@ -175,8 +185,10 @@ After updating the outline:
 
 ### Process Management
 - Maximum of 3 concurrent subagents at a time
-- **ALWAYS terminate processes when done** (dev servers, type checkers, long-running commands)
-- If a subagent hangs, terminate it and mark the task as blocked
+- **ALWAYS terminate ALL processes and sub-agents when done** — dev servers, type checkers, long-running commands, background tasks. No exceptions.
+- After EVERY sub-agent completes, verify it has been terminated before proceeding
+- If a subagent hangs, terminate it immediately and mark the task as blocked
+- The main agent must NEVER run implementation commands directly — always delegate
 
 ### Error Handling
 - If a subagent fails, mark the task with `[FAILED: reason]`
@@ -194,6 +206,12 @@ After each cycle, briefly report:
 - User interrupts with Ctrl+C
 - All remaining tasks are blocked or failed
 - Outline file becomes invalid or unreadable
+
+### Mandatory Delegation
+- **ALL steps** (read, plan, execute, update) MUST be delegated to sub-agents
+- The main agent's role is strictly orchestration: receive results, decide next action, delegate
+- NEVER read source code, edit files, or run commands directly in the main context
+- This preserves the main context window for decision-making and prevents token bloat
 
 ---
 

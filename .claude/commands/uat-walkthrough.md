@@ -99,28 +99,31 @@ For the current test, present a clear, formatted briefing:
 
 ### Presentation Format
 
-```
+Use **markdown bold** (`**label**`) for metadata labels and section headers so they stand out in Claude Code's terminal output:
+
+```markdown
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TEST [X of Y]: UAT-API-001 — List All Positions
+TEST [3 of 18]: UAT-UI-007 — Strength Proposal — Approve
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Endpoint: GET /api/v1/positions
-Description: Verify positions list endpoint returns user's positions
+**Page:** http://localhost:4321/strengths
+**Description:** Verify approving a proposed strength saves it and updates the panel
 
-STEPS:
-  1. Execute: curl -X GET 'http://localhost:8000/api/v1/positions' \
-       -H 'Authorization: Bearer <token>'
+**STEPS:**
+1. Trigger a strength proposal via chat (see UAT-UI-006)
+2. Click "Approve" on the proposal card
 
-EXPECTED RESULT:
-  200 OK with array of position objects containing
-  id, symbol, size, entry_price, current_price, pnl
+**EXPECTED RESULT:**
+- Strength is saved (POST to /api/strengths)
+- The strength appears in the "My Strengths" panel on the right
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Progress: 2/8 passed · 0 failed · 6 remaining
+**Progress:** 2/8 passed · 0 failed · 6 remaining
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
 **Rules for presenting**:
+- Bold all labels with markdown `**Label:**` — Claude Code renders bold in the terminal
 - Extract ALL metadata fields from the test (Endpoint, Page, Scenario, Components, Description, Steps, Expected Result)
 - Number the test position (e.g., "Test 3 of 12")
 - Show current progress bar/counts
@@ -140,7 +143,7 @@ This gives the user a live visual to compare against expected results. Skip this
 
 ### Screenshot Naming Convention
 
-All screenshots are saved to `.docs/uat/screenshots/` (create if it doesn't exist) and **prefixed with the task number** derived from the UAT filename.
+All screenshots are saved to `.docs/uat/screenshots/` and **prefixed with the task number** derived from the UAT filename. Assume this directory already exists.
 
 **Format**: `<task-number>-<UAT-ID>-<context>.png`
 
