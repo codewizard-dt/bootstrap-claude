@@ -20,15 +20,22 @@ Determine the project's primary source directory:
 
 ## Step 2: Get Diagnostics
 
-Use the `mcp__ide__getDiagnostics` tool to retrieve all current errors and warnings.
+Use the `mcp__ide__getDiagnostics` tool to retrieve **all** current diagnostics — errors, warnings, info, and hints.
 
 - Filter results to only include diagnostics from files within the detected source directory
-- Sort by severity: **errors first**, then warnings
+- Include **every severity level**: errors, warnings (including CSS conflicts, unused imports, type issues), info, and hints
+- Sort by severity: **errors first**, then warnings, then info/hints
 - If no diagnostics are found, report "No lint issues found!" and **STOP**
+
+Common warning types to look for:
+- **CSS conflicts** (`cssConflict`) — e.g., conflicting Tailwind classes like `max-w-[80%]` with `max-w-none`
+- **Unused variables/imports** — declared but never referenced
+- **Type warnings** — implicit `any`, missing return types
+- **Accessibility** — missing alt text, ARIA issues
 
 Display a summary:
 ```
-Found X issue(s) — Y error(s), Z warning(s)
+Found X issue(s) — Y error(s), Z warning(s), N info/hint(s)
 ```
 
 ---
@@ -41,6 +48,13 @@ Take the **first** diagnostic (highest severity) and fix it:
 2. **Understand the issue** — what the diagnostic message means and what caused it
 3. **Apply the fix** — use the appropriate editing tool (Serena symbolic edit for code symbols, Edit for line-level changes)
 4. Keep fixes minimal and focused — only change what's needed to resolve the specific diagnostic
+
+### Fix strategies by diagnostic type
+
+- **CSS conflict warnings** (e.g., `cssConflict`): Remove the conflicting/redundant class from the class string. When two Tailwind utilities set the same CSS property, remove the one that gets overridden.
+- **Unused imports/variables**: Remove the unused declaration
+- **Type errors**: Add proper types, fix mismatches
+- **General lint warnings**: Follow the diagnostic's suggestion or apply the standard fix for the rule
 
 ---
 
