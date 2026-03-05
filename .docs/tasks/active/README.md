@@ -5,86 +5,73 @@ Task files in `active/` are structured outlines designed for execution by `/tack
 ## Naming Convention
 
 ```
-<number>-<short-description>.md
+<NNN>-<short-description>.md
 ```
 
-- **number**: Sequential integer (check existing tasks across `active/`, `pending-uat/`, and `completed/` to determine next)
+- **NNN**: Zero-padded sequential integer (check `active/`, `pending-uat/`, and `completed/` to find the next number)
 - **short-description**: Lowercase, hyphen-separated slug (2-4 words)
 
-Examples: `1-auth-flow.md`, `2-api-endpoints.md`, `12-dashboard-filters.md`
+Examples: `001-basic-infrastructure.md`, `004-application-tracker.md`, `008-find-jobs.md`
 
 ## Required Structure
 
 ```markdown
-# <number>. <Task Title>
+# NNN — Task Title
 
-**Objective:** One-sentence description of what this task accomplishes.
+## Objective
 
-**Approach:** Brief summary of the technical approach or key decisions.
+One-sentence description of what this task accomplishes.
+
+## Approach
+
+Brief summary of the technical approach or key decisions (1-3 sentences).
 
 ## Prerequisites
 
 - [ ] Any setup or dependencies that must exist before starting
+- [ ] Reference other tasks by number: "Task 001 (Infrastructure) completed"
+
+---
 
 ## Steps
 
-### <Section Name>
+### 1. Section Name
 
 - [ ] Step description with enough detail for an agent to implement
-- [ ] Another step — include file paths, component names, or API routes where known
-  - Sub-detail or acceptance criteria for this step
+- [ ] Another step — include file paths, component names, or API routes when known
+  - Sub-detail or acceptance criteria (plain text indent, not a checkbox)
 
-### <Another Section>
+### 2. Another Section
 
-- [ ] More steps grouped by logical area (e.g., "Backend", "Frontend", "Tests")
+- [ ] More steps grouped by logical area
+
+### N. Verification
+
+- [ ] Verify TypeScript compiles / tests pass / app runs
+- [ ] Verify key user flows work end-to-end
 ```
 
 ## Rules
 
 - Every actionable item uses `- [ ]` checkbox syntax
-- Group steps under `###` section headings by logical area
+- Number step sections sequentially: `### 1.`, `### 2.`, etc.
+- Group steps by logical area (e.g., "Schema Update", "API Routes", "UI Components")
 - Steps should be specific enough for `/tackle` to execute without ambiguity
 - Include file paths, function names, or route patterns when known
-- Prerequisites go in their own section before steps
+- End with a verification section to confirm the work is complete
+- Use `---` separator between Prerequisites and Steps
 - Keep the objective to one sentence
 - Keep the approach to 1-3 sentences
-
-## Example
-
-```markdown
-# 3. Add User Profile API
-
-**Objective:** Create REST endpoints for viewing and updating user profiles.
-
-**Approach:** Add Express routes under `/api/profiles` with Prisma for data access. Reuse existing auth middleware.
-
-## Prerequisites
-
-- [ ] Database migration for `profiles` table is applied
-- [ ] Auth middleware is working (see task 1)
-
-## Steps
-
-### Schema & Database
-
-- [ ] Add `Profile` model to `prisma/schema.prisma` with fields: bio, avatarUrl, displayName
-- [ ] Generate and run migration
-
-### API Routes
-
-- [ ] Create `src/routes/profiles.ts` with GET `/api/profiles/:id` endpoint
-- [ ] Add PUT `/api/profiles/:id` endpoint with auth middleware
-- [ ] Add input validation for profile updates (max lengths, allowed fields)
-
-### Integration
-
-- [ ] Register profile routes in `src/app.ts`
-- [ ] Add profile link to navigation in `src/components/Nav.tsx`
-```
 
 ## Lifecycle
 
 ```
 active/  →  pending-uat/  →  completed/
 (/tackle)   (/uat-walkthrough)
+```
+
+When a task reaches `completed/`, a UAT link is appended:
+```markdown
+---
+**UAT**: [`.docs/uat/completed/NNN-slug.uat.md`](../../uat/completed/NNN-slug.uat.md)
 ```
