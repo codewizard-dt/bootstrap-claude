@@ -2,6 +2,8 @@
 description: Walk through a pending UAT file test-by-test with the user
 argument-hint: <path/to/.docs/uat/pending/file.uat.md>
 ---
+**Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
+
 
 # UAT Walkthrough
 

@@ -2,6 +2,8 @@
 description: Execute task with planning and delegation
 argument-hint: <task description>
 ---
+**Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
+
 
 $ARGUMENTS
 

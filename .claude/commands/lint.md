@@ -1,6 +1,7 @@
 ---
 description: Get lint diagnostics, fix issues one-by-one in cycles
 ---
+**Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 
 # Lint Fix Cycles
 

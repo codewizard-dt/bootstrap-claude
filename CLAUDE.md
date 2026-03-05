@@ -45,4 +45,5 @@ Standard Read/Edit/Write tools are permitted only for non-code files (markdown, 
 - `basic-project-setup.md` — MCP installation steps and API keys
 - `.docs/guides/mcp-tools.md` — Complete MCP tool reference with workflows and examples
 - `.claude/commands/` — All custom slash command definitions
+- `setup-project.sh` — Script to set up a new project (Serena MCP + copy commands/docs)
 - `update-project.sh` — Script to sync `.claude/commands/` and `.docs/` into a target project

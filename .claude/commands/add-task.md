@@ -2,6 +2,8 @@
 description: Add a new task to .docs/tasks
 argument-hint: <task description>
 ---
+**Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
+
 
 $ARGUMENTS
 

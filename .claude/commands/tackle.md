@@ -2,6 +2,8 @@
 description: Tackle an outlined task file step-by-step
 argument-hint: <path/to/outline.md>
 ---
+**Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
+
 # Tackle Outline
 
 Execute tasks from an outlined `*.md` file in cycles, delegating each step to a subagent.

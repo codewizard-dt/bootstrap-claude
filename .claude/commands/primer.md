@@ -1,3 +1,5 @@
+**Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
+
 # 🚨 MANDATORY REQUIREMENTS 🚨
 
 ## YOU MUST USE MCP TOOLS. THIS IS NON-NEGOTIABLE.

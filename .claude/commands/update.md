@@ -1,6 +1,7 @@
 ---
 description: Update documentation
 ---
+**Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 
 # Update Documentation
 
