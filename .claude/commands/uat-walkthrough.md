@@ -134,6 +134,21 @@ TEST [3 of 18]: UAT-UI-007 — Strength Proposal — Approve
 - Show current progress bar/counts
 - If steps include curl commands or code, format them clearly for copy-paste
 
+### API Test Automation
+
+When a test contains **curl commands or similar CLI commands** (identified by `curl`, `http`, or code blocks with shell commands in the Steps or Expected Result), run them autonomously:
+
+1. **Before each test**: Stop and present the test to the user (standard Step 3 format). Show exactly which commands will be executed.
+2. **Wait for user acknowledgement** via `AskUserQuestion`: **"This is an API test with executable commands. Proceed?"**
+   - **Run test** — Execute the commands and show results (Recommended)
+   - **Manual** — User will test manually (fall back to normal flow)
+   - **Skip** — Skip this test
+3. **If "Run test"**: Execute each curl/command via Bash, capture output, and present results clearly:
+   - Show the command, HTTP status code, and response body
+   - Compare against the expected result from the test
+   - **Do NOT auto-judge pass/fail** — still ask the user for their verdict (Step 4)
+4. **If commands fail to execute** (connection refused, timeout, etc.), report the error and fall back to normal manual verdict flow
+
 ### Puppeteer Assist for UI Tests
 
 Puppeteer is used **only for troubleshooting** — do NOT take screenshots when initially presenting a test. The user performs their own manual testing and reports the result.
