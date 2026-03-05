@@ -18,8 +18,13 @@ claude mcp add serena -- uvx --from git+https://github.com/oraios/serena serena 
 
 ## Step 2: Add Commands and Instructions
 
-- Copy `.claude/` from this repo into `<your_project_root>/.claude/` (contains custom commands)
-- Copy `.docs/` from this repo into `<your_project_root>/.docs/` (contains guides and task templates)
+Run the sync script from this repo:
+
+```bash
+./update-project.sh <path-to-project>
+```
+
+This copies `.claude/commands/` and `.docs/` into the target project. Re-run after pulling template updates.
 
 ## Step 3: Initialize
 

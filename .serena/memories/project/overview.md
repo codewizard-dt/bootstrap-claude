@@ -9,7 +9,8 @@ A project setup template for Claude Code. Contains reusable `.claude/` configura
 - `.docs/tasks/` — Task tracking (active → pending-uat → completed)
 - `.docs/uat/` — UAT test tracking (pending → completed)
 - `basic-project-setup.md` — MCP installation guide
-- `update-project.sh` — Syncs template files into target projects
+- `update-project.sh` — Syncs template files into target projects (accepts relative or absolute paths)
+- `update-agent.md` — Instructions for creating a shell alias for `update-project.sh`
 - `CLAUDE.md` — Project instructions for Claude Code
 
 ## Custom Commands (11)
