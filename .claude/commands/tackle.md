@@ -68,8 +68,10 @@ The sub-agent analyzes the outline to find the next actionable task:
 - Always choose the smallest, most atomic task that can be completed independently
 
 ### Completion Check
-- If ALL items are marked complete, report success and STOP
-- Output: "All tasks in outline complete!"
+- If ALL items are marked complete:
+  - Move the task file from `.docs/tasks/active/` to `.docs/tasks/pending-uat/`
+  - Report success and STOP
+  - Output: "All tasks in outline complete! Task moved to pending-uat."
 
 ---
 
@@ -251,9 +253,10 @@ Now execute the cycle:
 3. Delegate to the appropriate agent(s)
 4. Update the outline
 5. Repeat until done
-6. When finished run the `/update` skill
-7. Ask the user: **"Generate UAT tests for this task?"** using `AskUserQuestion`:
-   - **Yes** — Run `/uat-generator $ARGUMENTS` to create a UAT file in `.docs/uat/pending/` matching this task's naming, then suggest: `/uat-walkthrough .docs/uat/pending/<file>.uat.md`
+6. **Move the task file** from `.docs/tasks/active/` to `.docs/tasks/pending-uat/` (create the directory if it doesn't exist)
+7. When finished run the `/update` skill
+8. Ask the user: **"Generate UAT tests for this task?"** using `AskUserQuestion`:
+   - **Yes** — Run `/uat-generator .docs/tasks/pending-uat/<filename>` to create a UAT file in `.docs/uat/pending/` matching this task's naming, then suggest: `/uat-walkthrough .docs/uat/pending/<file>.uat.md`
    - **No** — Skip UAT generation
 
 **Start now - read the outline and begin the first cycle.**

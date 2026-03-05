@@ -6,8 +6,8 @@ A project setup template for Claude Code. Contains reusable `.claude/` configura
 ## Structure
 - `.claude/commands/` — Custom slash commands (11 total)
 - `.docs/guides/mcp-tools.md` — MCP tool reference
-- `.docs/tasks/` — Task tracking (active/completed)
-- `.docs/uat/` — UAT test tracking (active/completed)
+- `.docs/tasks/` — Task tracking (active → pending-uat → completed)
+- `.docs/uat/` — UAT test tracking (pending → completed)
 - `basic-project-setup.md` — MCP installation guide
 - `update-project.sh` — Syncs template files into target projects
 - `CLAUDE.md` — Project instructions for Claude Code
@@ -27,6 +27,9 @@ A project setup template for Claude Code. Contains reusable `.claude/` configura
 
 ## Workflow Pipeline
 `/add-task → /tackle → /update → /uat-generator → /uat-walkthrough`
+
+Task lifecycle: `active/` → (tackle) → `pending-uat/` → (uat-walkthrough all pass) → `completed/`
+UAT lifecycle: `pending/` → (uat-walkthrough all pass) → `completed/`
 
 ## Required MCPs
 - Serena (code exploration, editing, memory)

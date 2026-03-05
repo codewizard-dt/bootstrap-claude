@@ -88,7 +88,10 @@ When re-testing a failed test, first **reset its status** from `- [FAIL: ...]` b
 ### Completion Check
 - If no more tests match the current mode:
   - Report the final summary
-  - If ALL tests in the file are marked `[x] Pass`, move the file from `pending/` to `complete/`
+  - If ALL tests in the file are marked `[x] Pass`:
+    - Move the UAT file from `pending/` to `completed/`
+    - Move the associated task file from `.docs/tasks/pending-uat/` to `.docs/tasks/completed/` (derive task filename from UAT filename: `<number>-<slug>.uat.md` → `<number>-<slug>.md`)
+    - Update any internal path references in both moved files (e.g., source task links, UAT links)
   - STOP
 
 ---
@@ -131,15 +134,19 @@ TEST [3 of 18]: UAT-UI-007 — Strength Proposal — Approve
 
 ### Puppeteer Assist for UI Tests
 
-If the test is a **UI/layout test** (identified by `UAT-UI-*` prefix, or having `Page:` / `Components:` metadata), use Puppeteer MCP to give the user visual context:
+Puppeteer is used **only for troubleshooting** — do NOT take screenshots when initially presenting a test. The user performs their own manual testing and reports the result.
 
-1. **Launch browser** (if not already running): `puppeteer_launch` with headless mode
-2. **Navigate** to the page URL from the test's `Page:` field: `puppeteer_navigate`
-3. **Take a screenshot**: `puppeteer_screenshot` — save to `.docs/uat/screenshots/` using the naming convention below
-4. **Present** the screenshot to the user alongside the test briefing
-5. **Keep the browser open** for the duration of the walkthrough — reuse it across UI tests
+Puppeteer MCP is launched when a **UI/layout test** (identified by `UAT-UI-*` prefix, or having `Page:` / `Components:` metadata) receives a **Fail** or **Fix now** verdict. It is used to:
+- Capture the broken state for diagnosis
+- Inspect DOM/styles to identify root causes
+- Capture before/after states during the fix workflow
 
-This gives the user a live visual to compare against expected results. Skip this for non-UI tests (API, edge case, integration tests without a `Page:` field).
+**Viewport**: Always launch with a **desktop viewport** (1600×950) unless the user explicitly requests a different size.
+
+**Lifecycle**:
+1. **Launch browser** (if not already running) on the first Fail or Fix now for a UI test: `puppeteer_launch` with headless mode and desktop viewport
+2. **Keep the browser open** for the duration of the walkthrough — reuse it across UI tests
+3. Skip Puppeteer entirely for non-UI tests (API, edge case, integration tests without a `Page:` field)
 
 ### Screenshot Naming Convention
 
@@ -149,10 +156,10 @@ All screenshots are saved to `.docs/uat/screenshots/` and **prefixed with the ta
 
 | UAT File | Test ID | Context | Screenshot Path |
 |----------|---------|---------|-----------------|
-| `5-positions.uat.md` | `UAT-UI-001` | present | `.docs/uat/screenshots/5-UAT-UI-001-present.png` |
+| `5-positions.uat.md` | `UAT-UI-002` | fail | `.docs/uat/screenshots/5-UAT-UI-002-fail.png` |
 | `5-positions.uat.md` | `UAT-UI-002` | before-fix | `.docs/uat/screenshots/5-UAT-UI-002-before-fix.png` |
 | `5-positions.uat.md` | `UAT-UI-002` | after-fix | `.docs/uat/screenshots/5-UAT-UI-002-after-fix.png` |
-| `12-api-refactor.uat.md` | `UAT-UI-001` | present | `.docs/uat/screenshots/12-UAT-UI-001-present.png` |
+| `12-api-refactor.uat.md` | `UAT-UI-001` | fail | `.docs/uat/screenshots/12-UAT-UI-001-fail.png` |
 
 Extract the task number from the UAT filename: `<number>-<slug>.uat.md` → prefix is `<number>`.
 
@@ -177,6 +184,7 @@ Options:
 
 ### If Fail
 - Ask a follow-up: **"Describe what went wrong (optional):"** — use `AskUserQuestion` with a freeform "Add notes" option
+- For **UI tests**: launch Puppeteer (if not already running, desktop viewport), navigate to the page, and take a screenshot saved as `.docs/uat/screenshots/<task-number>-<UAT-ID>-fail.png` to capture the broken state
 - Mark the test: `- [FAIL: <user's note or "No details provided">] <!-- YYYY-MM-DD -->`
 
 ### If Fix Now
@@ -274,7 +282,7 @@ This is a UI/layout test. Use Puppeteer MCP tools to diagnose:
 - **Max 1 fix subagent at a time** — wait for it to complete before continuing
 - **After ANY fix (code or UI), you MUST**:
   1. Reset the test status to `- [ ] Pass`
-  2. Re-present the test to the user (Step 3) — for UI tests, take a fresh `puppeteer_screenshot` and show it
+  2. Re-present the test to the user (Step 3)
   3. Ask the user for their verdict via `AskUserQuestion` (Step 4) — Pass / Fail / Fix now / Skip
   4. Only the **user** can mark a test as passing — the agent never decides pass/fail
 - If the fix subagent reports failure or cannot resolve the issue, inform the user and present normal verdict options (Fail / Skip)
@@ -307,7 +315,7 @@ When the walkthrough ends (all tests resolved or user aborts), report:
 UAT WALKTHROUGH COMPLETE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 File:    .docs/uat/pending/5-positions.uat.md
-Source:  .docs/tasks/active/5-positions.md
+Source:  .docs/tasks/pending-uat/5-positions.md
 
 Results:
   ✓ Passed:  6
@@ -324,9 +332,11 @@ Failed Tests:
 ### Post-Walkthrough Actions
 
 - **All passed**:
-  1. Move file from `.docs/uat/pending/` to `.docs/uat/complete/`
-  2. **Delete all screenshots** for this task: `git rm .docs/uat/screenshots/<task-number>-*` (they are no longer needed once all tests pass)
-  3. Report the new file path
+  1. Move UAT file from `.docs/uat/pending/` to `.docs/uat/completed/`
+  2. Move associated task file from `.docs/tasks/pending-uat/` to `.docs/tasks/completed/` (derive task filename from UAT: `<number>-<slug>.uat.md` → `<number>-<slug>.md`)
+  3. **Update references** in both moved files: update `pending-uat/` → `completed/` in the task file, update `pending/` → `completed/` in the UAT file's source task link
+  4. **Delete all screenshots** for this task: `git rm .docs/uat/screenshots/<task-number>-*` (they are no longer needed once all tests pass)
+  5. Report the new file paths for both UAT and task files
 - **Some failed**: Keep file in `pending/`. Keep screenshots (useful for debugging). Suggest next steps:
   ```
   To fix failures and re-test:  /uat-walkthrough .docs/uat/pending/<file>.uat.md
@@ -356,9 +366,11 @@ Failed Tests:
 - If a prerequisite fails, warn the user that subsequent tests may be affected but let them decide whether to continue
 
 ### Puppeteer Browser Lifecycle
-- Launch the browser **once** on the first UI test encountered — reuse for all subsequent UI tests
+- **Do NOT launch on test presentation** — only launch when a UI test receives a Fail or Fix now verdict
+- Launch with **desktop viewport** (1600×950) unless the user specifies otherwise
+- Once launched, keep the browser open and reuse for all subsequent UI troubleshooting
 - Close the browser (`puppeteer_close_browser`) when the walkthrough ends (completion or abort)
-- If no UI tests are present, never launch the browser
+- If no UI tests fail, never launch the browser
 - All screenshots go to `.docs/uat/screenshots/` with `<task-number>-` prefix
 - On **all passed**: delete all `<task-number>-*` screenshots via `git rm .docs/uat/screenshots/<task-number>-*`
 - On **failed/aborted**: keep screenshots for debugging reference

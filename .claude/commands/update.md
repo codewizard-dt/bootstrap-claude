@@ -28,14 +28,16 @@ Update documentation in this sequence:
 
 #### 1. **Task Files** (`.docs/tasks/`)
 
-- Move completed tasks from `active/` to `completed/`
+- Tasks in `active/` are being implemented via `/tackle`
+- Tasks in `pending-uat/` have been implemented and await UAT testing
+- Tasks in `completed/` have passed UAT and are fully done
 - Update checkbox status in active tasks (`- [ ]` → `- [x]`)
 - Add new tasks discovered during implementation
 
 #### 2. **UAT Files** (`.docs/uat/`)
 
 - If a task was completed and has a corresponding UAT in `pending/`, note it's ready for walkthrough
-- If UAT tests were run and all passed, move from `pending/` to `complete/`
+- If UAT tests were run and all passed, move from `pending/` to `completed/`
 
 #### 3. **PROJECT_STATUS.md** (if it exists)
 
@@ -115,6 +117,7 @@ This command is typically run after `/tackle` completes. The full workflow:
 
 ```
 /add-task → /tackle → /update → /uat-generator → /uat-walkthrough
+(active/)   (→ pending-uat/)        (→ pending/)   (→ completed/ + completed/)
 ```
 
 ---

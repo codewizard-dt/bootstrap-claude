@@ -19,24 +19,24 @@ Generate comprehensive User Acceptance Tests (UAT) for a feature, writing them t
 
 Parse `$ARGUMENTS` to determine the source and output file:
 
-1. **If a task file path is provided** (e.g., `.docs/tasks/active/3-user-auth.md`):
+1. **If a task file path is provided** (e.g., `.docs/tasks/pending-uat/3-user-auth.md`):
    - Read the task file
    - Extract the feature requirements and scope
    - Derive UAT filename from the task filename: `3-user-auth.md` → `.docs/uat/pending/3-user-auth.uat.md`
 
 2. **If a feature description is provided** (e.g., "user authentication"):
-   - Search `.docs/tasks/active/` for a matching task file
+   - Search `.docs/tasks/pending-uat/` for a matching task file (also check `active/` as a fallback)
    - If a matching task is found, use its naming: `.docs/uat/pending/<number>-<slug>.uat.md`
    - If no matching task exists, ask the user:
      - Should a task be created first via `/add-task`?
      - Or assign a standalone UAT number and slug: `.docs/uat/pending/<next-number>-<slug>.uat.md`
-   - To determine `<next-number>`, scan existing files in `.docs/uat/pending/`, `.docs/uat/complete/`, and `.docs/tasks/active/` for the highest number
+   - To determine `<next-number>`, scan existing files in `.docs/uat/pending/`, `.docs/uat/completed/`, `.docs/tasks/active/`, and `.docs/tasks/pending-uat/` for the highest number
 
-3. Assume `.docs/uat/pending/`, `.docs/uat/complete/`, and `.docs/uat/screenshots/` directories already exist.
+3. Assume `.docs/uat/pending/`, `.docs/uat/completed/`, and `.docs/uat/screenshots/` directories already exist.
 
-4. **Check for existing UAT file** in both `pending/` and `complete/`:
+4. **Check for existing UAT file** in both `pending/` and `completed/`:
    - If it exists in `pending/`, ask the user: replace, append, or abort?
-   - If it exists in `complete/`, warn the user that a completed UAT already exists and ask whether to generate a new version in `pending/`
+   - If it exists in `completed/`, warn the user that a completed UAT already exists and ask whether to generate a new version in `pending/`
 
 ### Step 2: Analyze the Feature
 
@@ -60,7 +60,7 @@ The file MUST follow this structure:
 ```markdown
 # UAT: [Feature Name]
 
-> **Source task**: [`.docs/tasks/active/<number>-<slug>.md`](relative-link) (or "Standalone" if no task)
+> **Source task**: [`.docs/tasks/pending-uat/<number>-<slug>.md`](relative-link) (or "Standalone" if no task)
 > **Generated**: YYYY-MM-DD
 
 ---
@@ -126,7 +126,7 @@ The file MUST follow this structure:
 **Key structural rules**:
 - Every test case ends with `- [ ] Pass` — this makes the file `/tackle`-compatible
 - Prerequisites also use `- [ ]` checkboxes
-- The `Source task` header links back to the originating task file
+- The `Source task` header links back to the originating task file (typically in `pending-uat/`)
 - Section separators (`---`) match the outline format `/tackle` expects
 
 ### Step 4: Test Case Guidelines
@@ -161,7 +161,7 @@ When generating tests, ensure:
 
 1. **Write the UAT file** to `.docs/uat/pending/<number>-<slug>.uat.md`
 
-2. **Update the source task file** (if one exists):
+2. **Update the source task file** (if one exists, typically in `.docs/tasks/pending-uat/`):
    - Append a reference at the bottom of the task file:
      ```markdown
      ---
@@ -183,7 +183,7 @@ After writing the tests:
    To walk through tests interactively:  /uat-walkthrough .docs/uat/pending/<number>-<slug>.uat.md
    To create a task first:               /add-task <description>
    ```
-   When all tests pass, `/uat-walkthrough` moves the file from `pending/` to `complete/`.
+   When all tests pass, `/uat-walkthrough` moves the file from `pending/` to `completed/`.
 
 3. Note any areas that may need additional manual test cases
 
@@ -196,13 +196,17 @@ After writing the tests:
 ├── pending/          # Newly generated UATs, not yet fully passed
 │   ├── 3-user-auth.uat.md
 │   └── 5-positions.uat.md
-└── complete/         # All tests passed, UAT signed off
+└── completed/        # All tests passed, UAT signed off
     └── 1-onboarding.uat.md
+
+.docs/tasks/
+├── active/           # Tasks being implemented via /tackle
+├── pending-uat/      # Implementation complete, awaiting UAT testing
+└── completed/        # UAT passed, task fully complete
 ```
 
-**Lifecycle**: `pending/` → (execute via `/uat-walkthrough`, all `- [ ] Pass` checked) → move to `complete/`
-
-This mirrors `.docs/tasks/` which uses `active/` and `completed/`.
+**Task lifecycle**: `active/` → (`/tackle` completes) → `pending-uat/` → (`/uat-walkthrough` all pass) → `completed/`
+**UAT lifecycle**: `pending/` → (`/uat-walkthrough` all pass) → `completed/`
 
 ---
 
@@ -210,8 +214,8 @@ This mirrors `.docs/tasks/` which uses `active/` and `completed/`.
 
 | Source | UAT File Path | Example |
 |--------|--------------|---------|
-| Task `.docs/tasks/active/3-user-auth.md` | `.docs/uat/pending/3-user-auth.uat.md` | Mirrors task number and slug |
-| Task `.docs/tasks/active/12-api-refactor.md` | `.docs/uat/pending/12-api-refactor.uat.md` | Mirrors task number and slug |
+| Task `.docs/tasks/pending-uat/3-user-auth.md` | `.docs/uat/pending/3-user-auth.uat.md` | Mirrors task number and slug |
+| Task `.docs/tasks/pending-uat/12-api-refactor.md` | `.docs/uat/pending/12-api-refactor.uat.md` | Mirrors task number and slug |
 | Freeform (matching task found) | `.docs/uat/pending/<task-number>-<task-slug>.uat.md` | Uses discovered task's naming |
 | Freeform (no task) | `.docs/uat/pending/<next-number>-<derived-slug>.uat.md` | Auto-numbered, ask user to confirm slug |
 
@@ -221,12 +225,12 @@ The `<number>` prefix ensures UAT files sort alongside their tasks and are easy 
 
 ## Example
 
-Given task `.docs/tasks/active/5-positions.md`, the generated UAT at `.docs/uat/pending/5-positions.uat.md`:
+Given task `.docs/tasks/pending-uat/5-positions.md`, the generated UAT at `.docs/uat/pending/5-positions.uat.md`:
 
 ```markdown
 # UAT: Positions Management
 
-> **Source task**: [`.docs/tasks/active/5-positions.md`](../../tasks/active/5-positions.md)
+> **Source task**: [`.docs/tasks/pending-uat/5-positions.md`](../../tasks/pending-uat/5-positions.md)
 > **Generated**: 2026-03-03
 
 ---

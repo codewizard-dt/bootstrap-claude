@@ -35,5 +35,5 @@ $ARGUMENTS
 8) **Confirm completion**: Report the created task file path and summary to the user. Suggest next steps:
    ```
    To implement this task:  /tackle .docs/tasks/active/<number>-<slug>.md
-   To generate UAT tests:   /uat-generator .docs/tasks/active/<number>-<slug>.md
    ```
+   Note: `/tackle` will move the task to `pending-uat/` on completion, then offer to run `/uat-generator`.
