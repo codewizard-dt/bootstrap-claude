@@ -26,6 +26,7 @@ Follow `basic-project-setup.md` to configure a new project:
 | `/uat-generator <target>` | Generate UAT tests in `.docs/uat/pending/` mirroring task naming conventions |
 | `/uat-walkthrough <path>` | Interactively walk through a pending UAT file test-by-test with the user |
 | `/lint` | Get IDE diagnostics, fix issues one-by-one in verify cycles |
+| `/simplify <path>` | Analyze files/directories to remove redundancy and simplify complexity |
 | `/git-commit` | Stage all changes and commit with auto-generated message |
 | `/update` | Update all project documentation after implementation work |
 
@@ -44,3 +45,4 @@ Standard Read/Edit/Write tools are permitted only for non-code files (markdown, 
 - `basic-project-setup.md` — MCP installation steps and API keys
 - `.docs/guides/mcp-tools.md` — Complete MCP tool reference with workflows and examples
 - `.claude/commands/` — All custom slash command definitions
+- `update-project.sh` — Script to sync `.claude/commands/` and `.docs/` into a target project
