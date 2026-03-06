@@ -3,6 +3,7 @@ description: Generate User Acceptance Tests for a feature or documentation file
 argument-hint: <path/to/task-file.md or feature description>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
+**Run `/primer` first if you have not already this session.**
 
 
 # UAT Generator

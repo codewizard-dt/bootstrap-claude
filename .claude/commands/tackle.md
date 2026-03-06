@@ -3,6 +3,7 @@ description: Tackle an outlined task file step-by-step
 argument-hint: <path/to/outline.md>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
+**Run `/primer` first if you have not already this session.**
 
 # Tackle Outline
 
@@ -71,7 +72,7 @@ The sub-agent analyzes the outline to find the next actionable task:
 
 ### Completion Check
 - If ALL items are marked complete:
-  - Move the task file using `git mv` from `.docs/tasks/active/` to `.docs/tasks/pending-uat/` (fall back to `mv` only if `git mv` fails)
+  - Move the task file: `git mv .docs/tasks/active/<filename>.md .docs/tasks/pending-uat/<filename>.md` (fall back to `mv` if `git mv` fails)
   - Report success and STOP
   - Output: "All tasks in outline complete! Task moved to pending-uat."
 
@@ -256,7 +257,7 @@ Now execute the cycle:
 3. Delegate to the appropriate agent(s)
 4. Update the outline
 5. Repeat until done
-6. **Move the task file** using `git mv` from `.docs/tasks/active/` to `.docs/tasks/pending-uat/` (fall back to `mv` only if `git mv` fails)
+6. **Move the task file**: `git mv .docs/tasks/active/<filename>.md .docs/tasks/pending-uat/<filename>.md` (fall back to `mv` if `git mv` fails)
 7. When finished run the `/update` skill
 8. Ask the user: **"Generate UAT tests for this task?"** using `AskUserQuestion`:
    - **Yes** — Run `/uat-generator .docs/tasks/pending-uat/<filename>` to create a UAT file in `.docs/uat/pending/` matching this task's naming, then suggest: `/uat-walkthrough .docs/uat/pending/<file>.uat.md`

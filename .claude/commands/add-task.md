@@ -3,6 +3,7 @@ description: Add a new task to .docs/tasks
 argument-hint: <task description>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
+**Run `/primer` first if you have not already this session.**
 
 
 $ARGUMENTS

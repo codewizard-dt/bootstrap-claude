@@ -3,6 +3,7 @@ argument-hint: [relative_path]
 description: Assess and simplify files or directories
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
+**Run `/primer` first if you have not already this session.**
 
 
 **Purpose**: Analyze files or directories to remove redundant information and simplify overly complex structures.

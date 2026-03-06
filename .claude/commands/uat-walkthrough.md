@@ -3,6 +3,7 @@ description: Walk through a pending UAT file test-by-test with the user
 argument-hint: <path/to/.docs/uat/pending/file.uat.md>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
+**Run `/primer` first if you have not already this session.**
 
 
 # UAT Walkthrough
@@ -91,8 +92,8 @@ When re-testing a failed test, first **reset its status** from `- [FAIL: ...]` b
 - If no more tests match the current mode:
   - Report the final summary
   - If ALL tests in the file are marked `[x] Pass`:
-    - Move the UAT file using `git mv` from `pending/` to `completed/` (fall back to `mv` only if `git mv` fails)
-    - Move the associated task file using `git mv` from `.docs/tasks/pending-uat/` to `.docs/tasks/completed/` (derive task filename from UAT filename: `<number>-<slug>.uat.md` → `<number>-<slug>.md`; fall back to `mv` only if `git mv` fails)
+    - Move the UAT file: `git mv .docs/uat/pending/<slug>.uat.md .docs/uat/completed/<slug>.uat.md` (fall back to `mv` if `git mv` fails)
+    - Move the associated task file (derive name: `<number>-<slug>.uat.md` → `<number>-<slug>.md`): `git mv .docs/tasks/pending-uat/<number>-<slug>.md .docs/tasks/completed/<number>-<slug>.md` (fall back to `mv` if `git mv` fails)
     - Update any internal path references in both moved files (e.g., source task links, UAT links)
   - STOP
 
@@ -109,6 +110,7 @@ Use **markdown bold** (`**label**`) for metadata labels and section headers so t
 ```markdown
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TEST [3 of 18]: UAT-UI-007 — Strength Proposal — Approve
+**Progress:** 2/8 passed · 0 failed · 6 remaining
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 **Page:** http://localhost:4321/strengths
@@ -121,10 +123,6 @@ TEST [3 of 18]: UAT-UI-007 — Strength Proposal — Approve
 **EXPECTED RESULT:**
 - Strength is saved (POST to /api/strengths)
 - The strength appears in the "My Strengths" panel on the right
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-**Progress:** 2/8 passed · 0 failed · 6 remaining
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
 **Rules for presenting**:
@@ -374,8 +372,8 @@ Failed Tests:
 ### Post-Walkthrough Actions
 
 - **All passed**:
-  1. Move UAT file using `git mv` from `.docs/uat/pending/` to `.docs/uat/completed/` (fall back to `mv` only if `git mv` fails)
-  2. Move associated task file using `git mv` from `.docs/tasks/pending-uat/` to `.docs/tasks/completed/` (derive task filename from UAT: `<number>-<slug>.uat.md` → `<number>-<slug>.md`; fall back to `mv` only if `git mv` fails)
+  1. Move UAT file: `git mv .docs/uat/pending/<slug>.uat.md .docs/uat/completed/<slug>.uat.md` (fall back to `mv` if `git mv` fails)
+  2. Move associated task file (derive name: `<number>-<slug>.uat.md` → `<number>-<slug>.md`): `git mv .docs/tasks/pending-uat/<number>-<slug>.md .docs/tasks/completed/<number>-<slug>.md` (fall back to `mv` if `git mv` fails)
   3. **Update references** in both moved files: update `pending-uat/` → `completed/` in the task file, update `pending/` → `completed/` in the UAT file's source task link
   4. **Delete all screenshots** for this task: `git rm .docs/uat/screenshots/<task-number>-*` (they are no longer needed once all tests pass)
   5. Run the `/update` command to update all project documentation
