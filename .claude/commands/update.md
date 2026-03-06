@@ -38,7 +38,7 @@ Update documentation in this sequence:
 #### 2. **UAT Files** (`.docs/uat/`)
 
 - If a task was completed and has a corresponding UAT in `pending/`, note it's ready for walkthrough
-- If UAT tests were run and all passed, move from `pending/` to `completed/`
+- If UAT tests were run and all passed, move from `pending/` to `completed/` using `git mv` (fall back to `mv` only if `git mv` fails)
 
 #### 3. **PROJECT_STATUS.md** (if it exists)
 

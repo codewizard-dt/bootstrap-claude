@@ -71,7 +71,7 @@ The sub-agent analyzes the outline to find the next actionable task:
 
 ### Completion Check
 - If ALL items are marked complete:
-  - Move the task file from `.docs/tasks/active/` to `.docs/tasks/pending-uat/`
+  - Move the task file using `git mv` from `.docs/tasks/active/` to `.docs/tasks/pending-uat/` (fall back to `mv` only if `git mv` fails)
   - Report success and STOP
   - Output: "All tasks in outline complete! Task moved to pending-uat."
 
@@ -87,7 +87,8 @@ Before creating a plan or delegating work, gather implementation context:
 
 1. **Review existing code**: Read the files and symbols directly relevant to the task. Understand current patterns, data flow, and conventions before making changes.
 2. **Check project context**: Review `PROJECT_STATUS.md`, `CLAUDE.md`, and any related existing code to understand constraints and dependencies.
-3. **Clarify ambiguous implementation details**: If there are multiple valid approaches to implementing a task (e.g., component structure, data model changes, API design), use `AskUserQuestion` to present options with descriptions before committing to an approach. Do not guess — ask.
+3. **Library/framework lookups**: **NEVER search `node_modules/` for exports, types, or usage examples.** Use Context7 MCP (`resolve-library-id` → `query-docs`) for library documentation and Brave Search MCP for general web research. Searching `node_modules/` wastes tokens and produces unreliable results.
+4. **Clarify ambiguous implementation details**: If there are multiple valid approaches to implementing a task (e.g., component structure, data model changes, API design), use `AskUserQuestion` to present options with descriptions before committing to an approach. Do not guess — ask.
 
 ### Plan and Delegate
 
@@ -255,7 +256,7 @@ Now execute the cycle:
 3. Delegate to the appropriate agent(s)
 4. Update the outline
 5. Repeat until done
-6. **Move the task file** from `.docs/tasks/active/` to `.docs/tasks/pending-uat/` (create the directory if it doesn't exist)
+6. **Move the task file** using `git mv` from `.docs/tasks/active/` to `.docs/tasks/pending-uat/` (create the directory if needed; fall back to `mv` only if `git mv` fails)
 7. When finished run the `/update` skill
 8. Ask the user: **"Generate UAT tests for this task?"** using `AskUserQuestion`:
    - **Yes** — Run `/uat-generator .docs/tasks/pending-uat/<filename>` to create a UAT file in `.docs/uat/pending/` matching this task's naming, then suggest: `/uat-walkthrough .docs/uat/pending/<file>.uat.md`

@@ -91,8 +91,8 @@ When re-testing a failed test, first **reset its status** from `- [FAIL: ...]` b
 - If no more tests match the current mode:
   - Report the final summary
   - If ALL tests in the file are marked `[x] Pass`:
-    - Move the UAT file from `pending/` to `completed/`
-    - Move the associated task file from `.docs/tasks/pending-uat/` to `.docs/tasks/completed/` (derive task filename from UAT filename: `<number>-<slug>.uat.md` → `<number>-<slug>.md`)
+    - Move the UAT file using `git mv` from `pending/` to `completed/` (fall back to `mv` only if `git mv` fails)
+    - Move the associated task file using `git mv` from `.docs/tasks/pending-uat/` to `.docs/tasks/completed/` (derive task filename from UAT filename: `<number>-<slug>.uat.md` → `<number>-<slug>.md`; fall back to `mv` only if `git mv` fails)
     - Update any internal path references in both moved files (e.g., source task links, UAT links)
   - STOP
 
@@ -349,8 +349,8 @@ Failed Tests:
 ### Post-Walkthrough Actions
 
 - **All passed**:
-  1. Move UAT file from `.docs/uat/pending/` to `.docs/uat/completed/`
-  2. Move associated task file from `.docs/tasks/pending-uat/` to `.docs/tasks/completed/` (derive task filename from UAT: `<number>-<slug>.uat.md` → `<number>-<slug>.md`)
+  1. Move UAT file using `git mv` from `.docs/uat/pending/` to `.docs/uat/completed/` (fall back to `mv` only if `git mv` fails)
+  2. Move associated task file using `git mv` from `.docs/tasks/pending-uat/` to `.docs/tasks/completed/` (derive task filename from UAT: `<number>-<slug>.uat.md` → `<number>-<slug>.md`; fall back to `mv` only if `git mv` fails)
   3. **Update references** in both moved files: update `pending-uat/` → `completed/` in the task file, update `pending/` → `completed/` in the UAT file's source task link
   4. **Delete all screenshots** for this task: `git rm .docs/uat/screenshots/<task-number>-*` (they are no longer needed once all tests pass)
   5. Report the new file paths for both UAT and task files
