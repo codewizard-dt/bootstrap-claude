@@ -256,7 +256,7 @@ Now execute the cycle:
 3. Delegate to the appropriate agent(s)
 4. Update the outline
 5. Repeat until done
-6. **Move the task file** using `git mv` from `.docs/tasks/active/` to `.docs/tasks/pending-uat/` (create the directory if needed; fall back to `mv` only if `git mv` fails)
+6. **Move the task file** using `git mv` from `.docs/tasks/active/` to `.docs/tasks/pending-uat/` (fall back to `mv` only if `git mv` fails)
 7. When finished run the `/update` skill
 8. Ask the user: **"Generate UAT tests for this task?"** using `AskUserQuestion`:
    - **Yes** — Run `/uat-generator .docs/tasks/pending-uat/<filename>` to create a UAT file in `.docs/uat/pending/` matching this task's naming, then suggest: `/uat-walkthrough .docs/uat/pending/<file>.uat.md`

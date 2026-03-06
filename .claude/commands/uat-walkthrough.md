@@ -143,8 +143,33 @@ When a test contains **curl commands or similar CLI commands** (identified by `c
    - **Run test** — Execute the commands and show results (Recommended)
    - **Manual** — User will test manually (fall back to normal flow)
    - **Skip** — Skip this test
-3. **If "Run test"**: Execute each curl/command via Bash, capture output, and present results clearly:
-   - Show the command, HTTP status code, and response body
+3. **If "Run test"**: Execute the commands via Bash. **Always show the HTTP status code and relevant response details for every request.** The user needs this to verify correctness.
+
+   **Capturing status codes — choose the right technique:**
+
+   - **Simple curl (no pipes)**: Append `-w "\nHTTP_STATUS: %{http_code}\n"` to the curl flags.
+   - **Curl piped into jq/grep/etc.**: The `-w` output gets consumed by the pipe and is lost. Instead, capture the full response into a variable first:
+     ```bash
+     RESPONSE=$(curl -s -w "\nHTTP_STATUS: %{http_code}" -X GET http://localhost:3000/api/items)
+     echo "$RESPONSE" | sed '$d'  # body (all lines except last)
+     echo "$RESPONSE" | tail -1   # HTTP_STATUS: 200
+     ```
+   - **Loops with curl**: Use the variable technique inside each iteration so every request shows its status code and response:
+     ```bash
+     for item in a b c; do
+       echo "--- $item ---"
+       RESPONSE=$(curl -s -w "\nHTTP_STATUS: %{http_code}" -X POST http://localhost:3000/api/items \
+         -H 'Content-Type: application/json' -d "{\"name\": \"$item\"}")
+       echo "$RESPONSE" | sed '$d' | jq '.field'  # pipe body only
+       echo "$RESPONSE" | tail -1                  # HTTP_STATUS: 201
+       echo ""
+     done
+     ```
+
+   **Display rules:**
+   - Show the **status code** and **relevant response details** for every request (every iteration in a loop, every endpoint in a sequence)
+   - Do NOT truncate or summarize output — show every iteration
+   - Format results in a clear table or structured list when presenting to the user
    - Compare against the expected result from the test
    - **Do NOT auto-judge pass/fail** — still ask the user for their verdict (Step 4)
 4. **If commands fail to execute** (connection refused, timeout, etc.), report the error and fall back to normal manual verdict flow
@@ -353,7 +378,8 @@ Failed Tests:
   2. Move associated task file using `git mv` from `.docs/tasks/pending-uat/` to `.docs/tasks/completed/` (derive task filename from UAT: `<number>-<slug>.uat.md` → `<number>-<slug>.md`; fall back to `mv` only if `git mv` fails)
   3. **Update references** in both moved files: update `pending-uat/` → `completed/` in the task file, update `pending/` → `completed/` in the UAT file's source task link
   4. **Delete all screenshots** for this task: `git rm .docs/uat/screenshots/<task-number>-*` (they are no longer needed once all tests pass)
-  5. Report the new file paths for both UAT and task files
+  5. Run the `/update` command to update all project documentation
+  6. Report the new file paths for both UAT and task files
 - **Some failed**: Keep file in `pending/`. Keep screenshots (useful for debugging). Suggest next steps:
   ```
   To fix failures and re-test:  /uat-walkthrough .docs/uat/pending/<file>.uat.md
