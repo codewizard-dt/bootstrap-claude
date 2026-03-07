@@ -160,6 +160,35 @@ When generating tests, ensure:
    - **Error handling**: How errors are displayed/returned
    - **Edge cases**: Empty states, limits, special characters
 
+5. **API Test Ordering** (critical for sequential walkthrough):
+
+   API tests MUST be ordered so they can be run sequentially from top to bottom without skipping. Tests that create data come before tests that read, filter, update, or delete that data.
+
+   **Order by CRUD lifecycle per resource:**
+   1. **Create** (POST) — happy path, creates records that subsequent tests depend on
+   2. **Create validation** — POST with invalid/missing fields (400 errors)
+   3. **List / Read** — GET collection, GET by ID (data now exists from step 1)
+   4. **List with filters / pagination / search** — GET with query params
+   5. **Update** (PUT/PATCH) — happy path modifications
+   6. **Update validation** — PATCH/PUT with invalid data, non-existent IDs (400, 404)
+   7. **Delete** (DELETE) — happy path removal
+   8. **Delete validation** — DELETE non-existent IDs (404)
+   9. **Post-delete verification** — confirm deleted resource returns 404 on GET
+
+   **When multiple resources exist**, order the resources so that dependencies are satisfied. For example, if "leads" are created by a "job search POST", the job search tests come before the lead filter/read tests.
+
+   **Cross-resource dependency example:**
+   ```
+   UAT-API-001: Create Job Search (POST /api/searches) — creates leads as side effect
+   UAT-API-002: List Leads (GET /api/leads) — now has data from 001
+   UAT-API-003: Filter Leads by Status (GET /api/leads?status=new)
+   UAT-API-004: Get Lead by ID (GET /api/leads/:id)
+   UAT-API-005: Update Lead (PATCH /api/leads/:id)
+   UAT-API-006: Delete Lead (DELETE /api/leads/:id)
+   ```
+
+   **Error/validation tests that don't need existing data** (e.g., POST invalid JSON → 400, GET non-existent ID → 404) can be placed either alongside their CRUD group or in a separate "Validation & Error Handling" subsection after the happy-path CRUD block — but never before the create tests they implicitly depend on.
+
 ### Step 5: Write UAT File and Cross-Reference
 
 1. **Write the UAT file** to `.docs/uat/pending/<number>-<slug>.uat.md`
@@ -247,20 +276,20 @@ Given task `.docs/tasks/pending-uat/5-positions.md`, the generated UAT at `.docs
 
 ## API Tests
 
-### UAT-API-001: List All Positions
-- **Endpoint**: `GET /api/v1/positions`
-- **Description**: Verify positions list endpoint returns user's positions
-- **Steps**:
-  1. Execute: `curl -X GET 'http://localhost:8000/api/v1/positions' -H 'Authorization: Bearer <token>'`
-- **Expected Result**: 200 OK with array of position objects containing id, symbol, size, entry_price, current_price, pnl
-- [ ] Pass
-
-### UAT-API-002: Create New Position
+### UAT-API-001: Create New Position
 - **Endpoint**: `POST /api/v1/positions`
-- **Description**: Verify new position can be created
+- **Description**: Verify new position can be created (creates data for subsequent tests)
 - **Steps**:
   1. Execute: `curl -X POST 'http://localhost:8000/api/v1/positions' -H 'Content-Type: application/json' -d '{"symbol": "BTC/USD", "size": 0.5, "entry_price": 50000}'`
 - **Expected Result**: 201 Created with position object including generated id and timestamps
+- [ ] Pass
+
+### UAT-API-002: List All Positions
+- **Endpoint**: `GET /api/v1/positions`
+- **Description**: Verify positions list endpoint returns user's positions (data exists from UAT-API-001)
+- **Steps**:
+  1. Execute: `curl -X GET 'http://localhost:8000/api/v1/positions' -H 'Authorization: Bearer <token>'`
+- **Expected Result**: 200 OK with array of position objects containing id, symbol, size, entry_price, current_price, pnl
 - [ ] Pass
 ```
 

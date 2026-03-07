@@ -120,7 +120,8 @@ TEST [3 of 18]: UAT-UI-007 — Strength Proposal — Approve
 1. Trigger a strength proposal via chat (see UAT-UI-006)
 2. Click "Approve" on the proposal card
 
-**EXPECTED RESULT:**
+───────────────────────────────────────────
+▶ **EXPECTED RESULT:**
 - Strength is saved (POST to /api/strengths)
 - The strength appears in the "My Strengths" panel on the right
 ```
@@ -141,33 +142,8 @@ When a test contains **curl commands or similar CLI commands** (identified by `c
    - **Run test** — Execute the commands and show results (Recommended)
    - **Manual** — User will test manually (fall back to normal flow)
    - **Skip** — Skip this test
-3. **If "Run test"**: Execute the commands via Bash. **Always show the HTTP status code and relevant response details for every request.** The user needs this to verify correctness.
-
-   **Capturing status codes — choose the right technique:**
-
-   - **Simple curl (no pipes)**: Append `-w "\nHTTP_STATUS: %{http_code}\n"` to the curl flags.
-   - **Curl piped into jq/grep/etc.**: The `-w` output gets consumed by the pipe and is lost. Instead, capture the full response into a variable first:
-     ```bash
-     RESPONSE=$(curl -s -w "\nHTTP_STATUS: %{http_code}" -X GET http://localhost:3000/api/items)
-     echo "$RESPONSE" | sed '$d'  # body (all lines except last)
-     echo "$RESPONSE" | tail -1   # HTTP_STATUS: 200
-     ```
-   - **Loops with curl**: Use the variable technique inside each iteration so every request shows its status code and response:
-     ```bash
-     for item in a b c; do
-       echo "--- $item ---"
-       RESPONSE=$(curl -s -w "\nHTTP_STATUS: %{http_code}" -X POST http://localhost:3000/api/items \
-         -H 'Content-Type: application/json' -d "{\"name\": \"$item\"}")
-       echo "$RESPONSE" | sed '$d' | jq '.field'  # pipe body only
-       echo "$RESPONSE" | tail -1                  # HTTP_STATUS: 201
-       echo ""
-     done
-     ```
-
-   **Display rules:**
-   - Show the **status code** and **relevant response details** for every request (every iteration in a loop, every endpoint in a sequence)
-   - Do NOT truncate or summarize output — show every iteration
-   - Format results in a clear table or structured list when presenting to the user
+3. **If "Run test"**: Execute each curl/command via Bash, capture output, and present results clearly:
+   - Show the command, HTTP status code, and response body
    - Compare against the expected result from the test
    - **Do NOT auto-judge pass/fail** — still ask the user for their verdict (Step 4)
 4. **If commands fail to execute** (connection refused, timeout, etc.), report the error and fall back to normal manual verdict flow
