@@ -17,6 +17,26 @@ Execute tasks from an outlined `*.md` file in cycles, delegating each step to a 
 
 IMPORTANT: Adhere to all rules in '.docs/guides/mcp-tools.md'
 
+## MANDATORY: MCP Serena for All Code Operations
+
+All sub-agents delegated from this command **MUST** use MCP Serena tools for code exploration and editing. This is non-negotiable.
+
+| Operation | MUST Use | NEVER Use |
+|-----------|----------|-----------|
+| Explore code structure | Serena `get_symbols_overview` | `Read` on code files |
+| Find function/class | Serena `find_symbol` | `Grep` on code files |
+| Edit code | Serena symbolic or file/line tools | Standard `Edit` on code files |
+| Search code | Serena `search_for_pattern` | `Grep` |
+| Find files | Serena `find_file`, `list_dir` | `Glob`, `find` |
+| Library docs | Context7 MCP | `WebSearch` / `WebFetch` |
+
+**Exceptions** — standard Read/Edit/Write tools are permitted ONLY for non-code files (markdown, JSON, YAML, config).
+
+Every sub-agent prompt **MUST** include this instruction:
+> "Use MCP Serena for all code exploration and editing. Do NOT use Read, Edit, Grep, or Glob on code files. See `.docs/guides/mcp-tools.md` for the full tool reference."
+
+---
+
 ## Cycle Overview
 
 > **MANDATORY**: Every step in this cycle MUST be delegated to a sub-agent. The main agent orchestrates only — it reads sub-agent results, decides what to do next, and delegates again. This keeps the main context window clean and prevents token bloat.
@@ -86,7 +106,7 @@ The sub-agent analyzes the outline to find the next actionable task:
 
 Before creating a plan or delegating work, gather implementation context:
 
-1. **Review existing code**: Read the files and symbols directly relevant to the task. Understand current patterns, data flow, and conventions before making changes.
+1. **Review existing code**: Use Serena's `get_symbols_overview`, `find_symbol`, and `search_for_pattern` to explore relevant files and symbols. Understand current patterns, data flow, and conventions before making changes. Do NOT use Read/Grep/Glob on code files.
 2. **Check project context**: Review `PROJECT_STATUS.md`, `CLAUDE.md`, and any related existing code to understand constraints and dependencies.
 3. **Library/framework lookups**: **NEVER search `node_modules/` for exports, types, or usage examples.** Use Context7 MCP (`resolve-library-id` → `query-docs`) for library documentation and Brave Search MCP for general web research. Searching `node_modules/` wastes tokens and produces unreliable results.
 4. **Clarify ambiguous implementation details**: If there are multiple valid approaches to implementing a task (e.g., component structure, data model changes, API design), use `AskUserQuestion` to present options with descriptions before committing to an approach. Do not guess — ask.
@@ -114,12 +134,13 @@ Create a plan on how to complete the task. For each step of your plan, delegate 
 
 ### Subagent Requirements
 
-When delegating, instruct the subagent to:
+When delegating, **every** sub-agent prompt MUST include:
 
-1. **Execute the specific task** described in the outline item
-2. **Run quality gates** after completing the work:
+1. **MCP Serena mandate**: "Use MCP Serena for all code exploration and editing. Do NOT use Read, Edit, Grep, or Glob on code files. See `.docs/guides/mcp-tools.md` for the full tool reference."
+2. **Execute the specific task** described in the outline item
+3. **Run quality gates** after completing the work:
    - After any code changes: `pnpm typecheck`
-3. **Report completion status** (success, partial, or failure with reason)
+4. **Report completion status** (success, partial, or failure with reason)
 
 ### Example Delegation
 
@@ -127,6 +148,10 @@ When delegating, instruct the subagent to:
 Task tool invocation:
   subagent_type: "component-architect"
   prompt: |
+    **MANDATORY**: Use MCP Serena for all code exploration and editing.
+    Do NOT use Read, Edit, Grep, or Glob on code files.
+    See `.docs/guides/mcp-tools.md` for the full tool reference.
+
     Complete this task from the outline:
 
     Task: "Update Header component to fix H1 misuse"

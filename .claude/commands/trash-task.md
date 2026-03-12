@@ -44,14 +44,10 @@ If the user says **No**, STOP.
 
 ### Step 4: Move Files
 
-1. **Ensure directories exist**:
-   - `mkdir -p .docs/tasks/trashed/`
-   - `mkdir -p .docs/uat/trashed/`
-
-2. **Move the task file**:
+1. **Move the task file**:
    - Use `git mv <source> .docs/tasks/trashed/<filename>` (fall back to `mv` if `git mv` fails)
 
-3. **Move related UAT files** (if any):
+2. **Move related UAT files** (if any):
    - Use `git mv <source> .docs/uat/trashed/<filename>` for each (fall back to `mv` if `git mv` fails)
 
 ### Step 5: Update References
