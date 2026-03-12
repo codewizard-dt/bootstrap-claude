@@ -132,15 +132,40 @@ The file MUST follow this structure:
 - The `Source task` header links back to the originating task file (typically in `pending-uat/`)
 - Section separators (`---`) match the outline format `/tackle` expects
 
+### Step 3b: Relevance Filter — Only Test What Changed
+
+Before writing any test case, assess whether the functionality it covers was **actually changed or introduced** by the task. The UAT file must only contain tests for new or modified behavior — not for pre-existing features that happen to be related.
+
+For each potential test, apply this decision:
+
+| Verdict | Criteria | Action |
+|---------|----------|--------|
+| **Include** | The task introduced this endpoint, page, behavior, or validation — or modified its logic, response shape, UI, or error handling | Write the test |
+| **Exclude** | The endpoint/page/behavior existed before and was **not modified** by this task, even if the test subject is in the same file, module, or domain | Do **not** write a test |
+
+**How to assess relevance:**
+1. Read the task file's scope, acceptance criteria, and listed changes
+2. Use Serena (`find_referencing_symbols`, `search_for_pattern`) or `git diff` against the base branch to identify exactly which files, symbols, and routes were added or modified
+3. For each candidate test, ask: *"Would this test have a different expected result after the task compared to before?"*
+   - **Yes** → include it
+   - **No** → exclude it
+
+**Examples:**
+- Task adds a `PATCH /api/leads/:id` endpoint → include tests for update happy path, update validation, update 404. Do **not** include tests for `GET /api/leads` or `POST /api/leads` unless their behavior also changed.
+- Task adds a new UI page → include tests for that page. Do **not** include tests for the navbar or sidebar unless the task modified them (e.g., added a new nav link).
+- Task changes validation rules on an existing `POST` endpoint → include tests for the new validation. Include the happy-path `POST` only if the valid request shape changed. Do **not** include `GET`/`DELETE` tests for the same resource unless affected.
+
+**If in doubt**, err on the side of exclusion. A focused UAT that verifies the actual changes is more valuable than a broad UAT that re-tests stable functionality.
+
 ### Step 4: Test Case Guidelines
 
 When generating tests, ensure:
 
-1. **Completeness**:
-   - Cover all API endpoints (CRUD operations)
-   - Cover all UI pages and interactions
-   - Include error scenarios (400, 404, 500 errors)
-   - Include validation edge cases
+1. **Completeness** (within the scope of changed functionality only):
+   - Cover all **new or modified** API endpoints (CRUD operations that changed)
+   - Cover all **new or modified** UI pages and interactions
+   - Include error scenarios for **changed** endpoints (400, 404, 500 errors)
+   - Include validation edge cases for **new or changed** validation rules
 
 2. **Specificity**:
    - Provide exact curl commands with sample data

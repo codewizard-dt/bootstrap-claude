@@ -248,6 +248,20 @@ The outline file should follow this general structure:
 
 ---
 
+## Pre-Execution: Check Pending UAT Queue
+
+Before starting the cycle, check if there are tasks awaiting UAT:
+
+1. Use Serena's `list_dir` tool on `.docs/tasks/pending-uat/` to list files
+2. Count the number of task files (exclude `.gitkeep` or other non-task files)
+3. If there are **1 or more** task files:
+   - Use `AskUserQuestion` to show: **"There are X task(s) awaiting UAT. Are you sure you want to execute this task now?"**
+   - If the user says **No** — STOP execution and suggest: `Run /uat-walkthrough on a pending UAT file first.`
+   - If the user says **Yes** — proceed with the cycle below
+4. If there are **0** task files, proceed immediately
+
+---
+
 ## Begin Execution
 
 Now execute the cycle:
