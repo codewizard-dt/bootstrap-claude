@@ -60,14 +60,16 @@ This command runs in a continuous loop, presenting one test at a time to the use
 
 ## Step 1.5: Mode Selection (on first cycle only)
 
-After parsing, if there are **any failed tests** (`[FAIL]`), present a mode choice using `AskUserQuestion`:
+After parsing, if there are **any failed tests** (`[FAIL]`), present the mode choice inline:
 
-**"This UAT has N failed and M pending tests. How do you want to proceed?"**
+```
+This UAT has N failed and M pending tests.
+Failed first / Pending only / Failed only?
+```
 
-Options:
-1. **Failed first** — Re-test failed tests, then continue with pending (Recommended)
-2. **Pending only** — Skip failed tests, only walk through untested items
-3. **Failed only** — Only re-test failed tests, skip pending
+- **Failed first** — Re-test failed tests, then continue with pending
+- **Pending only** — Skip failed tests, only walk through untested items
+- **Failed only** — Only re-test failed tests, skip pending
 
 Store the chosen mode for the duration of this walkthrough. If there are **no failed tests**, skip this step entirely and proceed normally (pending only).
 
@@ -138,8 +140,8 @@ TEST [3 of 18]: UAT-UI-007 — Strength Proposal — Approve
 When a test contains **curl commands or similar CLI commands** (identified by `curl`, `http`, or code blocks with shell commands in the Steps or Expected Result), run them autonomously:
 
 1. **Before each test**: Stop and present the test to the user (standard Step 3 format). Show exactly which commands will be executed.
-2. **Wait for user acknowledgement** via `AskUserQuestion`: **"This is an API test with executable commands. Proceed?"**
-   - **Run test** — Execute the commands and show results (Recommended)
+2. **Ask the user inline**: **"This is an API test with executable commands. Run / Manual / Skip?"**
+   - **Run** — Execute the commands and show results
    - **Manual** — User will test manually (fall back to normal flow)
    - **Skip** — Skip this test
 3. **If "Run test"**: Execute each curl/command via Bash, capture output, and present results clearly:
@@ -183,28 +185,24 @@ Extract the task number from the UAT filename: `<number>-<slug>.uat.md` → pref
 
 ## Step 4: Record the User's Verdict
 
-Use `AskUserQuestion` to get the result:
+After presenting the test, prompt the user inline — do NOT use `AskUserQuestion` for verdicts. Simply output:
 
-### Question Format
+```
+Pass / Fail / Fix now / Skip?
+```
 
-Ask the user: **"What is the result of this test?"**
-
-Options:
-1. **Pass** — Test passed as expected
-2. **Fail** — Test did not produce expected results
-3. **Fix now** — Fix the underlying code, then re-test
-4. **Skip** — Skip this test for now (will remain pending)
+The user will type their choice. Accept any unambiguous prefix (e.g., "p", "pass", "f", "fail", "fix", "s", "skip").
 
 ### If Pass
 - Mark the test: `- [x] Pass <!-- YYYY-MM-DD -->`
 
 ### If Fail
-- Ask a follow-up: **"Describe what went wrong (optional):"** — use `AskUserQuestion` with a freeform "Add notes" option
+- Ask a follow-up inline: **"What went wrong? (optional, press Enter to skip)"**
 - For **UI tests**: launch Puppeteer (if not already running, desktop viewport), navigate to the page, and take a screenshot saved as `.docs/uat/screenshots/<task-number>-<UAT-ID>-fail.png` to capture the broken state
 - Mark the test: `- [FAIL: <user's note or "No details provided">] <!-- YYYY-MM-DD -->`
 
 ### If Fix Now
-- Ask: **"Describe what went wrong:"** — use `AskUserQuestion` with a freeform "Add notes" option
+- Ask inline: **"What went wrong?"**
 - Mark the test temporarily: `- [FIXING: <user's note>] <!-- YYYY-MM-DD -->`
 - **Delegate a fix** to a subagent (see [Fix Workflow](#fix-workflow) below)
 - After the subagent completes, reset status to `- [ ] Pass` and **re-present this same test** for the user to verify the fix
@@ -299,7 +297,7 @@ This is a UI/layout test. Use Puppeteer MCP tools to diagnose:
 - **After ANY fix (code or UI), you MUST**:
   1. Reset the test status to `- [ ] Pass`
   2. Re-present the test to the user (Step 3)
-  3. Ask the user for their verdict via `AskUserQuestion` (Step 4) — Pass / Fail / Fix now / Skip
+  3. Ask the user for their verdict inline (Step 4) — `Pass / Fail / Fix now / Skip?`
   4. Only the **user** can mark a test as passing — the agent never decides pass/fail
 - If the fix subagent reports failure or cannot resolve the issue, inform the user and present normal verdict options (Fail / Skip)
 - The `[FIXING: ...]` marker is temporary — it must be replaced with either `[x] Pass`, `[FAIL: ...]`, or `[ ] Pass` before moving to the next test
@@ -368,6 +366,7 @@ Failed Tests:
 ### User Interaction
 - **Never skip the user prompt** — every test requires explicit pass/fail from the user
 - **Never auto-pass or auto-fail** — the user is the tester, the agent is the facilitator. This applies **especially after a fix** — a successful code fix does NOT mean the test passes. Always re-present and ask.
+- **Use inline prompts** (`Pass / Fail / Fix now / Skip?`) — do NOT use `AskUserQuestion` for verdicts. The user types their choice directly in the chat. This is faster and less disruptive.
 - Present one test at a time — do not batch multiple tests into one question
 - Keep the test presentation clean and scannable
 

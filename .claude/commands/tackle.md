@@ -140,6 +140,7 @@ When delegating, **every** sub-agent prompt MUST include:
 2. **Execute the specific task** described in the outline item
 3. **Run quality gates** after completing the work:
    - After any code changes: `pnpm typecheck`
+   - **Assume all type errors are caused by your changes.** The codebase passes typecheck before each `/tackle` cycle (enforced by `/update` and `/git-commit`). Do NOT run `git stash` to check if errors are pre-existing — they are not. Fix them.
 4. **Report completion status** (success, partial, or failure with reason)
 
 ### Example Delegation
@@ -163,7 +164,8 @@ Task tool invocation:
 
     After completing the work:
     1. Run `pnpm typecheck` to verify no type errors
-    2. Report success or any issues encountered
+    2. If typecheck fails, fix the errors — they are from your changes (do NOT git stash to check)
+    3. Report success or any issues encountered
 ```
 
 ---
