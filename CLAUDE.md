@@ -40,7 +40,7 @@ When these MCPs are configured in a target project, they are **mandatory** for t
 - **Context7**: All library/framework documentation lookups (replaces WebSearch for docs)
 - **Brave Search**: General web research (must be sequential, 1 request/second)
 
-Standard Read/Edit/Write tools are permitted only for non-code files (markdown, JSON, YAML, config).
+Standard Read/Edit/Write tools are permitted only for non-code files (JSON, YAML, config). Markdown files must use Serena.
 
 ## Key Files
 

@@ -19,7 +19,7 @@ Determine what changed since the last documentation update:
 - Which documentation files are affected?
 - Are there new patterns, conventions, or workflows to document?
 
-Use MCP Serena to explore the codebase as needed. Standard Read/Edit/Write are permitted for markdown files.
+Use MCP Serena to explore the codebase as needed, including for markdown files. Standard Read/Edit/Write are permitted only for JSON, YAML, and config files.
 
 ---
 

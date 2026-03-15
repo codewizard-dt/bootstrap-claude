@@ -10,13 +10,13 @@ These MCP servers are **REQUIRED** for all applicable operations. Using standard
 
 | MCP Server | Mandatory For | Replaces |
 |------------|--------------|----------|
-| **Serena** | All code exploration, editing, file search | Read, Edit, Write, Grep, Glob (for code files) |
+| **Serena** | All code exploration, editing, file search | Read, Edit, Write, Grep, Glob (for code and markdown files) |
 | **Context7** | All library/framework documentation lookups | WebSearch, WebFetch (for library docs) |
 | **Brave Search** | All general web research | WebSearch (for non-library topics) |
 | **Puppeteer** | Browser automation, screenshots, UI interaction | WebFetch (for rendered pages) |
 
 **Exceptions** — standard Read/Edit/Write tools are permitted ONLY for:
-- Non-code files (markdown, JSON, YAML, .env)
+- Non-code files (JSON, YAML, .env)
 - Creating brand-new files
 - Reading binary files or images
 
@@ -186,4 +186,5 @@ Use `list_memories` to discover what's available for the current project.
 | Library docs | Context7 | `WebSearch` / `WebFetch` |
 | General research | Brave Search (sequential, 1/sec) | Parallel searches |
 | Browser interaction | Puppeteer | `WebFetch` for rendered content |
-| Non-code files | Standard Read/Edit/Write | Serena |
+| Non-code files (JSON, YAML, .env) | Standard Read/Edit/Write | Serena |
+| Markdown files | Serena | Standard Read/Edit/Write |

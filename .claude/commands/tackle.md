@@ -30,10 +30,10 @@ All sub-agents delegated from this command **MUST** use MCP Serena tools for cod
 | Find files | Serena `find_file`, `list_dir` | `Glob`, `find` |
 | Library docs | Context7 MCP | `WebSearch` / `WebFetch` |
 
-**Exceptions** — standard Read/Edit/Write tools are permitted ONLY for non-code files (markdown, JSON, YAML, config).
+**Exceptions** — standard Read/Edit/Write tools are permitted ONLY for non-code files (JSON, YAML, config). Markdown files must use Serena.
 
 Every sub-agent prompt **MUST** include this instruction:
-> "Use MCP Serena for all code exploration and editing. Do NOT use Read, Edit, Grep, or Glob on code files. See `.docs/guides/mcp-tools.md` for the full tool reference."
+> "Use MCP Serena for all code exploration and editing, including markdown files. Do NOT use Read, Edit, Grep, or Glob on code or markdown files. See `.docs/guides/mcp-tools.md` for the full tool reference."
 
 ---
 
