@@ -3,5 +3,5 @@ Usage: `update-agent <path_to_project_root>`
 
 Actual command that should be executed:
 ``` bash
-/Users/davidtaylor/Projects/basic-project-setup/update-project.sh $PROJECT_ROOT
+/Users/davidtaylor/Repositories/basic-project-setup/update-project.sh $PROJECT_ROOT
 ```

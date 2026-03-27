@@ -3,6 +3,12 @@ set -euo pipefail
 
 TEMPLATE_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+if ! command -v uv &> /dev/null; then
+  echo "Error: 'uv' is not installed."
+  echo "Install it with: curl -LsSf https://astral.sh/uv/install.sh | sh"
+  exit 1
+fi
+
 if [ $# -ne 1 ]; then
   echo "Usage: $0 <absolute-path-to-project>"
   exit 1
@@ -35,10 +41,12 @@ echo ""
 
 # 2. Copy .claude and docs directories
 echo "Copying .claude/ commands and .docs/..."
-cp -r "$TEMPLATE_DIR/.claude" "$PROJECT_DIR/.claude"
+mkdir -p "$PROJECT_DIR/.claude"
+rsync -av "$TEMPLATE_DIR/.claude/" "$PROJECT_DIR/.claude/"
 echo "Copied .claude/ to $PROJECT_DIR/.claude"
-cp -r "$TEMPLATE_DIR/docs" "$PROJECT_DIR/docs"
-echo "Copied .docs/ to $PROJECT_DIR/docs"
+mkdir -p "$PROJECT_DIR/.docs"
+rsync -av "$TEMPLATE_DIR/.docs/" "$PROJECT_DIR/.docs/"
+echo "Copied .docs/ to $PROJECT_DIR/.docs"
 echo ""
 
 # Done
