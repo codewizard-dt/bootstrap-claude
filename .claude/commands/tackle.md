@@ -320,9 +320,10 @@ Now execute the cycle:
 4. Update the outline
 5. Repeat until done
 6. **Move the task file**: `git mv .docs/tasks/active/<filename>.md .docs/tasks/pending-uat/<filename>.md` (fall back to `mv` if `git mv` fails)
-7. When finished run the `/update` skill
-8. Ask the user: **"Generate UAT tests for this task?"** using `AskUserQuestion`:
-   - **Yes** — Run `/uat-generator .docs/tasks/pending-uat/<filename>` to create a UAT file in `.docs/uat/pending/` matching this task's naming, then suggest: `/uat-walkthrough .docs/uat/pending/<file>.uat.md`
+7. Ask the user: **"Generate UAT tests for this task?"** using `AskUserQuestion`:
+   - **Yes** — Run `/uat-generator .docs/tasks/pending-uat/<filename>` to create a UAT file in `.docs/uat/pending/` matching this task's naming
    - **No** — Skip UAT generation
+8. Run the `/update` skill (this ensures any generated UAT file is included in the documentation update)
+9. If UAT was generated in step 7, suggest: `/uat-walkthrough .docs/uat/pending/<file>.uat.md`
 
 **Start now - read the outline and begin the first cycle.**

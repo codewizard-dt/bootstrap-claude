@@ -17,12 +17,27 @@ Move a task file (and any related UAT files) to their respective `trashed/` dire
 
 ## Instructions
 
-### Step 1: Validate the Task File
+### Step 1: Resolve the Task File
 
-1. Confirm the file at `$ARGUMENTS` exists (use Serena `list_dir` or `find_file`)
-2. If the file does not exist, STOP and report the error
-3. Determine which directory the task currently lives in (`active/`, `pending-uat/`, or `completed/`)
-4. Extract the task's number-slug identifier (e.g., `3-user-auth` from `3-user-auth.md`)
+Parse `$ARGUMENTS` to locate the task file:
+
+1. **If a file path is provided** (e.g., `.docs/tasks/active/3-user-auth.md`):
+   - Confirm the file exists (use Serena `find_file` or `list_dir`)
+   - If the file does not exist, STOP and report the error
+
+2. **If a number-slug is provided** (e.g., `3-user-auth`):
+   - Search `.docs/tasks/active/` for `<number-slug>.md`
+   - If not found, check `.docs/tasks/pending-uat/`
+   - If not found, check `.docs/tasks/completed/`
+   - If still not found, STOP and report the error
+
+3. **If only a description or number is provided** (e.g., `user auth` or `3`):
+   - Search `.docs/tasks/active/`, `.docs/tasks/pending-uat/`, and `.docs/tasks/completed/` for a matching task file
+   - If ambiguous, list matches and ask the user to clarify
+   - If no match found, STOP and report the error
+
+4. Determine which directory the task currently lives in (`active/`, `pending-uat/`, or `completed/`)
+5. Extract the task's **number-slug identifier** (e.g., `3-user-auth` from `3-user-auth.md`)
 
 ### Step 2: Find Related UAT Files
 
