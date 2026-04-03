@@ -27,6 +27,7 @@ Follow `basic-project-setup.md` to configure a new project:
 | `/update-task <path> <changes>` | Modify an existing task's scope or steps |
 | `/uat-generator <target>` | Generate UAT tests in `.docs/uat/pending/` mirroring task naming conventions |
 | `/uat-walkthrough <path>` | Interactively walk through a pending UAT file test-by-test with the user |
+| `/uat-skip <path>` | Skip UAT for a task, move task to completed and UAT to skipped |
 | `/lint` | Get IDE diagnostics, fix issues one-by-one in verify cycles |
 | `/simplify <path>` | Analyze files/directories to remove redundancy and simplify complexity |
 | `/git-commit` | Stage all changes and commit with auto-generated message |

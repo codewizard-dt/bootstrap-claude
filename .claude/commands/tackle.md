@@ -1,6 +1,6 @@
 ---
 description: Tackle an outlined task file step-by-step
-argument-hint: <path/to/outline.md>
+argument-hint: <path/to/task.md, number-slug, or description>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**
@@ -12,6 +12,27 @@ Execute tasks from an outlined `*.md` file in cycles, delegating each step to a 
 ---
 
 **Outline File**: $ARGUMENTS
+
+---
+
+## Step 0: Resolve the Task File
+
+Parse `$ARGUMENTS` to locate the task file:
+
+1. **If a file path is provided** (e.g., `.docs/tasks/active/3-user-auth.md`):
+   - Confirm the file exists (use Serena `find_file` or `list_dir`)
+   - If the file does not exist, STOP and report the error
+
+2. **If a number-slug is provided** (e.g., `3-user-auth`):
+   - Search `.docs/tasks/active/` for `<number-slug>.md`
+   - If not found, STOP and report the error
+
+3. **If only a description or number is provided** (e.g., `user auth` or `3`):
+   - Search `.docs/tasks/active/` for a matching task file
+   - If ambiguous, list matches and ask the user to clarify
+   - If no match found, STOP and report the error
+
+Use the resolved file path as the outline for all subsequent steps.
 
 ---
 

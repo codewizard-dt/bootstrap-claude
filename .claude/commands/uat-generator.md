@@ -1,6 +1,6 @@
 ---
 description: Generate User Acceptance Tests for a feature or documentation file
-argument-hint: <path/to/task-file.md or feature description>
+argument-hint: <path/to/task-file.md, number-slug, or feature description>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**
@@ -27,7 +27,14 @@ Parse `$ARGUMENTS` to determine the source and output file:
    - Extract the feature requirements and scope
    - Derive UAT filename from the task filename: `3-user-auth.md` → `.docs/uat/pending/3-user-auth.uat.md`
 
-2. **If a feature description is provided** (e.g., "user authentication"):
+2. **If a number-slug is provided** (e.g., `3-user-auth`):
+   - Search `.docs/tasks/pending-uat/` for `<number-slug>.md`
+   - If not found, also check `.docs/tasks/active/` as a fallback
+   - If found, read the task file and extract feature requirements
+   - Derive UAT filename: `<number>-<slug>.md` → `.docs/uat/pending/<number>-<slug>.uat.md`
+   - If not found in either directory, STOP and report the error
+
+3. **If a feature description is provided** (e.g., "user authentication"):
    - Search `.docs/tasks/pending-uat/` for a matching task file (also check `active/` as a fallback)
    - If a matching task is found, use its naming: `.docs/uat/pending/<number>-<slug>.uat.md`
    - If no matching task exists, ask the user:

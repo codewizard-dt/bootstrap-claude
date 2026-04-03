@@ -1,6 +1,6 @@
 ---
 description: Walk through a pending UAT file test-by-test with the user
-argument-hint: <path/to/.docs/uat/pending/file.uat.md>
+argument-hint: <path/to/uat-file.md, number-slug, or description>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**
@@ -47,7 +47,28 @@ This command runs in a continuous loop, presenting one test at a time to the use
 
 ## Step 1: Read and Parse the UAT File
 
-- Read the UAT file at: `$ARGUMENTS`
+### Resolve the UAT File
+
+Parse `$ARGUMENTS` to locate the UAT file:
+
+1. **If a file path is provided** (e.g., `.docs/uat/pending/3-user-auth.uat.md`):
+   - Use the path directly
+
+2. **If a number-slug is provided** (e.g., `3-user-auth`):
+   - Search `.docs/uat/pending/` for `<number-slug>.uat.md`
+   - If not found, also check `.docs/uat/completed/` as a fallback
+   - If not found in either, STOP and report the error
+
+3. **If only a description or number is provided** (e.g., `user auth` or `3`):
+   - Search `.docs/uat/pending/` for a matching UAT file
+   - If ambiguous, list matches and ask the user to clarify
+   - If no match found, STOP and report the error
+
+Use the resolved file path for all subsequent steps.
+
+### Parse the UAT File
+
+- Read the resolved UAT file
 - If the file does not exist or is empty, STOP and report the error
 - If the file is not in `.docs/uat/pending/`, warn the user and confirm they want to proceed
 - Parse the structure to identify:
