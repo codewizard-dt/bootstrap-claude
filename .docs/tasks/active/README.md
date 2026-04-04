@@ -35,17 +35,17 @@ Brief summary of the technical approach or key decisions (1-3 sentences).
 
 ## Steps
 
-### 1. Section Name
+### 1. Section Name  <!-- agent: general-purpose -->
 
 - [ ] Step description with enough detail for an agent to implement
 - [ ] Another step — include file paths, component names, or API routes when known
   - Sub-detail or acceptance criteria (plain text indent, not a checkbox)
 
-### 2. Another Section
+### 2. Another Section  <!-- agent: general-purpose -->
 
 - [ ] More steps grouped by logical area
 
-### N. Verification
+### N. Verification  <!-- agent: general-purpose -->
 
 - [ ] Verify TypeScript compiles / tests pass / app runs
 - [ ] Verify key user flows work end-to-end
@@ -55,8 +55,10 @@ Brief summary of the technical approach or key decisions (1-3 sentences).
 
 - Every actionable item uses `- [ ]` checkbox syntax
 - Number step sections sequentially: `### 1.`, `### 2.`, etc.
+- **Every step section MUST have an agent type annotation**: `<!-- agent: TYPE -->` on the `###` header line
+  - Valid types: `general-purpose`, `Explore`, `Plan`
 - Group steps by logical area (e.g., "Schema Update", "API Routes", "UI Components")
-- Steps should be specific enough for `/tackle` to execute without ambiguity
+- Steps should be specific enough for `/tackle` to execute without ambiguity — the task file IS the plan
 - Include file paths, function names, or route patterns when known
 - End with a verification section to confirm the work is complete
 - Use `---` separator between Prerequisites and Steps

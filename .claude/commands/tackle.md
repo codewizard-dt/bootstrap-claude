@@ -7,7 +7,7 @@ argument-hint: <path/to/task.md, number-slug, or description>
 
 # Tackle Outline
 
-Execute tasks from an outlined `*.md` file in cycles, delegating each step to a subagent.
+Execute a pre-planned task file step-by-step. The task file IS the plan — no re-planning needed. Each step section specifies its agent type via `<!-- agent: TYPE -->` annotation. This command reads, executes, and updates.
 
 ---
 
@@ -60,56 +60,32 @@ Every sub-agent prompt **MUST** include this instruction:
 
 ## Cycle Overview
 
-> **MANDATORY**: Every step in this cycle MUST be delegated to a sub-agent. The main agent orchestrates only — it reads sub-agent results, decides what to do next, and delegates again. This keeps the main context window clean and prevents token bloat.
-
-This command runs in a continuous loop until all tasks are complete or interrupted:
+This command is a pure executor. It does NOT plan — the task file already contains the full plan with agent annotations. The cycle is:
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│  1. DELEGATE: READ  → 2. DELEGATE: PLAN → 3. DELEGATE: EXECUTE  │
-│         ↑                                           │            │
-│         │                                           ↓            │
-│         └──────────── 4. DELEGATE: UPDATE ──────────┘            │
-└──────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│  1. READ OUTLINE  →  2. EXECUTE NEXT STEP  →  3. UPDATE │
+│         ↑                                       │       │
+│         └───────────────────────────────────────┘       │
+└─────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## Step 1: Read and Parse the Outline
 
-**Delegate this step** to an `Explore` sub-agent. The sub-agent reads and parses the outline, then returns a structured summary of task statuses. The main agent should NOT read the outline directly.
+**Delegate this step** to an `Explore` sub-agent. The sub-agent reads and parses the outline, then returns a structured summary. The main agent should NOT read the outline directly.
 
-- Use MCP Serena to read the outline file at: `$ARGUMENTS`
+- Use MCP Serena to read the outline file
 - If the file does not exist or is empty, STOP and report the error
 - Parse the structure to identify:
   - **Completed items**: Marked with `[x]`, `- [x]`, `[DONE]`, or strikethrough `~~text~~`
   - **In-progress items**: Marked with `[ ]`, `- [ ]`, `[WIP]`, or similar
   - **Not started items**: Unmarked list items or sections without status markers
   - **Blocked items**: Marked with `[BLOCKED]` or similar
-
----
-
-## Step 2: Find the Smallest Next Step
-
-**Delegate this step** to a `Plan` sub-agent. Provide the sub-agent with the parsed summary from Step 1. The sub-agent analyzes priorities and returns the next actionable task with a recommended agent type. The main agent should NOT analyze the outline directly.
-
-The sub-agent analyzes the outline to find the next actionable task:
-
-### Priority Order
-1. **Fix blockers first**: If any item is marked blocked, investigate why
-2. **Continue in-progress work**: If something is WIP, prioritize completing it
-3. **Start next incomplete item**: Find the first unmarked/incomplete task
-
-### Determine the "Smallest Step"
-- If a task has sub-items, work on the first incomplete sub-item
-- If a task is high-level (e.g., "Implement feature X"), break it down into:
-  - Component work → delegate to `component-architect`
-  - Style/theme work → delegate to `style-theme-guardian`
-  - MDX/article content → delegate to `mdx-content-handler`
-  - Codebase exploration → delegate to `Explore`
-  - Implementation planning → delegate to `Plan`
-  - General tasks → delegate to `general-purpose`
-- Always choose the smallest, most atomic task that can be completed independently
+- For each step section (`### N. ...`), extract the **agent type** from the `<!-- agent: TYPE -->` annotation
+  - If no annotation exists, default to `general-purpose`
+- Return: ordered list of sections with their status and agent type
 
 ### Completion Check
 - If ALL items are marked complete:
@@ -119,46 +95,32 @@ The sub-agent analyzes the outline to find the next actionable task:
 
 ---
 
-## Step 3: Delegate to Appropriate Subagent(s)
+## Step 2: Execute the Next Incomplete Step
 
-**Delegate this step** to the appropriate specialized sub-agent identified in Step 2. All implementation work runs in a sub-agent — never in the main context.
+**Delegate this step** to the sub-agent type specified in the task file's `<!-- agent: TYPE -->` annotation for that section. All implementation work runs in a sub-agent — never in the main context.
 
-### Research Before Implementing
+### Identify the Next Step
 
-Before creating a plan or delegating work, gather implementation context:
+From the parsed outline (Step 1), pick the next step using this priority:
+1. **Fix blockers first**: If any item is marked blocked, investigate why
+2. **Continue in-progress work**: If something is WIP, prioritize completing it
+3. **Start next incomplete item**: The first section with incomplete checkboxes
 
-1. **Review existing code**: Use Serena's `get_symbols_overview`, `find_symbol`, and `search_for_pattern` to explore relevant files and symbols. Understand current patterns, data flow, and conventions before making changes. Do NOT use Read/Grep/Glob on code files.
-2. **Check project context**: Review `PROJECT_STATUS.md`, `CLAUDE.md`, and any related existing code to understand constraints and dependencies.
-3. **Library/framework lookups**: **NEVER search `node_modules/` for exports, types, or usage examples.** Use Context7 MCP (`resolve-library-id` → `query-docs`) for library documentation and Brave Search MCP for general web research. Searching `node_modules/` wastes tokens and produces unreliable results.
-4. **Clarify ambiguous implementation details**: If there are multiple valid approaches to implementing a task (e.g., component structure, data model changes, API design), use `AskUserQuestion` to present options with descriptions before committing to an approach. Do not guess — ask.
+### Delegate Directly — No Re-Planning
 
-### Plan and Delegate
-
-Create a plan on how to complete the task. For each step of your plan, delegate to an appropriate sub-agent:
+The task file already contains all necessary detail. Pass the step's checkboxes and sub-details verbatim to the sub-agent. Do NOT research, re-plan, or ask clarifying questions — those were handled during `/add-task`.
 
 **CRITICAL**
 
 1) Absolute maximum of 3 sub-processes at a time
 2) **ALWAYS** terminate processes when done (dev servers, type checkers, long-running commands)
 
-
-### Agent Selection Guide
-
-| Task Type | Agent | Indicators |
-|-----------|-------|------------|
-| Component creation/editing | `component-architect` | Files in `src/components/`, React islands, UI components |
-| Style/theme changes | `style-theme-guardian` | Files in `src/styles/`, CSS custom properties, theme tokens |
-| MDX content/articles | `mdx-content-handler` | MDX files, content collections, article templates, FrontMatter CMS |
-| Codebase exploration | `Explore` | "Where is", "how does", "find all", understanding code |
-| Implementation design | `Plan` | Architecture decisions, feature design, multi-file changes |
-| General/unclear | `general-purpose` | Default for multi-step research or unclear tasks |
-
 ### Subagent Requirements
 
 When delegating, **every** sub-agent prompt MUST include:
 
 1. **MCP Serena mandate**: "Use MCP Serena for all code exploration and editing. Do NOT use Read, Edit, Grep, or Glob on code files. See `.docs/guides/mcp-tools.md` for the full tool reference."
-2. **Execute the specific task** described in the outline item
+2. **The exact checkboxes and sub-details** from the task file section — pass them verbatim
 3. **Run quality gates** after completing the work:
    - After any code changes: `pnpm typecheck`
    - **Assume all type errors are caused by your changes.** The codebase passes typecheck before each `/tackle` cycle (enforced by `/update` and `/git-commit`). Do NOT run `git stash` to check if errors are pre-existing — they are not. Fix them.
@@ -168,20 +130,20 @@ When delegating, **every** sub-agent prompt MUST include:
 
 ```
 Task tool invocation:
-  subagent_type: "component-architect"
+  subagent_type: "general-purpose"   ← read from <!-- agent: general-purpose -->
   prompt: |
     **MANDATORY**: Use MCP Serena for all code exploration and editing.
     Do NOT use Read, Edit, Grep, or Glob on code files.
     See `.docs/guides/mcp-tools.md` for the full tool reference.
 
-    Complete this task from the outline:
+    Complete these tasks from the outline:
 
-    Task: "Update Header component to fix H1 misuse"
+    ### 1. Create API Route
 
-    Requirements from outline:
-    - Change logo wrapper from h1 to div
-    - Maintain existing styling
-    - Verify no accessibility regressions
+    - [ ] Create `src/pages/api/contact.ts` with POST handler
+    - [ ] Validate request body: name (required), email (required, valid format), message (required)
+    - [ ] Return 200 on success, 400 on validation failure
+      - Use Zod for validation schema
 
     After completing the work:
     1. Run `pnpm typecheck` to verify no type errors
@@ -191,11 +153,11 @@ Task tool invocation:
 
 ---
 
-## Step 4: Update the Outline with Status
+## Step 3: Update the Outline with Status
 
 **Do this step directly in the main agent context** — do NOT delegate to a sub-agent. This is a simple text replacement that does not warrant the overhead of a sub-agent.
 
-After the sub-agent from Step 3 completes (or fails), update the outline file using the native `Edit` tool:
+After the sub-agent from Step 2 completes (or fails), update the outline file using the native `Edit` tool:
 
 ### Status Markers to Use
 - `[x]` or `- [x]` - Task completed successfully
@@ -225,15 +187,14 @@ After:
 
 ---
 
-## Step 5: Repeat the Cycle
+## Step 4: Repeat the Cycle
 
 After updating the outline:
 
 1. **Return to Step 1** - Read the updated outline
-2. **Find the next incomplete task** - Step 2
-3. **Delegate** - Step 3
-4. **Update** - Step 4
-5. **Continue** until all tasks are complete or you are interrupted
+2. **Execute the next step** - Step 2
+3. **Update** - Step 3
+4. **Continue** until all tasks are complete or you are interrupted
 
 ---
 
@@ -263,38 +224,17 @@ After each cycle, briefly report:
 - All remaining tasks are blocked or failed
 - Outline file becomes invalid or unreadable
 
+### No Re-Planning
+- `/tackle` is an executor, NOT a planner — all planning was done in `/add-task`
+- Do NOT research, re-plan, break down steps further, or ask clarifying questions
+- If a step is too vague to execute, mark it `[BLOCKED: step needs more detail]` and move on
+- The task file's agent annotations and step details are authoritative
+
 ### Mandatory Delegation
-- **ALL steps** (read, plan, execute, update) MUST be delegated to sub-agents
+- **ALL steps** (read, execute, update) MUST be delegated to sub-agents (except Step 3: outline update)
 - The main agent's role is strictly orchestration: receive results, decide next action, delegate
 - NEVER read source code, edit files, or run commands directly in the main context
 - This preserves the main context window for decision-making and prevents token bloat
-
----
-
-## Example Outline Format
-
-The outline file should follow this general structure:
-
-```markdown
-# Task: SEO Quick Technical Wins
-
-## On-Page Fixes
-- [ ] Fix Header H1 misuse (change logo h1 to div)
-- [ ] Fix duplicate ID on pricing page
-- [ ] Fix portal page meta description curly quotes
-- [ ] Add logo.png to public directory
-
-## Schema Improvements
-- [ ] Remove empty sameAs array from JSON-LD
-- [ ] Expand areaServed to include surrounding cities
-- [ ] Fix NAP inconsistency across all pages
-
-## Page Title Updates
-- [ ] Add "Austin, TX" to services page title
-- [ ] Add "Austin, TX" to about page title
-- [ ] Add "Austin, TX" to contact page title
-- [ ] Add "Austin, TX" to pricing page title
-```
 
 ---
 
@@ -305,9 +245,8 @@ Before starting the cycle, check if there are tasks awaiting UAT:
 1. Use Serena's `list_dir` tool on `.docs/tasks/pending-uat/` to list files
 2. Count the number of task files (exclude `.gitkeep` or other non-task files)
 3. If there are **1 or more** task files:
-   - Use `AskUserQuestion` to show: **"There are X task(s) awaiting UAT. Are you sure you want to execute this task now?"**
-   - If the user says **No** — STOP execution and suggest: `Run /uat-walkthrough on a pending UAT file first.`
-   - If the user says **Yes** — proceed with the cycle below
+   - Output a visible warning: **"⚠️ Warning: X task(s) awaiting UAT in `.docs/tasks/pending-uat/`. Consider running `/uat-walkthrough` after this task."**
+   - Do NOT prompt or block — continue execution immediately
 4. If there are **0** task files, proceed immediately
 
 ---
@@ -317,8 +256,8 @@ Before starting the cycle, check if there are tasks awaiting UAT:
 Now execute the cycle:
 
 1. Read the outline at: `$ARGUMENTS`
-2. Identify the first incomplete task
-3. Delegate to the appropriate agent(s)
+2. Identify the first incomplete step (using agent annotation from `<!-- agent: TYPE -->`)
+3. Delegate to the annotated agent type
 4. Update the outline
 5. Repeat until done
 6. **Move the task file**: `git mv .docs/tasks/active/<filename>.md .docs/tasks/pending-uat/<filename>.md` (fall back to `mv` if `git mv` fails)

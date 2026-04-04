@@ -19,7 +19,7 @@ $ARGUMENTS
 3) **Assess existing tasks**: Check `.docs/tasks/active/`, `.docs/tasks/pending-uat/`, and `.docs/tasks/completed/` to determine the next task number.
 
 4) **Research**: Before planning, conduct thorough internal and external research:
-   - **Internal**: Review `PROJECT_STATUS.md`, `CLAUDE.md`, and any related existing code to understand constraints and dependencies.
+   - **Internal**: Review `PROJECT_STATUS.md`, `CLAUDE.md`, and any related existing code to understand constraints and dependencies. Use Serena's `get_symbols_overview`, `find_symbol`, and `search_for_pattern` to explore relevant files and understand current patterns, data flow, and conventions.
    - **External**: Use **Brave Search MCP** and/or **Context7 MCP** to research:
      - Known weaknesses, pitfalls, and common failure modes for this type of task
      - Relevant packages, libraries, or frameworks that could be used
@@ -35,7 +35,20 @@ $ARGUMENTS
    - High-level step breakdown
    Ask the user to confirm before proceeding.
 
-7) **Create the task file**: After user confirmation, create a new task file in `.docs/tasks/active/` following the format specified in `.docs/tasks/active/README.md`.
+7) **Create the task file**: After user confirmation, create a fully detailed, execution-ready task file in `.docs/tasks/active/` following the format specified in `.docs/tasks/active/README.md`.
+
+   **CRITICAL — The task file IS the plan.** `/tackle` will execute steps verbatim without re-planning. Every step must include:
+   - **Specific file paths** to create or modify
+   - **Function/component names** to implement
+   - **Agent type annotation** on each section header (e.g., `### 1. Create API Route  <!-- agent: general-purpose -->`)
+   - **Enough implementation detail** that an agent can execute without ambiguity or further research
+   - **Sub-details** as plain-text indented lines under checkboxes for acceptance criteria
+
+   Agent type annotations use an HTML comment on the section header line:
+   ```markdown
+   ### 1. Section Name  <!-- agent: general-purpose -->
+   ```
+   Valid agent types: `general-purpose`, `Explore`, `Plan`
 
 8) **Update the task index**: Add a reference to the new task in `.docs/tasks/README.md` under the "Active Tasks" section (create the file if it doesn't exist).
 
