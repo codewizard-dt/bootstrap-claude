@@ -34,11 +34,14 @@ Parse the first part of `$ARGUMENTS` to locate the task file. Any remaining text
 
 ---
 
-## Step 2: Read the Task Spec and Task File
+## Step 2: Read the Task Spec, Add-Task Command, and Task File
 
-Read both files:
-1. `.docs/tasks/active/README.md` — the authoritative task file spec
-2. The resolved task file from Step 1
+Read all three files:
+1. `.docs/tasks/active/README.md` — the authoritative task file spec (format and naming rules)
+2. `.claude/commands/add-task.md` — the full overview of how to structure a task (research process, execution-readiness criteria, agent annotations, level of detail required)
+3. The resolved task file from Step 1
+
+The `add-task` command defines what a well-structured task looks like. Use it as the lens for your assessment.
 
 ---
 
@@ -101,7 +104,7 @@ Fix all issues found in Step 3:
 ### Research for improvements
 When adding specificity to vague steps:
 - Use Serena's `get_symbols_overview`, `find_symbol`, and `search_for_pattern` to understand the codebase
-- Use Context7 MCP for library documentation if steps reference frameworks
+- Use Context7 MCP and Brave Search MCP to research best practices for relevant packages
 - Ground every improvement in actual codebase state — don't guess at file paths or function names
 
 ### Present changes before applying
