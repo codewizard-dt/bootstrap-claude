@@ -1,0 +1,39 @@
+{
+  "name": "bootstrap-claude",
+  "version": "1.0.0",
+  "description": "Bootstrap Claude Code projects with reusable configurations and commands",
+  "homepage": "https://github.com/codewizard-dt/basic-project-setup#readme",
+  "bugs": {
+    "url": "https://github.com/codewizard-dt/basic-project-setup/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codewizard-dt/basic-project-setup.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "bin": {
+    "bootstrap-claude": "./bin/cli.js"
+  },
+  "files": [
+    "bin/",
+    "setup-project.sh",
+    "update-project.sh",
+    ".claude/commands/",
+    ".docs/tasks/README.md",
+    ".docs/tasks/active/.gitkeep",
+    ".docs/tasks/active/README.md",
+    ".docs/tasks/pending-uat/.gitkeep",
+    ".docs/tasks/completed/.gitkeep",
+    ".docs/tasks/trashed/.gitkeep",
+    ".docs/uat/completed/.gitkeep",
+    ".docs/uat/pending/.gitkeep",
+    ".docs/uat/skipped/.gitkeep",
+    ".docs/uat/screenshots/.gitkeep",
+    ".docs/uat/trashed/.gitkeep"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}

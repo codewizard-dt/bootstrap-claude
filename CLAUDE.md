@@ -8,7 +8,12 @@ This is a **project setup template** for Claude Code. It contains reusable `.cla
 
 ## Setup Workflow
 
-Follow `basic-project-setup.md` to configure a new project:
+Follow `basic-project-setup.md` to configure a new project, or use the npm package:
+
+- `npx bootstrap-claude setup` — runs setup-project.sh
+- `npx bootstrap-claude update` — runs update-project.sh
+
+**Manual setup steps:**
 
 1. **Serena MCP** — code exploration, editing, and memory: `claude mcp add serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context claude-code --project "$(pwd)"`
 2. **Brave Search MCP** — web search (rate limit: 1 req/sec, sequential only)
@@ -50,3 +55,5 @@ Standard Read/Edit/Write tools are permitted only for non-code files (JSON, YAML
 - `.claude/commands/` — All custom slash command definitions
 - `setup-project.sh` — Script to set up a new project (Serena MCP + copy commands/docs)
 - `update-project.sh` — Script to sync `.claude/commands/` and `.docs/` into a target project
+- `bin/cli.js` — CLI entry point for the npm package
+- `package.json` — npm package configuration with bin and files fields

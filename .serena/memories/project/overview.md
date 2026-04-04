@@ -1,7 +1,7 @@
 # basic-project-setup — Project Overview
 
 ## Purpose
-A project setup template for Claude Code. Contains reusable `.claude/` configurations (custom commands, guides) and MCP server setup instructions meant to be copied into other project repositories.
+A project setup template for Claude Code. Contains reusable `.claude/` configurations (custom commands, guides) and MCP server setup instructions meant to be copied into other project repositories. Also publishable as an npm package (`bootstrap-claude`) with CLI commands `setup` and `update` (`npx bootstrap-claude setup` / `npx bootstrap-claude update`).
 
 ## Structure
 - `.claude/commands/` — Custom slash commands (11 total)
@@ -12,6 +12,8 @@ A project setup template for Claude Code. Contains reusable `.claude/` configura
 - `update-project.sh` — Syncs template files into target projects (accepts relative or absolute paths)
 - `update-agent.md` — Instructions for creating a shell alias for `update-project.sh`
 - `CLAUDE.md` — Project instructions for Claude Code
+- `bin/cli.js` — CLI entry point for the npm package
+- `package.json` — npm package configuration with bin and files fields
 
 ## Custom Commands (11)
 - `/primer` — Refresh codebase context via Serena memories
