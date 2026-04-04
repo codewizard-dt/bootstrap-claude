@@ -193,9 +193,9 @@ Task tool invocation:
 
 ## Step 4: Update the Outline with Status
 
-**Delegate this step** to a `general-purpose` sub-agent. Provide the sub-agent with the completion status from Step 3 and instruct it to update the outline file. The main agent should NOT edit the outline directly.
+**Do this step directly in the main agent context** — do NOT delegate to a sub-agent. This is a simple text replacement that does not warrant the overhead of a sub-agent.
 
-After the subagent completes (or fails), update the outline file:
+After the sub-agent from Step 3 completes (or fails), update the outline file using the native `Edit` tool:
 
 ### Status Markers to Use
 - `[x]` or `- [x]` - Task completed successfully
@@ -205,9 +205,11 @@ After the subagent completes (or fails), update the outline file:
 
 ### Update Process
 
-1. Use MCP Serena's `replace_content` tool to update the task status
-2. Add a timestamp comment if helpful: `<!-- Updated: YYYY-MM-DD HH:MM -->`
+1. Use the native `Edit` tool to find the task's checkbox line and replace it with the updated status
+2. Add a timestamp comment: `<!-- Updated: YYYY-MM-DD HH:MM -->`
 3. If subtasks were discovered during execution, add them to the outline
+
+> **Note**: This is the one exception to the "use Serena for markdown" rule — the edit is a single-line status marker swap, and the native `Edit` tool is faster and simpler here.
 
 ### Example Update
 

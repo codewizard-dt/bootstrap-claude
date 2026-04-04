@@ -21,6 +21,7 @@
     "setup-project.sh",
     "update-project.sh",
     ".claude/commands/",
+    ".docs/guides/mcp-tools.md",
     ".docs/tasks/README.md",
     ".docs/tasks/active/.gitkeep",
     ".docs/tasks/active/README.md",
