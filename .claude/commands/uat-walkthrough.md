@@ -535,7 +535,9 @@ Failed Tests:
   1. Move UAT file: `git mv .docs/uat/pending/<slug>.uat.md .docs/uat/completed/<slug>.uat.md` (fall back to `mv` if `git mv` fails)
   2. Move associated task file (derive name: `<number>-<slug>.uat.md` → `<number>-<slug>.md`): `git mv .docs/tasks/pending-uat/<number>-<slug>.md .docs/tasks/completed/<number>-<slug>.md` (fall back to `mv` if `git mv` fails)
   3. **Update references** in both moved files: update `pending-uat/` → `completed/` in the task file, update `pending/` → `completed/` in the UAT file's source task link
-  4. **Delete all screenshots** for this task: `git rm .docs/uat/screenshots/<task-number>-*` (they are no longer needed once all tests pass)
+  4. **Delete all screenshots** for this task (they are no longer needed once all tests pass):
+     - Use `mcp__serena__list_dir` on `.docs/uat/screenshots/` to find files matching `<task-number>-*` — **never use `ls`**
+     - Run `git rm` on each matched file (or `rm` if not tracked)
   5. Run the `/update` command to update all project documentation
   6. Report the new file paths for both UAT and task files
 - **Some failed**: Keep file in `pending/`. Keep screenshots (useful for debugging). Suggest next steps:
@@ -576,7 +578,7 @@ Failed Tests:
 - Close the browser (`puppeteer_close_browser`) when the walkthrough ends (completion or abort)
 - If no UI tests fail, never launch the browser
 - All screenshots go to `.docs/uat/screenshots/` with `<task-number>-` prefix
-- On **all passed**: delete all `<task-number>-*` screenshots via `git rm .docs/uat/screenshots/<task-number>-*`
+- On **all passed**: use `mcp__serena__list_dir` on `.docs/uat/screenshots/` to find `<task-number>-*` files — **never use `ls`** — then `git rm` each one (or `rm` if not tracked)
 - On **failed/aborted**: keep screenshots for debugging reference
 
 ### Progress Persistence
