@@ -12,9 +12,10 @@ $ARGUMENTS
 
 **Instructions:**
 
-1) Summarize the input from the user, determine desired outcomes, and make determine what parts of the codebase to assess.
-2) Assess all relevant files (use serena mcp) and make a comprehensive plan to achieve desired outcomes.
-3) Delegate each step of the plan to the proper sub-agent.
+1) Summarize the input from the user, determine desired outcomes, and determine what parts of the codebase to assess.
+2) **Research**: If the task involves technology choices, architectural decisions, or unfamiliar patterns, run the `/research` workflow (see `.claude/commands/research.md`) to gather internal and external context before planning.
+3) Assess all relevant files (use serena mcp) and make a comprehensive plan to achieve desired outcomes.
+4) Delegate each step of the plan to the proper sub-agent.
 
 ---
 

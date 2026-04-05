@@ -18,14 +18,10 @@ $ARGUMENTS
 
 3) **Assess existing tasks**: Check `.docs/tasks/active/`, `.docs/tasks/pending-uat/`, and `.docs/tasks/completed/` to determine the next task number.
 
-4) **Research**: Before planning, conduct thorough internal and external research:
-   - **Internal**: Review `PROJECT_STATUS.md`, `CLAUDE.md`, and any related existing code to understand constraints and dependencies. Use Serena's `get_symbols_overview`, `find_symbol`, and `search_for_pattern` to explore relevant files and understand current patterns, data flow, and conventions.
-   - **External**: Use **Brave Search MCP** and/or **Context7 MCP** to research:
-     - Known weaknesses, pitfalls, and common failure modes for this type of task
-     - Relevant packages, libraries, or frameworks that could be used
-     - Recommended algorithms, patterns, or architectural approaches
-     - Best practices and lessons learned from the broader community
-   - Synthesize findings into a clear picture of the trade-offs, risks, and viable solutions.
+4) **Research**: Run the `/research` workflow (see `.claude/commands/research.md`) scoped to this task:
+   - **Phase 2 (Internal)**: Review `PROJECT_STATUS.md`, `CLAUDE.md`, and related code via Serena to understand constraints, dependencies, patterns, and data flow.
+   - **Phase 3 (External)**: Use Context7 MCP for library docs and Brave Search MCP for best practices, pitfalls, package discovery, and community recommendations.
+   - **Phase 4 (Synthesis)**: Produce a clear picture of trade-offs, risks, and viable solutions. If multiple approaches exist, present a comparison table.
 
 5) **Clarify approach**: Present your research findings and **always ask clarifying questions if there are multiple valid approaches** — use `AskUserQuestion` to present options with descriptions (informed by the research) before committing to an approach.
 

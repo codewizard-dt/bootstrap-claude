@@ -25,6 +25,7 @@ Follow `basic-project-setup.md` to configure a new project, or use the npm packa
 | Command | Purpose |
 |---------|---------|
 | `/primer` | Refresh codebase context via Serena memories |
+| `/research <topic>` | Deep research using codebase analysis, library docs, and web search |
 | `/now <task>` | Plan and delegate task to subagents (max 3 concurrent) |
 | `/tackle <path>` | Execute outlined task file step-by-step with subagent delegation |
 | `/add-task <desc>` | Create structured task in `.docs/tasks/active/` |

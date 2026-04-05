@@ -102,9 +102,9 @@ Fix all issues found in Step 3:
 - Convert plain list items to `- [ ]` checkbox syntax
 
 ### Research for improvements
-When adding specificity to vague steps:
-- Use Serena's `get_symbols_overview`, `find_symbol`, and `search_for_pattern` to understand the codebase
-- Use Context7 MCP and Brave Search MCP to research best practices for relevant packages
+When adding specificity to vague steps, follow the `/research` workflow (see `.claude/commands/research.md`):
+- **Internal (Phase 2)**: Use Serena's `get_symbols_overview`, `find_symbol`, and `search_for_pattern` to understand the codebase
+- **External (Phase 3)**: Use Context7 MCP for library docs and Brave Search MCP for best practices and package recommendations
 - Ground every improvement in actual codebase state — don't guess at file paths or function names
 
 ### Present changes before applying
