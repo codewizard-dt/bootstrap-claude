@@ -12,10 +12,17 @@ $ARGUMENTS
 
 **Instructions:**
 
-1) Summarize the input from the user, determine desired outcomes, and determine what parts of the codebase to assess.
-2) **Research**: If the task involves technology choices, architectural decisions, or unfamiliar patterns, run the `/research` workflow (see `.claude/commands/research.md`) to gather internal and external context before planning.
-3) Assess all relevant files (use serena mcp) and make a comprehensive plan to achieve desired outcomes.
-4) Delegate each step of the plan to the proper sub-agent.
+1) **Context**: Summarize the input from the user, determine desired outcomes, and determine what parts of the codebase to assess.
+2) **Recall Serena memories**: Before planning, check for relevant project knowledge:
+   - `mcp__serena__list_memories` → scan for memories related to the task area (use `topic` filter if applicable)
+   - `mcp__serena__read_memory` → read any relevant memories to inform your plan
+   - Factor recalled knowledge (architecture decisions, known gotchas, integration patterns) into your approach
+3) **Research**: If the task involves technology choices, architectural decisions, or unfamiliar patterns, run the `/research` workflow (see `.claude/commands/research.md`) to gather internal and external context before planning.
+4) Assess all relevant files (use serena mcp) and make a comprehensive plan to achieve desired outcomes.
+5) Delegate each step of the plan to the proper sub-agent.
+6) **Update memories after completion**: Once all steps are done:
+   - Update stale memories with `mcp__serena__edit_memory` if the task changed documented patterns
+   - Write new memories with `mcp__serena__write_memory` for non-obvious knowledge discovered during execution (use `/` in names for topic hierarchy, e.g. `api/auth/jwt-flow`)
 
 ---
 

@@ -64,11 +64,31 @@ Update when:
 
 #### 6. **Serena Memories**
 
-Use MCP Serena memory tools to persist key findings:
-- `mcp__serena__list_memories` → check what exists
-- `mcp__serena__read_memory` → read relevant memories
-- `mcp__serena__write_memory` → save new findings
-- `mcp__serena__edit_memory` → update stale memories
+After updating docs, ensure Serena memories reflect the current project state. Memories persist knowledge across conversations — they are the bridge between documentation updates and future agent context.
+
+**Workflow:**
+1. `mcp__serena__list_memories` → discover existing memories (use `topic` filter for targeted checks)
+2. `mcp__serena__read_memory` → read memories related to areas that changed
+3. **Update stale memories**: Use `mcp__serena__edit_memory` with `mode="literal"` for precise text swaps or `mode="regex"` for pattern-based updates. Prefer editing over rewriting.
+4. **Write new memories**: Use `mcp__serena__write_memory` for genuinely new knowledge. Use `/` in names for topic hierarchy (e.g., `api/auth/jwt-flow`, `modules/frontend`).
+5. `mcp__serena__rename_memory` → reorganize if naming no longer fits after changes
+
+**What to persist in memories:**
+- Architecture decisions and their rationale
+- Integration patterns between modules that aren't obvious from code
+- Naming conventions and project-specific terminology
+- Known gotchas, workarounds, and edge cases discovered during implementation
+- Configuration requirements that aren't self-documenting
+
+**What NOT to persist:**
+- Information already captured in task files, CLAUDE.md, or PROJECT_STATUS.md
+- Temporary state or debugging notes
+- Easily re-derivable facts (file lists, import paths)
+
+**After major implementation work, always check:**
+- Do existing memories reference code that was renamed, moved, or deleted?
+- Were new patterns established that future agents should know about?
+- Did any architectural decisions change that memories still describe the old way?
 
 ---
 

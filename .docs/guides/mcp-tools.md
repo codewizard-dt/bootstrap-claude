@@ -162,15 +162,61 @@ mcp__serena__onboarding()
 
 ### Memory Tools
 
-| Tool | Purpose |
-|------|---------|
-| `write_memory` | Save project-specific knowledge |
-| `read_memory` | Recall saved information |
-| `list_memories` | See available memories |
-| `edit_memory` | Update existing memory |
-| `delete_memory` | Remove memory (user request only) |
+| Tool | Purpose | Key Params |
+|------|---------|------------|
+| `list_memories` | List available memories | `topic` (optional filter, e.g. `"auth"`) |
+| `read_memory` | Read a memory's contents | `memory_name` |
+| `write_memory` | Create a new memory (markdown) | `memory_name`, `content`, `max_chars` (optional) |
+| `edit_memory` | Update existing memory in-place | `memory_name`, `needle`, `repl`, `mode` (`literal` or `regex`), `allow_multiple_occurrences` |
+| `rename_memory` | Rename or move a memory | `old_name`, `new_name` |
+| `delete_memory` | Delete a memory (user permission required) | `memory_name` |
 
-Use `list_memories` to discover what's available for the current project.
+### Memory Naming & Organization
+
+Use `/` separators to create topic hierarchies:
+
+```
+modules/frontend          → .serena/memories/modules/frontend.md
+auth/login/logic          → .serena/memories/auth/login/logic.md
+global/java/style_guide   → shared across all projects
+```
+
+- **Project memories**: Stored in `.serena/memories/` within the project
+- **Global memories**: Use `global/` prefix — shared across all projects (only when explicitly instructed)
+- **Topic filtering**: `list_memories(topic="auth")` returns only memories under that topic
+
+### When to Write Memories
+
+Write memories to persist **non-obvious project knowledge** useful for future tasks:
+
+- Architecture decisions and their rationale
+- Integration patterns between modules
+- Naming conventions and project-specific terminology
+- Known gotchas, workarounds, and edge cases
+- Configuration requirements that aren't self-documenting
+
+**Do NOT write memories for**:
+- Information already in code comments or docs
+- Temporary task state or debugging notes
+- Easily re-derivable facts (file paths, import lists)
+
+### Memory Workflow
+
+```
+1. list_memories          → discover what exists (filter by topic if needed)
+2. read_memory            → check if relevant memory already covers this
+3. write_memory           → create new, OR edit_memory → update existing
+4. After implementation   → update memories that reference changed code
+```
+
+### Best Practices
+
+- **Check before writing**: Always `list_memories` then `read_memory` to avoid duplicates
+- **Edit over rewrite**: Use `edit_memory` (literal or regex mode) for targeted updates instead of rewriting entire memories
+- **Keep memories focused**: One topic per memory — split broad memories into topic-specific ones
+- **Update after changes**: When code changes affect documented patterns, update the relevant memories
+- **Meaningful names**: Use descriptive hierarchical names (`api/auth/jwt-flow` not `memory1`)
+- **Review post-onboarding**: After Serena onboarding, review generated memories and refine them
 
 ---
 
