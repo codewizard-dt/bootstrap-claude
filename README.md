@@ -1,0 +1,60 @@
+# bootstrap-claude
+
+Bootstrap new Claude Code projects with reusable slash commands, MCP server setup, structured task management, and a UAT testing system — all deployable via a single shell script or `npx` command.
+
+**Repository:** https://github.com/codewizard-dt/basic-project-setup
+
+## Description
+
+`bootstrap-claude` is a project setup template and npm-distributed CLI tool that scaffolds a Claude Code workspace with everything needed for structured, AI-assisted development workflows. It installs and configures four MCP servers (Serena, Brave Search, Context7, Puppeteer), copies a library of 15 custom slash commands into the target project, and establishes a task management and UAT system under `.docs/`.
+
+The template was built to solve a recurring pain point: every new Claude Code project requires the same tedious setup — adding MCP servers, creating task directories, defining documentation conventions, and writing command workflows. With `bootstrap-claude`, that entire setup happens in a single `npx bootstrap-claude setup` run, including interactive API key prompts and idempotent installation checks.
+
+It is designed for developers who treat AI agents as first-class collaborators. The slash commands, task file format, and UAT system are all engineered to give Claude (and other agents) clear, unambiguous instructions — enabling reliable delegation of planning, implementation, testing, and documentation tasks.
+
+## Architecture
+
+The project is a **template repository** with a thin CLI wrapper for npm distribution. The `.claude/commands/` directory holds 15 markdown-defined slash commands that Claude Code loads as custom instructions — each command is a self-contained workflow spec with mandatory MCP tool requirements, step-by-step logic, and integration with Serena's memory system. The `.docs/` directory provides a structured task lifecycle (`active → pending-uat → completed`) and a parallel UAT system (`pending → completed/skipped`) that mirror each other by task number and slug. Two Bash scripts (`setup-project.sh`, `update-project.sh`) handle initial installation and incremental syncing using `rsync`, while `bin/cli.js` wraps those scripts for `npx` invocation.
+
+## Technologies
+
+**Runtime & Language**
+- Node.js (CommonJS, `child_process`)
+- Bash / Zsh (strict mode: `set -euo pipefail`)
+- Markdown (commands, task specs, guides, UAT files)
+
+**Package Management**
+- npm / npx (package distribution: `@codewizard-dt/bootstrap-claude`)
+- uv (Astral Python package manager, required for Serena MCP)
+
+**MCP Servers (Model Context Protocol)**
+- Serena MCP — semantic code exploration, editing, and persistent project memory
+- Brave Search MCP (`@modelcontextprotocol/server-brave-search`) — web research
+- Context7 MCP (HTTP transport) — library and framework documentation lookups
+- Puppeteer MCP — browser automation and screenshot capture for UI testing
+
+**Tooling & Infrastructure**
+- Claude Code CLI (`claude`) — AI coding assistant with custom command support
+- Git + GitHub — version control and remote hosting
+- rsync — non-destructive directory syncing for template updates
+
+## Use Cases
+
+- **Bootstrapping new Claude Code projects** — run once to install MCP servers, copy commands, and scaffold the task and UAT directory structure into any project root.
+- **Structured AI-agent delegation** — use the task file format and custom commands (`/tackle`, `/now`) to delegate multi-step implementation work to Claude with clear, machine-readable instructions.
+- **Feature validation via UAT** — generate acceptance tests with `/uat-generator` and walk through them interactively with `/uat-walkthrough`, including automatic API test execution and Puppeteer-assisted UI diagnosis.
+- **Knowledge-preserving development** — Serena's memory system persists architectural decisions, gotchas, and integration patterns across sessions, so agents don't repeat mistakes.
+- **Template synchronization** — run `npx bootstrap-claude update` on existing projects to pull in the latest command improvements without overwriting project-specific files.
+
+## Skills Demonstrated
+
+- **CLI Tool Development (Node.js)** — Authored an npm-distributed CLI that wraps shell scripts with argument dispatch, path resolution, and cross-platform child process execution.
+- **Bash Scripting & Shell Automation** — Wrote idempotent setup scripts with strict error handling, interactive API key prompts, environment variable fallbacks, and graceful dependency checks.
+- **AI Agent Workflow Design** — Designed a complete AI-assisted development loop: task creation → implementation delegation → UAT generation → interactive walkthrough → completion tracking.
+- **Model Context Protocol (MCP) Integration** — Orchestrated four MCP servers across global and per-project scopes, enforcing mandatory tool usage patterns and preventing suboptimal fallbacks.
+- **Technical Documentation & Specification Writing** — Produced 2,500+ lines of precise, machine-readable command specifications covering tool requirements, step logic, error handling, and output formats.
+- **Task Lifecycle Management** — Designed and implemented a four-stage task management system (active / pending-uat / completed / trashed) with structured file formats and agent-executable step definitions.
+- **User Acceptance Testing (UAT) Framework Design** — Built a custom UAT system supporting API auto-execution, batched UI testing, Puppeteer-assisted visual diagnosis, and per-test pass/fail/fix workflows.
+- **npm Package Authoring & Distribution** — Configured `package.json` with `bin`, `files`, and repository fields; packaged and published to the npm registry under a scoped namespace.
+- **Knowledge Management System Design** — Structured Serena memory hierarchies (topic `/` subtopic convention) for persistent, session-spanning project knowledge retrieval.
+- **Template & Scaffolding System Architecture** — Designed a reusable, rsync-based template distribution system that supports both initial setup and incremental updates without destructive overwrites.
