@@ -176,8 +176,7 @@ API TEST BATCH [tests 3–7 of 18]
 **Description:** Verify creating a new position returns 201
 
 ▶ **COMMAND:**
-  curl -s -w "\n%{http_code}" -X POST http://localhost:4321/api/positions \
-    -H "Content-Type: application/json" -d '{"title": "Engineer"}'
+  curl -sS -X POST 'http://localhost:4321/api/positions' -H 'Content-Type: application/json' -d '{"title":"Engineer"}'
 
 ▶ **EXPECTED:**
   - HTTP 201
@@ -189,22 +188,46 @@ API TEST BATCH [tests 3–7 of 18]
 ───────────────────────────────────────────
 ```
 
-3. **Execute all tests sequentially** via Bash, capturing:
-   - HTTP status code (use `curl -s -w "\n%{http_code}"` or equivalent)
-   - Response body (truncate to ~50 lines if very large)
+3. **Execute tests one at a time, one Bash invocation per test.** Run the test, capture and present its result, then run the next test. **Never** batch multiple tests into a single Bash call. The walkthrough's "batch" concept refers to *presentation grouping*, not command chaining.
+
+4. **Capture for each test**:
+   - HTTP status code (curl prints it as part of the response when using `-i`, or use `-sS` and rely on the response body for status indication)
+   - Response body (truncate display to ~50 lines if very large, but do not write to a temp file just to read it back)
    - Any errors (connection refused, timeout, etc.)
 
-4. **If a command fails to execute** (connection refused, timeout, etc.):
+5. **If a command fails to execute** (connection refused, timeout, etc.):
    - Show the error in the ACTUAL section
-   - Continue with remaining tests in the batch
+   - Continue with the next test in the batch
 
-5. **After all tests in the batch are executed**, present the batch results summary and ask for verdicts (see Step 4A)
+6. **After all tests in the batch are executed**, present the batch results summary and ask for verdicts (see Step 4A)
 
 #### Rules
+
 - **Never ask "Run / Manual / Skip?"** — always auto-execute
 - **Never auto-judge pass/fail** — the user decides after seeing actual vs expected
-- Extract commands from the test's Steps and Expected Result sections
+- Extract commands from the test's Steps and Expected Result sections (typically the `**Command**:` block written by `/uat-generator`)
+- Run the command **as-is**. Do not wrap it, decorate it, or rewrite it.
 - If a test has no extractable command but was classified as API/CLI, present it as a manual test instead (fall back to Step 3C for that individual test)
+
+#### ⛔ Forbidden Bash Patterns When Running API Tests
+
+These patterns trigger user approval prompts on every invocation, slow the walkthrough to a crawl, and obscure the real curl output. Do not use them. Ever.
+
+| ❌ Forbidden | Why | ✅ Do this instead |
+|-------------|-----|------------------|
+| Multiple `curl` calls in one Bash invocation | Chained commands trigger approval prompts; agent loses per-test feedback loop | One Bash call per test, run sequentially |
+| `echo "=== UAT-API-001 ==="` banners | Approval prompt; clutters output | The presentation header (Step 2) is the banner |
+| `&&`, `;`, `\|\|` chaining between commands | Same as above | Separate Bash calls |
+| `-w "\nHTTP %{http_code}\n"` format strings | The user reads response directly; this is line noise | Just `curl -sS` |
+| `-o /tmp/api1.json` then `head -c 800 /tmp/api1.json` | Approval prompt; pointless indirection | Print response to stdout, truncate display in your message |
+| `--max-time 90` or other defensive flags | Defaults are fine; failing fast is good | Plain `curl -sS` |
+| Pre-assigning `TOKEN=...`, `STRATEGY_ID=...` then using `$TOKEN` in the curl | Multi-line shell scripts trigger approval prompts and hide values | Inline the literal value into the curl command on a single line |
+| `curl ... \` line continuations | Single-line commands are easier to read in the approval dialog | One long line per curl |
+| Piping into `head`, `tee`, or output redirection | All trigger approval prompts | A single `\| jq '.'` or `\| jq '<projection>'` is permitted; nothing else |
+
+> **The rule of thumb**: each Bash call should contain exactly one program invocation (one `curl`, optionally one `jq` pipe stage). If your bash command has more than one statement, more than one `curl`, an `echo`, a `;`, or a `&&`, you are doing it wrong. Run the test again as a single clean curl.
+
+If the previously generated UAT file contains any of these forbidden patterns in its `**Command**:` blocks, **clean them up before running** — do not faithfully execute a malformed command just because it was written that way. The clean curl style is documented in `.claude/commands/uat-generator.md` "Curl command standards".
 
 ---
 
