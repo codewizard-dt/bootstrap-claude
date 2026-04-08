@@ -3,6 +3,7 @@ description: Move a task and its related UAT files to trashed directories
 argument-hint: <path/to/task-file.md>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
+**Always obey `.docs/guides/task-lifecycle.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**
 
 # Trash Task
@@ -27,16 +28,15 @@ Parse `$ARGUMENTS` to locate the task file:
 
 2. **If a number-slug is provided** (e.g., `3-user-auth`):
    - Search `.docs/tasks/active/` for `<number-slug>.md`
-   - If not found, check `.docs/tasks/pending-uat/`
    - If not found, check `.docs/tasks/completed/`
    - If still not found, STOP and report the error
 
 3. **If only a description or number is provided** (e.g., `user auth` or `3`):
-   - Search `.docs/tasks/active/`, `.docs/tasks/pending-uat/`, and `.docs/tasks/completed/` for a matching task file
+   - Search `.docs/tasks/active/` and `.docs/tasks/completed/` for a matching task file
    - If ambiguous, list matches and ask the user to clarify
    - If no match found, STOP and report the error
 
-4. Determine which directory the task currently lives in (`active/`, `pending-uat/`, or `completed/`)
+4. Determine which directory the task currently lives in (`active/` or `completed/`)
 5. Extract the task's **number-slug identifier** (e.g., `3-user-auth` from `3-user-auth.md`)
 
 ### Step 2: Find Related UAT Files

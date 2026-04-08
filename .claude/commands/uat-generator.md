@@ -3,6 +3,7 @@ description: Generate User Acceptance Tests for a feature or documentation file
 argument-hint: <path/to/task-file.md, number-slug, or feature description>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
+**Always obey `.docs/guides/task-lifecycle.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**
 
 
@@ -22,25 +23,24 @@ Generate comprehensive User Acceptance Tests (UAT) for a feature, writing them t
 
 Parse `$ARGUMENTS` to determine the source and output file:
 
-1. **If a task file path is provided** (e.g., `.docs/tasks/pending-uat/3-user-auth.md`):
+1. **If a task file path is provided** (e.g., `.docs/tasks/active/3-user-auth.md`):
    - Read the task file
    - Extract the feature requirements and scope
    - Derive UAT filename from the task filename: `3-user-auth.md` → `.docs/uat/pending/3-user-auth.uat.md`
 
 2. **If a number-slug is provided** (e.g., `3-user-auth`):
-   - Search `.docs/tasks/pending-uat/` for `<number-slug>.md`
-   - If not found, also check `.docs/tasks/active/` as a fallback
+   - Search `.docs/tasks/active/` for `<number-slug>.md`
    - If found, read the task file and extract feature requirements
    - Derive UAT filename: `<number>-<slug>.md` → `.docs/uat/pending/<number>-<slug>.uat.md`
    - If not found in either directory, STOP and report the error
 
 3. **If a feature description is provided** (e.g., "user authentication"):
-   - Search `.docs/tasks/pending-uat/` for a matching task file (also check `active/` as a fallback)
+   - Search `.docs/tasks/active/` for a matching task file
    - If a matching task is found, use its naming: `.docs/uat/pending/<number>-<slug>.uat.md`
    - If no matching task exists, ask the user:
      - Should a task be created first via `/add-task`?
      - Or assign a standalone UAT number and slug: `.docs/uat/pending/<next-number>-<slug>.uat.md`
-   - To determine `<next-number>`, scan existing files in `.docs/uat/pending/`, `.docs/uat/completed/`, `.docs/tasks/active/`, and `.docs/tasks/pending-uat/` for the highest number
+   - To determine `<next-number>`, scan existing files in `.docs/uat/pending/`, `.docs/uat/completed/`, and `.docs/tasks/active/` for the highest number
 
 3. Assume `.docs/uat/pending/`, `.docs/uat/completed/`, and `.docs/uat/screenshots/` directories already exist.
 
@@ -61,6 +61,28 @@ Use MCP Serena to explore the codebase and understand the feature:
    - Identify happy paths, edge cases, and integration points
    - Note any dependencies or prerequisites
 
+3. **Research API contracts** (required for any API tests):
+
+   Before writing a single API test case, you MUST determine the **exact** input and output contract for each endpoint under test. Guessed payloads produce broken tests. Run the `/research` workflow (see `.claude/commands/research.md`) — or perform equivalent direct investigation — to capture, for each endpoint:
+
+   - **HTTP method and full path** (including any path params)
+   - **Required headers** (auth scheme, content-type, cookies)
+   - **Request body schema**: every field name, type, whether required/optional, and a realistic example value. Read the route handler, request validator (Zod/Pydantic/DTO/etc.), or OpenAPI spec — do not infer from variable names alone.
+   - **Query parameters**: name, type, allowed values, defaults
+   - **Success response**: status code, full body shape with example values
+   - **Error responses**: status codes and body shape for validation failures, not-found, unauthorized
+   - **Side effects**: what the endpoint creates, mutates, or deletes (so subsequent tests can depend on it)
+   - **Auth/session prerequisites**: how to obtain a valid token or cookie before the test runs
+
+   Sources to consult, in order of preference:
+   1. The route handler source file (Serena `find_symbol` on the handler)
+   2. The request/response schema definition (Zod, Pydantic, TypeBox, DTO class, etc.)
+   3. Existing integration tests or fixtures that already exercise the endpoint
+   4. OpenAPI/Swagger spec if the project publishes one
+   5. As a last resort, Context7 for framework-level docs
+
+   If you cannot determine any of the above for a given endpoint, **do not fabricate a test for it**. Note the gap in the report (Step 6) and skip the test.
+
 ### Step 3: Generate UAT Test Cases
 
 Create a UAT file structured as a **`/tackle`-compatible outline** with `- [ ]` checkboxes.
@@ -70,7 +92,7 @@ The file MUST follow this structure:
 ```markdown
 # UAT: [Feature Name]
 
-> **Source task**: [`.docs/tasks/pending-uat/<number>-<slug>.md`](relative-link) (or "Standalone" if no task)
+> **Source task**: [`.docs/tasks/active/<number>-<slug>.md`](relative-link) (or "Standalone" if no task)
 > **Generated**: YYYY-MM-DD
 
 ---
@@ -90,8 +112,12 @@ The file MUST follow this structure:
 - **Description**: [What this test verifies]
 - **Steps**:
   1. [Step-by-step instructions]
-  2. [Include exact curl command or request details]
-- **Expected Result**: [What success looks like]
+  2. Run the curl command below as-is
+- **Command**:
+  ```bash
+  curl -sS -X POST 'http://localhost:8000/api/v1/example' -H 'Content-Type: application/json' -d '{"field":"value"}'
+  ```
+- **Expected Result**: [Status code + concrete body shape, e.g. `201 Created` with `{"id": "<uuid>", "field": "value", "createdAt": "<iso>"}`]
 - [ ] Pass
 
 ### UAT-API-002: [Next Test]
@@ -136,7 +162,7 @@ The file MUST follow this structure:
 **Key structural rules**:
 - Every test case ends with `- [ ] Pass` — this makes the file `/tackle`-compatible
 - Prerequisites also use `- [ ]` checkboxes
-- The `Source task` header links back to the originating task file (typically in `pending-uat/`)
+- The `Source task` header links back to the originating task file (typically in `active/`)
 - Section separators (`---`) match the outline format `/tackle` expects
 
 ### Step 3b: Relevance Filter — Only Test What Changed
@@ -175,10 +201,41 @@ When generating tests, ensure:
    - Include validation edge cases for **new or changed** validation rules
 
 2. **Specificity**:
-   - Provide exact curl commands with sample data
+   - Provide exact curl commands with sample data grounded in the API contract from Step 2.3
    - Include specific URLs and routes
    - Specify exact expected response structures
    - Include sample request/response bodies
+
+   **Curl command standards** (mandatory — these prevent walkthrough friction):
+
+   - **One single `curl` invocation per test**, optionally piped into a single output-shaping helper. No `echo` wrappers, no banner lines, no `&&`/`;` chaining, no `2>&1`, no output redirection. Chained shell commands trigger user approval prompts and slow the walkthrough to a crawl.
+   - **Piping into `jq` is allowed and encouraged** when the raw response is large or noisy — e.g. `| jq '.'` to pretty-print, `| jq '.data | length'` to count, `| jq '{id, status, createdAt}'` to project the fields the test actually verifies. Keep it to a single pipe stage; do not chain `jq` into `head`, `tee`, etc.
+   - **No `-w "\nHTTP %{http_code}\n"`** or other format strings appended to surface the status code. The walkthrough operator reads the HTTP response directly; the status is visible in the response or in `-i`/`-v` output if needed.
+   - **Use `-sS`** (silent + show errors) so progress bars don't pollute output, but errors still surface.
+   - **Use single quotes around the URL and `-d` payload** so the shell doesn't try to interpolate `$` or backticks. If the payload itself contains a literal single quote, switch the outer quoting to double quotes and escape as needed — but prefer payloads without embedded single quotes.
+   - **Inline the payload on `-d`** with valid JSON. Do not use heredocs, temp files, or `@file.json` references — the test must run from a fresh shell with no setup.
+   - **Hardcode realistic example values.** Do not use shell variables (`$TOKEN`, `$ID`) unless the test explicitly documents how to obtain them in a Prerequisites step. If a test depends on an ID created by an earlier test, write the example with a clear placeholder like `<id-from-UAT-API-001>` and instruct the operator to substitute it.
+   - **Auth tokens / cookies**: if the endpoint requires auth, either (a) include a `-H 'Authorization: Bearer <token>'` placeholder with a Prerequisites step explaining how to obtain the token, or (b) use `-b cookies.txt` only if a prior test in the file populates that cookie jar. Never assume an undocumented auth state.
+   - **No line continuations** (`\` at end of line) unless the command genuinely exceeds ~200 chars. Long single-line commands are easier to copy-paste than multi-line ones.
+   - **The command must run successfully against a freshly-started dev server with documented prerequisites met.** If you cannot construct such a command, you do not understand the contract well enough yet — return to Step 2.3.
+
+   **Bad example** (do not generate this — it triggers approval prompts and clutters output):
+   ```bash
+   echo "===== API-2: POST /api/chat ====="
+   curl -sS -X POST "http://localhost:4321/api/chat" \
+     -b cookies.txt -c cookies.txt \
+     -H "Content-Type: application/json" \
+     --max-time 90 \
+     -d '{"messages":[...]}' \
+     -w "\nHTTP %{http_code}\n" | head -c 800
+   echo
+   echo "===== API-2 DONE ====="
+   ```
+
+   **Good example** (clean, single invocation, ready to run):
+   ```bash
+   curl -sS -X POST 'http://localhost:4321/api/chat' -H 'Content-Type: application/json' -b cookies.txt -c cookies.txt -d '{"messages":[{"role":"user","content":"hello"}],"context":"resume-builder","resumeId":"<id-from-UAT-API-001>","applicationId":"<id-from-UAT-API-001>"}'
+   ```
 
 3. **Executability**:
    - Each test should be independently executable
@@ -225,7 +282,7 @@ When generating tests, ensure:
 
 1. **Write the UAT file** to `.docs/uat/pending/<number>-<slug>.uat.md`
 
-2. **Update the source task file** (if one exists, typically in `.docs/tasks/pending-uat/`):
+2. **Update the source task file** (if one exists, typically in `.docs/tasks/active/`):
    - Append a reference at the bottom of the task file:
      ```markdown
      ---
@@ -264,12 +321,11 @@ After writing the tests:
     └── 1-onboarding.uat.md
 
 .docs/tasks/
-├── active/           # Tasks being implemented via /tackle
-├── pending-uat/      # Implementation complete, awaiting UAT testing
+├── active/           # Tasks being implemented via /tackle, then awaiting UAT
 └── completed/        # UAT passed, task fully complete
 ```
 
-**Task lifecycle**: `active/` → (`/tackle` completes) → `pending-uat/` → (`/uat-walkthrough` all pass) → `completed/`
+**Task lifecycle**: `active/` → (`/tackle` completes, stays in `active/`) → (`/uat-walkthrough` all pass) → `completed/`
 **UAT lifecycle**: `pending/` → (`/uat-walkthrough` all pass) → `completed/`
 
 ---
@@ -278,8 +334,8 @@ After writing the tests:
 
 | Source | UAT File Path | Example |
 |--------|--------------|---------|
-| Task `.docs/tasks/pending-uat/3-user-auth.md` | `.docs/uat/pending/3-user-auth.uat.md` | Mirrors task number and slug |
-| Task `.docs/tasks/pending-uat/12-api-refactor.md` | `.docs/uat/pending/12-api-refactor.uat.md` | Mirrors task number and slug |
+| Task `.docs/tasks/active/3-user-auth.md` | `.docs/uat/pending/3-user-auth.uat.md` | Mirrors task number and slug |
+| Task `.docs/tasks/active/12-api-refactor.md` | `.docs/uat/pending/12-api-refactor.uat.md` | Mirrors task number and slug |
 | Freeform (matching task found) | `.docs/uat/pending/<task-number>-<task-slug>.uat.md` | Uses discovered task's naming |
 | Freeform (no task) | `.docs/uat/pending/<next-number>-<derived-slug>.uat.md` | Auto-numbered, ask user to confirm slug |
 
@@ -289,12 +345,12 @@ The `<number>` prefix ensures UAT files sort alongside their tasks and are easy 
 
 ## Example
 
-Given task `.docs/tasks/pending-uat/5-positions.md`, the generated UAT at `.docs/uat/pending/5-positions.uat.md`:
+Given task `.docs/tasks/active/5-positions.md`, the generated UAT at `.docs/uat/pending/5-positions.uat.md`:
 
 ```markdown
 # UAT: Positions Management
 
-> **Source task**: [`.docs/tasks/pending-uat/5-positions.md`](../../tasks/pending-uat/5-positions.md)
+> **Source task**: [`.docs/tasks/active/5-positions.md`](../../tasks/active/5-positions.md)
 > **Generated**: 2026-03-03
 
 ---
@@ -312,16 +368,24 @@ Given task `.docs/tasks/pending-uat/5-positions.md`, the generated UAT at `.docs
 - **Endpoint**: `POST /api/v1/positions`
 - **Description**: Verify new position can be created (creates data for subsequent tests)
 - **Steps**:
-  1. Execute: `curl -X POST 'http://localhost:8000/api/v1/positions' -H 'Content-Type: application/json' -d '{"symbol": "BTC/USD", "size": 0.5, "entry_price": 50000}'`
-- **Expected Result**: 201 Created with position object including generated id and timestamps
+  1. Run the curl command below as-is
+- **Command**:
+  ```bash
+  curl -sS -X POST 'http://localhost:8000/api/v1/positions' -H 'Content-Type: application/json' -H 'Authorization: Bearer <token>' -d '{"symbol":"BTC/USD","size":0.5,"entry_price":50000}'
+  ```
+- **Expected Result**: `201 Created` with `{"id":"<uuid>","symbol":"BTC/USD","size":0.5,"entry_price":50000,"current_price":<number>,"pnl":<number>,"created_at":"<iso>","updated_at":"<iso>"}`
 - [ ] Pass
 
 ### UAT-API-002: List All Positions
 - **Endpoint**: `GET /api/v1/positions`
 - **Description**: Verify positions list endpoint returns user's positions (data exists from UAT-API-001)
 - **Steps**:
-  1. Execute: `curl -X GET 'http://localhost:8000/api/v1/positions' -H 'Authorization: Bearer <token>'`
-- **Expected Result**: 200 OK with array of position objects containing id, symbol, size, entry_price, current_price, pnl
+  1. Run the curl command below as-is
+- **Command**:
+  ```bash
+  curl -sS -X GET 'http://localhost:8000/api/v1/positions' -H 'Authorization: Bearer <token>'
+  ```
+- **Expected Result**: `200 OK` with array of position objects, each containing `id`, `symbol`, `size`, `entry_price`, `current_price`, `pnl`. Array includes the position created in UAT-API-001.
 - [ ] Pass
 ```
 

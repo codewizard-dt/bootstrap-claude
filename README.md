@@ -14,7 +14,7 @@ It is designed for developers who treat AI agents as first-class collaborators. 
 
 ## Architecture
 
-The project is a **template repository** with a thin CLI wrapper for npm distribution. The `.claude/commands/` directory holds 15 markdown-defined slash commands that Claude Code loads as custom instructions — each command is a self-contained workflow spec with mandatory MCP tool requirements, step-by-step logic, and integration with Serena's memory system. The `.docs/` directory provides a structured task lifecycle (`active → pending-uat → completed`) and a parallel UAT system (`pending → completed/skipped`) that mirror each other by task number and slug. Two Bash scripts (`setup-project.sh`, `update-project.sh`) handle initial installation and incremental syncing using `rsync`, while `bin/cli.js` wraps those scripts for `npx` invocation.
+The project is a **template repository** with a thin CLI wrapper for npm distribution. The `.claude/commands/` directory holds 15 markdown-defined slash commands that Claude Code loads as custom instructions — each command is a self-contained workflow spec with mandatory MCP tool requirements, step-by-step logic, and integration with Serena's memory system. The `.docs/` directory provides a structured task lifecycle (`active → completed`) and a parallel UAT system (`pending → completed/skipped`) that mirror each other by task number and slug. Two Bash scripts (`setup-project.sh`, `update-project.sh`) handle initial installation and incremental syncing using `rsync`, while `bin/cli.js` wraps those scripts for `npx` invocation.
 
 ## Technologies
 
@@ -53,7 +53,7 @@ The project is a **template repository** with a thin CLI wrapper for npm distrib
 - **AI Agent Workflow Design** — Designed a complete AI-assisted development loop: task creation → implementation delegation → UAT generation → interactive walkthrough → completion tracking.
 - **Model Context Protocol (MCP) Integration** — Orchestrated four MCP servers across global and per-project scopes, enforcing mandatory tool usage patterns and preventing suboptimal fallbacks.
 - **Technical Documentation & Specification Writing** — Produced 2,500+ lines of precise, machine-readable command specifications covering tool requirements, step logic, error handling, and output formats.
-- **Task Lifecycle Management** — Designed and implemented a four-stage task management system (active / pending-uat / completed / trashed) with structured file formats and agent-executable step definitions.
+- **Task Lifecycle Management** — Designed and implemented a three-stage task management system (active / completed / trashed) with structured file formats and agent-executable step definitions.
 - **User Acceptance Testing (UAT) Framework Design** — Built a custom UAT system supporting API auto-execution, batched UI testing, Puppeteer-assisted visual diagnosis, and per-test pass/fail/fix workflows.
 - **npm Package Authoring & Distribution** — Configured `package.json` with `bin`, `files`, and repository fields; packaged and published to the npm registry under a scoped namespace.
 - **Knowledge Management System Design** — Structured Serena memory hierarchies (topic `/` subtopic convention) for persistent, session-spanning project knowledge retrieval.

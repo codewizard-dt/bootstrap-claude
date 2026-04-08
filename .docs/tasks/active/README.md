@@ -8,7 +8,7 @@ Task files in `active/` are structured outlines designed for execution by `/tack
 <NNN>-<short-description>.md
 ```
 
-- **NNN**: Zero-padded sequential integer (check `active/`, `pending-uat/`, and `completed/` to find the next number)
+- **NNN**: Zero-padded sequential integer (check `active/` and `completed/` to find the next number)
 - **short-description**: Lowercase, hyphen-separated slug (2-4 words)
 
 Examples: `001-basic-infrastructure.md`, `004-application-tracker.md`, `008-find-jobs.md`
@@ -68,8 +68,8 @@ Brief summary of the technical approach or key decisions (1-3 sentences).
 ## Lifecycle
 
 ```
-active/  →  pending-uat/  →  completed/
-(/tackle)   (/uat-walkthrough)
+active/  →  completed/
+(/tackle + /uat-walkthrough all pass)
 ```
 
 When a task reaches `completed/`, a UAT link is appended:

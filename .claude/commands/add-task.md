@@ -3,6 +3,7 @@ description: Add a new task to .docs/tasks
 argument-hint: <task description>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
+**Always obey `.docs/guides/task-lifecycle.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**
 
 
@@ -16,7 +17,7 @@ $ARGUMENTS
 
 2) **Summarize the user input**: Extract the core task objective, scope, and any specific requirements from the provided arguments.
 
-3) **Assess existing tasks**: Check `.docs/tasks/active/`, `.docs/tasks/pending-uat/`, and `.docs/tasks/completed/` to determine the next task number.
+3) **Assess existing tasks**: Check `.docs/tasks/active/` and `.docs/tasks/completed/` to determine the next task number.
 
 4) **Research**: Run the `/research` workflow (see `.claude/commands/research.md`) scoped to this task:
    - **Phase 2 (Internal)**: Review `PROJECT_STATUS.md`, `CLAUDE.md`, and related code via Serena to understand constraints, dependencies, patterns, and data flow.
@@ -54,4 +55,4 @@ $ARGUMENTS
    ```
    To implement this task:  /tackle .docs/tasks/active/<number>-<slug>.md
    ```
-   Note: `/tackle` will move the task to `pending-uat/` on completion, then offer to run `/uat-generator`.
+   Note: After `/tackle` completes, the task stays in `active/`. Use `/uat-generator` to create UAT tests, then `/uat-walkthrough` to move the task to `completed/`.

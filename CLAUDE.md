@@ -37,7 +37,7 @@ Follow `basic-project-setup.md` to configure a new project, or use the npm packa
 | `/lint` | Get IDE diagnostics, fix issues one-by-one in verify cycles |
 | `/simplify <path>` | Analyze files/directories to remove redundancy and simplify complexity |
 | `/git-commit` | Stage all changes and commit with auto-generated message |
-| `/update` | Update all project documentation after implementation work |
+| `/update-docs` | Update all project documentation after implementation work |
 
 ## MCP Tool Requirements
 

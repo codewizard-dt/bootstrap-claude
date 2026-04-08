@@ -6,7 +6,7 @@ A project setup template for Claude Code. Contains reusable `.claude/` configura
 ## Structure
 - `.claude/commands/` — Custom slash commands (11 total)
 - `.docs/guides/mcp-tools.md` — MCP tool reference
-- `.docs/tasks/` — Task tracking (active → pending-uat → completed)
+- `.docs/tasks/` — Task tracking (active → completed)
 - `.docs/uat/` — UAT test tracking (pending → completed)
 - `basic-project-setup.md` — MCP installation guide
 - `update-project.sh` — Syncs template files into target projects (accepts relative or absolute paths)
@@ -25,13 +25,13 @@ A project setup template for Claude Code. Contains reusable `.claude/` configura
 - `/lint` — IDE diagnostics with fix cycles (also pre-commit in git-commit)
 - `/simplify <path>` — Remove redundancy, simplify complexity
 - `/git-commit` — Stage and commit with auto message
-- `/update` — Update all docs after implementation
+- `/update-docs` — Update all docs after implementation
 - `/git-commit` includes `/lint` as a pre-commit step
 
 ## Workflow Pipeline
-`/add-task → /tackle → /update → /uat-generator → /uat-walkthrough`
+`/add-task → /tackle → /update-docs → /uat-generator → /uat-walkthrough`
 
-Task lifecycle: `active/` → (tackle) → `pending-uat/` → (uat-walkthrough all pass) → `completed/`
+Task lifecycle: `active/` → (tackle + uat-walkthrough all pass) → `completed/`
 UAT lifecycle: `pending/` → (uat-walkthrough all pass) → `completed/`
 
 ## Required MCPs

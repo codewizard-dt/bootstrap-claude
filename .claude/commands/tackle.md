@@ -3,6 +3,7 @@ description: Tackle an outlined task file step-by-step
 argument-hint: <path/to/task.md, number-slug, or description>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
+**Always obey `.docs/guides/task-lifecycle.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**
 
 # Tackle Outline
@@ -89,9 +90,8 @@ This command is a pure executor. It does NOT plan — the task file already cont
 
 ### Completion Check
 - If ALL items are marked complete:
-  - Move the task file: `git mv .docs/tasks/active/<filename>.md .docs/tasks/pending-uat/<filename>.md` (fall back to `mv` if `git mv` fails)
   - Report success and STOP
-  - Output: "All tasks in outline complete! Task moved to pending-uat."
+  - Output: "All tasks in outline complete!"
 
 ---
 
@@ -123,7 +123,7 @@ When delegating, **every** sub-agent prompt MUST include:
 2. **The exact checkboxes and sub-details** from the task file section — pass them verbatim
 3. **Run quality gates** after completing the work:
    - After any code changes: `pnpm typecheck`
-   - **Assume all type errors are caused by your changes.** The codebase passes typecheck before each `/tackle` cycle (enforced by `/update` and `/git-commit`). Do NOT run `git stash` to check if errors are pre-existing — they are not. Fix them.
+   - **Assume all type errors are caused by your changes.** The codebase passes typecheck before each `/tackle` cycle (enforced by `/update-docs` and `/git-commit`). Do NOT run `git stash` to check if errors are pre-existing — they are not. Fix them.
 4. **Report completion status** (success, partial, or failure with reason)
 
 ### Example Delegation
@@ -238,19 +238,6 @@ After each cycle, briefly report:
 
 ---
 
-## Pre-Execution: Check Pending UAT Queue
-
-Before starting the cycle, check if there are tasks awaiting UAT:
-
-1. Use Serena's `list_dir` tool on `.docs/tasks/pending-uat/` to list files
-2. Count the number of task files (exclude `.gitkeep` or other non-task files)
-3. If there are **1 or more** task files:
-   - Output a visible warning: **"⚠️ Warning: X task(s) awaiting UAT in `.docs/tasks/pending-uat/`. Consider running `/uat-walkthrough` after this task."**
-   - Do NOT prompt or block — continue execution immediately
-4. If there are **0** task files, proceed immediately
-
----
-
 ## Begin Execution
 
 Now execute the cycle:
@@ -260,11 +247,10 @@ Now execute the cycle:
 3. Delegate to the annotated agent type
 4. Update the outline
 5. Repeat until done
-6. **Move the task file**: `git mv .docs/tasks/active/<filename>.md .docs/tasks/pending-uat/<filename>.md` (fall back to `mv` if `git mv` fails)
-7. Ask the user: **"Generate UAT tests for this task?"** using `AskUserQuestion`:
-   - **Yes** — Run `/uat-generator .docs/tasks/pending-uat/<filename>` to create a UAT file in `.docs/uat/pending/` matching this task's naming
+6. Ask the user: **"Generate UAT tests for this task?"** using `AskUserQuestion`:
+   - **Yes** — Run `/uat-generator .docs/tasks/active/<filename>` to create a UAT file in `.docs/uat/pending/` matching this task's naming
    - **No** — Skip UAT generation
-8. Run the `/update` skill (this ensures any generated UAT file is included in the documentation update)
-9. If UAT was generated in step 7, suggest: `/uat-walkthrough .docs/uat/pending/<file>.uat.md`
+7. Run the `/update` skill (this ensures any generated UAT file is included in the documentation update)
+8. If UAT was generated in step 6, suggest: `/uat-walkthrough .docs/uat/pending/<file>.uat.md`
 
 **Start now - read the outline and begin the first cycle.**

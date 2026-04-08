@@ -3,6 +3,7 @@ description: Skip UAT for a task, moving it to completed and archiving/creating 
 argument-hint: <path/to/task-file.md or task number-slug>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
+**Always obey `.docs/guides/task-lifecycle.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**
 
 # UAT Skip
@@ -29,22 +30,22 @@ This command is part of the task lifecycle: `/add-task` → `/tackle` → `/uat-
 
 Parse `$ARGUMENTS` to locate the task file:
 
-1. **If a file path is provided** (e.g., `.docs/tasks/pending-uat/3-user-auth.md`):
+1. **If a file path is provided** (e.g., `.docs/tasks/active/3-user-auth.md`):
    - Confirm the file exists (use Serena `find_file` or `list_dir`)
    - If the file does not exist, STOP and report the error
 
 2. **If a number-slug is provided** (e.g., `3-user-auth`):
-   - Search `.docs/tasks/pending-uat/` for `<number-slug>.md`
+   - Search `.docs/tasks/active/` for `<number-slug>.md`
    - If not found, also check `.docs/tasks/active/` as a fallback
    - If still not found, STOP and report the error
 
 3. **If only a description or number is provided**:
-   - Search `.docs/tasks/pending-uat/` for a matching task file
+   - Search `.docs/tasks/active/` for a matching task file
    - If ambiguous, list matches and ask the user to clarify
 
 4. Extract the task's **number-slug identifier** (e.g., `3-user-auth` from `3-user-auth.md`)
 
-5. **Validate location**: The task file should be in `.docs/tasks/pending-uat/`. If it is in `active/`, warn the user that implementation may not be complete and confirm they want to proceed.
+5. **Validate location**: The task file should be in `.docs/tasks/active/`.
 
 ### Step 2: Find or Create the UAT File
 
@@ -81,7 +82,7 @@ Before moving anything, present a summary and ask for confirmation inline:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 UAT SKIP — Confirm
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Task:  .docs/tasks/pending-uat/<number>-<slug>.md → .docs/tasks/completed/
+Task:  .docs/tasks/active/<number>-<slug>.md → .docs/tasks/completed/
 UAT:   .docs/uat/pending/<slug>.uat.md → .docs/uat/skipped/
        (or: No existing UAT — skeleton will be created in skipped/)
 
@@ -97,7 +98,7 @@ If the user says **No**, STOP.
    - `.docs/tasks/completed/` — should already exist
 
 2. **Move the task file** to completed:
-   - `git mv .docs/tasks/pending-uat/<number>-<slug>.md .docs/tasks/completed/<number>-<slug>.md`
+   - `git mv .docs/tasks/active/<number>-<slug>.md .docs/tasks/completed/<number>-<slug>.md`
    - Fall back to `mv` if `git mv` fails
 
 3. **Handle the UAT file**:
@@ -115,10 +116,10 @@ If the user says **No**, STOP.
      ```
 
 2. **Update the UAT file** (now in `skipped/`):
-   - If the `Source task` link points to `pending-uat/`, update it to `completed/`
+   - If the `Source task` link points to `active/`, update it to `completed/`
 
 3. **Search for other references** using Serena's `search_for_pattern`:
-   - Look for references to the old task path (`pending-uat/<number>-<slug>.md`) across `.docs/`
+   - Look for references to the old task path (`active/<number>-<slug>.md`) across `.docs/`
    - Update any found references to the new `completed/` path
 
 ### Step 6: Delete Related Screenshots
@@ -133,7 +134,7 @@ If any screenshots exist for this task in `.docs/uat/screenshots/`:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 UAT SKIP COMPLETE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Task:  .docs/tasks/pending-uat/<number>-<slug>.md → .docs/tasks/completed/<number>-<slug>.md
+Task:  .docs/tasks/active/<number>-<slug>.md → .docs/tasks/completed/<number>-<slug>.md
 UAT:   .docs/uat/pending/<slug>.uat.md → .docs/uat/skipped/<slug>.uat.md
        (or: Skeleton created at .docs/uat/skipped/<slug>.uat.md)
 
@@ -148,8 +149,7 @@ Screenshots deleted: [count or "None"]
 
 ```
 .docs/tasks/
-├── active/           # Tasks being implemented via /tackle
-├── pending-uat/      # Implementation complete, awaiting UAT testing
+├── active/           # Tasks being implemented via /tackle, or awaiting UAT testing
 ├── completed/        # UAT passed (or skipped), task fully complete
 └── trashed/          # Discarded tasks
 
@@ -160,7 +160,7 @@ Screenshots deleted: [count or "None"]
 └── screenshots/      # Temporary screenshots from /uat-walkthrough
 ```
 
-**Task lifecycle**: `active/` → (`/tackle`) → `pending-uat/` → (`/uat-walkthrough` | **`/uat-skip`**) → `completed/`
+**Task lifecycle**: `active/` → (`/tackle`, stays in `active/`) → (`/uat-walkthrough` | **`/uat-skip`**) → `completed/`
 
 ---
 
@@ -168,7 +168,7 @@ Screenshots deleted: [count or "None"]
 
 | Source | UAT File Path |
 |--------|--------------|
-| Task `.docs/tasks/pending-uat/3-user-auth.md` | `.docs/uat/skipped/3-user-auth.uat.md` |
-| Task `.docs/tasks/pending-uat/12-api-refactor.md` | `.docs/uat/skipped/12-api-refactor.uat.md` |
+| Task `.docs/tasks/active/3-user-auth.md` | `.docs/uat/skipped/3-user-auth.uat.md` |
+| Task `.docs/tasks/active/12-api-refactor.md` | `.docs/uat/skipped/12-api-refactor.uat.md` |
 
 The `<number>` prefix ensures UAT files sort alongside their tasks and are easy to cross-reference.

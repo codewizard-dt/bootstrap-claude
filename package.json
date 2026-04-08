@@ -25,7 +25,6 @@
     ".docs/tasks/README.md",
     ".docs/tasks/active/.gitkeep",
     ".docs/tasks/active/README.md",
-    ".docs/tasks/pending-uat/.gitkeep",
     ".docs/tasks/completed/.gitkeep",
     ".docs/tasks/trashed/.gitkeep",
     ".docs/uat/completed/.gitkeep",

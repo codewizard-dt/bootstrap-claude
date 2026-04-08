@@ -1,13 +1,14 @@
 ---
-description: Assess and improve a task file for execution readiness
+description: Assess and update a task file for execution readiness
 argument-hint: <path/to/task.md, number-slug, or number> [optional instructions]
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
+**Always obey `.docs/guides/task-lifecycle.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**
 
-# Improve Task
+# Update Task
 
-Assess an existing task file against the task spec and improve it until it is execution-ready for `/tackle`.
+Assess an existing task file against the task spec and update it until it is execution-ready for `/tackle`.
 
 ---
 
@@ -17,7 +18,7 @@ Assess an existing task file against the task spec and improve it until it is ex
 
 ## Step 1: Resolve the Task File
 
-Parse the first part of `$ARGUMENTS` to locate the task file. Any remaining text after the file reference is treated as **user instructions** for how to improve the task.
+Parse the first part of `$ARGUMENTS` to locate the task file. Any remaining text after the file reference is treated as **user instructions** for how to update the task.
 
 1. **If a file path is provided** (e.g., `.docs/tasks/active/3-user-auth.md`):
    - Confirm the file exists (use Serena `find_file` or `list_dir`)
@@ -87,7 +88,7 @@ If there are **user instructions** (text after the file reference in `$ARGUMENTS
 
 ---
 
-## Step 5: Apply Improvements
+## Step 5: Apply Updates
 
 ### If user instructions were provided
 Apply the user's specific changes first, then fix any spec compliance issues found in Step 3.
@@ -101,11 +102,11 @@ Fix all issues found in Step 3:
   - Use Context7 MCP for any library/framework documentation needed
 - Convert plain list items to `- [ ]` checkbox syntax
 
-### Research for improvements
+### Research for updates
 When adding specificity to vague steps, follow the `/research` workflow (see `.claude/commands/research.md`):
 - **Internal (Phase 2)**: Use Serena's `get_symbols_overview`, `find_symbol`, and `search_for_pattern` to understand the codebase
 - **External (Phase 3)**: Use Context7 MCP for library docs and Brave Search MCP for best practices and package recommendations
-- Ground every improvement in actual codebase state — don't guess at file paths or function names
+- Ground every update in actual codebase state — don't guess at file paths or function names
 
 ### Present changes before applying
 Before writing the updated task file, present a summary of proposed changes and ask the user to confirm using `AskUserQuestion`.
