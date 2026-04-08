@@ -405,7 +405,7 @@ The user will type their choice. Accept any unambiguous prefix (e.g., "p", "pass
 
 After each verdict:
 
-1. **Update the test's status line** in the file using Edit tools:
+1. **Update the test's status line** in the file using the **`Edit`** tool — one `Edit` call per status line. **Never** use `sed`, `awk`, `perl -i`, or `echo` to flip status markers, even when many tests need updating in a row. One `Edit` call per test is correct; one `sed` is wrong (and triggers an approval prompt every time). See `.docs/guides/mcp-tools.md` "Common anti-patterns".
    - Replace `- [ ] Pass` with the appropriate marker (see Step 4)
 2. **Do NOT modify** any other part of the test — only the status line changes
 

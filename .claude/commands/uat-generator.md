@@ -283,12 +283,13 @@ When generating tests, ensure:
 1. **Write the UAT file** to `.docs/uat/pending/<number>-<slug>.uat.md`
 
 2. **Update the source task file** (if one exists, typically in `.docs/tasks/active/`):
-   - Append a reference at the bottom of the task file:
+   - Use **`Read`** to load the task file, then **`Edit`** to append a reference at the bottom. **Never** use `echo >>`, `cat <<EOF`, `sed`, or any other shell command to append. See `.docs/guides/mcp-tools.md` "Common anti-patterns".
+   - The reference to append:
      ```markdown
      ---
      **UAT**: [`.docs/uat/pending/<number>-<slug>.uat.md`](../../uat/pending/<number>-<slug>.uat.md)
      ```
-   - If the task already has a UAT reference, update it
+   - If the task already has a UAT reference, use `Edit` to replace the existing one in place
 
 ### Step 6: Report Completion
 

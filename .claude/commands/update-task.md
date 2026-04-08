@@ -111,7 +111,7 @@ When adding specificity to vague steps, follow the `/research` workflow (see `.c
 ### Present changes before applying
 Before writing the updated task file, present a summary of proposed changes and ask the user to confirm using `AskUserQuestion`.
 
-After confirmation, update the task file using Serena editing tools.
+After confirmation, update the task file using the **`Edit`** tool (or `Write` for a full rewrite). **Never** use `sed`, `awk`, `perl -i`, or `echo >>` — call `Edit` once per change, even if there are many. See `.docs/guides/mcp-tools.md` "Common anti-patterns".
 
 ---
 

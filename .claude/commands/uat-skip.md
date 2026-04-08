@@ -107,9 +107,9 @@ If the user says **No**, STOP.
 
 ### Step 5: Update References
 
-1. **Update the task file** (now in `completed/`):
-   - If it contains a UAT reference pointing to `pending/`, update the path to `skipped/`
-   - If it has no UAT reference, append one:
+1. **Update the task file** (now in `completed/`) using the **`Edit`** tool. **Never** use `sed`, `echo >>`, or any other shell command for these edits. See `.docs/guides/mcp-tools.md` "Common anti-patterns".
+   - If it contains a UAT reference pointing to `pending/`, `Edit` to update the path to `skipped/`
+   - If it has no UAT reference, `Read` the file then `Edit` to append:
      ```markdown
      ---
      **UAT**: [`.docs/uat/skipped/<number>-<slug>.uat.md`](../../uat/skipped/<number>-<slug>.uat.md) *(skipped)*

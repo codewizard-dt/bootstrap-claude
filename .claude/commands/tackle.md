@@ -167,11 +167,11 @@ After the sub-agent from Step 2 completes (or fails), update the outline file us
 
 ### Update Process
 
-1. Use the native `Edit` tool to find the task's checkbox line and replace it with the updated status
+1. Use the **`Edit`** tool — call it once per checkbox line. **Never** reach for `sed`, `awk`, `perl -i`, or `echo` to update task files, no matter how many checkboxes need flipping. Ten `Edit` calls is correct; one `sed` is wrong (and will trigger an approval prompt every time).
 2. Add a timestamp comment: `<!-- Updated: YYYY-MM-DD HH:MM -->`
 3. If subtasks were discovered during execution, add them to the outline
 
-> **Note**: Markdown files use the native `Edit` tool — Serena's symbolic editor doesn't apply to prose. The single-line status marker swap is straightforward.
+> **Note**: Markdown files use the native `Edit` tool — Serena's symbolic editor doesn't apply to prose, and shell editors (`sed` etc.) are forbidden. See `.docs/guides/mcp-tools.md` "Common anti-patterns" for the full rule.
 
 ### Example Update
 

@@ -4,6 +4,16 @@
 
 ---
 
+## ⚠️ TOP RULE — READ FIRST
+
+**NEVER use `sed`, `awk`, `perl -i`, `echo >>`, or any other shell command to edit a file.** This applies to **every** file type — code, markdown, JSON, YAML, `.env`, anything. The fact that markdown is allowed to use standard tools means use the **`Edit`** and **`Write`** tools, **NOT** `sed`.
+
+If you find yourself reaching for `sed -i` to flip task checkboxes, update a status line, replace a string in a config file, or do "just a quick fix" to a doc — **stop**. Use the `Edit` tool. If you have many similar replacements in one file, use `Edit` with `replace_all: true` or call `Edit` multiple times. The `Edit` tool is always the right answer.
+
+The shell is for running programs (`pnpm test`, `git mv`, `curl`), not for inspecting or modifying files.
+
+---
+
 ## MANDATORY: MCP Tool Requirements
 
 These MCP servers are **REQUIRED** for all applicable operations. Using standard tools when an MCP tool exists is a violation of project rules.
@@ -33,6 +43,69 @@ These MCP servers are **REQUIRED** for all applicable operations. Using standard
   - Editing via shell → **never** `sed` / `awk` / `echo >>`
 
 The rule of thumb: **the shell is for running programs, not for inspecting or modifying files.** Even on a markdown file, do not `cat README.md` — use `Read`. Do not `grep -r foo .docs/` — use `mcp__serena__search_for_pattern` or the `Grep` tool.
+
+### Common anti-patterns and their fixes
+
+These are real mistakes AI agents make on this codebase. Do not repeat them.
+
+#### ❌ Anti-pattern: `sed` to flip task-file checkboxes
+
+```bash
+# WRONG — never do this
+sed -i '' 's/- \[ \] Launch Puppeteer/- [x] Launch Puppeteer/; s/- \[ \] Navigate and screenshot/- [x] Navigate and screenshot/' .docs/tasks/active/051-ux-conversion-audit.md
+```
+
+This pattern shows up most often when marking multiple steps complete in a task file. It triggers an approval prompt every time, is fragile against whitespace or escaping, and silently corrupts files when a regex backfires.
+
+✅ **Correct**: call the `Edit` tool once per checkbox (or use `replace_all: true` if every `- [ ]` in the file should become `- [x]`):
+
+```
+Edit(file_path=".docs/tasks/active/051-ux-conversion-audit.md",
+     old_string="- [ ] Launch Puppeteer",
+     new_string="- [x] Launch Puppeteer")
+Edit(file_path=".docs/tasks/active/051-ux-conversion-audit.md",
+     old_string="- [ ] Navigate and screenshot each marketing",
+     new_string="- [x] Navigate and screenshot each marketing")
+# ...one Edit call per checkbox
+```
+
+Yes, even if there are ten checkboxes. Ten `Edit` calls is correct. One `sed` is wrong.
+
+#### ❌ Anti-pattern: `cat` to check what's in a file before editing
+
+```bash
+# WRONG
+cat .docs/tasks/active/051-ux-conversion-audit.md
+```
+
+✅ **Correct**: `Read` tool. Always.
+
+#### ❌ Anti-pattern: `ls` to see what's in a directory
+
+```bash
+# WRONG
+ls .docs/uat/screenshots/
+```
+
+✅ **Correct**: `mcp__serena__list_dir(relative_path=".docs/uat/screenshots/")`
+
+#### ❌ Anti-pattern: `grep -r` to find a string across files
+
+```bash
+# WRONG
+grep -r "pending-uat" .
+```
+
+✅ **Correct**: the `Grep` tool, or `mcp__serena__search_for_pattern`.
+
+#### ❌ Anti-pattern: `echo "new content" >> file.md` to append to a file
+
+```bash
+# WRONG
+echo "## New Section" >> README.md
+```
+
+✅ **Correct**: `Read` the file first to see the current end, then `Edit` to append (or `Write` if creating fresh).
 
 ---
 

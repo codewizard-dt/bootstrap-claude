@@ -32,7 +32,7 @@ Update documentation in this sequence:
 
 - Tasks in `active/` are being implemented via `/tackle` or awaiting UAT testing
 - Tasks in `completed/` have passed UAT and are fully done
-- Update checkbox status in active tasks (`- [ ]` → `- [x]`)
+- Update checkbox status in active tasks (`- [ ]` → `- [x]`) using the **`Edit`** tool — one call per checkbox. **Never** `sed`/`awk`/`perl -i`. See `.docs/guides/mcp-tools.md` "Common anti-patterns".
 - Add new tasks discovered during implementation
 
 #### 2. **UAT Files** (`.docs/uat/`)

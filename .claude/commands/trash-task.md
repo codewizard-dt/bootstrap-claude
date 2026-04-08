@@ -79,7 +79,7 @@ Search for and update any references to the moved files across the project:
    - If in an index or status file: **remove the line** or update the path to reflect the new `trashed/` location
    - If in another task/UAT file's `Source task` or `UAT` link: **update the path** to `trashed/`
 
-3. Use Serena's file editing tools (`replace_content`) to make the updates
+3. Use the **`Edit`** tool to make the updates — one `Edit` call per replacement. **Never** use `sed`, `awk`, or `perl -i` to bulk-rewrite paths across files, even when many references need updating. See `.docs/guides/mcp-tools.md` "Common anti-patterns".
 
 ### Step 6: Report Completion
 
