@@ -20,7 +20,7 @@ Determine what changed since the last documentation update:
 - Which documentation files are affected?
 - Are there new patterns, conventions, or workflows to document?
 
-Use MCP Serena to explore the codebase as needed, including for markdown files. Standard Read/Edit/Write are permitted only for JSON, YAML, and config files.
+Use Serena (`list_dir`, `find_file`, `search_for_pattern`, `get_symbols_overview`, `find_symbol`) for all exploration. Standard `Read`/`Edit`/`Write` are permitted for markdown and config files (JSON, YAML, `.env`); code files still must use Serena's symbolic or file/line editing tools. **Never** use `bash` commands like `ls`, `cat`, `find`, `grep`, or `sed` on any file. See `.docs/guides/mcp-tools.md`.
 
 ---
 

@@ -52,10 +52,10 @@ All sub-agents delegated from this command **MUST** use MCP Serena tools for cod
 | Find files | Serena `find_file`, `list_dir` | `Glob`, `find` |
 | Library docs | Context7 MCP | `WebSearch` / `WebFetch` |
 
-**Exceptions** — standard Read/Edit/Write tools are permitted ONLY for non-code files (JSON, YAML, config). Markdown files must use Serena.
+**Exceptions** — standard Read/Edit/Write tools are permitted for markdown and config files (JSON, YAML, `.env`). Code files must use Serena. File/directory exploration must always use Serena tools (`list_dir`, `find_file`, `search_for_pattern`) — never `bash` commands like `ls`, `cat`, `find`, `grep`, or `sed`.
 
 Every sub-agent prompt **MUST** include this instruction:
-> "Use MCP Serena for all code exploration and editing, including markdown files. Do NOT use Read, Edit, Grep, or Glob on code or markdown files. See `.docs/guides/mcp-tools.md` for the full tool reference."
+> "Use Serena for all code exploration and editing, and for all file/directory exploration of any type. Standard `Read`/`Edit`/`Write` are permitted for markdown and config files only. Never use `bash` `ls`/`cat`/`find`/`grep`/`sed`. See `.docs/guides/mcp-tools.md` for the full tool reference."
 
 ---
 
@@ -171,7 +171,7 @@ After the sub-agent from Step 2 completes (or fails), update the outline file us
 2. Add a timestamp comment: `<!-- Updated: YYYY-MM-DD HH:MM -->`
 3. If subtasks were discovered during execution, add them to the outline
 
-> **Note**: This is the one exception to the "use Serena for markdown" rule — the edit is a single-line status marker swap, and the native `Edit` tool is faster and simpler here.
+> **Note**: Markdown files use the native `Edit` tool — Serena's symbolic editor doesn't apply to prose. The single-line status marker swap is straightforward.
 
 ### Example Update
 

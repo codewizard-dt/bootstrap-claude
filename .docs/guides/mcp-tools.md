@@ -10,15 +10,29 @@ These MCP servers are **REQUIRED** for all applicable operations. Using standard
 
 | MCP Server | Mandatory For | Replaces |
 |------------|--------------|----------|
-| **Serena** | All code exploration, editing, file search | Read, Edit, Write, Grep, Glob (for code and markdown files) |
+| **Serena** | All **code** exploration and editing; **all** file/directory exploration and search (code, markdown, config, anything) | `Read`, `Edit`, `Write`, `Grep`, `Glob` (for code files); `bash` exploration commands (`ls`, `cat`, `find`, `grep`, `sed`, `awk`, `head`, `tail`, `tree`) for **any** file type |
 | **Context7** | All library/framework documentation lookups | WebSearch, WebFetch (for library docs) |
 | **Brave Search** | All general web research | WebSearch (for non-library topics) |
 | **Puppeteer** | Browser automation, screenshots, UI interaction | WebFetch (for rendered pages) |
 
-**Exceptions** — standard Read/Edit/Write tools are permitted ONLY for:
-- Non-code files (JSON, YAML, .env)
-- Creating brand-new files
-- Reading binary files or images
+### Standard tools (`Read`, `Edit`, `Write`) are permitted for:
+
+- **Markdown files** (`.md`) — content edits use standard tools (Serena's symbolic editor doesn't apply to prose)
+- **Config files** — JSON, YAML, TOML, `.env`, `.gitignore`, `package.json`, etc.
+- **Creating brand-new files** of any type
+- **Binary files and images** (read only)
+
+### Standard tools are NEVER permitted for:
+
+- **Code files** — TypeScript, JavaScript, Python, Go, Rust, etc. Always use Serena's symbolic or file/line tools.
+- **File or directory exploration of any kind**, regardless of file type. This includes:
+  - Listing directories → use `mcp__serena__list_dir`, **never** `ls` / `tree` / `find -type d`
+  - Finding files by name → use `mcp__serena__find_file`, **never** `find -name` / `ls | grep`
+  - Searching file contents → use `mcp__serena__search_for_pattern` or the `Grep` tool, **never** `grep` / `rg` / `ag` invoked through `bash`
+  - Reading file contents for inspection → use `mcp__serena__get_symbols_overview` (code) or `Read` (markdown/config), **never** `cat` / `head` / `tail`
+  - Editing via shell → **never** `sed` / `awk` / `echo >>`
+
+The rule of thumb: **the shell is for running programs, not for inspecting or modifying files.** Even on a markdown file, do not `cat README.md` — use `Read`. Do not `grep -r foo .docs/` — use `mcp__serena__search_for_pattern` or the `Grep` tool.
 
 ---
 
@@ -224,13 +238,16 @@ Write memories to persist **non-obvious project knowledge** useful for future ta
 
 | Task | MUST Use | NEVER Use |
 |------|----------|-----------|
-| Explore code structure | Serena `get_symbols_overview` | `Read` on code files |
-| Find function/class | Serena `find_symbol` | `Grep` on code files |
-| Edit code | Serena symbolic or file/line tools | Standard `Edit` on code files |
+| Explore code structure | Serena `get_symbols_overview` | `Read` on code files, `cat` |
+| Find function/class | Serena `find_symbol` | `Grep` on code files, `bash grep` |
+| Edit code | Serena symbolic or file/line tools | Standard `Edit` on code files, `sed` |
 | Rename symbol | Serena `rename_symbol` | Manual find-and-replace |
-| Search code | Serena `search_for_pattern` | `Grep` (unless Serena unavailable) |
+| Search file contents | Serena `search_for_pattern` or `Grep` tool | `bash grep` / `rg` / `ag` |
+| List a directory | Serena `list_dir` | `ls`, `tree`, `find -type d` |
+| Find files by name | Serena `find_file` or `Glob` tool | `find -name`, `ls \| grep` |
+| Read markdown content | Standard `Read` | `cat`, `head`, `tail` |
+| Edit markdown content | Standard `Edit` / `Write` | `sed`, `awk`, `echo >>` |
+| Edit config files (JSON, YAML, .env) | Standard `Read`/`Edit`/`Write` | `sed`, Serena symbolic tools |
 | Library docs | Context7 | `WebSearch` / `WebFetch` |
 | General research | Brave Search (sequential, 1/sec) | Parallel searches |
 | Browser interaction | Puppeteer | `WebFetch` for rendered content |
-| Non-code files (JSON, YAML, .env) | Standard Read/Edit/Write | Serena |
-| Markdown files | Serena | Standard Read/Edit/Write |
