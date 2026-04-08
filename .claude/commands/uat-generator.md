@@ -61,9 +61,15 @@ Use MCP Serena to explore the codebase and understand the feature:
    - Identify happy paths, edge cases, and integration points
    - Note any dependencies or prerequisites
 
-3. **Research API contracts** (required for any API tests):
+3. **Research the contract for every test you plan to write** (mandatory — no exceptions):
 
-   Before writing a single API test case, you MUST determine the **exact** input and output contract for each endpoint under test. Guessed payloads produce broken tests. Run the `/research` workflow (see `.claude/commands/research.md`) — or perform equivalent direct investigation — to capture, for each endpoint:
+   Before writing a single test case of any type, you MUST determine the **exact** behavior under test by reading the actual code. Guessed payloads, guessed selectors, guessed error messages, and guessed flow steps all produce broken tests that fail during walkthrough and waste the operator's time.
+
+   Run the `/research` workflow (see `.claude/commands/research.md`) for each distinct feature area, **or** perform equivalent direct investigation using Serena. Either way, you MUST produce a **research notes block** (kept in your working context, not the UAT file) for each test type before writing tests of that type. If you cannot fill in the required fields for a given test, **do not fabricate the test** — note the gap in the Step 6 report and skip it.
+
+   #### 2.3a. API tests — required research
+
+   For each endpoint under test, capture:
 
    - **HTTP method and full path** (including any path params)
    - **Required headers** (auth scheme, content-type, cookies)
@@ -74,14 +80,61 @@ Use MCP Serena to explore the codebase and understand the feature:
    - **Side effects**: what the endpoint creates, mutates, or deletes (so subsequent tests can depend on it)
    - **Auth/session prerequisites**: how to obtain a valid token or cookie before the test runs
 
-   Sources to consult, in order of preference:
+   Sources, in order of preference:
    1. The route handler source file (Serena `find_symbol` on the handler)
    2. The request/response schema definition (Zod, Pydantic, TypeBox, DTO class, etc.)
    3. Existing integration tests or fixtures that already exercise the endpoint
    4. OpenAPI/Swagger spec if the project publishes one
    5. As a last resort, Context7 for framework-level docs
 
-   If you cannot determine any of the above for a given endpoint, **do not fabricate a test for it**. Note the gap in the report (Step 6) and skip the test.
+   #### 2.3b. UI tests — required research
+
+   For each page or interaction under test, capture:
+
+   - **Route / URL pattern** — read the router config or file-based routing tree (e.g. `app/`, `pages/`, `routes/`); do not guess
+   - **Component file path** — Serena `find_symbol` on the page-level component, then `get_symbols_overview` on the file
+   - **Visible elements relevant to the test** — exact text labels, button labels, form field names, headings (read the JSX/template, do not invent labels)
+   - **User actions available** — every `onClick`, `onSubmit`, `onChange` handler the test will trigger; what each handler calls
+   - **Form validation rules** — read the form schema (Zod/Yup/RHF resolver, etc.) for required fields, format constraints, error messages
+   - **Expected post-action state** — read the mutation/state-update logic to know what the UI should look like after the action (toast text, redirect target, list refresh, modal close)
+   - **Loading and error states** — what does the component render while pending or after a failed request
+   - **Auth/role requirements** — does the page require login? a specific role? read the route guard or middleware
+
+   Sources: the component source file, the form schema, the router config, the state management slice/store, any existing E2E tests (Playwright/Cypress) that exercise the page.
+
+   #### 2.3c. Edge case tests — required research
+
+   For each edge case under test, capture:
+
+   - **The exact code path that handles the edge case** — Serena `search_for_pattern` for the validation, the throw, the early return, or the conditional that fires
+   - **The trigger condition** — the specific input, state, or sequence that causes the path to execute
+   - **The observable response** — exact error message, status code, redirect, toast, or UI fallback that the user sees
+   - **Whether the behavior is intentional** — verified in the source, not assumed from a generic "should fail gracefully"
+
+   If the codebase does not actually handle a given edge case, do not write a test asserting that it does. Note the gap.
+
+   #### 2.3d. Integration tests — required research
+
+   For each end-to-end flow under test, capture:
+
+   - **Every component, service, and endpoint in the flow**, in order — list them
+   - **The data passed between each step** (request bodies, query params, returned IDs)
+   - **Any side effects** at each step (DB writes, queue messages, cache invalidations)
+   - **The terminal observable state** that confirms the flow completed (final HTTP response, final UI state, final DB row)
+
+   Use Serena `find_referencing_symbols` to trace call chains. If you cannot describe every step concretely, the test is too vague — narrow it down or split it.
+
+### Step 2.4: Research Checkpoint (hard gate)
+
+**Do not proceed to Step 3 until** you can answer **yes** to all of these:
+
+- [ ] For every API test I plan to write, I have the full request/response contract from Step 2.3a (read from source, not guessed).
+- [ ] For every UI test I plan to write, I have the route, component file, exact element labels, and expected post-action state from Step 2.3b.
+- [ ] For every edge case test I plan to write, I have located the actual handling code from Step 2.3c.
+- [ ] For every integration test I plan to write, I have the full step-by-step flow from Step 2.3d.
+- [ ] Any test I cannot answer "yes" for has been **dropped**, not approximated, and added to the Step 6 gaps report.
+
+If any answer is "no" or "partially", return to Step 2.3 and finish the research before writing tests. **Writing tests from incomplete research is a failure mode**, not a shortcut.
 
 ### Step 3: Generate UAT Test Cases
 
@@ -200,11 +253,12 @@ When generating tests, ensure:
    - Include error scenarios for **changed** endpoints (400, 404, 500 errors)
    - Include validation edge cases for **new or changed** validation rules
 
-2. **Specificity**:
-   - Provide exact curl commands with sample data grounded in the API contract from Step 2.3
-   - Include specific URLs and routes
-   - Specify exact expected response structures
-   - Include sample request/response bodies
+2. **Specificity** (every test must be grounded in the research from Step 2.3 — never in assumption):
+   - **API tests**: exact curl commands, URLs, headers, request bodies, and expected response structures — all from Step 2.3a research
+   - **UI tests**: exact routes, exact element labels (button text, form field labels, headings), exact post-action state — all from Step 2.3b research
+   - **Edge case tests**: the exact trigger condition and the exact observable error response/UI state — from Step 2.3c research
+   - **Integration tests**: every step in the flow named explicitly with the expected intermediate and final states — from Step 2.3d research
+   - If you find yourself writing a vague phrase like "should display an error" or "the API should return a reasonable response", **stop** — return to Step 2.3 and find the exact text/code/shape
 
    **Curl command standards** (mandatory — these prevent walkthrough friction):
 
@@ -395,3 +449,5 @@ Given task `.docs/tasks/active/5-positions.md`, the generated UAT at `.docs/uat/
 ## Begin Generation
 
 Now analyze `$ARGUMENTS` and generate comprehensive UAT test cases.
+
+**Reminder before you start writing**: every test in the file must trace back to a concrete research finding from Step 2.3. If at any point you catch yourself guessing — at a payload field, a button label, an error message, a flow step — **stop**, return to Step 2.3, and either ground the test in real code or drop it. A focused 8-test UAT grounded in research is far more valuable than a 30-test UAT half built on assumption.
