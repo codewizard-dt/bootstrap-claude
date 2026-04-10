@@ -122,8 +122,9 @@ When delegating, **every** sub-agent prompt MUST include:
 1. **MCP Serena mandate**: "Use MCP Serena for all code exploration and editing. Do NOT use Read, Edit, Grep, or Glob on code files. See `.docs/guides/mcp-tools.md` for the full tool reference."
 2. **The exact checkboxes and sub-details** from the task file section — pass them verbatim
 3. **Run quality gates** after completing the work:
-   - After any code changes: `pnpm typecheck`
-   - **Assume all type errors are caused by your changes.** The codebase passes typecheck before each `/tackle` cycle (enforced by `/update-docs` and `/git-commit`). Do NOT run `git stash` to check if errors are pre-existing — they are not. Fix them.
+   - After any code changes: run the project's typecheck command (e.g., `pnpm typecheck`, `make types-backend`, `mypy`, etc.)
+   - **ALL type errors are caused by your changes. No exceptions.** The codebase is committed clean before every `/tackle` cycle (enforced by `/update-docs` and `/git-commit`). There are zero pre-existing type errors.
+   - **NEVER run `git stash` to "verify" if errors are pre-existing** — this is banned. It wastes time, triggers approval prompts, and the answer is always the same: the errors are yours. Fix them immediately.
 4. **Report completion status** (success, partial, or failure with reason)
 
 ### Example Delegation
@@ -147,7 +148,7 @@ Task tool invocation:
 
     After completing the work:
     1. Run `pnpm typecheck` to verify no type errors
-    2. If typecheck fails, fix the errors — they are from your changes (do NOT git stash to check)
+    2. If typecheck fails, ALL errors are from your changes — fix them immediately. NEVER run `git stash` to check if errors are pre-existing (they are not — the codebase is committed clean before every cycle).
     3. Report success or any issues encountered
 ```
 

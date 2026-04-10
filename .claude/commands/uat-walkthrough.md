@@ -79,7 +79,7 @@ Use the resolved file path for all subsequent steps.
 - Parse the structure to identify:
   - **Test sections**: Headings matching `### UAT-*` patterns (e.g., `### UAT-API-001:`, `### UAT-UI-002:`)
   - **Prerequisites**: Items under `## Prerequisites`
-  - **Test status**: Each test ends with `- [ ] Pass` (pending) or `- [x] Pass` (passed) or `- [FAIL] ...` (failed)
+  - **Test status**: Each test ends with `- [ ] Pass` (pending), `- [x] Pass` (passed), `- [FAIL: ...] ...` (failed), `- [FIXING: ...] ...` (fix in progress), or `- [SKIP: ...] ...` (user skipped)
 - Count totals: passed, failed, pending, skipped
 
 ---
@@ -138,7 +138,8 @@ Tests are presented in **batches of up to 5** based on their type:
 ### Completion Check
 - If no more tests match the current mode:
   - Report the final summary
-  - If ALL tests in the file are marked `[x] Pass`:
+  - **A UAT file is complete when no tests have a blocking status.** Blocking statuses are `[FAIL: ...]` and `[FIXING: ...]`. Non-blocking statuses are `[x] Pass` (passed) and `[SKIP: ...]` (user decided the test is not necessary). Only `- [ ] Pass` (untested) is ambiguous — it is non-blocking only if the current mode excluded it (e.g., "Failed only" mode skips pending tests).
+  - If the file is complete (no `[FAIL]` or `[FIXING]` markers remain, and no untested `- [ ] Pass` tests remain that were in scope for the current mode):
     - Move the UAT file: `git mv .docs/uat/pending/<slug>.uat.md .docs/uat/completed/<slug>.uat.md` (fall back to `mv` if `git mv` fails)
     - Move the associated task file (derive name: `<number>-<slug>.uat.md` → `<number>-<slug>.md`): `git mv .docs/tasks/active/<number>-<slug>.md .docs/tasks/completed/<number>-<slug>.md` (fall back to `mv` if `git mv` fails)
     - Update any internal path references in both moved files (e.g., source task links, UAT links)
@@ -419,7 +420,8 @@ The user will type their choice. Accept any unambiguous prefix (e.g., "p", "pass
 - The re-presented test follows the single-test verdict flow (Step 4C)
 
 #### If Skip
-- Leave the test unchanged (`- [ ] Pass`)
+- Ask a follow-up inline: **"Reason for skipping? (optional, press Enter to skip)"**
+- Mark the test: `- [SKIP: <user's reason or "User skipped">] <!-- YYYY-MM-DD -->`
 - Move to the next test
 
 ---
@@ -543,9 +545,10 @@ Source:  .docs/tasks/active/5-positions.md
 
 Results:
   ✓ Passed:  6
+  ⊘ Skipped: 1
   ✗ Failed:  2
-  - Skipped: 0
-  Total:     8
+  - Pending: 0
+  Total:     9
 
 Failed Tests:
   • UAT-API-003: Delete Position — "Returns 500 instead of 204"
@@ -555,7 +558,7 @@ Failed Tests:
 
 ### Post-Walkthrough Actions
 
-- **All passed**:
+- **All complete** (no `[FAIL]` or `[FIXING]` markers remain — every test is `[x] Pass` or `[SKIP: ...]`):
   1. Move UAT file: `git mv .docs/uat/pending/<slug>.uat.md .docs/uat/completed/<slug>.uat.md` (fall back to `mv` if `git mv` fails)
   2. Move associated task file (derive name: `<number>-<slug>.uat.md` → `<number>-<slug>.md`): `git mv .docs/tasks/active/<number>-<slug>.md .docs/tasks/completed/<number>-<slug>.md` (fall back to `mv` if `git mv` fails)
   3. **Update references** in both moved files: update `active/` → `completed/` in the task file, update `pending/` → `completed/` in the UAT file's source task link
@@ -564,7 +567,7 @@ Failed Tests:
      - Run `git rm` on each matched file (or `rm` if not tracked)
   5. Run the `/update-docs` command to update all project documentation
   6. Report the new file paths for both UAT and task files
-- **Some failed**: Keep file in `pending/`. Keep screenshots (useful for debugging). Suggest next steps:
+- **Some failed** (any `[FAIL]` or `[FIXING]` markers remain): Keep file in `pending/`. Keep screenshots (useful for debugging). Suggest next steps:
   ```
   To fix failures and re-test:  /uat-walkthrough .docs/uat/pending/<file>.uat.md
   To create fix tasks:          /add-task "Fix UAT failures in <feature>"
@@ -585,10 +588,10 @@ Failed Tests:
 - Keep the test presentation clean and scannable
 
 ### File Integrity
-- Only modify status lines (`- [ ] Pass` → `- [x] Pass`, `- [FAIL: ...]`, or `- [FIXING: ...]`)
+- Only modify status lines (`- [ ] Pass` → `- [x] Pass`, `- [FAIL: ...]`, `- [FIXING: ...]`, or `- [SKIP: ...]`)
 - Never rewrite or reformat the rest of the UAT file
 - Preserve all existing metadata, headings, and structure
-- `[FIXING: ...]` is always temporary — must resolve to `[x] Pass`, `[FAIL: ...]`, or `[ ] Pass` before moving on
+- `[FIXING: ...]` is always temporary — must resolve to `[x] Pass`, `[FAIL: ...]`, `[SKIP: ...]`, or `[ ] Pass` before moving on
 
 ### Prerequisites
 - Present **all unchecked prerequisites at once** as a single batch before any tests

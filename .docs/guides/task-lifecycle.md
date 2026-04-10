@@ -22,14 +22,14 @@ Tasks and UATs share a `<NNN>-<slug>` identifier so they sort and cross-referenc
 ## Happy Path
 
 ```
-/add-task        /tackle        /uat-generator      /uat-walkthrough (all pass)
+/add-task        /tackle        /uat-generator      /uat-walkthrough (all complete)
    │                │                  │                    │
    ▼                ▼                  ▼                    ▼
 active/          active/            active/             completed/
                                     pending/            completed/
 ```
 
-**Key point:** `/tackle` does **not** move the task file. The task stays in `active/` through implementation and UAT generation. It only moves to `completed/` when **all** UAT tests pass (or when `/uat-skip` is used).
+**Key point:** `/tackle` does **not** move the task file. The task stays in `active/` through implementation and UAT generation. It only moves to `completed/` when all UAT tests are resolved — every test is either passed (`[x] Pass`) or skipped (`[SKIP: ...]`), with no `[FAIL]` or `[FIXING]` markers remaining (or when `/uat-skip` is used).
 
 ---
 
@@ -41,7 +41,7 @@ active/          active/            active/             completed/
 | `/update-task` | — | — | Rewrites task in place |
 | `/tackle` | — | — | Implementation only; no moves |
 | `/uat-generator` | — | **creates** in `pending/` | Appends UAT cross-link to task file |
-| `/uat-walkthrough` (all pass) | `active/` → `completed/` | `pending/` → `completed/` | Updates cross-links; deletes screenshots; runs `/update-docs` |
+| `/uat-walkthrough` (all complete) | `active/` → `completed/` | `pending/` → `completed/` | Complete = all tests `[x] Pass` or `[SKIP]`, no `[FAIL]`/`[FIXING]`; updates cross-links; deletes screenshots; runs `/update-docs` |
 | `/uat-walkthrough` (any fail / abort) | — | — | Stays in place; screenshots kept for debugging |
 | `/uat-skip` | `active/` → `completed/` | `pending/` → `skipped/`, or **creates** skeleton in `skipped/` | Deletes screenshots; updates cross-links |
 | `/trash-task` | `active/` or `completed/` → `trashed/` | any location → `trashed/` | Updates references in indexes and cross-linked files |
