@@ -33,6 +33,8 @@ Follow `basic-project-setup.md` to configure a new project, or use the npm packa
 | `/update-task <path> <changes>` | Modify an existing task's scope or steps |
 | `/uat-generator <target>` | Generate UAT tests in `.docs/uat/pending/` mirroring task naming conventions |
 | `/uat-walkthrough <path>` | Interactively walk through a pending UAT file test-by-test with the user |
+| `/uat-auto <path>` | Non-interactively run every test in a pending UAT file and auto-judge verdicts (headless, fail-closed) |
+| `/uat-auth` | Authenticate a test user (user|guest) and export `$UAT_AUTH_TOKEN` for UAT tools; invoked automatically by `/uat-auto` on auth-gated tests |
 | `/uat-skip <path>` | Skip UAT for a task, move task to completed and UAT to skipped |
 | `/lint` | Get IDE diagnostics, fix issues one-by-one in verify cycles |
 | `/simplify <path>` | Analyze files/directories to remove redundancy and simplify complexity |
