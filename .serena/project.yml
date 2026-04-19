@@ -96,7 +96,18 @@ read_only: false
 excluded_tools: []
 
 # list of tools to include that would otherwise be disabled (particularly optional tools that are disabled by default)
-included_optional_tools: []
+included_optional_tools:
+  - list_dir
+  - find_file
+  - find_symbol
+  - find_referencing_symbols
+  - search_for_pattern
+  - replace_content
+  - replace_lines
+  - insert_at_line
+  - insert_after_symbol
+  - insert_before_symbol
+  - delete_lines
 
 # fixed set of tools to use as the base tool set (if non-empty), replacing Serena's default set of tools.
 # This cannot be combined with non-empty excluded_tools or included_optional_tools.
