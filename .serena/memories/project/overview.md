@@ -4,7 +4,7 @@
 Project setup template for Claude Code. Contains reusable `.claude/` configurations (custom commands, guides) and MCP server setup instructions meant to be copied into other project repositories. Published as an npm package (`@codewizard-dt/bootstrap-claude`) with CLI commands `setup` and `update` (`npx bootstrap-claude setup` / `npx bootstrap-claude update`).
 
 ## Structure
-- `.claude/commands/` — Custom slash commands (17 total)
+- `.claude/commands/` — Custom slash commands (18 total)
 - `.docs/guides/mcp-tools.md` — MCP tool reference
 - `.docs/guides/task-lifecycle.md` — Task lifecycle conventions
 - `.docs/tasks/` — Task tracking (`active/` → `completed/` → `trashed/`)
@@ -15,8 +15,9 @@ Project setup template for Claude Code. Contains reusable `.claude/` configurati
 - `bin/cli.js` — CLI entry point for the npm package
 - `package.json` — npm package configuration
 
-## Custom Commands (17)
+## Custom Commands (18)
 - `/primer` — Refresh codebase context via Serena memories
+- `/serena-config` — Interactively configure Serena language servers in `.serena/project.yml`; reads current config + auto-detects repo languages, then asks one add/remove question (free-text with `-` prefix for removals)
 - `/research <topic>` — Deep research (codebase + Context7 + Brave)
 - `/now <task>` — Plan and delegate to subagents (max 3 concurrent)
 - `/tackle <path>` — Execute task file step-by-step
