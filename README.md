@@ -14,7 +14,7 @@ It is designed for developers who treat AI agents as first-class collaborators. 
 
 ## Architecture
 
-The project is a **template repository** with a thin CLI wrapper for npm distribution. The `.claude/commands/` directory holds 16 markdown-defined slash commands that Claude Code loads as custom instructions — each command is a self-contained workflow spec with mandatory MCP tool requirements, step-by-step logic, and integration with Serena's memory system. The `.docs/` directory provides a structured task lifecycle (`active → completed → trashed`) and a parallel UAT system (`pending → completed/skipped/trashed`) that mirror each other by task number and slug. Two Bash scripts (`setup-project.sh`, `update-project.sh`) handle initial installation and incremental syncing using `rsync`, while `bin/cli.js` wraps those scripts for `npx` invocation.
+The project is a **template repository** with a thin CLI wrapper for npm distribution. The `.claude/commands/` directory holds 16 markdown-defined slash commands that Claude Code loads as custom instructions — each command is a self-contained workflow spec with mandatory MCP tool requirements, step-by-step logic, and integration with Serena's memory system. The `.docs/` directory provides a structured task lifecycle (`active → completed → trashed`) and a parallel UAT system (`pending → completed/skipped/trashed`) that mirror each other by task number and slug. Three Bash scripts (`setup-project.sh`, `update-project.sh`, `bootstrap-serena.sh`) handle initial installation, incremental syncing via `rsync`, and headless Serena project.yml bootstrapping via `claude --print`, while `bin/cli.js` wraps the top-level scripts for `npx` invocation.
 
 ## Technologies
 

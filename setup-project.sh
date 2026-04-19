@@ -103,6 +103,11 @@ rsync -av "$TEMPLATE_DIR/.docs/" "$PROJECT_DIR/.docs/"
 echo "Copied .docs/ to $PROJECT_DIR/.docs"
 echo ""
 
+# 4. Bootstrap Serena project.yml
+echo "Bootstrapping Serena project.yml..."
+"$TEMPLATE_DIR/bootstrap-serena.sh" "$PROJECT_DIR"
+echo ""
+
 # Done
 echo "============================="
 echo "  Setup complete!"

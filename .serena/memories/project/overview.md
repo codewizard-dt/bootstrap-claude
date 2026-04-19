@@ -10,7 +10,8 @@ Project setup template for Claude Code. Contains reusable `.claude/` configurati
 - `.docs/tasks/` — Task tracking (`active/` → `completed/` → `trashed/`)
 - `.docs/uat/` — UAT test tracking (`pending/` → `completed/` / `skipped/` / `trashed/`)
 - `basic-project-setup.md` — MCP installation guide
-- `setup-project.sh` / `update-project.sh` — Template install + incremental sync (rsync-based)
+- `setup-project.sh` / `update-project.sh` — Template install + incremental sync (rsync-based). Both scripts invoke `bootstrap-serena.sh` at the end.
+- `bootstrap-serena.sh` — Headlessly triggers `.serena/project.yml` creation via `claude --print "exit"` and enables 11 optional Serena tools (list_dir, find_file, find_symbol, find_referencing_symbols, search_for_pattern, replace_content, replace_lines, insert_at_line, insert_after_symbol, insert_before_symbol, delete_lines). Idempotent — skips already-configured projects. Uses a Python one-liner for the find/replace to avoid macOS/GNU `sed -i` portability issues.
 - `CLAUDE.md` — Project instructions for Claude Code
 - `bin/cli.js` — CLI entry point for the npm package
 - `package.json` — npm package configuration

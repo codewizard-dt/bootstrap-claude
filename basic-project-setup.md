@@ -24,9 +24,9 @@ Run the sync script from this repo:
 ./update-project.sh <path-to-project>
 ```
 
-This copies `.claude/commands/` and `.docs/` into the target project. Re-run after pulling template updates.
+This copies `.claude/commands/` and `.docs/` into the target project and runs `bootstrap-serena.sh` (idempotent) to ensure `.serena/project.yml` exists and has the 11 optional Serena tools enabled. Re-run after pulling template updates.
 
 ## Step 3: Initialize
 
 - Run `/init`
-- Run `/primer'
+- Run `/primer`

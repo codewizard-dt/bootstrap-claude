@@ -35,6 +35,11 @@ mkdir -p "$PROJECT_DIR/.docs"
 rsync -av "$TEMPLATE_DIR/.docs/" "$PROJECT_DIR/.docs/"
 echo ""
 
+# 3. Bootstrap Serena project.yml (idempotent)
+echo "Re-checking Serena project.yml bootstrap..."
+"$TEMPLATE_DIR/bootstrap-serena.sh" "$PROJECT_DIR"
+echo ""
+
 # Done
 echo "============================="
 echo "  Update complete!"
