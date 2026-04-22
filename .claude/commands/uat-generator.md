@@ -11,6 +11,8 @@ argument-hint: <path/to/task-file.md, number-slug, or feature description>
 
 Generate comprehensive User Acceptance Tests (UAT) for a feature, writing them to `.docs/uat/pending/`.
 
+UAT is the phase that owns **runtime and end-to-end verification**. `/tackle` only runs static gates (typecheck, `bash -n`, lint, unit tests). Any behavior that requires executing the feature — running a helper script against real paths, hitting an API, walking a user flow, asserting on produced files — is a UAT test, not a tackle verification step. See `.docs/guides/command-anti-patterns.md`.
+
 ---
 
 **Target**: $ARGUMENTS
@@ -283,6 +285,7 @@ When generating tests, ensure:
 
    **No literal credentials**: Never write literal credentials (email, password, token) into a generated UAT file. Use `$UAT_AUTH_TOKEN` for bearer tokens and omit password fields entirely — signup/login is `/uat-auth`'s responsibility.
    - **No line continuations** (`\` at end of line) unless the command genuinely exceeds ~200 chars. Long single-line commands are easier to copy-paste than multi-line ones.
+   - **Scratch paths**: if a test needs to write temporary files, use `./tmp/<purpose>/` (project-local, gitignored). Never write to `/tmp/` or use `$(mktemp -d)` — those paths are outside Serena's project scope and cannot be inspected without shell listings.
    - **The command must run successfully against a freshly-started dev server with documented prerequisites met.** If you cannot construct such a command, you do not understand the contract well enough yet — return to Step 2.3.
 
    **Bad example** (do not generate this — it triggers approval prompts and clutters output):
@@ -314,6 +317,7 @@ When generating tests, ensure:
    - **Authorization**: Permission checks (if applicable)
    - **Error handling**: How errors are displayed/returned
    - **Edge cases**: Empty states, limits, special characters
+   - **Shell scripts and helpers**: UAT is the right place to execute scripts against a project-local scratch dir (`./tmp/`) and assert on produced files. Do NOT try to do this in `/tackle`.
 
 5. **API Test Ordering** (critical for sequential walkthrough):
 

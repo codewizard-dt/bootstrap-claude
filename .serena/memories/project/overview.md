@@ -5,12 +5,14 @@ Project setup template for Claude Code. Contains reusable `.claude/` configurati
 
 ## Structure
 - `.claude/commands/` — Custom slash commands (18 total)
-- `.docs/guides/mcp-tools.md` — MCP tool reference
+- `.docs/guides/mcp-tools.md` — MCP tool reference (cross-links to command-anti-patterns.md)
 - `.docs/guides/task-lifecycle.md` — Task lifecycle conventions
+- `.docs/guides/command-anti-patterns.md` — Shell-command and file-operation hygiene rules; defines the /tackle-vs-UAT verification split: static gates only in /tackle (bash -n, typecheck, lint, unit tests), runtime/E2E in UAT
 - `.docs/tasks/` — Task tracking (`active/` → `completed/` → `trashed/`)
 - `.docs/uat/` — UAT test tracking (`pending/` → `completed/` / `skipped/` / `trashed/`)
 - `basic-project-setup.md` — MCP installation guide
-- `setup-project.sh` / `update-project.sh` — Template install + incremental sync (rsync-based). Both scripts invoke `bootstrap-serena.sh` at the end.
+- `setup-project.sh` / `update-project.sh` — Template install + incremental sync (rsync-based). Both scripts delegate `.docs/` sync to `sync-docs-scaffold.sh` and invoke `bootstrap-serena.sh` at the end.
+- `sync-docs-scaffold.sh` — Syncs only the scaffold structure of `.docs/` into target projects: guides (full), directory shells with `.gitkeep` files, and `tasks/active/README.md`. Never copies template task files (e.g. `0NN-*.md`) or UAT content — protects target-project work on idempotent re-runs.
 - `bootstrap-serena.sh` — Headlessly triggers `.serena/project.yml` creation via `claude --print "exit"` and enables 11 optional Serena tools (list_dir, find_file, find_symbol, find_referencing_symbols, search_for_pattern, replace_content, replace_lines, insert_at_line, insert_after_symbol, insert_before_symbol, delete_lines). Idempotent — skips already-configured projects. Uses a Python one-liner for the find/replace to avoid macOS/GNU `sed -i` portability issues.
 - `CLAUDE.md` — Project instructions for Claude Code
 - `bin/cli.js` — CLI entry point for the npm package
@@ -21,11 +23,11 @@ Project setup template for Claude Code. Contains reusable `.claude/` configurati
 - `/serena-config` — Interactively configure Serena language servers in `.serena/project.yml`; reads current config + auto-detects repo languages, then asks one add/remove question (free-text with `-` prefix for removals)
 - `/research <topic>` — Deep research (codebase + Context7 + Brave)
 - `/now <task>` — Plan and delegate to subagents (max 3 concurrent)
-- `/tackle <path>` — Execute task file step-by-step
+- `/tackle <path>` — Execute task file step-by-step; verification restricted to static gates only (bash -n, typecheck, lint, unit tests); runtime/E2E verification deferred to UAT via [DEFERRED-TO-UAT] marker
 - `/add-task <desc>` — Create task in `.docs/tasks/active/`
 - `/trash-task <path>` — Move task + UAT to `trashed/`
 - `/update-task <path> <changes>` — Modify existing task
-- `/uat-generator <target>` — Generate UAT tests
+- `/uat-generator <target>` — Generate UAT tests; owns runtime and end-to-end verification (what /tackle cannot run); shell script execution against ./tmp/ scratch dirs belongs here, not in /tackle
 - `/uat-walkthrough <path>` — Interactive UAT (human at keyboard)
 - `/uat-auto <path>` — Headless UAT auto-judging (fail-closed, for orchestrators like tmux-conductor)
 - `/uat-auth [--role=user|guest]` — Authenticate test user and export `$UAT_AUTH_TOKEN`; invoked by `/uat-auto` Step 2.5 on auth-gated tests; env-var-only credentials, no disk persistence

@@ -56,9 +56,11 @@ Standard Read/Edit/Write tools are permitted for markdown and config files (JSON
 
 - `basic-project-setup.md` — MCP installation steps and API keys
 - `.docs/guides/mcp-tools.md` — Complete MCP tool reference with workflows and examples
+- `.docs/guides/command-anti-patterns.md` — Shell-command and file-operation hygiene rules; defines the `/tackle`-vs-UAT verification split (static gates only in tackle; runtime/E2E in UAT)
 - `.claude/commands/` — All custom slash command definitions
-- `setup-project.sh` — Script to set up a new project (Serena MCP + copy commands/docs + bootstrap Serena project.yml)
-- `update-project.sh` — Script to sync `.claude/commands/` and `.docs/` into a target project (re-runs bootstrap-serena.sh idempotently)
+- `setup-project.sh` — Script to set up a new project (Serena MCP + copy commands/docs + bootstrap Serena project.yml); delegates `.docs/` sync to `sync-docs-scaffold.sh`
+- `update-project.sh` — Script to sync `.claude/commands/` and `.docs/` into a target project (re-runs bootstrap-serena.sh idempotently); delegates `.docs/` sync to `sync-docs-scaffold.sh`
+- `sync-docs-scaffold.sh` — Syncs only the scaffold structure of `.docs/` (guides + directory shells + `active/README.md`), never template-specific task or UAT content; called by both setup and update scripts
 - `bootstrap-serena.sh` — Headlessly triggers `.serena/project.yml` creation via `claude --print` and enables 11 optional Serena tools; called by both setup and update scripts
 - `bin/cli.js` — CLI entry point for the npm package
 - `package.json` — npm package configuration with bin and files fields

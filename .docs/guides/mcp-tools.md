@@ -107,6 +107,8 @@ echo "## New Section" >> README.md
 
 ✅ **Correct**: `Read` the file first to see the current end, then `Edit` to append (or `Write` if creating fresh).
 
+**See also**: [`command-anti-patterns.md`](./command-anti-patterns.md) — shell hygiene, scratch-dir rules, and the /tackle-vs-UAT verification split.
+
 ---
 
 ## Serena (Code Exploration & Editing)
