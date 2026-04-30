@@ -4,11 +4,12 @@
 Project setup template for Claude Code. Contains reusable `.claude/` configurations (custom commands, guides) and MCP server setup instructions meant to be copied into other project repositories. Published as an npm package (`@codewizard-dt/bootstrap-claude`) with CLI commands `setup` and `update` (`npx bootstrap-claude setup` / `npx bootstrap-claude update`).
 
 ## Structure
-- `.claude/commands/` — Custom slash commands (18 total)
+- `.claude/commands/` — Custom slash commands (19 total)
 - `.docs/guides/mcp-tools.md` — MCP tool reference (cross-links to command-anti-patterns.md)
 - `.docs/guides/task-lifecycle.md` — Task lifecycle conventions
 - `.docs/guides/command-anti-patterns.md` — Shell-command and file-operation hygiene rules; defines the /tackle-vs-UAT verification split: static gates only in /tackle (bash -n, typecheck, lint, unit tests), runtime/E2E in UAT
 - `.docs/tasks/` — Task tracking (`active/` → `completed/` → `trashed/`)
+- `.docs/adr/` — Architectural Decision Records (MADR-style, NNNN-slug.md, immutable once accepted, supersede via new ADR). Scaffold-only sync: `.gitkeep` propagates, ADR files are project-specific and never copied.
 - `.docs/uat/` — UAT test tracking (`pending/` → `completed/` / `skipped/` / `trashed/`)
 - `basic-project-setup.md` — MCP installation guide
 - `setup-project.sh` / `update-project.sh` — Template install + incremental sync (rsync-based). Both scripts delegate `.docs/` sync to `sync-docs-scaffold.sh` and invoke `bootstrap-serena.sh` at the end.
@@ -18,13 +19,14 @@ Project setup template for Claude Code. Contains reusable `.claude/` configurati
 - `bin/cli.js` — CLI entry point for the npm package
 - `package.json` — npm package configuration
 
-## Custom Commands (18)
+## Custom Commands (19)
 - `/primer` — Refresh codebase context via Serena memories
 - `/serena-config` — Interactively configure Serena language servers in `.serena/project.yml`; reads current config + auto-detects repo languages, then asks one add/remove question (free-text with `-` prefix for removals)
 - `/research <topic>` — Deep research (codebase + Context7 + Brave)
 - `/now <task>` — Plan and delegate to subagents (max 3 concurrent)
 - `/tackle <path>` — Execute task file step-by-step; verification restricted to static gates only (bash -n, typecheck, lint, unit tests); runtime/E2E verification deferred to UAT via [DEFERRED-TO-UAT] marker
 - `/add-task <desc>` — Create task in `.docs/tasks/active/`
+- `/create-adr <topic>` — Create Architectural Decision Record in `.docs/adr/`; MADR-style sections, table-only comparisons (no bullet pros/cons), mermaid flowcharts for any decision involving a flow/sequence/before-after architecture; immutable once accepted, supersede via new ADR
 - `/trash-task <path>` — Move task + UAT to `trashed/`
 - `/update-task <path> <changes>` — Modify existing task
 - `/uat-generator <target>` — Generate UAT tests; owns runtime and end-to-end verification (what /tackle cannot run); shell script execution against ./tmp/ scratch dirs belongs here, not in /tackle

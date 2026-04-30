@@ -30,6 +30,7 @@ Follow `basic-project-setup.md` to configure a new project, or use the npm packa
 | `/now <task>` | Plan and delegate task to subagents (max 3 concurrent) |
 | `/tackle <path>` | Execute outlined task file step-by-step with subagent delegation |
 | `/add-task <desc>` | Create structured task in `.docs/tasks/active/` |
+| `/create-adr <topic>` | Create an Architectural Decision Record in `.docs/adr/` (MADR-style, table-only comparisons, mermaid flowcharts) |
 | `/trash-task <path>` | Move task + related UAT files to `trashed/` directories and update references |
 | `/update-task <path> <changes>` | Modify an existing task's scope or steps |
 | `/uat-generator <target>` | Generate UAT tests in `.docs/uat/pending/` mirroring task naming conventions |

@@ -30,6 +30,7 @@ mkdir -p "$PROJECT_DIR/.docs/uat/completed"
 mkdir -p "$PROJECT_DIR/.docs/uat/skipped"
 mkdir -p "$PROJECT_DIR/.docs/uat/trashed"
 mkdir -p "$PROJECT_DIR/.docs/uat/screenshots"
+mkdir -p "$PROJECT_DIR/.docs/adr"
 
 # Sync .docs/guides/ as a full directory (entire contents, no filters)
 rsync -av "$TEMPLATE_DIR/.docs/guides/" "$PROJECT_DIR/.docs/guides/"
@@ -49,5 +50,8 @@ rsync -av "$TEMPLATE_DIR/.docs/tasks/trashed/.gitkeep" "$PROJECT_DIR/.docs/tasks
 for sub in pending completed skipped trashed screenshots; do
   rsync -av "$TEMPLATE_DIR/.docs/uat/$sub/.gitkeep" "$PROJECT_DIR/.docs/uat/$sub/"
 done
+
+# Sync .docs/adr/.gitkeep only — ADR files are project-specific and MUST NOT be copied
+rsync -av "$TEMPLATE_DIR/.docs/adr/.gitkeep" "$PROJECT_DIR/.docs/adr/"
 
 echo ".docs/ scaffold synced."
