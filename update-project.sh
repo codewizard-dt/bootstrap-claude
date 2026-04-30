@@ -30,9 +30,8 @@ rsync -av "$TEMPLATE_DIR/.claude/commands/" "$PROJECT_DIR/.claude/commands/"
 echo ""
 
 # 2. Sync .docs/
-echo "Syncing .docs/..."
-mkdir -p "$PROJECT_DIR/.docs"
-rsync -av "$TEMPLATE_DIR/.docs/" "$PROJECT_DIR/.docs/"
+echo "Syncing .docs/ scaffold..."
+"$TEMPLATE_DIR/sync-docs-scaffold.sh" "$PROJECT_DIR"
 echo ""
 
 # 3. Bootstrap Serena project.yml (idempotent)

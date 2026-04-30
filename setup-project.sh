@@ -98,9 +98,7 @@ echo "Copying .claude/ commands and .docs/..."
 mkdir -p "$PROJECT_DIR/.claude"
 rsync -av "$TEMPLATE_DIR/.claude/" "$PROJECT_DIR/.claude/"
 echo "Copied .claude/ to $PROJECT_DIR/.claude"
-mkdir -p "$PROJECT_DIR/.docs"
-rsync -av "$TEMPLATE_DIR/.docs/" "$PROJECT_DIR/.docs/"
-echo "Copied .docs/ to $PROJECT_DIR/.docs"
+"$TEMPLATE_DIR/sync-docs-scaffold.sh" "$PROJECT_DIR"
 echo ""
 
 # 4. Bootstrap Serena project.yml

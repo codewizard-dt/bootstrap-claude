@@ -174,7 +174,7 @@ After every eligible test has a non-blocking status (`[x] Pass`, `[SKIP: ...]` a
 
 ### All Pass (no `[FAIL]` or `[FIXING]` markers remain)
 
-1. Cleanup auth state: run `unset UAT_AUTH_TOKEN UAT_TEST_EMAIL UAT_TEST_PASSWORD UAT_SESSION_COOKIE; rm -f /tmp/uat-auth-*.jar /tmp/uat-auth-*.json` regardless of outcome.
+1. Cleanup auth state: run `unset UAT_AUTH_TOKEN UAT_TEST_EMAIL UAT_TEST_PASSWORD UAT_SESSION_COOKIE; rm -f /tmp/uat-auth-*.jar /tmp/uat-auth-*.json /tmp/uat-auth-token` regardless of outcome.
 2. Move the UAT file: `git mv .docs/uat/pending/<slug>.uat.md .docs/uat/completed/<slug>.uat.md` (fall back to `mv` if `git mv` fails).
 3. Move the associated task file: derive from UAT name (`<number>-<slug>.uat.md` → `<number>-<slug>.md`), then `git mv .docs/tasks/active/<number>-<slug>.md .docs/tasks/completed/<number>-<slug>.md` (fall back to `mv`).
 4. Update internal path references in both moved files (`active/` → `completed/` in the task, `pending/` → `completed/` in the UAT's source-task link).
@@ -185,7 +185,7 @@ After every eligible test has a non-blocking status (`[x] Pass`, `[SKIP: ...]` a
 
 ### Any Fail (`[FAIL: ...]` markers remain)
 
-1. Cleanup auth state: run `unset UAT_AUTH_TOKEN UAT_TEST_EMAIL UAT_TEST_PASSWORD UAT_SESSION_COOKIE; rm -f /tmp/uat-auth-*.jar /tmp/uat-auth-*.json` regardless of outcome.
+1. Cleanup auth state: run `unset UAT_AUTH_TOKEN UAT_TEST_EMAIL UAT_TEST_PASSWORD UAT_SESSION_COOKIE; rm -f /tmp/uat-auth-*.jar /tmp/uat-auth-*.json /tmp/uat-auth-token` regardless of outcome.
 2. **Leave the UAT file in `pending/`** — it is not complete.
 3. **Keep screenshots** — they are diagnostic evidence for the next human walkthrough.
 4. Close Puppeteer if launched.
