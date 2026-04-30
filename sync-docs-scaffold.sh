@@ -51,7 +51,7 @@ for sub in pending completed skipped trashed screenshots; do
   rsync -av "$TEMPLATE_DIR/.docs/uat/$sub/.gitkeep" "$PROJECT_DIR/.docs/uat/$sub/"
 done
 
-# Sync .docs/adr/.gitkeep only — ADR files are project-specific and MUST NOT be copied
-rsync -av "$TEMPLATE_DIR/.docs/adr/.gitkeep" "$PROJECT_DIR/.docs/adr/"
+# Sync .docs/adr/ README + .gitkeep only — ADR files are project-specific and MUST NOT be copied
+rsync -av "$TEMPLATE_DIR/.docs/adr/README.md" "$TEMPLATE_DIR/.docs/adr/.gitkeep" "$PROJECT_DIR/.docs/adr/"
 
 echo ".docs/ scaffold synced."

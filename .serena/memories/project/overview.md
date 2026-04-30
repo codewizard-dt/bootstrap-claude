@@ -30,7 +30,7 @@ Project setup template for Claude Code. Contains reusable `.claude/` configurati
 - `/finalize-adr <file>#<DM>` — Ratify a **single decision block** (e.g. `0007-session#D2`). Per-decision audit (E-C-A-D-R DoD), per-decision supersession check across the entire log, atomic two-block cross-reference if superseding. Siblings in the same file are byte-for-byte untouched. Refuses to run on already-accepted decisions (suggests `/create-adr` successor instead).
 - `/trash-task <path>` — Move task + UAT to `trashed/`
 - `/update-task <path> <changes>` — Modify existing task
-- `/uat-generator <target>` — Generate UAT tests; owns runtime and end-to-end verification (what /tackle cannot run); shell script execution against ./tmp/ scratch dirs belongs here, not in /tackle
+- `/uat-generator <target>` — Generate UAT tests; owns runtime and end-to-end verification (what /tackle cannot run); shell script execution against ./tmp/ scratch dirs belongs here, not in /tackle. **Test integrity rule (non-negotiable)**: tests encode required functionality from the task's acceptance criteria — never weakened, narrowed, or reshaped to match buggy/incomplete implementation. Source code grounds *how to invoke*; the requirement grounds *what should happen*. Discrepancies → write the test against the requirement, let it fail, report the gap.
 - `/uat-walkthrough <path>` — Interactive UAT (human at keyboard)
 - `/uat-auto <path>` — Headless UAT auto-judging (fail-closed, for orchestrators like tmux-conductor)
 - `/uat-auth [--role=user|guest]` — Authenticate test user and export `$UAT_AUTH_TOKEN`; invoked by `/uat-auto` Step 2.5 on auth-gated tests; env-var-only credentials, no disk persistence

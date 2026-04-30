@@ -19,6 +19,21 @@ UAT is the phase that owns **runtime and end-to-end verification**. `/tackle` on
 
 ---
 
+## Test Integrity (Non-Negotiable)
+
+**Tests verify required functionality, not implementation behavior.** Your job is to encode what the feature *must do* per the task's acceptance criteria — not to mirror whatever the current code happens to produce. A UAT that passes against broken code is worse than no UAT: it certifies the bug.
+
+- **Never weaken an assertion to make a test pass.** If the requirement says the endpoint returns `201 Created`, write the test to expect `201`. If the implementation returns `200`, the failing test is the signal — that is the entire point of UAT.
+- **Never narrow scope, drop edge cases, or soften expected results** to match buggy or incomplete behavior. If the task requires email-format validation and the code does not enforce it, write the validation test anyway and let it fail.
+- **Never reshape an expected response body to match an actual response body** that contradicts the spec. Use the **requirement** as the source of truth for *what should happen*. Use the **source code** (Step 2.3) only as the source of truth for *how to call it* (route paths, HTTP methods, field names that exist on the wire, headers, auth scheme).
+- **When research reveals a gap between requirement and implementation**, write the test against the requirement and call out the discrepancy in the Step 6 report. Do not silently align the test with the broken behavior, and do not delete the test.
+- **Do not edit a generated test later just because it failed during walkthrough.** Failing tests surface bugs; the fix belongs in the code, not in the assertion. Only edit a test if the *requirement itself* was wrong or has changed.
+- **If you cannot determine the correct expected result from the requirement** (the task is ambiguous on a behavior), stop and ask the user — do not invent a permissive assertion to keep the test green.
+
+This rule sits above the Step 2.3 contract research: that step tells you how to *invoke* the system; this rule tells you what the system *should produce*. When they disagree, the requirement wins for the expected result.
+
+---
+
 ## Instructions
 
 ### Step 1: Determine the Source and Derive the UAT File Path
@@ -467,3 +482,5 @@ Given task `.docs/tasks/active/5-positions.md`, the generated UAT at `.docs/uat/
 Now analyze `$ARGUMENTS` and generate comprehensive UAT test cases.
 
 **Reminder before you start writing**: every test in the file must trace back to a concrete research finding from Step 2.3. If at any point you catch yourself guessing — at a payload field, a button label, an error message, a flow step — **stop**, return to Step 2.3, and either ground the test in real code or drop it. A focused 8-test UAT grounded in research is far more valuable than a 30-test UAT half built on assumption.
+
+**Test integrity reminder**: research grounds *how to invoke* the system; the **requirement** grounds *what the system should produce*. Encode the required behavior in expected results — never the actual (possibly broken) behavior. If implementation and requirement disagree, write the test against the requirement, let it fail, and report the gap in Step 6. Do not soften, narrow, or reshape a test to keep it green.
