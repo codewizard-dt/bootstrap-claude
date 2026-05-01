@@ -1,5 +1,7 @@
 ---
-description: Add all changed files to git, then create a new commit
+name: git-commit
+description: Stage all changed files and create a commit with an auto-generated message
+model: haiku
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 

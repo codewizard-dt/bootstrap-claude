@@ -15,7 +15,7 @@ if (!command || !SCRIPTS[command]) {
   console.error('');
   console.error('Commands:');
   console.error('  setup   Set up a new project with Claude Code configurations');
-  console.error('  update  Sync .claude/commands/ and .docs/ into the current project');
+  console.error('  update  Sync .claude/skills/ and .docs/ into the current project');
   process.exit(1);
 }
 

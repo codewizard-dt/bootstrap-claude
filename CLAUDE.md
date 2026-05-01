@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Repo Is
 
-This is a **project setup template** for Claude Code. It contains reusable `.claude/` configurations (custom commands, guides) and MCP server setup instructions meant to be copied into other project repositories. It is not a standalone application.
+This is a **project setup template** for Claude Code. It contains reusable `.claude/` configurations (custom skills, guides) and MCP server setup instructions meant to be copied into other project repositories. It is not a standalone application.
 
 ## Setup Workflow
 
@@ -59,9 +59,9 @@ Standard Read/Edit/Write tools are permitted for markdown and config files (JSON
 - `basic-project-setup.md` — MCP installation steps and API keys
 - `.docs/guides/mcp-tools.md` — Complete MCP tool reference with workflows and examples
 - `.docs/guides/command-anti-patterns.md` — Shell-command and file-operation hygiene rules; defines the `/tackle`-vs-UAT verification split (static gates only in tackle; runtime/E2E in UAT)
-- `.claude/commands/` — All custom slash command definitions
+- `.claude/skills/` — All custom skill definitions (in Skills directory format)
 - `setup-project.sh` — Script to set up a new project (Serena MCP + copy commands/docs + bootstrap Serena project.yml); delegates `.docs/` sync to `sync-docs-scaffold.sh`
-- `update-project.sh` — Script to sync `.claude/commands/` and `.docs/` into a target project (re-runs bootstrap-serena.sh idempotently); delegates `.docs/` sync to `sync-docs-scaffold.sh`
+- `update-project.sh` — Script to sync `.claude/skills/` and `.docs/` into a target project (re-runs bootstrap-serena.sh idempotently); delegates `.docs/` sync to `sync-docs-scaffold.sh`
 - `sync-docs-scaffold.sh` — Syncs only the scaffold structure of `.docs/` (guides + directory shells + `active/README.md`), never template-specific task or UAT content; called by both setup and update scripts
 - `bootstrap-serena.sh` — Headlessly triggers `.serena/project.yml` creation via `claude --print` and enables 11 optional Serena tools; called by both setup and update scripts
 - `bin/cli.js` — CLI entry point for the npm package

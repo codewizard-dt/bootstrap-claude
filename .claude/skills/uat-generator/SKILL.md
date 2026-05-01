@@ -1,5 +1,8 @@
 ---
-description: Generate User Acceptance Tests for a feature or documentation file
+name: uat-generator
+description: Generate UAT tests in .docs/uat/pending/ mirroring task naming conventions
+model: claude-opus-4-7
+disable-model-invocation: true
 argument-hint: <path/to/task-file.md, number-slug, or feature description>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
@@ -82,7 +85,7 @@ Use MCP Serena to explore the codebase and understand the feature:
 
    Before writing a single test case of any type, you MUST determine the **exact** behavior under test by reading the actual code. Guessed payloads, guessed selectors, guessed error messages, and guessed flow steps all produce broken tests that fail during walkthrough and waste the operator's time.
 
-   Run the `/research` workflow (see `.claude/commands/research.md`) for each distinct feature area, **or** perform equivalent direct investigation using Serena. Either way, you MUST produce a **research notes block** (kept in your working context, not the UAT file) for each test type before writing tests of that type. If you cannot fill in the required fields for a given test, **do not fabricate the test** — note the gap in the Step 6 report and skip it.
+   Run the `/research` workflow (see `.claude/skills/research/SKILL.md`) for each distinct feature area, **or** perform equivalent direct investigation using Serena. Either way, you MUST produce a **research notes block** (kept in your working context, not the UAT file) for each test type before writing tests of that type. If you cannot fill in the required fields for a given test, **do not fabricate the test** — note the gap in the Step 6 report and skip it.
 
    #### 2.3a. API tests — required research
 

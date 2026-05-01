@@ -1,5 +1,8 @@
 ---
-description: Interactively configure Serena language servers
+name: serena-config
+description: Interactively configure Serena language servers in .serena/project.yml
+model: claude-sonnet-4-6
+disable-model-invocation: true
 argument-hint: (no arguments)
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**

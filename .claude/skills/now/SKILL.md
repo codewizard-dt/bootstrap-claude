@@ -1,5 +1,9 @@
 ---
-description: Execute task with planning and delegation
+name: now
+description: Plan and delegate a task to subagents (max 3 concurrent)
+model: claude-opus-4-7
+effort: high
+disable-model-invocation: true
 argument-hint: <task description>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
@@ -17,7 +21,7 @@ $ARGUMENTS
    - `mcp__serena__list_memories` → scan for memories related to the task area (use `topic` filter if applicable)
    - `mcp__serena__read_memory` → read any relevant memories to inform your plan
    - Factor recalled knowledge (architecture decisions, known gotchas, integration patterns) into your approach
-3) **Research**: If the task involves technology choices, architectural decisions, or unfamiliar patterns, run the `/research` workflow (see `.claude/commands/research.md`) to gather internal and external context before planning.
+3) **Research**: If the task involves technology choices, architectural decisions, or unfamiliar patterns, run the `/research` workflow (see `.claude/skills/research/SKILL.md`) to gather internal and external context before planning.
 4) Assess all relevant files (use serena mcp) and make a comprehensive plan to achieve desired outcomes.
 5) Delegate each step of the plan to the proper sub-agent.
 6) **Update memories after completion**: Once all steps are done:

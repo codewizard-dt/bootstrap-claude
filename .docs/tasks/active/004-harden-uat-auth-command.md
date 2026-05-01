@@ -2,7 +2,7 @@
 
 ## Objective
 
-Rewrite `.claude/commands/uat-auth.md` so that the observed error loop (empty `$UAT_LOGIN_URL`, `.test`-TLD rejection, email-verification gate, shell-state loss between Bash calls, and escalation into direct DB manipulation) is impossible — by closing each gap with explicit export steps, compatible defaults, per-framework signup adapters, and a hard fail-closed boundary that forbids DB/hash/session tampering.
+Rewrite `.claude/skills/uat-auth/SKILL.md` so that the observed error loop (empty `$UAT_LOGIN_URL`, `.test`-TLD rejection, email-verification gate, shell-state loss between Bash calls, and escalation into direct DB manipulation) is impossible — by closing each gap with explicit export steps, compatible defaults, per-framework signup adapters, and a hard fail-closed boundary that forbids DB/hash/session tampering.
 
 ## Approach
 
@@ -10,8 +10,8 @@ Restructure the existing Phase 1–6 spec to (a) require explicit `export UAT_LO
 
 ## Prerequisites
 
-- [ ] `.claude/commands/uat-auth.md` exists at current template version
-- [ ] `update-project.sh` syncs `.claude/commands/` into target projects (so this fix propagates)
+- [ ] `.claude/skills/uat-auth/SKILL.md` exists at current template version
+- [ ] `update-project.sh` syncs `.claude/skills/` into target projects (so this fix propagates)
 - [ ] Familiarity with the original error loop: curl-missing-URL → `INVALID_EMAIL` → `VALIDATION_ERROR` → `requireEmailVerification: true` → agent attempted DB/scrypt/session-forge recovery
 
 ---
@@ -20,7 +20,7 @@ Restructure the existing Phase 1–6 spec to (a) require explicit `export UAT_LO
 
 ### 1. Rewrite Phase 1 — Detect AND export endpoint env vars  <!-- agent: general-purpose -->
 
-- [ ] Modify `.claude/commands/uat-auth.md` Phase 1 section (currently lines 36–56) so the detection step is not just "read files" but "detect AND export, then guard"
+- [ ] Modify `.claude/skills/uat-auth/SKILL.md` Phase 1 section (currently lines 36–56) so the detection step is not just "read files" but "detect AND export, then guard"
   - After the detection bullet list, add an explicit exported-variable contract:
     ```
     After detection, the following env vars MUST be exported into the Bash
@@ -47,7 +47,7 @@ Restructure the existing Phase 1–6 spec to (a) require explicit `export UAT_LO
 
 ### 2. Rewrite Phase 2 — Safer default email domain  <!-- agent: general-purpose -->
 
-- [ ] In Phase 2 of `.claude/commands/uat-auth.md` (currently lines 59–72), change the hardcoded `.test` TLD to a domain that passes strict validators
+- [ ] In Phase 2 of `.claude/skills/uat-auth/SKILL.md` (currently lines 59–72), change the hardcoded `.test` TLD to a domain that passes strict validators
   - Replace `uat-user@example.test` → `uat-user@example.com`
   - Replace `uat-guest@example.test` → `uat-guest@example.com`
   - Update mask `test-***@example.test` → `test-***@example.com` (Phase 5 summary also, line 133)
@@ -59,7 +59,7 @@ Restructure the existing Phase 1–6 spec to (a) require explicit `export UAT_LO
 
 ### 3. Rewrite Phase 3 — Single-Bash-call execution + framework adapters  <!-- agent: general-purpose -->
 
-- [ ] Add a bold warning at the top of Phase 3 in `.claude/commands/uat-auth.md` (currently lines 74–101):
+- [ ] Add a bold warning at the top of Phase 3 in `.claude/skills/uat-auth/SKILL.md` (currently lines 74–101):
   ```
   **IMPORTANT — Shell state does NOT persist between Bash tool calls.**
   Each Bash call spawns a fresh shell; `export` in call N is NOT visible in call N+1.
@@ -124,7 +124,7 @@ Restructure the existing Phase 1–6 spec to (a) require explicit `export UAT_LO
 
 ### 4. Add Forbidden Actions + new fail-closed diagnostics  <!-- agent: general-purpose -->
 
-- [ ] Insert a new `## Forbidden Actions` section in `.claude/commands/uat-auth.md` between the current `## Scope` (line 28) and `## Phase 1` (line 36). Content:
+- [ ] Insert a new `## Forbidden Actions` section in `.claude/skills/uat-auth/SKILL.md` between the current `## Scope` (line 28) and `## Phase 1` (line 36). Content:
   ```
   ## Forbidden Actions
 
@@ -194,14 +194,14 @@ Restructure the existing Phase 1–6 spec to (a) require explicit `export UAT_LO
 
 ### 6. Update Important Rules section  <!-- agent: general-purpose -->
 
-- [ ] In the `## Important Rules` section (currently lines 154–171) of `.claude/commands/uat-auth.md`, add two new rule subsections:
+- [ ] In the `## Important Rules` section (currently lines 154–171) of `.claude/skills/uat-auth/SKILL.md`, add two new rule subsections:
   - **### No app-state mutation** — "uat-auth never writes to the app DB, never runs migrations, never invokes seed scripts. See Forbidden Actions above. Failures that would require app-state mutation are the test-infra team's problem, not uat-auth's."
   - **### Single-shell-call contract** — "The Phase 3 login→signup→retry sequence is one atomic Bash call. Splitting it across multiple Bash invocations is forbidden because env vars do not persist between shell spawns. Token handoff to Phase 4 uses the `/tmp/uat-auth-token` file (mode 0600)."
 - [ ] Leave the existing rules (No interaction, No literal credentials, No disk persistence, No screenshots of login state, No OAuth/SSO / admin) unchanged
 
 ### 7. Update the "Begin Auth" execution checklist  <!-- agent: general-purpose -->
 
-- [ ] In `## Begin Auth` (currently lines 175–186) of `.claude/commands/uat-auth.md`, update the numbered sequence to reflect the new shape:
+- [ ] In `## Begin Auth` (currently lines 175–186) of `.claude/skills/uat-auth/SKILL.md`, update the numbered sequence to reflect the new shape:
   ```
   1. **Phase 1** — detect auth scheme, export UAT_LOGIN_URL / UAT_SIGNUP_URL /
      UAT_TOKEN_JQ / UAT_COOKIE_NAME. Guard: both URLs non-empty before Phase 3.
@@ -218,7 +218,7 @@ Restructure the existing Phase 1–6 spec to (a) require explicit `export UAT_LO
 
 ### 8. Verification  <!-- agent: general-purpose -->
 
-- [ ] Open the rewritten `.claude/commands/uat-auth.md` and confirm it contains the following markers (grep via `mcp__serena__search_for_pattern` with `relative_path=".claude/commands/uat-auth.md"`):
+- [ ] Open the rewritten `.claude/skills/uat-auth/SKILL.md` and confirm it contains the following markers (grep via `mcp__serena__search_for_pattern` with `relative_path=".claude/skills/uat-auth/SKILL.md"`):
   - `Forbidden Actions` (new section header)
   - `UAT_LOGIN_URL unset after Phase 1` (new guard diagnostic)
   - `--email-domain` (new override arg)
@@ -234,6 +234,6 @@ Restructure the existing Phase 1–6 spec to (a) require explicit `export UAT_LO
   - No `scryptAsync` / `scrypt` referenced as a legitimate path
   - No `INSERT INTO session` or `INSERT INTO "user"` as a legitimate path
 - [ ] Confirm the file still has all six Phase sections (1–6) and that Phase 3 now contains a Phase 3b subsection
-- [ ] Run `wc -l .claude/commands/uat-auth.md` — expected ~230–300 lines after the additions (current is ~187)
+- [ ] Run `wc -l .claude/skills/uat-auth/SKILL.md` — expected ~230–300 lines after the additions (current is ~187)
 - [ ] Manually re-read the "Begin Auth" section to confirm the numbered steps match the new Phase 1/3 behavior
-- [ ] Cross-check: `.claude/commands/uat-auto.md` Step 6 cleanup already `rm -f`s `/tmp/uat-auth-*` — confirm the new `/tmp/uat-auth-token` is covered by the existing glob (it is). No change to `/uat-auto` required in this task.
+- [ ] Cross-check: `.claude/skills/uat-auto/SKILL.md` Step 6 cleanup already `rm -f`s `/tmp/uat-auth-*` — confirm the new `/tmp/uat-auth-token` is covered by the existing glob (it is). No change to `/uat-auto` required in this task.

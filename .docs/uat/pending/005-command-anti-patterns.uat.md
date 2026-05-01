@@ -59,10 +59,10 @@
 - [ ] Pass
 
 ### UAT-DOC-005: tackle.md — Verification scope callout and tightened subagent item 3
-- **File**: `.claude/commands/tackle.md`
+- **File**: `.claude/skills/tackle/SKILL.md`
 - **Description**: Verify the two changes to tackle.md are present and coherent.
 - **Steps**:
-  1. Open `.claude/commands/tackle.md`
+  1. Open `.claude/skills/tackle/SKILL.md`
   2. Find the "Verification scope" callout (should be near line 68, just after the MCP Serena mandatory tools table and Exceptions paragraph): confirm it reads "Static gates only (bash -n, typecheck, lint, unit tests). Runtime/E2E verification is the UAT phase's job" and links to `command-anti-patterns.md#verification-belongs-to-the-right-phase`
   3. Find `### Subagent Requirements` → item 3: confirm it says "Run **static gates only**" not "Run quality gates"
   4. Confirm item 3 lists `bash -n` as the shell-script gate
@@ -72,10 +72,10 @@
 - [ ] Pass
 
 ### UAT-DOC-006: uat-generator.md — Runtime verification ownership paragraph and new bullets
-- **File**: `.claude/commands/uat-generator.md`
+- **File**: `.claude/skills/uat-generator/SKILL.md`
 - **Description**: Verify the three additions to uat-generator.md are present and coherent.
 - **Steps**:
-  1. Open `.claude/commands/uat-generator.md`
+  1. Open `.claude/skills/uat-generator/SKILL.md`
   2. Near line 14, confirm the opening paragraph states: "UAT is the phase that owns **runtime and end-to-end verification**" and explicitly contrasts with `/tackle`'s static-only gates, with a link to `command-anti-patterns.md`
   3. In Step 4 "Coverage Categories", find the "**Shell scripts and helpers**" bullet: confirm it says UAT is the right place to execute scripts against `./tmp/` and explicitly says "Do NOT try to do this in `/tackle`"
   4. In the "Curl command standards" block, find the "**Scratch paths**" bullet: confirm it requires `./tmp/<purpose>/`, prohibits `/tmp/` and `$(mktemp -d)`, and explains Serena-scope as the reason
@@ -114,8 +114,8 @@
   1. Open `.docs/guides/command-anti-patterns.md` → `## See also` section: confirm links to `./mcp-tools.md` and `./task-lifecycle.md`
   2. Confirm both linked files actually exist: navigate to `.docs/guides/mcp-tools.md` and `.docs/guides/task-lifecycle.md`
   3. Open `.docs/guides/mcp-tools.md` → end of "### Common anti-patterns and their fixes" section: confirm the "**See also**" line links to `./command-anti-patterns.md`
-  4. Open `.claude/commands/tackle.md`: confirm the "Verification scope" callout links to `.docs/guides/command-anti-patterns.md#verification-belongs-to-the-right-phase`
-  5. Open `.claude/commands/uat-generator.md`: confirm the opening runtime-verification paragraph ends with a link to `.docs/guides/command-anti-patterns.md`
+  4. Open `.claude/skills/tackle/SKILL.md`: confirm the "Verification scope" callout links to `.docs/guides/command-anti-patterns.md#verification-belongs-to-the-right-phase`
+  5. Open `.claude/skills/uat-generator/SKILL.md`: confirm the opening runtime-verification paragraph ends with a link to `.docs/guides/command-anti-patterns.md`
 - **Expected Result**: All five link targets exist; no broken references; the cross-link circle is complete (guide ↔ mcp-tools, guide ← tackle, guide ← uat-generator)
 - [ ] Pass
 

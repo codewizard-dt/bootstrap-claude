@@ -23,18 +23,12 @@ fi
 echo "Updating project: $PROJECT_DIR"
 echo ""
 
-# 1. Sync .claude/commands/
-echo "Syncing .claude/commands/..."
-mkdir -p "$PROJECT_DIR/.claude/commands"
-rsync -av "$TEMPLATE_DIR/.claude/commands/" "$PROJECT_DIR/.claude/commands/"
-echo ""
-
-# 2. Sync .docs/
-echo "Syncing .docs/ scaffold..."
+# 1. Sync .claude/skills/ and .docs/
+echo "Syncing .claude/skills/ and .docs/ scaffold..."
 "$TEMPLATE_DIR/sync-docs-scaffold.sh" "$PROJECT_DIR"
 echo ""
 
-# 3. Bootstrap Serena project.yml (idempotent)
+# 2. Bootstrap Serena project.yml (idempotent)
 echo "Re-checking Serena project.yml bootstrap..."
 "$TEMPLATE_DIR/bootstrap-serena.sh" "$PROJECT_DIR"
 echo ""

@@ -31,6 +31,7 @@ mkdir -p "$PROJECT_DIR/.docs/uat/skipped"
 mkdir -p "$PROJECT_DIR/.docs/uat/trashed"
 mkdir -p "$PROJECT_DIR/.docs/uat/screenshots"
 mkdir -p "$PROJECT_DIR/.docs/adr"
+mkdir -p "$PROJECT_DIR/.claude/skills"
 
 # Sync .docs/guides/ as a full directory (entire contents, no filters)
 rsync -av "$TEMPLATE_DIR/.docs/guides/" "$PROJECT_DIR/.docs/guides/"
@@ -54,4 +55,7 @@ done
 # Sync .docs/adr/ README + .gitkeep only — ADR files are project-specific and MUST NOT be copied
 rsync -av "$TEMPLATE_DIR/.docs/adr/README.md" "$TEMPLATE_DIR/.docs/adr/.gitkeep" "$PROJECT_DIR/.docs/adr/"
 
-echo ".docs/ scaffold synced."
+# Sync .claude/skills/ (all skill directories and SKILL.md files)
+rsync -av "$TEMPLATE_DIR/.claude/skills/" "$PROJECT_DIR/.claude/skills/"
+
+echo ".docs/ scaffold and .claude/skills/ synced."

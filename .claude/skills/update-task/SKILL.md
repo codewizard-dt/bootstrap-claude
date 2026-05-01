@@ -1,5 +1,8 @@
 ---
-description: Assess and update a task file for execution readiness
+name: update-task
+description: Assess and modify an existing task's scope or steps
+model: claude-opus-4-7
+disable-model-invocation: true
 argument-hint: <path/to/task.md, number-slug, or number> [optional instructions]
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
@@ -39,7 +42,7 @@ Parse the first part of `$ARGUMENTS` to locate the task file. Any remaining text
 
 Read all three files:
 1. `.docs/tasks/active/README.md` — the authoritative task file spec (format and naming rules)
-2. `.claude/commands/add-task.md` — the full overview of how to structure a task (research process, execution-readiness criteria, agent annotations, level of detail required)
+2. `.claude/skills/add-task/SKILL.md` — the full overview of how to structure a task (research process, execution-readiness criteria, agent annotations, level of detail required)
 3. The resolved task file from Step 1
 
 The `add-task` command defines what a well-structured task looks like. Use it as the lens for your assessment.
@@ -103,7 +106,7 @@ Fix all issues found in Step 3:
 - Convert plain list items to `- [ ]` checkbox syntax
 
 ### Research for updates
-When adding specificity to vague steps, follow the `/research` workflow (see `.claude/commands/research.md`):
+When adding specificity to vague steps, follow the `/research` workflow (see `.claude/skills/research/SKILL.md`):
 - **Internal (Phase 2)**: Use Serena's `get_symbols_overview`, `find_symbol`, and `search_for_pattern` to understand the codebase
 - **External (Phase 3)**: Use Context7 MCP for library docs and Brave Search MCP for best practices and package recommendations
 - Ground every update in actual codebase state — don't guess at file paths or function names

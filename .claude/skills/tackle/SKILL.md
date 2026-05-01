@@ -1,5 +1,8 @@
 ---
-description: Tackle an outlined task file step-by-step
+name: tackle
+description: Execute an outlined task file step-by-step with subagent delegation
+model: claude-sonnet-4-6
+disable-model-invocation: true
 argument-hint: <path/to/task.md, number-slug, or description>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**

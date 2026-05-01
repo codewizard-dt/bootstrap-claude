@@ -381,8 +381,8 @@ The crucial property the diagram captures: finalization operates on **one decisi
 
 ## See Also
 
-- [`/create-adr` command](../../.claude/commands/create-adr.md)
-- [`/finalize-adr` command](../../.claude/commands/finalize-adr.md)
+- [`/create-adr` command](../../.claude/skills/create-adr/SKILL.md)
+- [`/finalize-adr` command](../../.claude/skills/finalize-adr/SKILL.md)
 - [MADR 4.0 template](https://adr.github.io/madr/) — upstream format reference
 - [Nygard's original 2011 post](https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions) — origin of the ADR concept
 - [How to create ADRs — and how not to](https://ozimmer.ch/practices/2023/04/03/ADRCreation.html) — ozimmer 2023, anti-patterns

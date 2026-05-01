@@ -11,7 +11,7 @@ Create `.docs/guides/command-anti-patterns.md` as the canonical reference for sh
 ## Prerequisites
 
 - [ ] `.docs/guides/mcp-tools.md` and `.docs/guides/task-lifecycle.md` exist (they do)
-- [ ] `.claude/commands/tackle.md` and `.claude/commands/uat-generator.md` exist (they do)
+- [ ] `.claude/skills/tackle/SKILL.md` and `.claude/skills/uat-generator/SKILL.md` exist (they do)
 - [ ] Task 003 (sync-docs-scaffold) resolved or paused — this task was triggered by a verification step in 003 that itself exhibited the anti-pattern
 
 ---
@@ -59,7 +59,7 @@ Create `.docs/guides/command-anti-patterns.md` as the canonical reference for sh
 
 ### 2. Tighten `/tackle` verification scope  <!-- agent: general-purpose -->
 
-- [x] Edit `.claude/commands/tackle.md`
+- [x] Edit `.claude/skills/tackle/SKILL.md`
   - Locate the `### Subagent Requirements` block (currently item 3 reads: "Run quality gates after completing the work: After any code changes: run the project's typecheck command...")
   - Replace its body with stricter language that explicitly restricts verification to static gates and redirects runtime checks to UAT. Use these exact points:
     - "Run **static gates only**: `bash -n` for shell scripts, project typecheck (`pnpm typecheck` / `mypy` / etc.), lint, and unit tests"
@@ -73,7 +73,7 @@ Create `.docs/guides/command-anti-patterns.md` as the canonical reference for sh
 
 ### 3. Update `/uat-generator` to own runtime verification  <!-- agent: general-purpose -->
 
-- [x] Edit `.claude/commands/uat-generator.md`
+- [x] Edit `.claude/skills/uat-generator/SKILL.md`
   - In the opening section (above "## Instructions"), add a short paragraph: "UAT is the phase that owns **runtime and end-to-end verification**. `/tackle` only runs static gates (typecheck, `bash -n`, lint, unit tests). Any behavior that requires executing the feature — running a helper script against real paths, hitting an API, walking a user flow, asserting on produced files — is a UAT test, not a tackle verification step. See `.docs/guides/command-anti-patterns.md`."
   - In Step 4 ("Test Case Guidelines") → sub-section "Coverage Categories", add a new bullet: `**Shell scripts and helpers**: UAT is the right place to execute scripts against a project-local scratch dir (./tmp/) and assert on produced files. Do NOT try to do this in /tackle.`
   - Do not touch the research-gate block (Step 2.3 / 2.4) — that content is orthogonal
@@ -104,8 +104,8 @@ Create `.docs/guides/command-anti-patterns.md` as the canonical reference for sh
 - [x] `bash -n` is not applicable (no shell scripts were created or modified in this task — pure markdown edits)
 - [x] Confirm the new guide exists at `.docs/guides/command-anti-patterns.md` using `mcp__serena__find_file`
 - [x] Confirm the new guide contains all required sections using `mcp__serena__search_for_pattern` for each section heading text (TOP RULE, scratch, echo banners, temp-file round-trips, footguns, verification, see also)
-- [x] Confirm `.claude/commands/tackle.md` contains the new "Verification scope" callout using `mcp__serena__search_for_pattern` for the string `Static gates only`
-- [x] Confirm `.claude/commands/uat-generator.md` contains the new runtime-verification paragraph using `mcp__serena__search_for_pattern` for the string `runtime and end-to-end verification`
+- [x] Confirm `.claude/skills/tackle/SKILL.md` contains the new "Verification scope" callout using `mcp__serena__search_for_pattern` for the string `Static gates only`
+- [x] Confirm `.claude/skills/uat-generator/SKILL.md` contains the new runtime-verification paragraph using `mcp__serena__search_for_pattern` for the string `runtime and end-to-end verification`
 - [x] Confirm `.docs/guides/mcp-tools.md` contains the new "See also" cross-link using `mcp__serena__search_for_pattern` for `command-anti-patterns.md`
 - [x] Confirm `.gitignore` contains `tmp/` using `Read`
 - [x] **Do NOT** run the helper against a scratch dir, do not create any `./tmp/` directory, do not invoke any script — those are UAT concerns and explicitly outside /tackle's scope (this task is the one that codifies that rule)

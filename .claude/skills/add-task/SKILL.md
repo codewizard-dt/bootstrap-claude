@@ -1,5 +1,8 @@
 ---
-description: Add a new task to .docs/tasks
+name: add-task
+description: Create a structured, execution-ready task file in .docs/tasks/active/
+model: claude-opus-4-7
+disable-model-invocation: true
 argument-hint: <task description>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
@@ -19,7 +22,7 @@ $ARGUMENTS
 
 3) **Assess existing tasks**: Check `.docs/tasks/active/` and `.docs/tasks/completed/` to determine the next task number.
 
-4) **Research**: Run the `/research` workflow (see `.claude/commands/research.md`) scoped to this task:
+4) **Research**: Run the `/research` workflow (see `.claude/skills/research/SKILL.md`) scoped to this task:
    - **Phase 2 (Internal)**: Review `PROJECT_STATUS.md`, `CLAUDE.md`, and related code via Serena to understand constraints, dependencies, patterns, and data flow.
    - **Phase 3 (External)**: Use Context7 MCP for library docs and Brave Search MCP for best practices, pitfalls, package discovery, and community recommendations.
    - **Phase 4 (Synthesis)**: Produce a clear picture of trade-offs, risks, and viable solutions. If multiple approaches exist, present a comparison table.

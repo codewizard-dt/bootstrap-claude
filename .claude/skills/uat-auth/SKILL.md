@@ -1,5 +1,7 @@
 ---
-description: Authenticate a test user (user|guest) and export session token for UAT tools — never touches disk, never logs credentials
+name: uat-auth
+description: Authenticate a test user and export UAT_AUTH_TOKEN for UAT tools; auto-invoked by /uat-auto on auth-gated tests
+model: claude-sonnet-4-6
 argument-hint: [--role=user|guest] [--base-url=<url>] [--framework=<better-auth|next-auth|supabase|lucia|custom>] [--login-endpoint=<path>] [--signup-endpoint=<path>] [--token-json-path=<jq-path>] [--cookie-name=<name>] [--email-domain=<domain>] [--signup-extra-fields=<json>]
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**

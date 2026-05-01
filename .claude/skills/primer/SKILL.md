@@ -1,3 +1,8 @@
+---
+name: primer
+description: Refresh codebase context via Serena memories
+model: claude-haiku-4-5-20251001
+---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 
 # MANDATORY REQUIREMENTS

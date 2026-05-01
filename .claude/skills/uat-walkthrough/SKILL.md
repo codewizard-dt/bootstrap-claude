@@ -1,5 +1,8 @@
 ---
+name: uat-walkthrough
 description: Walk through a pending UAT file test-by-test with the user
+model: claude-sonnet-4-6
+disable-model-invocation: true
 argument-hint: <path/to/uat-file.md, number-slug, or description>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
@@ -228,7 +231,7 @@ These patterns trigger user approval prompts on every invocation, slow the walkt
 
 > **The rule of thumb**: each Bash call should contain exactly one program invocation (one `curl`, optionally one `jq` pipe stage). If your bash command has more than one statement, more than one `curl`, an `echo`, a `;`, or a `&&`, you are doing it wrong. Run the test again as a single clean curl.
 
-If the previously generated UAT file contains any of these forbidden patterns in its `**Command**:` blocks, **clean them up before running** — do not faithfully execute a malformed command just because it was written that way. The clean curl style is documented in `.claude/commands/uat-generator.md` "Curl command standards".
+If the previously generated UAT file contains any of these forbidden patterns in its `**Command**:` blocks, **clean them up before running** — do not faithfully execute a malformed command just because it was written that way. The clean curl style is documented in `.claude/skills/uat-generator/SKILL.md` "Curl command standards".
 
 ---
 

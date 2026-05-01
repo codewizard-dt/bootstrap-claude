@@ -1,10 +1,10 @@
 # basic-project-setup — Project Overview
 
 ## Purpose
-Project setup template for Claude Code. Contains reusable `.claude/` configurations (custom commands, guides) and MCP server setup instructions meant to be copied into other project repositories. Published as an npm package (`@codewizard-dt/bootstrap-claude`) with CLI commands `setup` and `update` (`npx bootstrap-claude setup` / `npx bootstrap-claude update`).
+Project setup template for Claude Code. Contains reusable `.claude/` configurations (custom skills, guides) and MCP server setup instructions meant to be copied into other project repositories. Published as an npm package (`@codewizard-dt/bootstrap-claude`) with CLI commands `setup` and `update` (`npx bootstrap-claude setup` / `npx bootstrap-claude update`).
 
 ## Structure
-- `.claude/commands/` — Custom slash commands (20 total)
+- `.claude/skills/` — Custom skills in Skills directory format (20 total)
 - `.docs/guides/mcp-tools.md` — MCP tool reference (cross-links to command-anti-patterns.md)
 - `.docs/guides/task-lifecycle.md` — Task lifecycle conventions
 - `.docs/guides/command-anti-patterns.md` — Shell-command and file-operation hygiene rules; defines the /tackle-vs-UAT verification split: static gates only in /tackle (bash -n, typecheck, lint, unit tests), runtime/E2E in UAT
@@ -13,13 +13,13 @@ Project setup template for Claude Code. Contains reusable `.claude/` configurati
 - `.docs/uat/` — UAT test tracking (`pending/` → `completed/` / `skipped/` / `trashed/`)
 - `basic-project-setup.md` — MCP installation guide
 - `setup-project.sh` / `update-project.sh` — Template install + incremental sync (rsync-based). Both scripts delegate `.docs/` sync to `sync-docs-scaffold.sh` and invoke `bootstrap-serena.sh` at the end.
-- `sync-docs-scaffold.sh` — Syncs only the scaffold structure of `.docs/` into target projects: guides (full), directory shells with `.gitkeep` files, and `tasks/active/README.md`. Never copies template task files (e.g. `0NN-*.md`) or UAT content — protects target-project work on idempotent re-runs.
+- `sync-docs-scaffold.sh` — Syncs the scaffold structure of `.docs/` into target projects (guides, directory shells, `.gitkeep` files, `tasks/active/README.md`) AND syncs `.claude/skills/` (all 20 skill directories + SKILL.md files). Never copies template task/UAT content — protects target-project work on idempotent re-runs. Called by both `setup-project.sh` and `update-project.sh`.
 - `bootstrap-serena.sh` — Headlessly triggers `.serena/project.yml` creation via `claude --print "exit"` and enables 11 optional Serena tools (list_dir, find_file, find_symbol, find_referencing_symbols, search_for_pattern, replace_content, replace_lines, insert_at_line, insert_after_symbol, insert_before_symbol, delete_lines). Idempotent — skips already-configured projects. Uses a Python one-liner for the find/replace to avoid macOS/GNU `sed -i` portability issues.
 - `CLAUDE.md` — Project instructions for Claude Code
 - `bin/cli.js` — CLI entry point for the npm package
 - `package.json` — npm package configuration
 
-## Custom Commands (20)
+## Custom Skills (20)
 - `/primer` — Refresh codebase context via Serena memories
 - `/serena-config` — Interactively configure Serena language servers in `.serena/project.yml`; reads current config + auto-detects repo languages, then asks one add/remove question (free-text with `-` prefix for removals)
 - `/research <topic>` — Deep research (codebase + Context7 + Brave)

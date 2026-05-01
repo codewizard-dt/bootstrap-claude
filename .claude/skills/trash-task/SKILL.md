@@ -1,5 +1,8 @@
 ---
-description: Move a task and its related UAT files to trashed directories
+name: trash-task
+description: Move a task and its related UAT files to trashed directories and update references
+model: claude-sonnet-4-6
+disable-model-invocation: true
 argument-hint: <path/to/task-file.md>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
