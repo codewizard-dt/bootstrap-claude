@@ -23,12 +23,52 @@ fi
 echo "Updating project: $PROJECT_DIR"
 echo ""
 
-# 1. Sync .claude/skills/ and .docs/
+# 1. Detect legacy .claude/commands/ files migrated to .claude/skills/
+# The migration moved each <name>.md slash-command into .claude/skills/<name>/SKILL.md.
+# If any of those legacy files still exist in the target, offer to remove them.
+LEGACY_COMMANDS_DIR="$PROJECT_DIR/.claude/commands"
+if [ -d "$LEGACY_COMMANDS_DIR" ]; then
+  LEGACY_FILES=()
+  for skill_dir in "$TEMPLATE_DIR/.claude/skills/"*/; do
+    skill_name="$(basename "$skill_dir")"
+    legacy_file="$LEGACY_COMMANDS_DIR/$skill_name.md"
+    if [ -f "$legacy_file" ]; then
+      LEGACY_FILES+=("$legacy_file")
+    fi
+  done
+
+  if [ ${#LEGACY_FILES[@]} -gt 0 ]; then
+    echo "Found legacy slash-command files in $LEGACY_COMMANDS_DIR/ that have been migrated to .claude/skills/:"
+    for f in "${LEGACY_FILES[@]}"; do
+      echo "  - ${f#"$PROJECT_DIR"/}"
+    done
+    echo ""
+    read -r -p "Remove these legacy command files? [y/N] " REPLY
+    if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+      for f in "${LEGACY_FILES[@]}"; do
+        rm -f "$f"
+        echo "  Removed: ${f#"$PROJECT_DIR"/}"
+      done
+      # If .claude/commands/ is now empty (no files, no subdirs), remove the directory.
+      if [ -z "$(ls -A "$LEGACY_COMMANDS_DIR")" ]; then
+        rmdir "$LEGACY_COMMANDS_DIR"
+        echo "  Removed empty directory: .claude/commands/"
+      else
+        echo "  Note: .claude/commands/ retained — other (project-specific) files remain."
+      fi
+    else
+      echo "  Skipped legacy command cleanup."
+    fi
+    echo ""
+  fi
+fi
+
+# 2. Sync .claude/skills/ and .docs/
 echo "Syncing .claude/skills/ and .docs/ scaffold..."
 "$TEMPLATE_DIR/sync-docs-scaffold.sh" "$PROJECT_DIR"
 echo ""
 
-# 2. Bootstrap Serena project.yml (idempotent)
+# 3. Bootstrap Serena project.yml (idempotent)
 echo "Re-checking Serena project.yml bootstrap..."
 "$TEMPLATE_DIR/bootstrap-serena.sh" "$PROJECT_DIR"
 echo ""

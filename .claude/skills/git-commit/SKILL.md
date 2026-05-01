@@ -1,7 +1,7 @@
 ---
 name: git-commit
 description: Stage all changed files and create a commit with an auto-generated message
-model: haiku
+model: claude-haiku-4-5-20251001
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 
