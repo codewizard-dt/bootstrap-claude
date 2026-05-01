@@ -13,13 +13,13 @@ Project setup template for Claude Code. Contains reusable `.claude/` configurati
 - `.docs/uat/` — UAT test tracking (`pending/` → `completed/` / `skipped/` / `trashed/`)
 - `basic-project-setup.md` — MCP installation guide
 - `setup-project.sh` / `update-project.sh` — Template install + incremental sync (rsync-based). Both scripts delegate `.docs/` sync to `sync-docs-scaffold.sh` and invoke `bootstrap-serena.sh` at the end.
-- `sync-docs-scaffold.sh` — Syncs the scaffold structure of `.docs/` into target projects (guides, directory shells, `.gitkeep` files, `tasks/active/README.md`) AND syncs `.claude/skills/` (all 20 skill directories + SKILL.md files). Never copies template task/UAT content — protects target-project work on idempotent re-runs. Called by both `setup-project.sh` and `update-project.sh`.
+- `sync-docs-scaffold.sh` — Syncs the scaffold structure of `.docs/` into target projects (guides, directory shells, `.gitkeep` files, `tasks/active/README.md`) AND syncs `.claude/skills/` (all 22 skill directories + SKILL.md files). Never copies template task/UAT content — protects target-project work on idempotent re-runs. Called by both `setup-project.sh` and `update-project.sh`.
 - `bootstrap-serena.sh` — Headlessly triggers `.serena/project.yml` creation via `claude --print "exit"` and enables 11 optional Serena tools (list_dir, find_file, find_symbol, find_referencing_symbols, search_for_pattern, replace_content, replace_lines, insert_at_line, insert_after_symbol, insert_before_symbol, delete_lines). Idempotent — skips already-configured projects. Uses a Python one-liner for the find/replace to avoid macOS/GNU `sed -i` portability issues.
 - `CLAUDE.md` — Project instructions for Claude Code
 - `bin/cli.js` — CLI entry point for the npm package
 - `package.json` — npm package configuration
 
-## Custom Skills (20)
+## Custom Skills (22)
 - `/primer` — Refresh codebase context via Serena memories
 - `/serena-config` — Interactively configure Serena language servers in `.serena/project.yml`; reads current config + auto-detects repo languages, then asks one add/remove question (free-text with `-` prefix for removals)
 - `/research <topic>` — Deep research (codebase + Context7 + Brave)
@@ -40,6 +40,8 @@ Project setup template for Claude Code. Contains reusable `.claude/` configurati
 - `/git-commit` — Stage and commit with auto message
 - `/update-docs` — Update docs + audit/update Serena memories
 - `/project-readme` — Generate/update portfolio-ready README
+- `/marp-slideshow <input> [output]` — Summarize a source file into a Marp/Marpit slide deck; output: `<stem>.slides.md`
+- `/mermaid-flowchart <input> [output]` — Summarize an architecture file (markdown, YAML, Docker Compose) into a Mermaid flowchart; output: `<stem>.flowchart.md`
 
 ## Workflow Pipeline
 `/add-task → /tackle → /update-docs → /uat-generator → /uat-walkthrough` (human) OR `/uat-auto` (headless)

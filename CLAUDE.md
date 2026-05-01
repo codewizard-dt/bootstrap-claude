@@ -41,6 +41,8 @@ Follow `basic-project-setup.md` to configure a new project, or use the npm packa
 | `/uat-skip <path>` | Skip UAT for a task, move task to completed and UAT to skipped |
 | `/lint` | Get IDE diagnostics, fix issues one-by-one in verify cycles |
 | `/simplify <path>` | Analyze files/directories to remove redundancy and simplify complexity |
+| `/marp-slideshow <input> [output]` | Summarize a source file into a Marp/Marpit slide deck following best practices |
+| `/mermaid-flowchart <input> [output]` | Summarize an architecture file (markdown, YAML, Docker Compose) into a Mermaid flowchart in a new markdown file |
 | `/git-commit` | Stage all changes and commit with auto-generated message |
 | `/update-docs` | Update all project documentation after implementation work |
 

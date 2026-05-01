@@ -126,4 +126,4 @@ Extract a new `sync-docs-scaffold.sh` helper that runs multiple targeted `rsync`
 - [x] Clean up scratch: `rm -rf "$SCRATCH"`
 
 ---
-**UAT**: [`.docs/uat/pending/003-sync-docs-scaffold.uat.md`](../../uat/pending/003-sync-docs-scaffold.uat.md)
+**UAT**: [`.docs/uat/completed/003-sync-docs-scaffold.uat.md`](../../uat/completed/003-sync-docs-scaffold.uat.md)
