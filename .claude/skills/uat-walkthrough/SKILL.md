@@ -351,6 +351,16 @@ Extract the task number from the UAT filename: `<number>-<slug>.uat.md` → pref
 
 Prompt the user inline — do NOT use `AskUserQuestion` for verdicts. The approach varies by batch type.
 
+### ⛔ MANDATORY VERDICT GATE
+
+**You MUST receive an explicit pass/fail/fix/skip verdict from the user for every single test before moving on. No exceptions.**
+
+- **Batched tests (API/CLI Step 4A, UI Step 4B):** ask for verdicts on all tests in the batch **at once**, in a single prompt. Then **STOP and wait** for the user's reply. Do not present the next batch, do not run more commands, do not call any other tools until the user has responded with verdicts that cover every test in the current batch. If the user's response leaves any test in the batch unaccounted for, ask a follow-up specifically for the missing tests — do not assume, do not default to pass.
+- **Single tests (manual Step 4C, fix-now re-tests):** ask for the verdict **immediately after presentation** and **STOP and wait**. Do not present the next test until the user has answered for the current one.
+- **Never** auto-judge, infer a verdict from output, or move on "because the result looked fine." The user is the only authority on pass/fail.
+
+This is a hard requirement, not a preference. Violating it invalidates the walkthrough.
+
 ---
 
 ### Step 4A: API/CLI Batch Verdicts
@@ -527,7 +537,7 @@ After updating:
 1. **Return to Step 1** — Re-read the file to get current state
 2. **Find next batch** — Step 2 (classify and batch tests)
 3. **Present** — Step 3A/3B/3C (based on batch type)
-4. **Record** — Step 4A/4B/4C (collect verdicts)
+4. **Record** — Step 4A/4B/4C (collect verdicts) — **HARD STOP here until the user has given a verdict for every test in the current batch/single. Do not advance to the next batch or test until that is true.**
 5. **Update** — Step 5
 6. **Continue** until all tests are resolved or user aborts
 
@@ -583,6 +593,7 @@ Failed Tests:
 
 ### User Interaction
 - **Never skip the user prompt** — every test requires explicit pass/fail from the user
+- **Mandatory verdict gate (see Step 4)** — for batched tests, ask for all verdicts at once and stop until the user replies; for single (non-batched) tests, ask after each one and stop until the user replies. You may not advance to the next test/batch without an explicit verdict for every test in the current one.
 - **Never auto-pass or auto-fail** — the user is the tester, the agent is the facilitator. This applies **especially after a fix** — a successful code fix does NOT mean the test passes. Always re-present and ask.
 - **Use inline prompts** — do NOT use `AskUserQuestion` for verdicts. The user types their choice directly in the chat.
 - **API/CLI tests are auto-executed** — never ask "Run / Manual / Skip?", just execute and show results
