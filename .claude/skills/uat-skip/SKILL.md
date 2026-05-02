@@ -2,7 +2,6 @@
 name: uat-skip
 description: Skip UAT for a task, moving it to completed and archiving a skeleton UAT in skipped
 model: claude-sonnet-4-6
-disable-model-invocation: true
 argument-hint: <path/to/task-file.md or task number-slug>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**

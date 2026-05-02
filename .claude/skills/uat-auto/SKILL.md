@@ -2,7 +2,6 @@
 name: uat-auto
 description: Non-interactively run every test in a pending UAT file and auto-judge verdicts (headless, fail-closed)
 model: claude-sonnet-4-6
-disable-model-invocation: true
 argument-hint: <path/to/uat-file.md, number-slug, or description>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**

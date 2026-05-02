@@ -2,7 +2,6 @@
 name: uat-walkthrough
 description: Walk through a pending UAT file test-by-test with the user
 model: claude-sonnet-4-6
-disable-model-invocation: true
 argument-hint: <path/to/uat-file.md, number-slug, or description>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**

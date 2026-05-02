@@ -2,7 +2,6 @@
 name: marp-slideshow
 description: Summarize a file and emit a Marp/Marpit slideshow markdown deck following best practices
 model: claude-sonnet-4-6
-disable-model-invocation: true
 argument-hint: <path to source file> [optional output path]
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**

@@ -2,7 +2,6 @@
 name: project-readme
 description: Generate or update a portfolio-ready project README
 model: claude-opus-4-7
-disable-model-invocation: true
 argument-hint: <path to project directory (defaults to cwd)>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**

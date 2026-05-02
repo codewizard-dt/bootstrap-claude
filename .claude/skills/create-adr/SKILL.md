@@ -3,7 +3,6 @@ name: create-adr
 description: Create an ADR Decision Group file in .docs/adr/ with one or more proposed decisions, table-only comparisons, and mermaid flowcharts
 model: claude-opus-4-7
 effort: high
-disable-model-invocation: true
 argument-hint: <decision topic, group title, or "group: <title>" for an explicit multi-decision file>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**

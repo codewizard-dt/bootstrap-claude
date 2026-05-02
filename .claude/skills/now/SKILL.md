@@ -3,7 +3,6 @@ name: now
 description: Plan and delegate a task to subagents (max 3 concurrent)
 model: claude-opus-4-7
 effort: high
-disable-model-invocation: true
 argument-hint: <task description>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**

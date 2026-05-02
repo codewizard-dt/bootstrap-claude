@@ -3,7 +3,6 @@ name: finalize-adr
 description: Finalize a single proposed decision block; run E-C-A-D-R audit, supersession check, and flip status to accepted
 model: claude-opus-4-7
 effort: high
-disable-model-invocation: true
 argument-hint: <path/to/adr.md#DM, NNNN-slug#DM, or NNNN#DM>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**

@@ -2,7 +2,6 @@
 name: update-docs
 description: Update all project documentation after implementation work
 model: claude-sonnet-4-6
-disable-model-invocation: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Always obey `.docs/guides/task-lifecycle.md`. Read it now if not already in context.**

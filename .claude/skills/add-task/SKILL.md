@@ -2,7 +2,6 @@
 name: add-task
 description: Create a structured, execution-ready task file in .docs/tasks/active/
 model: claude-opus-4-7
-disable-model-invocation: true
 argument-hint: <task description>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**

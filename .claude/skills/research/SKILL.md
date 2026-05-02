@@ -3,7 +3,6 @@ name: research
 description: Deep research on a topic using codebase analysis, library docs, and web search
 model: claude-opus-4-7
 effort: high
-disable-model-invocation: true
 argument-hint: <topic or question to research>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**

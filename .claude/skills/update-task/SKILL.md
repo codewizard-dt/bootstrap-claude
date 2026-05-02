@@ -2,7 +2,6 @@
 name: update-task
 description: Assess and modify an existing task's scope or steps
 model: claude-opus-4-7
-disable-model-invocation: true
 argument-hint: <path/to/task.md, number-slug, or number> [optional instructions]
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
