@@ -198,16 +198,20 @@ API TEST BATCH [tests 3–7 of 18]
    - Response body (truncate display to ~50 lines if very large, but do not write to a temp file just to read it back)
    - Any errors (connection refused, timeout, etc.)
 
-5. **If a command fails to execute** (connection refused, timeout, etc.):
-   - Show the error in the ACTUAL section
-   - Continue with the next test in the batch
+5. **If a command fails to execute** (connection refused, timeout, etc.) **OR the actual result does not match the expected result** (e.g., HTTP status mismatch, error in response body, missing fields, exception output):
+   - Show the error or mismatch in the ACTUAL section
+   - **STOP immediately. Do NOT continue executing the remaining tests in the batch.**
+   - Ask the user inline for that single failing test: `Pass / Fail / Fix now / Skip?`
+   - **Wait for explicit direction.** The agent never moves on to another test after a failure without explicit user direction.
+   - Once the user has responded, apply the verdict (Step 4/5), then resume executing the remaining tests in the batch from where you halted
 
-6. **After all tests in the batch are executed**, present the batch results summary and ask for verdicts (see Step 4A)
+6. **After all tests in the batch are executed without failure**, present the batch results summary and ask for verdicts (see Step 4A)
 
 #### Rules
 
 - **Never ask "Run / Manual / Skip?"** — always auto-execute
 - **Never auto-judge pass/fail** — the user decides after seeing actual vs expected
+- **Halt on failure (mandatory)**: If a test's auto-executed result errors out OR the actual output clearly does not match the expected result (HTTP code mismatch, error in response body, exception, missing required fields), STOP the batch immediately at that test. Ask the user `Pass / Fail / Fix now / Skip?` for the failing test and **wait** for an explicit reply before running any further tests. The agent never moves on after a failure without explicit direction. Observing a mismatch is not the same as judging pass/fail — the user still issues the verdict; the agent only halts so the user can decide.
 - Extract commands from the test's Steps and Expected Result sections (typically the `**Command**:` block written by `/uat-generator`)
 - Run the command **as-is**. Do not wrap it, decorate it, or rewrite it.
 - If a test has no extractable command but was classified as API/CLI, present it as a manual test instead (fall back to Step 3C for that individual test)
@@ -356,6 +360,7 @@ Prompt the user inline — do NOT use `AskUserQuestion` for verdicts. The approa
 
 - **Batched tests (API/CLI Step 4A, UI Step 4B):** ask for verdicts on all tests in the batch **at once**, in a single prompt. Then **STOP and wait** for the user's reply. Do not present the next batch, do not run more commands, do not call any other tools until the user has responded with verdicts that cover every test in the current batch. If the user's response leaves any test in the batch unaccounted for, ask a follow-up specifically for the missing tests — do not assume, do not default to pass.
 - **Single tests (manual Step 4C, fix-now re-tests):** ask for the verdict **immediately after presentation** and **STOP and wait**. Do not present the next test until the user has answered for the current one.
+- **Auto-executed failures (API/CLI Step 3A):** if a test errors out or its actual result clearly does not match the expected result, **halt the batch immediately at that test**. Ask `Pass / Fail / Fix now / Skip?` for the single failing test and **STOP and wait**. Do NOT execute the next test in the batch, do NOT proceed to the batch verdict prompt, and do NOT call any other tools until the user has given direction for the failing test. The agent never moves on after a failure without explicit user direction.
 - **Never** auto-judge, infer a verdict from output, or move on "because the result looked fine." The user is the only authority on pass/fail.
 
 This is a hard requirement, not a preference. Violating it invalidates the walkthrough.
