@@ -7,6 +7,19 @@ model: claude-haiku-4-5-20251001
 
 # git-commit
 
+## Step 0: Confirmation Gate (HARD STOP)
+
+⛔ **Do not proceed past this step without explicit user confirmation.**
+
+Before any investigation, `git status`, `git diff`, `git log`, lint cycles, or staging:
+
+1. Ask the user: **"Ready to run /git-commit? This will run /lint fix cycles and then stage and commit all non-gitignored changes. Reply 'yes' (or 'y') to continue."**
+2. **Wait** for the user's response.
+3. Only if the user replies with an affirmative (e.g. `yes`, `y`, `proceed`, `go`) may you continue to Step 1.
+4. If the response is anything else — including silence, questions, "no", or a request to change scope — **halt** and address that input. Do not run any git or lint commands.
+
+This gate exists so the user can abort before any read or write side effects. Never skip it, never assume prior approval from earlier in the session carries over, and never run preparatory `git status`/`git diff` "just to be helpful" before the user confirms.
+
 ## Step 1: Run Lint Fix Cycles
 
 Before committing, run the `/lint` workflow to catch and fix any diagnostics:
