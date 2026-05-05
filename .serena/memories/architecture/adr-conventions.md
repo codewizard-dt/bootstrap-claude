@@ -51,6 +51,10 @@ A single decision can flip `proposed → accepted` only when all five pass:
 ## Chain invariant
 **At most one `accepted` decision per decision area** across the entire log. `/finalize-adr` enforces this; if it cannot resolve which decision supersedes which, it leaves status as `proposed` and reports rather than creating parallel `accepted` decisions.
 
+## Companion review skill: `/walkthrough-adr`
+
+A lighter, non-finalizing review pass for ADR files. Walks every `D*` block one at a time; for each `proposed` decision asks the user via `AskUserQuestion` to **Confirm / Change / Defer / Skip**. Sibling blocks are untouched, status is never flipped (that stays with `/finalize-adr`), and supersession + index + relationship-graph work is explicitly out of scope. Useful when an ADR file has multiple proposed decisions and the user wants to align on the choices in one pass before sending each through the E-C-A-D-R gate.
+
 ## Why this matters for command authors
 - `/create-adr` writes a file with N decision blocks; each block needs full metadata.
 - `/finalize-adr` argument is `<file>#<DM>` (e.g. `0007-session#D2`) and operates on **one block at a time**. Bare-path inputs auto-resolve only if the file has exactly one proposed decision.

@@ -20,7 +20,7 @@ Project setup template for Claude Code. Contains reusable `.claude/` configurati
 - `bin/cli.js` — CLI entry point for the npm package
 - `package.json` — npm package configuration
 
-## Custom Skills (27)
+## Custom Skills (29)
 - `/primer` — Refresh codebase context via Serena memories
 - `/serena-config` — Interactively configure Serena language servers in `.serena/project.yml`; reads current config + auto-detects repo languages, then asks one add/remove question (free-text with `-` prefix for removals)
 - `/research <topic>` — Deep research (codebase + Context7 + Brave)
@@ -33,7 +33,7 @@ Project setup template for Claude Code. Contains reusable `.claude/` configurati
 - `/update-prd <file> [change]` — Approved PRDs: append-only `## Amendment N` blocks + `[amended N]` markers; drafts: direct edits. Always surfaces downstream ADR/task impact.
 - `/trash-prd <file>` — Move to `.docs/prd/trashed/`; never auto-cascades to linked ADRs/tasks; preserves index row and cross-links (path updated, not deleted).
 - `/create-adr <topic>` — Create an ADR file in `.docs/adr/`. Each file is a **Decision Group** containing 1+ decision blocks (`D1`, `D2`, …); each decision has its own `Status`, `Date`, `Deciders`, `Tags`, and supersession state. Table-only comparisons, mermaid flowcharts. Status defaults to `proposed`; finalization deferred to `/finalize-adr`.
-- `/finalize-adr <file>#<DM>` — Ratify a **single decision block** (e.g. `0007-session#D2`). Per-decision audit (E-C-A-D-R DoD), per-decision supersession check across the entire log, atomic two-block cross-reference if superseding. Siblings in the same file are byte-for-byte untouched. Refuses to run on already-accepted decisions (suggests `/create-adr` successor instead).
+- `/walkthrough-adr <file>` — Interactive Q&A walkthrough of every decision in an ADR file. For each `proposed` decision, presents drivers + options + currently-chosen option, then asks the user to **Confirm**, **Change**, **Defer**, or **Skip**. Light edits only (bold chosen option, rewrite outcome justification, fill blank metadata on request). Never flips status; suggests `/finalize-adr <file>#<DM>` per confirmed decision. Treats `accepted`/`superseded`/`deprecated` siblings as informational-only. Sibling blocks remain byte-for-byte unchanged.\n- `/finalize-adr <file>#<DM>` — Ratify a **single decision block** (e.g. `0007-session#D2`). Per-decision audit (E-C-A-D-R DoD), per-decision supersession check across the entire log, atomic two-block cross-reference if superseding. Siblings in the same file are byte-for-byte untouched. Refuses to run on already-accepted decisions (suggests `/create-adr` successor instead).
 - `/trash-task <path>` — Move task + UAT to `trashed/`
 - `/update-task <path> <changes>` — Modify existing task
 - `/uat-generator <target>` — Generate UAT tests; owns runtime and end-to-end verification (what /tackle cannot run); shell script execution against ./tmp/ scratch dirs belongs here, not in /tackle. **Test integrity rule (non-negotiable)**: tests encode required functionality from the task's acceptance criteria — never weakened, narrowed, or reshaped to match buggy/incomplete implementation. Source code grounds *how to invoke*; the requirement grounds *what should happen*. Discrepancies → write the test against the requirement, let it fail, report the gap.
@@ -42,6 +42,7 @@ Project setup template for Claude Code. Contains reusable `.claude/` configurati
 - `/uat-auth [--role=user|guest]` — Authenticate test user and export `$UAT_AUTH_TOKEN`; invoked by `/uat-auto` Step 2.5 on auth-gated tests; env-var-only credentials, no disk persistence
 - `/uat-skip <path>` — Skip UAT, move task to completed + UAT to skipped
 - `/lint` — IDE diagnostics with fix cycles
+- `/debug-logs [symptom]` — Read-only failure diagnosis: gather session context (recent diff, background processes, recent errors), pick log stores by symptom (TaskOutput, IDE diagnostics, gh run logs, DigitalOcean app logs, conventional `./logs`/`./tmp` paths, Puppeteer console), correlate with code, and produce ranked hypotheses with concrete next actions. Never auto-applies fixes.
 - `/simplify <path>` — Remove redundancy, simplify complexity
 - `/git-commit` — Stage and commit with auto message
 - `/update-docs` — Update docs + audit/update Serena memories

@@ -37,6 +37,7 @@ Follow `basic-project-setup.md` to configure a new project, or use the npm packa
 | `/trash-prd <file>` | Move a cancelled PRD to `.docs/prd/trashed/`, surface linked ADRs/tasks for separate review, and update all references |
 | `/create-adr <topic>` | Create an ADR file (Decision Group) in `.docs/adr/` containing 1+ proposed decisions; per-decision tags/status; table-only comparisons; mermaid flowcharts |
 | `/finalize-adr <file>#<DM>` | Finalize a single proposed decision (e.g. `0007-session#D2`); per-decision E-C-A-D-R audit; per-decision supersession check; siblings remain untouched |
+| `/walkthrough-adr <file>` | Walk an ADR file decision-by-decision, presenting each architecture choice and confirming it with the user via Q&A; light edits only (no status flips) |
 | `/trash-task <path>` | Move task + related UAT files to `trashed/` directories and update references |
 | `/update-task <path> <changes>` | Modify an existing task's scope or steps |
 | `/uat-generator <target>` | Generate UAT tests in `.docs/uat/pending/` mirroring task naming conventions |
@@ -45,6 +46,7 @@ Follow `basic-project-setup.md` to configure a new project, or use the npm packa
 | `/uat-auth` | Authenticate a test user (user|guest) and export `$UAT_AUTH_TOKEN` for UAT tools; invoked automatically by `/uat-auto` on auth-gated tests |
 | `/uat-skip <path>` | Skip UAT for a task, move task to completed and UAT to skipped |
 | `/lint` | Get IDE diagnostics, fix issues one-by-one in verify cycles |
+| `/debug-logs [symptom]` | Diagnose failures by inspecting session context, background processes, and conventional log stores; produce ranked hypotheses with next actions (read-only) |
 | `/simplify <path>` | Analyze files/directories to remove redundancy and simplify complexity |
 | `/marp-slideshow <input> [output]` | Summarize a source file into a Marp/Marpit slide deck following best practices |
 | `/mermaid-flowchart <input> [output]` | Summarize an architecture file (markdown, YAML, Docker Compose) into a Mermaid flowchart in a new markdown file |
