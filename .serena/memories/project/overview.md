@@ -10,6 +10,7 @@ Project setup template for Claude Code. Contains reusable `.claude/` configurati
 - `.docs/guides/command-anti-patterns.md` — Shell-command and file-operation hygiene rules; defines the /tackle-vs-UAT verification split: static gates only in /tackle (bash -n, typecheck, lint, unit tests), runtime/E2E in UAT
 - `.docs/tasks/` — Task tracking (`active/` → `completed/` → `trashed/`)
 - `.docs/adr/` — Architecture Decision Log (ADL). Each file is a **Decision Group** with 1+ `## DM. <title>` blocks; each decision has independent `Status`, `Date`, `Deciders`, `Tags`. Identifier `ADR-NNNN#DM`. Per-decision supersession (atomic two-block cross-reference). README.md defines glossary, supersession rule, E-C-A-D-R Definition of Done, anti-patterns, file template, index format (one row per decision), relationship graph (per-decision nodes). Scaffold-only sync: `.gitkeep` propagates, ADR files are project-specific and never copied.
+- `.docs/prd/` — Product Requirements Log (PRL). PRDs sit **upstream** of ADRs and tasks, capturing *what to build and why* (product perspective). Status lifecycle: `draft → approved → archived/superseded/trashed`. Subfolders: `active/`, `archived/`, `trashed/`. Scaffold-only sync: README.md + per-subfolder `.gitkeep` propagate; PRD files are project-specific and never copied. Hard boundary rule: **"A PRD never justifies architecture. An ADR never redefines product scope."** Approved PRDs are immutable in substance — changes via append-only `## Amendment N` blocks.
 - `.docs/uat/` — UAT test tracking (`pending/` → `completed/` / `skipped/` / `trashed/`)
 - `basic-project-setup.md` — MCP installation guide
 - `setup-project.sh` / `update-project.sh` — Template install + incremental sync (rsync-based). Both scripts delegate `.docs/` sync to `sync-docs-scaffold.sh` and invoke `bootstrap-serena.sh` at the end.
@@ -19,13 +20,18 @@ Project setup template for Claude Code. Contains reusable `.claude/` configurati
 - `bin/cli.js` — CLI entry point for the npm package
 - `package.json` — npm package configuration
 
-## Custom Skills (22)
+## Custom Skills (27)
 - `/primer` — Refresh codebase context via Serena memories
 - `/serena-config` — Interactively configure Serena language servers in `.serena/project.yml`; reads current config + auto-detects repo languages, then asks one add/remove question (free-text with `-` prefix for removals)
 - `/research <topic>` — Deep research (codebase + Context7 + Brave)
 - `/now <task>` — Plan and delegate to subagents (max 3 concurrent)
 - `/tackle <path>` — Execute task file step-by-step; verification restricted to static gates only (bash -n, typecheck, lint, unit tests); runtime/E2E verification deferred to UAT via [DEFERRED-TO-UAT] marker
 - `/add-task <desc>` — Create task in `.docs/tasks/active/`
+- `/create-prd <idea>` — Socratic Q&A elicitation → `.docs/prd/active/NNN-slug.md` (status: `draft`). Enforces named personas, measurable success metrics, explicit non-goals, acceptance criteria on every story.
+- `/finalize-prd <file>` — Completeness audit + stakeholder gate → flip `draft → approved`. Re-audits after each gap resolution; refuses to flip while any required field is empty.
+- `/prd-to-decisions <file>` — Bridge skill: extracts ASRs from an approved PRD, cross-checks existing ADRs, groups into Decision Group candidates, surfaces `/create-adr` commands, writes bidirectional cross-links.
+- `/update-prd <file> [change]` — Approved PRDs: append-only `## Amendment N` blocks + `[amended N]` markers; drafts: direct edits. Always surfaces downstream ADR/task impact.
+- `/trash-prd <file>` — Move to `.docs/prd/trashed/`; never auto-cascades to linked ADRs/tasks; preserves index row and cross-links (path updated, not deleted).
 - `/create-adr <topic>` — Create an ADR file in `.docs/adr/`. Each file is a **Decision Group** containing 1+ decision blocks (`D1`, `D2`, …); each decision has its own `Status`, `Date`, `Deciders`, `Tags`, and supersession state. Table-only comparisons, mermaid flowcharts. Status defaults to `proposed`; finalization deferred to `/finalize-adr`.
 - `/finalize-adr <file>#<DM>` — Ratify a **single decision block** (e.g. `0007-session#D2`). Per-decision audit (E-C-A-D-R DoD), per-decision supersession check across the entire log, atomic two-block cross-reference if superseding. Siblings in the same file are byte-for-byte untouched. Refuses to run on already-accepted decisions (suggests `/create-adr` successor instead).
 - `/trash-task <path>` — Move task + UAT to `trashed/`
@@ -44,7 +50,9 @@ Project setup template for Claude Code. Contains reusable `.claude/` configurati
 - `/mermaid-flowchart <input> [output]` — Summarize an architecture file (markdown, YAML, Docker Compose) into a Mermaid flowchart; output: `<stem>.flowchart.md`
 
 ## Workflow Pipeline
-`/add-task → /tackle → /update-docs → /uat-generator → /uat-walkthrough` (human) OR `/uat-auto` (headless)
+`/create-prd → /finalize-prd → /prd-to-decisions → /create-adr → /finalize-adr → /add-task → /tackle → /update-docs → /uat-generator → /uat-walkthrough` (human) OR `/uat-auto` (headless)
+
+PRD layer is optional for small/internal work — jump directly to `/add-task` or `/create-adr` when below the PRD threshold (bug fixes, refactors, single-engineer choices). See `.docs/prd/README.md` "When NOT to Write a PRD".
 
 - Task lifecycle: `active/` → (tackle + UAT all pass) → `completed/`
 - UAT lifecycle: `pending/` → (all pass) → `completed/`

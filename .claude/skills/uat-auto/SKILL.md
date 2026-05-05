@@ -183,7 +183,18 @@ After every eligible test has a non-blocking status (`[x] Pass`, `[SKIP: ...]` a
 5. Delete screenshots for this task: use `mcp__serena__list_dir` on `.docs/uat/screenshots/` to find files matching `<task-number>-*` — **never** `ls` — then `git rm` each (or `rm` if untracked).
 6. Close Puppeteer: `puppeteer_close_browser` if it was launched.
 7. Run `/update-docs` to refresh project documentation.
-8. Emit the completion summary (see below).
+8. **Check for ADR linkage**: Read the moved task file (now in `completed/`) for a line matching `**Implements**: ADR-NNNN#DM`:
+   - If found:
+     1. Parse the `ADR-NNNN#DM` reference.
+     2. Locate the ADR file using Serena `mcp__serena__find_file` for `NNNN-*.md` in `.docs/adr/`.
+     3. Use Serena `mcp__serena__search_for_pattern` on `.docs/tasks/active/` for the same `**Implements**: ADR-NNNN#DM` pattern to check for remaining WIP tasks.
+     4. **If no other WIP tasks remain** (last or only task for this decision):
+        - **Single-task**: replace `Source task(s): .docs/tasks/active/...` line with `Source task(s): .docs/tasks/completed/NNN-slug.md — **implemented** YYYY-MM-DD`
+        - **Multi-task**: update this task's sub-line from `**WIP**` to `**done** YYYY-MM-DD`; append `- **Decision fully implemented** YYYY-MM-DD` after the last sub-line
+     5. **If other WIP tasks remain**: update only this task's sub-line to `**done** YYYY-MM-DD`
+     - Use `Read` then `Edit` — never `sed`, `echo >>`, or shell redirection
+   - If not found: skip silently
+9. Emit the completion summary (see below).
 
 ### Any Fail (`[FAIL: ...]` markers remain)
 

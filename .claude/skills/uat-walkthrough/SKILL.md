@@ -37,7 +37,7 @@ This command runs in a continuous loop, presenting tests in typed batches:
 │         ↑              (first cycle)         │                              │
 │         │                          ┌─────────┼──────────┐                   │
 │         │                       3A. API    3B. UI    3C. Manual             │
-│         │                      (auto-run) (batch)   (single)               │
+│         │                      (auto-run) (compact) (single)               │
 │         │                          └─────────┼──────────┘                   │
 │         │                                    ↓                              │
 │         │                          4. RECORD VERDICTS (per test)            │
@@ -88,7 +88,15 @@ Use the resolved file path for all subsequent steps.
 
 ## Step 1.5: Mode Selection (on first cycle only)
 
-After parsing, if there are **any failed tests** (`[FAIL]`), present the mode choice inline:
+After parsing, decide the mode based on what's present. **Only ask the user when there is a genuine ambiguity** — if only one mode is sensible, pick it silently and proceed.
+
+| Failed count | Pending count | Action |
+|--------------|---------------|--------|
+| 0 | any | Skip this step. Proceed with **Pending only** silently. |
+| ≥1 | 0 | Skip this step. Proceed with **Failed only** silently (Failed first and Failed only are equivalent when no pending tests remain). Briefly note the auto-choice in your status line, e.g. "3 failed tests, no pending — re-running failed tests." |
+| ≥1 | ≥1 | Ask the user inline (see prompt below). |
+
+When asking is required, present the mode choice inline:
 
 ```
 This UAT has N failed and M pending tests.
@@ -99,7 +107,7 @@ Failed first / Pending only / Failed only?
 - **Pending only** — Skip failed tests, only walk through untested items
 - **Failed only** — Only re-test failed tests, skip pending
 
-Store the chosen mode for the duration of this walkthrough. If there are **no failed tests**, skip this step entirely and proceed normally (pending only).
+Store the chosen (or auto-selected) mode for the duration of this walkthrough.
 
 ---
 
@@ -120,7 +128,7 @@ When re-testing a failed test, first **reset its status** from `- [FAIL: ...]` b
 
 ### Batching Rules
 
-Tests are presented in **batches of up to 5** based on their type:
+Tests are presented based on their type:
 
 1. **Classify each test** by type:
    - **API/CLI test**: Contains `curl`, `http`, `wget`, or code blocks with shell commands in the Steps or Expected Result, OR has an `Endpoint:` metadata field
@@ -128,14 +136,15 @@ Tests are presented in **batches of up to 5** based on their type:
    - **Manual test**: Everything else (edge cases, integration logic, etc.)
 
 2. **Collect the next batch** from the eligible tests (per mode):
-   - Take the next **up to 5 consecutive tests of the same type** (API/CLI, UI, or Manual)
-   - If the next test switches type, start a new batch with the new type
-   - A batch can be smaller than 5 if fewer remain or the type changes
+   - **API/CLI**: take the next **up to 5 consecutive API/CLI tests**
+   - **UI**: take the next **up to 3 consecutive UI tests** — kept small so all fit on screen
+   - **Manual**: take **exactly 1 test** — manual tests are never batched
+   - If the next test switches type, start fresh with the new type
 
-3. **Route the batch** to the appropriate presentation flow:
-   - API/CLI batch → Step 3A (auto-execute)
-   - UI batch → Step 3B (batched manual)
-   - Manual batch → Step 3C (single manual, one at a time — no batching)
+3. **Route to the appropriate presentation flow**:
+   - API/CLI batch → Step 3A (auto-execute, up to 5)
+   - UI batch → Step 3B (compact batch, up to 3)
+   - Manual test → Step 3C (single, one at a time — no batching)
 
 ### Completion Check
 - If no more tests match the current mode:
@@ -191,6 +200,8 @@ API TEST BATCH [tests 3–7 of 18]
 ───────────────────────────────────────────
 ```
 
+**Layout rule:** EXPECTED must always appear immediately above ACTUAL with no other content between them — never side-by-side prose, never separated by intervening output. The user must be able to compare the two blocks at a glance without scrolling. If a response body is truncated for display, truncate it inside the ACTUAL block; do not move it elsewhere.
+
 3. **Execute tests one at a time, one Bash invocation per test.** Run the test, capture and present its result, then run the next test. **Never** batch multiple tests into a single Bash call. The walkthrough's "batch" concept refers to *presentation grouping*, not command chaining.
 
 4. **Capture for each test**:
@@ -238,54 +249,42 @@ If the previously generated UAT file contains any of these forbidden patterns in
 
 ---
 
-### Step 3B: UI Test Batch (Batched Manual)
+### Step 3B: UI Test Batch (Compact)
 
-UI tests are presented as a **batch of up to 5** so the user can test them together, then report results.
+UI tests are presented in **batches of up to 3**, written compactly so the entire batch fits on screen without scrolling. Every test entry must be brief — a one-line description, abbreviated steps, and a one-line expected result. Omit preamble, rationale, and prose padding.
 
 #### Presentation Format
 
 ```markdown
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-UI TEST BATCH [tests 8–12 of 18]
+UI TEST BATCH [tests 8–10 of 18]
 **Progress:** 7/18 passed · 0 failed · 11 remaining
 **Page:** http://localhost:4321/strengths
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-**[8 of 18] UAT-UI-001: Strength Panel — Layout**
-  Test that the "My Strengths" panel renders on the right side of the page
-  with proper spacing and no overflow.
-  **Steps:**
-  1. Navigate to /strengths
-  2. Verify the panel is visible on the right
-  **Expected:** Panel is right-aligned, no horizontal scroll
-
+[8] UAT-UI-001 — Strength Panel Layout
+  Steps: Navigate to /strengths · Verify panel is on the right
+  Expected: Right-aligned, no horizontal scroll
 ───────────────────────────────────────────
-
-**[9 of 18] UAT-UI-002: Strength Panel — Empty State**
-  Test that the panel shows an empty-state message when no strengths exist.
-  **Steps:**
-  1. Clear all strengths (or use a fresh account)
-  2. Navigate to /strengths
-  **Expected:** Panel shows "No strengths yet" message
-
+[9] UAT-UI-002 — Strength Panel Empty State
+  Steps: Clear strengths · Navigate to /strengths
+  Expected: "No strengths yet" message visible
 ───────────────────────────────────────────
-
-**[10 of 18] UAT-UI-003: Strength Card — Display**
-  Test that each strength renders as a card with title and description.
-  **Steps:**
-  1. Add a strength via API or UI
-  2. Check the card shows title and description
-  **Expected:** Card displays both fields, properly formatted
-
+[10] UAT-UI-003 — Strength Card Display
+  Steps: Add a strength · Check the card
+  Expected: Card shows title and description
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Please test the above, then give verdicts for each.
+Verdicts for UI batch (tests 8–10)?
+  [8] Pass / Fail / Fix now / Skip?
+  [9] Pass / Fail / Fix now / Skip?
+  [10] Pass / Fail / Fix now / Skip?
 ```
 
 #### Rules
-- **Group by page** where possible — if all tests in the batch share the same `Page:` URL, show it once in the batch header
-- **Summarize each test concisely** — include the test ID, name, what to test, steps, and expected result
-- **Include enough detail** that the user can test without referring back to the UAT file
-- After presenting the batch, proceed to Step 4B for per-test verdicts
+- **Maximum 3 tests per batch** — never exceed 3 UI tests in a single presentation
+- **One line per field** — description, steps (dot-separated), expected result; no multi-line blocks
+- **Group by page** — if all tests share the same `Page:` URL, show it once in the batch header
+- **Steps as a single line** — condense numbered steps into a short dot-separated sequence
+- After presenting the batch, ask for verdicts inline (as shown above) and proceed to Step 4B
 
 ---
 
@@ -583,7 +582,18 @@ Failed Tests:
      - Use `mcp__serena__list_dir` on `.docs/uat/screenshots/` to find files matching `<task-number>-*` — **never use `ls`**
      - Run `git rm` on each matched file (or `rm` if not tracked)
   5. Run the `/update-docs` command to update all project documentation
-  6. Report the new file paths for both UAT and task files
+  6. **Check for ADR linkage**: Read the moved task file (now in `completed/`) for a line matching `**Implements**: ADR-NNNN#DM`:
+     - If found:
+       1. Parse the `ADR-NNNN#DM` reference (e.g. `ADR-0007#D2`).
+       2. Locate the ADR file using Serena `mcp__serena__find_file` for `NNNN-*.md` in `.docs/adr/`.
+       3. Use Serena `mcp__serena__search_for_pattern` on `.docs/tasks/active/` for the same `**Implements**: ADR-NNNN#DM` pattern to check if other WIP tasks remain.
+       4. **If no other WIP tasks remain** (this was the last or only task for this decision):
+          - **Single-task case**: replace the `Source task(s): .docs/tasks/active/...` line with `Source task(s): .docs/tasks/completed/NNN-slug.md — **implemented** YYYY-MM-DD`
+          - **Multi-task case**: update this task's sub-line from `**WIP**` to `**done** YYYY-MM-DD`; then append `- **Decision fully implemented** YYYY-MM-DD` after the last task sub-line
+       5. **If other WIP tasks remain** for the same decision: update only this task's sub-line from `**WIP** (added ...)` to `**done** YYYY-MM-DD` in the ADR `### Links` section
+       - Use `Read` then `Edit` on the ADR file — never `sed`, `echo >>`, or shell redirection
+     - If no `**Implements**:` line is found: skip silently
+  7. Report the new file paths for both UAT and task files
 - **Some failed** (any `[FAIL]` or `[FIXING]` markers remain): Keep file in `pending/`. Keep screenshots (useful for debugging). Suggest next steps:
   ```
   To fix failures and re-test:  /uat-walkthrough .docs/uat/pending/<file>.uat.md
@@ -601,7 +611,7 @@ Failed Tests:
 - **Never auto-pass or auto-fail** — the user is the tester, the agent is the facilitator. This applies **especially after a fix** — a successful code fix does NOT mean the test passes. Always re-present and ask.
 - **Use inline prompts** — do NOT use `AskUserQuestion` for verdicts. The user types their choice directly in the chat.
 - **API/CLI tests are auto-executed** — never ask "Run / Manual / Skip?", just execute and show results
-- **Batch tests by type** — API/CLI and UI tests are batched (up to 5), manual tests are presented one at a time
+- **Batch tests by type** — API/CLI tests are batched (up to 5); UI tests are batched compactly (up to 3, one-liner format); manual tests are presented one at a time
 - **Flexible verdict input** — accept "all pass", per-test lists, or selective overrides for batched verdicts
 - Keep the test presentation clean and scannable
 

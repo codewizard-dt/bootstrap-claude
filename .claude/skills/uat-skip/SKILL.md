@@ -124,6 +124,18 @@ If the user says **No**, STOP.
    - Look for references to the old task path (`active/<number>-<slug>.md`) across `.docs/`
    - Update any found references to the new `completed/` path
 
+4. **Check for ADR linkage**: Read the moved task file (now in `completed/`) for a line matching `**Implements**: ADR-NNNN#DM`:
+   - If found:
+     1. Parse the `ADR-NNNN#DM` reference.
+     2. Locate the ADR file using Serena `mcp__serena__find_file` for `NNNN-*.md` in `.docs/adr/`.
+     3. Use Serena `mcp__serena__search_for_pattern` on `.docs/tasks/active/` for the same `**Implements**: ADR-NNNN#DM` pattern to check for remaining WIP tasks.
+     4. **If no other WIP tasks remain** (last or only task for this decision):
+        - **Single-task**: replace `Source task(s): .docs/tasks/active/...` line with `Source task(s): .docs/tasks/completed/NNN-slug.md — **implemented (UAT skipped)** YYYY-MM-DD`
+        - **Multi-task**: update this task's sub-line to `**done (UAT skipped)** YYYY-MM-DD`; append `- **Decision fully implemented (UAT skipped for some tasks)** YYYY-MM-DD` after the last sub-line
+     5. **If other WIP tasks remain**: update only this task's sub-line to `**done (UAT skipped)** YYYY-MM-DD`
+     - Use `Read` then `Edit` — never `sed`, `echo >>`, or shell redirection
+   - If not found: skip silently
+
 ### Step 6: Delete Related Screenshots
 
 If any screenshots exist for this task in `.docs/uat/screenshots/`:
