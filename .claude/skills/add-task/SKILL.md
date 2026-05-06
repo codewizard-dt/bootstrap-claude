@@ -47,7 +47,7 @@ $ARGUMENTS
    - If the decision is `accepted`, store `(adr_file_path, decision_id, decision_anchor)` for use in steps 7 and 8.5.
    - If no ADR reference is present in `$ARGUMENTS`: skip this step entirely. All subsequent ADR steps are no-ops.
 
-3) **Assess existing tasks**: Check `.docs/tasks/active/` and `.docs/tasks/completed/` to determine the next task number.
+3) **Assess existing tasks** (preview only): Check `.docs/tasks/active/` and `.docs/tasks/completed/` for a tentative next task number to use during planning. The authoritative re-check happens in step 7a, immediately before file creation — so do not over-invest here.
 
 4) **Research**: Run the `/research` workflow (see `.claude/skills/research/SKILL.md`) scoped to this task:
    - **Phase 2 (Internal)**: Review `PROJECT_STATUS.md`, `CLAUDE.md`, and related code via Serena to understand constraints, dependencies, patterns, and data flow.
@@ -63,6 +63,14 @@ $ARGUMENTS
    Ask the user to confirm before proceeding.
 
 7) **Create the task file(s)**: After user confirmation, create fully detailed, execution-ready task file(s) in `.docs/tasks/active/` following the format specified in `.docs/tasks/active/README.md`.
+
+   **7a) Re-verify the next available task number — IMMEDIATELY before writing any file.** The number determined in step 3 may now be stale (other tasks created mid-session, the `active/README.md` index may list reservations not yet on disk, or a sibling task is being created in the same run). Do a fresh scan now:
+   - Use Serena `mcp__serena__list_dir` on `.docs/tasks/active/`, `.docs/tasks/completed/`, and `.docs/tasks/trashed/` (skip any that don't exist).
+   - Use `mcp__serena__search_for_pattern` against `.docs/tasks/README.md` and `.docs/tasks/active/README.md` for `^\d{3}-` entries — these may reserve numbers that haven't been written to disk yet.
+   - Collect every `NNN-` prefix across all sources, take `max + 1`, zero-pad to 3 digits.
+   - **For ADR splits or multi-task runs**: assign sequential numbers (`NNN`, `NNN+1`, `NNN+2`, …) and reserve them all *before* writing the first file.
+   - If the number you planned to use in step 6 has been taken, silently bump to the new next-available number and use it. Do not re-prompt the user.
+   - **Never use a `Write` tool call before completing this re-scan.**
 
    **ADR split (only when step 2.5 found an accepted ADR reference)**: If the decision is large enough to warrant multiple tasks (determined during step 6 clarification), create all task files in this single invocation — one file per logical chunk. Present the planned task list to the user for confirmation before creating any files. Each task file implements one portion of the decision and gets its own `**Implements**:` line (see below). The goal is that when all tasks complete, the decision is fully implemented.
 

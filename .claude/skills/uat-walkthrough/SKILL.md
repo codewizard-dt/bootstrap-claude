@@ -429,6 +429,10 @@ The user will type their choice. Accept any unambiguous prefix (e.g., "p", "pass
 
 #### If Fix Now
 - Ask inline: **"What went wrong?"**
+- **Resolve approach ambiguity before delegating (mandatory).** The root cause and target component are usually clear from the test itself. The ambiguity that matters is *how to fix it* in the wider codebase — whether the fix has side effects, whether there are multiple valid approaches with different tradeoffs, or whether the safest fix path touches shared code. If any of those are unclear, **STOP and ask** before delegating. Do not hand a subagent an approach decision it shouldn't be making alone. Examples:
+  - "There are two ways to fix this — clamp at the API layer or adjust the validation schema. Which fits better with the rest of the feature?"
+  - "This fix would touch the shared `<X>` utility. Should I scope it narrowly to this test or update it globally?"
+  If the fix path is unambiguous (one obvious change, no shared-code risk), proceed directly.
 - Mark the test temporarily: `- [FIXING: <user's note>] <!-- YYYY-MM-DD -->`
 - **Process all non-fix verdicts first** (pass/fail/skip in the batch), then handle Fix Now tests one at a time
 - **Delegate a fix** to a subagent (see [Fix Workflow](#fix-workflow) below)
