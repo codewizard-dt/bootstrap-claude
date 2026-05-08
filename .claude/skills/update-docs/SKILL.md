@@ -164,7 +164,7 @@ Before completing the update, verify:
 This command is typically run after `/tackle` completes. The full workflow:
 
 ```
-/add-task → /tackle → /update-docs → /uat-generator → /uat-walkthrough
+/add-task → /tackle → /update-docs → /uat-generator → /uat
 (active/)   (stays in active/)      (→ pending/)   (→ completed/ + completed/)
 ```
 

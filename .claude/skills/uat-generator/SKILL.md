@@ -388,10 +388,10 @@ After writing the tests:
 
 2. **Next steps for the user**:
    ```
-   To walk through tests interactively:  /uat-walkthrough .docs/uat/pending/<number>-<slug>.uat.md
+   To walk through tests interactively:  /uat .docs/uat/pending/<number>-<slug>.uat.md
    To create a task first:               /add-task <description>
    ```
-   When all tests pass, `/uat-walkthrough` moves the file from `pending/` to `completed/`.
+   When all tests pass, `/uat` moves the file from `pending/` to `completed/`.
 
 3. Note any areas that may need additional manual test cases
 
@@ -412,8 +412,8 @@ After writing the tests:
 └── completed/        # UAT passed, task fully complete
 ```
 
-**Task lifecycle**: `active/` → (`/tackle` completes, stays in `active/`) → (`/uat-walkthrough` all pass) → `completed/`
-**UAT lifecycle**: `pending/` → (`/uat-walkthrough` all pass) → `completed/`
+**Task lifecycle**: `active/` → (`/tackle` completes, stays in `active/`) → (`/uat` all pass) → `completed/`
+**UAT lifecycle**: `pending/` → (`/uat` all pass) → `completed/`
 
 ---
 

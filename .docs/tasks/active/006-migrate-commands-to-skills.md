@@ -52,7 +52,7 @@ argument-hint: <preserve if present in original .md frontmatter>
 | `uat-auth` | `claude-sonnet-4-6` | — | omit (both) | Model auto-invokes; keep in `/` menu |
 | `uat-auto` | `claude-sonnet-4-6` | — | `true` | Execution |
 | `uat-skip` | `claude-sonnet-4-6` | — | `true` | Execution |
-| `uat-walkthrough` | `claude-sonnet-4-6` | — | `true` | Execution |
+| `uat` | `claude-sonnet-4-6` | — | `true` | Execution |
 | `update-docs` | `claude-sonnet-4-6` | — | `true` | Execution |
 | `primer` | `claude-haiku-4-5-20251001` | — | omit (both) | Lightweight; Claude may auto-invoke |
 
@@ -77,7 +77,7 @@ argument-hint: <preserve if present in original .md frontmatter>
 | `uat-auto` | Non-interactively run every test in a pending UAT file and auto-judge verdicts (headless, fail-closed) |
 | `uat-generator` | Generate UAT tests in .docs/uat/pending/ mirroring task naming conventions |
 | `uat-skip` | Skip UAT for a task, moving it to completed and archiving a skeleton UAT in skipped |
-| `uat-walkthrough` | Walk through a pending UAT file test-by-test with the user |
+| `uat` | Walk through a pending UAT file test-by-test with the user |
 | `update-docs` | Update all project documentation after implementation work |
 | `update-task` | Assess and modify an existing task's scope or steps |
 
@@ -105,7 +105,7 @@ The 20 commands to process:
 - [x] `uat-auto`
 - [x] `uat-generator`
 - [x] `uat-skip`
-- [x] `uat-walkthrough`
+- [x] `uat`
 - [x] `update-docs`
 - [x] `update-task`
 

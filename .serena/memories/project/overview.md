@@ -37,7 +37,7 @@ Project setup template for Claude Code. Contains reusable `.claude/` configurati
 - `/trash-task <path>` — Move task + UAT to `trashed/`
 - `/update-task <path> <changes>` — Modify existing task
 - `/uat-generator <target>` — Generate UAT tests; owns runtime and end-to-end verification (what /tackle cannot run); shell script execution against ./tmp/ scratch dirs belongs here, not in /tackle. **Test integrity rule (non-negotiable)**: tests encode required functionality from the task's acceptance criteria — never weakened, narrowed, or reshaped to match buggy/incomplete implementation. Source code grounds *how to invoke*; the requirement grounds *what should happen*. Discrepancies → write the test against the requirement, let it fail, report the gap.
-- `/uat-walkthrough <path>` — Interactive UAT (human at keyboard)
+- `/uat <path>` — Interactive UAT (human at keyboard)
 - `/uat-auto <path>` — Headless UAT auto-judging (fail-closed, for orchestrators like tmux-conductor)
 - `/uat-skip <path>` — Skip UAT, move task to completed + UAT to skipped
 - `/lint` — IDE diagnostics with fix cycles
@@ -51,7 +51,7 @@ Project setup template for Claude Code. Contains reusable `.claude/` configurati
 - `/mermaid-flowchart <input> [output]` — Summarize an architecture file (markdown, YAML, Docker Compose) into a Mermaid flowchart; output: `<stem>.flowchart.md`
 
 ## Workflow Pipeline
-`/create-prd → /finalize-prd → /prd-to-decisions → /create-adr → /finalize-adr → /add-task → /tackle → /update-docs → /uat-generator → /uat-walkthrough` (human) OR `/uat-auto` (headless)
+`/create-prd → /finalize-prd → /prd-to-decisions → /create-adr → /finalize-adr → /add-task → /tackle → /update-docs → /uat-generator → /uat` (human) OR `/uat-auto` (headless)
 
 PRD layer is optional for small/internal work — jump directly to `/add-task` or `/create-adr` when below the PRD threshold (bug fixes, refactors, single-engineer choices). See `.docs/prd/README.md` "When NOT to Write a PRD".
 

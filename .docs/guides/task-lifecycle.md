@@ -22,7 +22,7 @@ Tasks and UATs share a `<NNN>-<slug>` identifier so they sort and cross-referenc
 ## Happy Path
 
 ```
-/add-task        /tackle        /uat-generator      /uat-walkthrough (all complete)
+/add-task        /tackle        /uat-generator      /uat (all complete)
    │                │                  │                    │
    ▼                ▼                  ▼                    ▼
 active/          active/            active/             completed/
@@ -41,8 +41,8 @@ active/          active/            active/             completed/
 | `/update-task` | — | — | Rewrites task in place |
 | `/tackle` | — | — | Implementation only; no moves |
 | `/uat-generator` | — | **creates** in `pending/` | Appends UAT cross-link to task file |
-| `/uat-walkthrough` (all complete) | `active/` → `completed/` | `pending/` → `completed/` | Complete = all tests `[x] Pass` or `[SKIP]`, no `[FAIL]`/`[FIXING]`; updates cross-links; deletes screenshots; runs `/update-docs` |
-| `/uat-walkthrough` (any fail / abort) | — | — | Stays in place; screenshots kept for debugging |
+| `/uat` (all complete) | `active/` → `completed/` | `pending/` → `completed/` | Complete = all tests `[x] Pass` or `[SKIP]`, no `[FAIL]`/`[FIXING]`; updates cross-links; deletes screenshots; runs `/update-docs` |
+| `/uat` (any fail / abort) | — | — | Stays in place; screenshots kept for debugging |
 | `/uat-skip` | `active/` → `completed/` | `pending/` → `skipped/`, or **creates** skeleton in `skipped/` | Deletes screenshots; updates cross-links |
 | `/trash-task` | `active/` or `completed/` → `trashed/` | any location → `trashed/` | Updates references in indexes and cross-linked files |
 | `/update-docs` | — | — | Refreshes doc state and checkboxes; no file moves |

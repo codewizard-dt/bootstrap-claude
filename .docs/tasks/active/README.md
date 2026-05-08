@@ -69,7 +69,7 @@ Brief summary of the technical approach or key decisions (1-3 sentences).
 
 ```
 active/  →  completed/
-(/tackle + /uat-walkthrough all pass)
+(/tackle + /uat all pass)
 ```
 
 When a task reaches `completed/`, a UAT link is appended:

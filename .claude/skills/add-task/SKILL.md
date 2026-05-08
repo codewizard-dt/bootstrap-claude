@@ -113,5 +113,5 @@ $ARGUMENTS
    ```
    To implement this task:  /tackle .docs/tasks/active/<number>-<slug>.md
    ```
-   Note: After `/tackle` completes, the task stays in `active/`. Use `/uat-generator` to create UAT tests, then `/uat-walkthrough` to move the task to `completed/`.
+   Note: After `/tackle` completes, the task stays in `active/`. Use `/uat-generator` to create UAT tests, then `/uat` to move the task to `completed/`.
    If this task implements an ADR decision, the ADR's `### Links` section will be updated to **implemented** automatically when all linked tasks pass UAT.

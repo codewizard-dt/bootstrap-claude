@@ -20,7 +20,7 @@ Skip UAT testing for a task, marking it as completed and moving (or creating) a 
 
 ## Pipeline Context
 
-This command is part of the task lifecycle: `/add-task` → `/tackle` → `/uat-generator` → `/uat-walkthrough`
+This command is part of the task lifecycle: `/add-task` → `/tackle` → `/uat-generator` → `/uat`
 
 `/uat-skip` is an **escape hatch** — use it when UAT testing is not needed, not applicable, or intentionally deferred for a task that has completed implementation.
 
@@ -169,12 +169,12 @@ Screenshots deleted: [count or "None"]
 
 .docs/uat/
 ├── pending/          # Generated UATs, not yet walked through
-├── completed/        # All tests passed via /uat-walkthrough
+├── completed/        # All tests passed via /uat
 ├── skipped/          # UAT intentionally skipped via /uat-skip
-└── screenshots/      # Temporary screenshots from /uat-walkthrough
+└── screenshots/      # Temporary screenshots from /uat
 ```
 
-**Task lifecycle**: `active/` → (`/tackle`, stays in `active/`) → (`/uat-walkthrough` | **`/uat-skip`**) → `completed/`
+**Task lifecycle**: `active/` → (`/tackle`, stays in `active/`) → (`/uat` | **`/uat-skip`**) → `completed/`
 
 ---
 

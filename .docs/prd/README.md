@@ -46,7 +46,7 @@ flowchart LR
     FinalizeADR --> AcceptedADR[ADR accepted]
     AcceptedADR --> AddTask[/add-task --adr/]
     AddTask --> Tackle[/tackle/]
-    Tackle --> UAT[/uat-walkthrough/]
+    Tackle --> UAT[/uat/]
 ```
 
 The boundary between PRD and ADR is sharp:
@@ -280,7 +280,7 @@ flowchart LR
     AcceptedADR --> AddTaskFromADR[/add-task --adr/]
     AddTask --> Tackle[/tackle/]
     AddTaskFromADR --> Tackle
-    Tackle --> UATWalk[/uat-walkthrough/]
+    Tackle --> UATWalk[/uat/]
     UATWalk --> Done[Linked Tasks marked done<br/>in PRD index]
     Approved --> Update[/update-prd/]
     Update --> Amendment[Amendment N appended<br/>downstream impact flagged]

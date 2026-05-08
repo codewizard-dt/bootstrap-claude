@@ -41,7 +41,7 @@ Follow `basic-project-setup.md` to configure a new project, or use the npm packa
 | `/trash-task <path>` | Move task + related UAT files to `trashed/` directories and update references |
 | `/update-task <path> <changes>` | Modify an existing task's scope or steps |
 | `/uat-generator <target>` | Generate UAT tests in `.docs/uat/pending/` mirroring task naming conventions |
-| `/uat-walkthrough <path>` | Interactively walk through a pending UAT file test-by-test with the user |
+| `/uat <path>` | Interactively walk through a pending UAT file test-by-test with the user |
 | `/uat-auto <path>` | Non-interactively run every test in a pending UAT file and auto-judge verdicts (headless, fail-closed) |
 | `/uat-skip <path>` | Skip UAT for a task, move task to completed and UAT to skipped |
 | `/lint` | Get IDE diagnostics, fix issues one-by-one in verify cycles |
