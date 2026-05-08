@@ -43,9 +43,9 @@ Follow `basic-project-setup.md` to configure a new project, or use the npm packa
 | `/uat-generator <target>` | Generate UAT tests in `.docs/uat/pending/` mirroring task naming conventions |
 | `/uat-walkthrough <path>` | Interactively walk through a pending UAT file test-by-test with the user |
 | `/uat-auto <path>` | Non-interactively run every test in a pending UAT file and auto-judge verdicts (headless, fail-closed) |
-| `/uat-auth` | Authenticate a test user (user|guest) and export `$UAT_AUTH_TOKEN` for UAT tools; invoked automatically by `/uat-auto` on auth-gated tests |
 | `/uat-skip <path>` | Skip UAT for a task, move task to completed and UAT to skipped |
 | `/lint` | Get IDE diagnostics, fix issues one-by-one in verify cycles |
+| `/type-check` | Detect type-checking tools (typecheck/tsc/mypy/pyright/go vet/cargo check/etc.), run each one, and only invoke `/git-commit` if all pass |
 | `/debug-logs [symptom]` | Diagnose failures by inspecting session context, background processes, and conventional log stores; produce ranked hypotheses with next actions (read-only) |
 | `/simplify <path>` | Analyze files/directories to remove redundancy and simplify complexity |
 | `/marp-slideshow <input> [output]` | Summarize a source file into a Marp/Marpit slide deck following best practices |

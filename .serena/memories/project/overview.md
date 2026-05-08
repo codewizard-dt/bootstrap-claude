@@ -39,15 +39,15 @@ Project setup template for Claude Code. Contains reusable `.claude/` configurati
 - `/uat-generator <target>` — Generate UAT tests; owns runtime and end-to-end verification (what /tackle cannot run); shell script execution against ./tmp/ scratch dirs belongs here, not in /tackle. **Test integrity rule (non-negotiable)**: tests encode required functionality from the task's acceptance criteria — never weakened, narrowed, or reshaped to match buggy/incomplete implementation. Source code grounds *how to invoke*; the requirement grounds *what should happen*. Discrepancies → write the test against the requirement, let it fail, report the gap.
 - `/uat-walkthrough <path>` — Interactive UAT (human at keyboard)
 - `/uat-auto <path>` — Headless UAT auto-judging (fail-closed, for orchestrators like tmux-conductor)
-- `/uat-auth [--role=user|guest]` — Authenticate test user and export `$UAT_AUTH_TOKEN`; invoked by `/uat-auto` Step 2.5 on auth-gated tests; env-var-only credentials, no disk persistence
 - `/uat-skip <path>` — Skip UAT, move task to completed + UAT to skipped
 - `/lint` — IDE diagnostics with fix cycles
+- `/type-check` — Detect type-checking tools (typecheck/tsc/mypy/pyright/go vet/cargo check/etc.), run each sequentially, and chain into `/git-commit` only if all pass; graceful no-op if no checkers detected; never auto-fixes (verification-only)
 - `/debug-logs [symptom]` — Read-only failure diagnosis: gather session context (recent diff, background processes, recent errors), pick log stores by symptom (TaskOutput, IDE diagnostics, gh run logs, DigitalOcean app logs, conventional `./logs`/`./tmp` paths, Puppeteer console), correlate with code, and produce ranked hypotheses with concrete next actions. Never auto-applies fixes.
 - `/simplify <path>` — Remove redundancy, simplify complexity
 - `/git-commit` — Stage and commit with auto message
 - `/update-docs` — Update docs + audit/update Serena memories
 - `/project-readme` — Generate/update portfolio-ready README
-- `/marp-slideshow <input> [output]` — Summarize a source file into a Marp/Marpit slide deck; output: `<stem>.slides.md`
+- `/marp-slideshow <input> [output]` — Summarize a source file into a Marp/Marpit slide deck; default output: `.docs/MARP/<stem>.slides.md`; always normalizes filename to `.slides.md`
 - `/mermaid-flowchart <input> [output]` — Summarize an architecture file (markdown, YAML, Docker Compose) into a Mermaid flowchart; output: `<stem>.flowchart.md`
 
 ## Workflow Pipeline

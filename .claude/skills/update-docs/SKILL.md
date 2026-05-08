@@ -66,9 +66,9 @@ Update when:
 
 ---
 
-### Step 3: Update Serena Memories (MANDATORY)
+### Step 3: Update Serena Memories
 
-**This step is not optional.** Serena memories are the bridge between this conversation and every future conversation. If you skip this step, the next agent starts with stale or missing context — leading to repeated mistakes, redundant research, and wrong assumptions about the codebase.
+Serena memories persist only what future agents cannot recover from code or docs. The goal is a lean, accurate memory set — not comprehensive coverage. Audit and prune aggressively; write sparingly.
 
 Every `/update-docs` run MUST execute this full workflow:
 
@@ -89,20 +89,23 @@ For every memory that references code, patterns, or architecture affected by rec
 
 #### 3.3 Write new memories for discoveries
 
-After any implementation work, there is almost always new non-obvious knowledge worth persisting. Use `mcp__serena__write_memory` for each new memory. Use `/` in names for topic hierarchy (e.g., `api/auth/jwt-flow`, `modules/frontend`).
+Only write a new memory if the knowledge **cannot be recovered** by reading CLAUDE.md, task files, ADRs, or the code itself, **and** it would materially change how a future agent operates on this codebase. Apply a strict threshold: if in doubt, do not write it.
 
-**What MUST be persisted as memories:**
-- Architecture decisions and their rationale
-- Integration patterns between modules that aren't obvious from code
-- Naming conventions and project-specific terminology
-- Known gotchas, workarounds, and edge cases discovered during implementation
-- Configuration requirements that aren't self-documenting
-- Workflow constraints that agents must follow (e.g., "typecheck errors are always from your changes, never pre-existing")
+Use `mcp__serena__write_memory` only for:
+- **Codebase-wide standards**: naming conventions or terminology that apply across the whole project and aren't documented anywhere
+- **Non-obvious invariants**: constraints or coupling between modules that a skilled developer would not infer from the code (e.g., "module A must always be initialised before B at runtime")
+- **Repeated-mistake traps**: gotchas that caused real failures and are invisible in the code (e.g., "this ORM silently drops timezone info")
+- **Mandatory workflow constraints**: agent-level rules that govern how work must be done on this project (e.g., "never run migrations without a backup step")
 
-**What must NOT be persisted:**
-- Information already captured in task files, CLAUDE.md, or PROJECT_STATUS.md
-- Temporary state or debugging notes
-- Easily re-derivable facts (file lists, import paths)
+**Do NOT write memories for:**
+- Architecture decisions already recorded in ADR files
+- Information already in CLAUDE.md, PROJECT_STATUS.md, or task files
+- Temporary state, debugging notes, or task-specific findings
+- Easily re-derivable facts (file lists, import paths, dependency versions)
+- Implementation details that are clear from reading the code
+- Anything specific to a single task or feature unless it sets a project-wide standard
+
+Use `/` in names for topic hierarchy (e.g., `api/auth/jwt-flow`, `modules/frontend`). Prefer updating an existing memory over creating a new one.
 
 #### 3.4 Verification checklist
 

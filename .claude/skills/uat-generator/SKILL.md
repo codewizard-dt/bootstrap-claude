@@ -297,10 +297,9 @@ When generating tests, ensure:
      Auth-Required: true
      Auth-Role: user   # or "guest"
      ```
-   - These signal `/uat-auto` Step 2.5 to invoke `/uat-auth` before running the test, which populates `$UAT_AUTH_TOKEN` in the test environment.
-   - The Prerequisites section of the generated UAT file must include: `- Auth handled automatically by /uat-auth (invoked by /uat-auto on demand)`
+   - These signal `/uat-auto` that the test requires auth; `$UAT_AUTH_TOKEN` must be present in the environment before the test runs.
 
-   **No literal credentials**: Never write literal credentials (email, password, token) into a generated UAT file. Use `$UAT_AUTH_TOKEN` for bearer tokens and omit password fields entirely — signup/login is `/uat-auth`'s responsibility.
+   **No literal credentials**: Never write literal credentials (email, password, token) into a generated UAT file. Use `$UAT_AUTH_TOKEN` for bearer tokens and omit password fields entirely.
    - **No line continuations** (`\` at end of line) unless the command genuinely exceeds ~200 chars. Long single-line commands are easier to copy-paste than multi-line ones.
    - **Scratch paths**: if a test needs to write temporary files, use `./tmp/<purpose>/` (project-local, gitignored). Never write to `/tmp/` or use `$(mktemp -d)` — those paths are outside Serena's project scope and cannot be inspected without shell listings.
    - **The command must run successfully against a freshly-started dev server with documented prerequisites met.** If you cannot construct such a command, you do not understand the contract well enough yet — return to Step 2.3.

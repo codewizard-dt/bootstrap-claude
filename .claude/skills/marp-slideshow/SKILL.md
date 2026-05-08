@@ -15,7 +15,17 @@ Read a source file at the path supplied in `$ARGUMENTS`, distill it into a struc
 
 **Source / args**: `$ARGUMENTS`
 
-The first whitespace-separated token is the **input path** (required). An optional second token is the **output path**. If not provided, derive `<input-stem>.slides.md` next to the input file (e.g. `notes.md` → `notes.slides.md`).
+The first whitespace-separated token is the **input path** (required). An optional second token is the **output path**.
+
+**Output path resolution rules** (apply in order):
+
+1. **No output path provided** → write to `.docs/MARP/<input-stem>.slides.md` (create `.docs/MARP/` if it doesn't exist). Do **not** place the deck next to the input file.
+2. **Output path provided** → always normalize the filename so it ends in `.slides.md`, even if the user didn't say so:
+   - `deck` → `deck.slides.md`
+   - `deck.md` → `deck.slides.md` (strip the trailing `.md`, then append `.slides.md`)
+   - `deck.slides.md` → keep as-is
+   - `path/to/deck.md` → `path/to/deck.slides.md` (preserve the directory the user gave)
+3. If the resolved output path collides with an existing file, ask the user before overwriting.
 
 If `$ARGUMENTS` is empty, ask the user for the input path before proceeding.
 
@@ -177,7 +187,8 @@ Before calling `Write`, mentally verify:
 - [ ] Images use Marpit sizing (`w:` / `h:` / `bg` / `bg left`) — no raw `<img>` unless necessary
 - [ ] Speaker notes (HTML comments) are present where the source had context that didn't fit on-slide
 - [ ] Footer / header are short (one line, no Markdown that breaks YAML — wrap in quotes if it contains `:` or `#`)
-- [ ] Output filename ends in `.md` and lives next to the source unless the user gave an explicit path
+- [ ] Output filename ends in `.slides.md` (always — append/normalize even if the user-supplied path didn't include it)
+- [ ] If the user did **not** supply an output path, the deck is written to `.docs/MARP/<input-stem>.slides.md` (not next to the source)
 
 ## Phase 5 — Write & Confirm
 

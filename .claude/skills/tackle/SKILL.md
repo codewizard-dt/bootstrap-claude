@@ -35,16 +35,25 @@ Parse `$ARGUMENTS` to locate the task file:
    - If ambiguous, list matches and ask the user to clarify
    - If no match found, fall through to case 4
 
-4. **If `$ARGUMENTS` is empty OR the input above did not resolve to a task file** — auto-pick the most important active task:
-   - Use `mcp__serena__list_dir` on `.docs/tasks/active/` to enumerate all `*.md` task files (exclude `README.md`)
+4. **If `$ARGUMENTS` is empty OR the input above did not resolve to a task file** — survey all active tasks and recommend, do NOT auto-pick:
+   - Use `mcp__serena__list_dir` on `.docs/tasks/active/` to enumerate all `*.md` task files (exclude `README.md` and `.gitkeep`)
+   - Use `mcp__serena__list_dir` on `.docs/uat/pending/` to enumerate pending UAT files (exclude `.gitkeep`)
    - If no active tasks exist, STOP and report "No active tasks to tackle"
-   - Read each candidate task file (use `Read` — these are markdown) to assess its `## Objective`, overall checkbox progress, and any blocking/failure markers
-   - Pick the next task using this priority order (highest first):
-     1. **In-progress tasks** — any task with at least one `[x]` checkbox but not all complete (continue existing work before starting new)
-     2. **Unblock-able tasks** — tasks with `[BLOCKED: ...]` or `[FAILED: ...]` markers whose blocker is plausibly resolvable now (skip if the blocker is clearly still outstanding)
-     3. **Lowest-numbered fully-pending task** — as the stable tiebreaker, the task with the lowest `<NNN>` prefix whose checkboxes are all `[ ]`
-   - Before beginning, announce the auto-pick to the user in one line: `No matching task — tackling \`<NNN>-<slug>.md\` (<reason>, <X>/<Y> steps complete)`. Do not prompt for confirmation; proceed.
-   - If `$ARGUMENTS` was non-empty but unresolved, prefix the announcement with `Input \`<arguments>\` did not match — ` so the user sees why auto-pick fired.
+   - For each task file, read it (use `Read` — these are markdown) and capture:
+     - **Number + slug** (from filename `<NNN>-<slug>.md`)
+     - **Objective** — first sentence under `## Objective` (one line, truncate if long)
+     - **Progress** — count of `[x]` vs total checkboxes across the file (e.g. `3/8`)
+     - **Status flags** — presence of `[BLOCKED: ...]`, `[FAILED: ...]`, `[WIP]`, or `[DEFERRED-TO-UAT]` markers
+     - **Pending UAT** — whether `.docs/uat/pending/<NNN>-<slug>.uat.md` exists. A pending UAT means implementation is essentially complete and the task is awaiting `/uat-walkthrough` — it should NOT be re-tackled unless the impl checkboxes are clearly incomplete.
+   - Present the survey to the user as a compact table with these columns: `#` · `Slug` · `Progress` · `UAT` · `Flags` · `Objective`. Use `—` for empty cells; in the `UAT` column show `pending` (if a pending UAT exists), `none` otherwise.
+   - Below the table, output a **Recommendation** section ranking the top 1–3 candidates with one-line reasoning each, using this priority order (highest first):
+     1. **In-progress tasks without a pending UAT** — at least one `[x]` checkbox, not all complete, no pending UAT (finish what's started)
+     2. **Unblock-able tasks** — `[BLOCKED: ...]`/`[FAILED: ...]` whose blocker is plausibly resolvable now (skip if blocker is clearly still outstanding)
+     3. **Lowest-numbered fully-pending task** — all `[ ]` checkboxes, no pending UAT, lowest `<NNN>` prefix
+     - Tasks with a **pending UAT** must be excluded from the recommendation list and instead surfaced under a separate `**Awaiting UAT walkthrough**:` line that suggests `/uat-walkthrough .docs/uat/pending/<NNN>-<slug>.uat.md` for each.
+   - Use `AskUserQuestion` to ask the user which task to tackle. Offer the top recommendation as the first option (label it `(Recommended)`), include up to 2 additional candidates as further options, and rely on the auto-provided `Other` for free-form input. Use the `header` field for the task number-slug.
+   - If `$ARGUMENTS` was non-empty but unresolved, prefix the survey output with one line: `Input \`<arguments>\` did not match an active task — surveying all active tasks instead.`
+   - Once the user answers, resolve their choice to a task file path and use it as the outline for all subsequent steps. Do NOT proceed to Step 1 until the user has chosen.
 
 Use the resolved file path as the outline for all subsequent steps.
 
@@ -269,10 +278,23 @@ Now execute the cycle:
 3. Delegate to the annotated agent type
 4. Update the outline
 5. Repeat until done
-6. Ask the user: **"Generate UAT tests for this task?"** using `AskUserQuestion`:
-   - **Yes** — Run `/uat-generator .docs/tasks/active/<filename>` to create a UAT file in `.docs/uat/pending/` matching this task's naming
-   - **No** — Skip UAT generation
-7. Run the `/update` skill (this ensures any generated UAT file is included in the documentation update)
-8. If UAT was generated in step 6, suggest: `/uat-walkthrough .docs/uat/pending/<file>.uat.md`
+
+### Step 6: UAT Generation Gate (HARD STOP — must precede /update-docs and /git-commit)
+
+⛔ **This gate MUST run before Step 7. Never skip it, never reorder it, never let `/update-docs` (which triggers `/git-commit`) run first.**
+
+Once all outline steps are complete, ask the user: **"Generate UAT tests for this task?"** using `AskUserQuestion`:
+- **Yes** — Run `/uat-generator .docs/tasks/active/<filename>` to create a UAT file in `.docs/uat/pending/` matching this task's naming
+- **No** — Skip UAT generation
+
+**Wait** for the user's answer (and for `/uat-generator` to finish, if invoked) before proceeding to Step 7. The UAT file produced here must exist on disk before `/update-docs` runs so it's included in the same documentation update and commit.
+
+### Step 7: Run `/update-docs`
+
+Only after Step 6 has resolved, run the `/update-docs` skill. This skill ends by invoking `/git-commit`, which has its own confirmation gate — that is the *git-commit* prompt the user should see only after the UAT prompt above.
+
+### Step 8: Suggest UAT Walkthrough
+
+If UAT was generated in Step 6, suggest: `/uat-walkthrough .docs/uat/pending/<file>.uat.md`
 
 **Start now - read the outline and begin the first cycle.**

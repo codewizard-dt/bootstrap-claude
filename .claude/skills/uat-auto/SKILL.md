@@ -76,26 +76,7 @@ For each prerequisite in the UAT file:
 - If the prerequisite is **descriptive only** (e.g. "test data loaded"), treat it as **unverifiable** and record a note. Do not assume it is satisfied.
 - If any prerequisite fails or is unverifiable, **abort the entire walkthrough** with `[FAIL: auto-judge: prerequisite not satisfied — <which>]` on every untested test. Proceed to Step 6 reporting.
 
-**Note:** Auth prerequisites (login state, bearer tokens, session cookies, test-user credentials) are handled by the new **Step 2.5: Auth Detection and Setup** below and must **not** cause abort at Step 2. Skip auth-related prerequisites here and let Step 2.5 resolve them.
-
 Prerequisites are a hard gate. A single unverifiable prerequisite fails the run.
-
----
-
-## Step 2.5: Auth Detection and Setup
-
-Scan each eligible test (pending + previously-failed) for any of these auth signals:
-
-1. Literal `Authorization:` header in the test's `**Command**:` block
-2. Literal `Bearer` token reference in Expected or Command sections
-3. `Auth-Required: true` metadata field in the test's metadata block
-4. `Page:` URL matching a configured auth-gated route prefix (read from `CLAUDE.md` if present; otherwise skip this signal)
-
-If any eligible test matches → invoke `/uat-auth` with role inferred from test metadata (`Auth-Role: guest` → `--role=guest`, default `user`) and `--inject-cookie` when any UI test is eligible.
-
-If `/uat-auth` exits non-zero → mark every auth-gated test `[FAIL: auto-judge: auth setup failed — <reason>]` and proceed to remaining non-auth tests normally.
-
-If no eligible test matches auth signals → skip Step 2.5 entirely, do not invoke `/uat-auth`.
 
 ---
 
@@ -128,7 +109,7 @@ Extract the command from the test's `**Command**:` block (written by `/uat-gener
 1. The command exited successfully (curl returned a response; no connection error).
 2. The HTTP status code matches the Expected section's explicit status (e.g. "HTTP 201"). If no status is specified, treat any 2xx as pass-eligible on status alone.
 3. The response body satisfies **every** machine-checkable assertion in the Expected section. Machine-checkable means: literal string presence, JSON key presence, JSON value equality, array length, or type-of checks. Use `jq` or direct substring matching.
-4. If the test references `$UAT_AUTH_TOKEN`, the token must be present in the environment (set by Step 2.5). If not present, record `[FAIL: auto-judge: auth token missing]`.
+4. If the test references `$UAT_AUTH_TOKEN`, the token must be present in the environment. If not present, record `[FAIL: auto-judge: auth token missing]`.
 
 If any criterion fails → `[FAIL: auto-judge: <which criterion, with actual vs expected>]`.
 If the Expected section contains no machine-checkable assertions at all → `[FAIL: auto-judge: expected section not machine-verifiable]`.
@@ -176,8 +157,7 @@ After every eligible test has a non-blocking status (`[x] Pass`, `[SKIP: ...]` a
 
 ### All Pass (no `[FAIL]` or `[FIXING]` markers remain)
 
-1. Cleanup auth state: run `unset UAT_AUTH_TOKEN UAT_TEST_EMAIL UAT_TEST_PASSWORD UAT_SESSION_COOKIE; rm -f /tmp/uat-auth-*.jar /tmp/uat-auth-*.json /tmp/uat-auth-token` regardless of outcome.
-2. Move the UAT file: `git mv .docs/uat/pending/<slug>.uat.md .docs/uat/completed/<slug>.uat.md` (fall back to `mv` if `git mv` fails).
+1. Move the UAT file: `git mv .docs/uat/pending/<slug>.uat.md .docs/uat/completed/<slug>.uat.md` (fall back to `mv` if `git mv` fails).
 3. Move the associated task file: derive from UAT name (`<number>-<slug>.uat.md` → `<number>-<slug>.md`), then `git mv .docs/tasks/active/<number>-<slug>.md .docs/tasks/completed/<number>-<slug>.md` (fall back to `mv`).
 4. Update internal path references in both moved files (`active/` → `completed/` in the task, `pending/` → `completed/` in the UAT's source-task link).
 5. Delete screenshots for this task: use `mcp__serena__list_dir` on `.docs/uat/screenshots/` to find files matching `<task-number>-*` — **never** `ls` — then `git rm` each (or `rm` if untracked).
@@ -198,8 +178,7 @@ After every eligible test has a non-blocking status (`[x] Pass`, `[SKIP: ...]` a
 
 ### Any Fail (`[FAIL: ...]` markers remain)
 
-1. Cleanup auth state: run `unset UAT_AUTH_TOKEN UAT_TEST_EMAIL UAT_TEST_PASSWORD UAT_SESSION_COOKIE; rm -f /tmp/uat-auth-*.jar /tmp/uat-auth-*.json /tmp/uat-auth-token` regardless of outcome.
-2. **Leave the UAT file in `pending/`** — it is not complete.
+1. **Leave the UAT file in `pending/`** — it is not complete.
 3. **Keep screenshots** — they are diagnostic evidence for the next human walkthrough.
 4. Close Puppeteer if launched.
 5. Emit the completion summary.
@@ -270,7 +249,7 @@ On all-pass, replace `Next action` with `Moved to completed/` and the new paths.
 - Use Serena for every directory listing and file search (e.g. screenshots cleanup).
 - Use the `Edit` tool for every status-line flip.
 - No `sed`, `awk`, `ls`, `find`, `grep`, `cat` on any file. See `.docs/guides/mcp-tools.md`.
-- Credentials are governed by `/uat-auth` — never emit literal password values in any Bash call, thinking block, or text output. Only `"$UAT_AUTH_TOKEN"` and `"$UAT_TEST_PASSWORD"` env-var references are permitted.
+- Never emit literal password or token values in any Bash call, thinking block, or text output. Only `"$UAT_AUTH_TOKEN"` and `"$UAT_TEST_PASSWORD"` env-var references are permitted.
 
 ---
 
