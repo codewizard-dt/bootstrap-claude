@@ -124,6 +124,8 @@ If the user says **No**, STOP.
    - Look for references to the old task path (`active/<number>-<slug>.md`) across `.docs/`
    - Update any found references to the new `completed/` path
 
+3a. **Update `.docs/tasks/README.md`** — remove this task's row from the Active Tasks table and append a row to the Completed Tasks table (columns: `#`, Slug linking to `completed/...`, `UAT: skipped`, Objective). Use `Edit` calls — never `sed`. The index is `/tackle`'s no-args survey source.
+
 4. **Check for ADR linkage**: Read the moved task file (now in `completed/`) for a line matching `**Implements**: ADR-NNNN#DM`:
    - If found:
      1. Parse the `ADR-NNNN#DM` reference.

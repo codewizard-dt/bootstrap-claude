@@ -60,3 +60,17 @@ Keep memories current and useful for future conversations:
 4. **Do NOT write memories for**: information already in code comments or docs, temporary state, easily re-derivable facts
 
 See `.docs/guides/mcp-tools.md` for the complete Serena memory reference.
+
+---
+
+## Step 4: Verify Task Index Bootstrap
+
+`/tackle` no-args mode reads only `.docs/tasks/README.md` to survey active tasks — it relies on a structured index table rather than reading every task file. Older projects using this template predate that contract; check and bootstrap if needed.
+
+1. Use `mcp__serena__list_dir` on `.docs/tasks/active/` to list task files. If the directory does not exist or is empty, skip this step.
+2. Read `.docs/tasks/README.md` (use `Read` — markdown). Decide whether it is **bootstrapped**: it must contain an `## Active Tasks` section followed by a markdown table whose header row includes the columns `#`, `Slug`, `Progress`, `UAT`, `Flags`, `Objective` (in any order, case-insensitive).
+3. **If bootstrapped**: do a quick consistency check — every active task file should appear as a row, and every row should point to a real file. If you spot drift (missing rows, rows pointing at moved/trashed files, `Progress: 0/0`), report a one-line warning to the user listing what's off, but do NOT auto-fix; the skill that mutated state without updating the index is the bug.
+4. **If NOT bootstrapped** (file missing, no Active Tasks table, or wrong columns):
+   - Tell the user: `Task index at .docs/tasks/README.md is not in the structured-table format /tackle expects. Bootstrap it now? (Y/n)` via `AskUserQuestion`.
+   - On **yes**: for each file in `.docs/tasks/active/` and `.docs/tasks/completed/`, read the file and compute: `#` (filename prefix), `Slug` (filename slug, linked to the file), `Progress` (count of `- [x]` vs all `- [ ]`/`- [x]` checkboxes — read each task file once with `Read`; this is a one-time bootstrap so a parallel batch of `Read` calls is acceptable), `UAT` (`pending` if a matching file exists in `.docs/uat/pending/`, `completed` if in `.docs/uat/completed/`, `skipped` if in `.docs/uat/skipped/`, else `none`), `Flags` (presence of `[WIP]`, `[BLOCKED: ...]`, `[FAILED: ...]`, `[DEFERRED-TO-UAT]`), `Objective` (first sentence under `## Objective`). Write the result as `.docs/tasks/README.md` using the format documented in that file's column reference. Reference: this template's own `.docs/tasks/README.md` shows the canonical layout.
+   - On **no**: leave the file alone and continue. Warn the user that `/tackle` with no args will not be able to survey active tasks until the index is bootstrapped — they'll need to invoke `/tackle <path-or-slug>` explicitly.

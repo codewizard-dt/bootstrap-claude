@@ -197,10 +197,18 @@ API TEST BATCH [tests 3–7 of 18]
 ▶ **ACTUAL:**
   - HTTP 201
   - Response: {"id": 1, "title": "Engineer", "created_at": "2026-04-04T..."}
+
+▶ **RESULT:** ✓ Matches expected
 ───────────────────────────────────────────
 ```
 
 **Layout rule:** EXPECTED must always appear immediately above ACTUAL with no other content between them — never side-by-side prose, never separated by intervening output. The user must be able to compare the two blocks at a glance without scrolling. If a response body is truncated for display, truncate it inside the ACTUAL block; do not move it elsewhere.
+
+**Assessment rule (mandatory, applies on every presentation including retests):** After the ACTUAL block, always output a `▶ **RESULT:**` line with a clear indicator:
+- `✓ Matches expected` — when all expected criteria appear to be met
+- `✗ Does not match expected — <one-line reason>` — when the output diverges (wrong status code, missing field, error body, etc.)
+
+This indicator is the agent's observation, not a verdict — the user still issues the final pass/fail. It must appear on every API/CLI result presentation, including after a Fix Now retest.
 
 3. **Execute tests one at a time, one Bash invocation per test.** Run the test, capture and present its result, then run the next test. **Never** batch multiple tests into a single Bash call. The walkthrough's "batch" concept refers to *presentation grouping*, not command chaining.
 
@@ -210,7 +218,7 @@ API TEST BATCH [tests 3–7 of 18]
    - Any errors (connection refused, timeout, etc.)
 
 5. **If a command fails to execute** (connection refused, timeout, etc.) **OR the actual result does not match the expected result** (e.g., HTTP status mismatch, error in response body, missing fields, exception output):
-   - Show the error or mismatch in the ACTUAL section
+   - Show the error or mismatch in the ACTUAL section, then show `▶ **RESULT:** ✗ Does not match expected — <reason>`
    - **STOP immediately. Do NOT continue executing the remaining tests in the batch.**
    - Ask the user inline for that single failing test: `Pass / Fail / Fix now / Skip?`
    - **Wait for explicit direction.** The agent never moves on to another test after a failure without explicit user direction.
@@ -582,6 +590,7 @@ Failed Tests:
   1. Move UAT file: `git mv .docs/uat/pending/<slug>.uat.md .docs/uat/completed/<slug>.uat.md` (fall back to `mv` if `git mv` fails)
   2. Move associated task file (derive name: `<number>-<slug>.uat.md` → `<number>-<slug>.md`): `git mv .docs/tasks/active/<number>-<slug>.md .docs/tasks/completed/<number>-<slug>.md` (fall back to `mv` if `git mv` fails)
   3. **Update references** in both moved files: update `active/` → `completed/` in the task file, update `pending/` → `completed/` in the UAT file's source task link
+  3a. **Update `.docs/tasks/README.md`** — remove this task's row from the Active Tasks table and append a row to the Completed Tasks table (columns: `#`, Slug linking to `completed/...`, `UAT: completed`, Objective). Use `Edit` calls — never `sed`. The index is `/tackle`'s no-args survey source.
   4. **Delete all screenshots** for this task (they are no longer needed once all tests pass):
      - Use `mcp__serena__list_dir` on `.docs/uat/screenshots/` to find files matching `<task-number>-*` — **never use `ls`**
      - Run `git rm` on each matched file (or `rm` if not tracked)

@@ -89,7 +89,13 @@ $ARGUMENTS
 
    **ADR link (only when step 2.5 found an accepted ADR reference)**: Insert `**Implements**: [ADR-NNNN#DM](<relative-path-to-adr-file#anchor>)` in each task file's `## Objective` section, as the last line of that section — after the objective sentence and before `## Approach`. Use a repo-relative path from the task file's location (e.g. `../../adr/0007-session.md#d2-session-lifetime`).
 
-8) **Update the task index**: Add a reference to the new task in `.docs/tasks/README.md` under the "Active Tasks" section (create the file if it doesn't exist).
+8) **Update the task index**: Append a row to the **Active Tasks** table in `.docs/tasks/README.md` (create the file if it doesn't exist — match the column layout described there). The row format is:
+
+   ```
+   | NNN | [slug](active/NNN-slug.md) | 0/<total> | none | — | <objective first sentence> |
+   ```
+
+   Where `<total>` is the count of `- [ ]` checkboxes you just wrote into the task file's `## Steps` sections. Insert the row in numeric order. This index is `/tackle`'s no-args survey source; do not skip this step.
 
 8.5) **Update the ADR file** (only when step 2.5 found an accepted ADR reference):
    - In the target decision's `### Links` section, add a `Source task(s):` line:

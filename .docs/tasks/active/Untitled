@@ -1,0 +1,3 @@
+We need to make sure that the README, so when this task gets migrated into other projects that have already been using this document tackle system, then we need to make sure that it bootstraps the README properly as well. Maybe we can put that in the PRIMER command.
+
+I think the PRIMER command would be a great spot for that. When it runs Primer, check and see if the .docs readme is bootstrapped properly. .docs slash tasks, if that readme is bootstrapped properly. 

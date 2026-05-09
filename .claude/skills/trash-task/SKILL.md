@@ -78,8 +78,9 @@ Search for and update any references to the moved files across the project:
    - Any UAT files that reference the task
 
 2. For each reference found:
-   - If in an index or status file: **remove the line** or update the path to reflect the new `trashed/` location
-   - If in another task/UAT file's `Source task` or `UAT` link: **update the path** to `trashed/`
+   - If in `.docs/tasks/README.md`: **delete the task's row** from the Active or Completed table entirely. Do not move it to a "Trashed" section. The README is the survey source for `/tackle`; trashed tasks should not appear there.
+   - If in another status/index file: remove the line or update the path to reflect the new `trashed/` location.
+   - If in another task/UAT file's `Source task` or `UAT` link: **update the path** to `trashed/`.
 
 3. Use the **`Edit`** tool to make the updates — one `Edit` call per replacement. **Never** use `sed`, `awk`, or `perl -i` to bulk-rewrite paths across files, even when many references need updating. See `.docs/guides/mcp-tools.md` "Common anti-patterns".
 

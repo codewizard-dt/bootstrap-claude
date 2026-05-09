@@ -35,18 +35,14 @@ Parse `$ARGUMENTS` to locate the task file:
    - If ambiguous, list matches and ask the user to clarify
    - If no match found, fall through to case 4
 
-4. **If `$ARGUMENTS` is empty OR the input above did not resolve to a task file** — survey all active tasks and recommend, do NOT auto-pick:
-   - Use `mcp__serena__list_dir` on `.docs/tasks/active/` to enumerate all `*.md` task files (exclude `README.md` and `.gitkeep`)
-   - Use `mcp__serena__list_dir` on `.docs/uat/pending/` to enumerate pending UAT files (exclude `.gitkeep`)
-   - If no active tasks exist, STOP and report "No active tasks to tackle"
-   - **Tool discipline for the survey** — DO NOT use `bash` (`for` loops, `grep -c`, `wc -l`, `find`, `awk`, etc.) to enumerate, count, or aggregate across task files. Bash aggregation violates `.docs/guides/mcp-tools.md` AND triggers a permission prompt for every loop. Instead, issue **parallel `Read` calls in a single message** — one `Read` per task file. These are short markdown files; reading them all in parallel is the correct approach. Compute checkbox counts and detect flag markers from the read output, in your own reasoning — not via shell commands.
-   - For each task file, read it (use `Read` — these are markdown) and capture:
-     - **Number + slug** (from filename `<NNN>-<slug>.md`)
-     - **Objective** — first sentence under `## Objective` (one line, truncate if long)
-     - **Progress** — count of `[x]` vs total checkboxes across the file (e.g. `3/8`)
-     - **Status flags** — presence of `[BLOCKED: ...]`, `[FAILED: ...]`, `[WIP]`, or `[DEFERRED-TO-UAT]` markers
-     - **Pending UAT** — whether `.docs/uat/pending/<NNN>-<slug>.uat.md` exists. A pending UAT means implementation is essentially complete and the task is awaiting `/uat` — it should NOT be re-tackled unless the impl checkboxes are clearly incomplete.
-   - Present the survey to the user as a compact table with these columns: `#` · `Slug` · `Progress` · `UAT` · `Flags` · `Objective`. Use `—` for empty cells; in the `UAT` column show `pending` (if a pending UAT exists), `none` otherwise.
+4. **If `$ARGUMENTS` is empty OR the input above did not resolve to a task file** — survey active tasks from the index and recommend, do NOT auto-pick:
+   - **Read only `.docs/tasks/README.md`** using the `Read` tool. This file is the canonical task index and already contains the columns the survey needs (`#`, `Slug`, `Progress`, `UAT`, `Flags`, `Objective`). Do **NOT** read individual task files in `.docs/tasks/active/` for the survey — that's what the index exists to prevent.
+   - **If the README is missing, has no `## Active Tasks` table, or the table is missing the expected columns**, STOP and report: `Task index at .docs/tasks/README.md is not bootstrapped. Run /primer to bootstrap it, or invoke /tackle <path-or-slug> directly.` Do not fall back to scanning every task file.
+   - Use `mcp__serena__list_dir` on `.docs/uat/pending/` only to sanity-check the index's `UAT` column against on-disk reality. If they disagree, trust the disk and quietly note the drift in your output (don't block on it).
+   - If the **Active Tasks** table is empty, STOP and report "No active tasks to tackle".
+   - **Tool discipline** — DO NOT enumerate, count, grep, or aggregate across `.docs/tasks/active/` with `bash`, `Read`, or any other tool. The whole point of this gate is to avoid that work. The index row is authoritative for the survey; the only acceptable per-file read is on the chosen task in Step 1.
+   - **If the index appears stale** (e.g. you noticed a row with `Progress: 0/0`, missing rows for files in `active/`, or an obviously stale `UAT` column), warn the user inline with one sentence — `Index may be stale: <observation>. Treating its rows as authoritative for now.` — and continue. Do not fix the index pre-emptively; whichever skill mutated state without updating the index should be fixed instead.
+   - Present the index's Active rows back to the user as a compact table (you may copy the index table verbatim or compress it). Use `—` for empty cells.
    - Below the table, output a **Recommendation** section ranking the top 1–3 candidates with one-line reasoning each, using this priority order (highest first):
      1. **In-progress tasks without a pending UAT** — at least one `[x]` checkbox, not all complete, no pending UAT (finish what's started)
      2. **Unblock-able tasks** — `[BLOCKED: ...]`/`[FAILED: ...]` whose blocker is plausibly resolvable now (skip if blocker is clearly still outstanding)
@@ -202,6 +198,7 @@ After the sub-agent from Step 2 completes (or fails), update the outline file us
 1. Use the **`Edit`** tool — call it once per checkbox line. **Never** reach for `sed`, `awk`, `perl -i`, or `echo` to update task files, no matter how many checkboxes need flipping. Ten `Edit` calls is correct; one `sed` is wrong (and will trigger an approval prompt every time).
 2. Add a timestamp comment: `<!-- Updated: YYYY-MM-DD HH:MM -->`
 3. If subtasks were discovered during execution, add them to the outline
+4. **Update `.docs/tasks/README.md`** — flip this task's `Progress` column to the new `<done>/<total>` count and update its `Flags` column if a `[WIP]`, `[BLOCKED: ...]`, `[FAILED: ...]`, or `[DEFERRED-TO-UAT]` marker was added or cleared. One `Edit` call per changed cell. Skip if neither column changed. The index is `/tackle`'s no-args survey source — letting it drift defeats the whole point of having it.
 
 > **Note**: Markdown files use the native `Edit` tool — Serena's symbolic editor doesn't apply to prose, and shell editors (`sed` etc.) are forbidden. See `.docs/guides/mcp-tools.md` "Common anti-patterns" for the full rule.
 
