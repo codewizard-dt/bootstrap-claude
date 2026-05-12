@@ -43,7 +43,11 @@ Follow `basic-project-setup.md` to configure a new project, or use the npm packa
 | `/uat-generator <target>` | Generate UAT tests in `.docs/uat/pending/` mirroring task naming conventions |
 | `/uat <path>` | Interactively walk through a pending UAT file test-by-test with the user |
 | `/uat-auto <path>` | Non-interactively run every test in a pending UAT file and auto-judge verdicts (headless, fail-closed) |
+| `/uat-auto-plus <path>` | Autonomous-fix variant of `/uat-auto`: diagnoses failures, applies fixes itself, re-runs until green or attempts are exhausted (intended for `--dangerously-skip-permissions` agents) |
 | `/uat-skip <path>` | Skip UAT for a task, move task to completed and UAT to skipped |
+| `/file-bug <description>` | File a new bug in `.docs/bugs/open/` with required-on-report fields and update the bug index |
+| `/triage-bug <BUG-NNNN>` | Triage an open bug (priority, assignee, tags, impact) and decide its next destination: stay triaged, start work (→ `in-progress/`), or trash (wontfix / duplicate / cannot-reproduce) |
+| `/close-bug <BUG-NNNN>` | Close an in-progress bug — requires root-cause analysis, fix commit, and a regression test before moving to `.docs/bugs/closed/` |
 | `/lint` | Get IDE diagnostics, fix issues one-by-one in verify cycles |
 | `/type-check` | Detect type-checking tools (typecheck/tsc/mypy/pyright/go vet/cargo check/etc.), run each one, and only invoke `/git-commit` if all pass |
 | `/debug-logs [symptom]` | Diagnose failures by inspecting session context, background processes, and conventional log stores; produce ranked hypotheses with next actions (read-only) |
@@ -68,6 +72,7 @@ Standard Read/Edit/Write tools are permitted for markdown and config files (JSON
 - `basic-project-setup.md` — MCP installation steps and API keys
 - `.docs/guides/mcp-tools.md` — Complete MCP tool reference with workflows and examples
 - `.docs/guides/command-anti-patterns.md` — Shell-command and file-operation hygiene rules; defines the `/tackle`-vs-UAT verification split (static gates only in tackle; runtime/E2E in UAT)
+- `.docs/guides/bug-lifecycle.md` — Bug folder-movement rules, state-transition gates, and triage cadence; companion to `.docs/bugs/README.md`
 - `.claude/skills/` — All custom skill definitions (in Skills directory format)
 - `setup-project.sh` — Script to set up a new project (Serena MCP + copy commands/docs + bootstrap Serena project.yml); delegates `.docs/` sync to `sync-docs-scaffold.sh`
 - `update-project.sh` — Script to sync `.claude/skills/` and `.docs/` into a target project (re-runs bootstrap-serena.sh idempotently); delegates `.docs/` sync to `sync-docs-scaffold.sh`

@@ -34,6 +34,10 @@ mkdir -p "$PROJECT_DIR/.docs/adr"
 mkdir -p "$PROJECT_DIR/.docs/prd/active"
 mkdir -p "$PROJECT_DIR/.docs/prd/archived"
 mkdir -p "$PROJECT_DIR/.docs/prd/trashed"
+mkdir -p "$PROJECT_DIR/.docs/bugs/open"
+mkdir -p "$PROJECT_DIR/.docs/bugs/in-progress"
+mkdir -p "$PROJECT_DIR/.docs/bugs/closed"
+mkdir -p "$PROJECT_DIR/.docs/bugs/trashed"
 mkdir -p "$PROJECT_DIR/.claude/skills"
 
 # Sync .docs/guides/ as a full directory (entire contents, no filters)
@@ -62,6 +66,13 @@ rsync -av "$TEMPLATE_DIR/.docs/adr/README.md" "$TEMPLATE_DIR/.docs/adr/.gitkeep"
 rsync -av "$TEMPLATE_DIR/.docs/prd/README.md" "$PROJECT_DIR/.docs/prd/"
 for sub in active archived trashed; do
   rsync -av "$TEMPLATE_DIR/.docs/prd/$sub/.gitkeep" "$PROJECT_DIR/.docs/prd/$sub/"
+done
+
+# Sync .docs/bugs/ README + open/README + per-subfolder .gitkeep only — bug records are project-specific and MUST NOT be copied
+rsync -av "$TEMPLATE_DIR/.docs/bugs/README.md" "$PROJECT_DIR/.docs/bugs/"
+rsync -av "$TEMPLATE_DIR/.docs/bugs/open/README.md" "$TEMPLATE_DIR/.docs/bugs/open/.gitkeep" "$PROJECT_DIR/.docs/bugs/open/"
+for sub in in-progress closed trashed; do
+  rsync -av "$TEMPLATE_DIR/.docs/bugs/$sub/.gitkeep" "$PROJECT_DIR/.docs/bugs/$sub/"
 done
 
 # Sync .claude/skills/ (all skill directories and SKILL.md files)

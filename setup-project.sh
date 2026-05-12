@@ -81,19 +81,18 @@ else
   claude mcp add --scope user puppeteer-mcp-claude -- npx puppeteer-mcp-claude serve
   echo "  puppeteer-mcp-claude MCP installed."
 fi
-echo ""
 
-# 2. Add Serena MCP for this project
-echo "Adding Serena MCP..."
-cd "$PROJECT_DIR"
-if claude mcp add serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context claude-code --project "$PROJECT_DIR" 2>&1; then
-  echo "Serena MCP added."
+# serena (global, user scope; resolves project from cwd via --project .)
+if claude mcp get "serena" &>/dev/null; then
+  echo "  serena: already installed, skipping."
 else
-  echo "Serena MCP already configured for this project, skipping."
+  echo "  Installing serena MCP..."
+  claude mcp add --scope user serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context claude-code --project .
+  echo "  serena MCP installed."
 fi
 echo ""
 
-# 3. Copy .claude and docs directories
+# 2. Copy .claude and docs directories
 echo "Copying .claude/ commands and .docs/..."
 mkdir -p "$PROJECT_DIR/.claude"
 rsync -av "$TEMPLATE_DIR/.claude/" "$PROJECT_DIR/.claude/"
@@ -101,7 +100,7 @@ echo "Copied .claude/ to $PROJECT_DIR/.claude"
 "$TEMPLATE_DIR/sync-docs-scaffold.sh" "$PROJECT_DIR"
 echo ""
 
-# 4. Bootstrap Serena project.yml
+# 3. Bootstrap Serena project.yml
 echo "Bootstrapping Serena project.yml..."
 "$TEMPLATE_DIR/bootstrap-serena.sh" "$PROJECT_DIR"
 echo ""
