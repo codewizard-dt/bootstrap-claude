@@ -11,7 +11,7 @@ argument-hint: <path/to/uat-file.md, number-slug, or description>
 
 # UAT Auto
 
-Headless variant of `/uat`. Runs every test in a pending UAT file, auto-judges pass/fail from deterministic evidence, writes results, and moves files on completion — with **zero user prompts**.
+Headless variant of `/uat-walk`. Runs every test in a pending UAT file, auto-judges pass/fail from deterministic evidence, writes results, and moves files on completion — with **zero user prompts**.
 
 ---
 
@@ -21,13 +21,13 @@ Headless variant of `/uat`. Runs every test in a pending UAT file, auto-judges p
 
 ## When to Use
 
-Use `/uat-auto` when there is no human at the keyboard — for example, when a headless orchestrator (e.g. a tmux-based multi-agent conductor, a CI job, or a scheduled run) dispatches UAT work. Use `/uat` for anything interactive.
+Use `/uat-auto` when there is no human at the keyboard — for example, when a headless orchestrator (e.g. a tmux-based multi-agent conductor, a CI job, or a scheduled run) dispatches UAT work. Use `/uat-walk` for anything interactive.
 
 `/uat-auto` slots into the same task lifecycle:
 
 ```
-/add-task → /tackle → /uat-generator → /uat-auto (headless)   ─┐
-                                     → /uat (human)─┴→ completed/
+/task-add → /tackle → /uat-generate → /uat-auto (headless)   ─┐
+                                     → /uat-walk (human)─┴→ completed/
 ```
 
 Both walkthrough commands produce identical file-movement outcomes — only the decision procedure differs.
@@ -38,13 +38,13 @@ Both walkthrough commands produce identical file-movement outcomes — only the 
 
 **The agent never auto-passes a test it cannot verify with hard evidence.** Pass requires a machine-checkable match. On any doubt, uncertainty, or missing evidence, record `[FAIL: auto-judge: <reason>]`. **Never** `[SKIP]` — skip is a human judgment, not an agent judgment. **Never** `[x] Pass` unless the pass criteria below are met exactly.
 
-This is the single most important rule in this command. A false pass is worse than a false fail: a false fail gets re-triaged by a human in the next `/uat`, whereas a false pass ships a broken feature.
+This is the single most important rule in this command. A false pass is worse than a false fail: a false fail gets re-triaged by a human in the next `/uat-walk`, whereas a false pass ships a broken feature.
 
 ---
 
 ## Step 1: Resolve and Parse the UAT File
 
-Parse `$ARGUMENTS` to locate the UAT file (same resolver as `/uat`):
+Parse `$ARGUMENTS` to locate the UAT file (same resolver as `/uat-walk`):
 
 1. **File path** (e.g. `.docs/uat/pending/3-user-auth.uat.md`) — use directly
 2. **Number-slug** (e.g. `3-user-auth`) — search `.docs/uat/pending/`, fall back to `.docs/uat/completed/`
@@ -90,7 +90,7 @@ Classify each untested and failed-but-scoped test (see Mode below):
 
 ### Mode
 
-Unlike `/uat`, there is no mode prompt. The default is **"pending + previously-failed"**: every test with `- [ ] Pass` or `[FAIL: ...]` is eligible. Reset `[FAIL: ...]` to `- [ ] Pass` before running so a fresh verdict is recorded. Leave `[x] Pass` and `[SKIP: ...]` untouched.
+Unlike `/uat-walk`, there is no mode prompt. The default is **"pending + previously-failed"**: every test with `- [ ] Pass` or `[FAIL: ...]` is eligible. Reset `[FAIL: ...]` to `- [ ] Pass` before running so a fresh verdict is recorded. Leave `[x] Pass` and `[SKIP: ...]` untouched.
 
 ---
 
@@ -100,9 +100,9 @@ Work through eligible tests in document order. Update the file immediately after
 
 ### 4A — API/CLI Tests
 
-Extract the command from the test's `**Command**:` block (written by `/uat-generator`). If no extractable command exists, record `[FAIL: auto-judge: no machine-executable command in test body]` and move on.
+Extract the command from the test's `**Command**:` block (written by `/uat-generate`). If no extractable command exists, record `[FAIL: auto-judge: no machine-executable command in test body]` and move on.
 
-**One Bash call per test.** Run the command as-is. No `&&`, no `;`, no `echo` banners, no `-o /tmp/...` indirection, no multi-statement shells. Same forbidden-patterns rules as `/uat` Step 3A — a single clean `curl -sS`, optionally piped into one `jq` stage. If the generated command contains forbidden patterns, rewrite it to the clean form before executing.
+**One Bash call per test.** Run the command as-is. No `&&`, no `;`, no `echo` banners, no `-o /tmp/...` indirection, no multi-statement shells. Same forbidden-patterns rules as `/uat-walk` Step 3A — a single clean `curl -sS`, optionally piped into one `jq` stage. If the generated command contains forbidden patterns, rewrite it to the clean form before executing.
 
 **Pass criteria (ALL must be true):**
 
@@ -130,7 +130,7 @@ If the Expected section is purely visual ("panel looks right", "no overflow") wi
 
 ### 4C — Manual Tests
 
-Manual tests (edge cases, concurrency, integration scenarios) are **always** recorded as `[FAIL: auto-judge: manual test requires human verification]`. Do not attempt to execute or heuristically evaluate them. This is intentional fail-closed behavior — if `/uat-generator` produced a manual test, it expected a human.
+Manual tests (edge cases, concurrency, integration scenarios) are **always** recorded as `[FAIL: auto-judge: manual test requires human verification]`. Do not attempt to execute or heuristically evaluate them. This is intentional fail-closed behavior — if `/uat-generate` produced a manual test, it expected a human.
 
 ---
 
@@ -160,6 +160,7 @@ After every eligible test has a non-blocking status (`[x] Pass`, `[SKIP: ...]` a
 1. Move the UAT file: `git mv .docs/uat/pending/<slug>.uat.md .docs/uat/completed/<slug>.uat.md` (fall back to `mv` if `git mv` fails).
 3. Move the associated task file: derive from UAT name (`<number>-<slug>.uat.md` → `<number>-<slug>.md`), then `git mv .docs/tasks/active/<number>-<slug>.md .docs/tasks/completed/<number>-<slug>.md` (fall back to `mv`).
 4. Update internal path references in both moved files (`active/` → `completed/` in the task, `pending/` → `completed/` in the UAT's source-task link).
+4a. **Roadmap Auto-Checkoff** — scan `.docs/roadmaps/` for any roadmap referencing this task and flip its matching checkbox. Follow the canonical algorithm in [`.docs/roadmaps/README.md#auto-checkoff-contract`](../../../.docs/roadmaps/README.md). Short form: (i) `mcp__serena__list_dir` on `.docs/roadmaps/` (skip `README.md`); (ii) `Read` each roadmap and look for lines matching `- [ ] [TASK-<NNN>:` whose link path ends in `<NNN>-<slug>.md` (either `active/` or `completed/`); (iii) `Edit` each matching line to flip `- [ ]` → `- [x]` (use the full line text as `old_string` for uniqueness) and `Edit` the roadmap's `**Last updated**:` to today; (iv) bump the matching row's `Progress` numerator in `.docs/roadmaps/README.md`. Silent no-op if no roadmap references the task. **Do NOT** auto-flip `Status: active` → `Status: done` even on the last box — that flip is manual. Use `Edit` only — never `sed`, `bash`, or `Write`.
 5. Delete screenshots for this task: use `mcp__serena__list_dir` on `.docs/uat/screenshots/` to find files matching `<task-number>-*` — **never** `ls` — then `git rm` each (or `rm` if untracked).
 6. Close Puppeteer: `puppeteer_close_browser` if it was launched.
 7. Run `/update-docs` to refresh project documentation.
@@ -207,7 +208,7 @@ Failed Tests:
   • UAT-EDGE-001: Empty Positions — "auto-judge: manual test requires human verification"
 
 Next action:
-  /uat .docs/uat/pending/5-positions.uat.md
+  /uat-walk .docs/uat/pending/5-positions.uat.md
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -223,8 +224,8 @@ On all-pass, replace `Next action` with `Moved to completed/` and the new paths.
 - **No clarifying questions** on the UAT file path. Ambiguous input → exit with a diagnostic summary.
 
 ### No Fix Workflow
-- This command **does not** delegate fixes. It records evidence and exits. Re-run `/uat` to triage and fix.
-- `[FIXING: ...]` markers found in the input file are reset to `- [ ] Pass` and re-evaluated (a `/uat` session may have been interrupted mid-fix).
+- This command **does not** delegate fixes. It records evidence and exits. Re-run `/uat-walk` to triage and fix.
+- `[FIXING: ...]` markers found in the input file are reset to `- [ ] Pass` and re-evaluated (a `/uat-walk` session may have been interrupted mid-fix).
 
 ### Verdict Discipline
 - `[x] Pass` only on concrete machine-verified evidence (Step 4 criteria).

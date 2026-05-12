@@ -20,7 +20,7 @@ Skip UAT testing for a task, marking it as completed and moving (or creating) a 
 
 ## Pipeline Context
 
-This command is part of the task lifecycle: `/add-task` → `/tackle` → `/uat-generator` → `/uat`
+This command is part of the task lifecycle: `/task-add` → `/tackle` → `/uat-generate` → `/uat-walk`
 
 `/uat-skip` is an **escape hatch** — use it when UAT testing is not needed, not applicable, or intentionally deferred for a task that has completed implementation.
 
@@ -126,6 +126,8 @@ If the user says **No**, STOP.
 
 3a. **Update `.docs/tasks/README.md`** — remove this task's row from the Active Tasks table and append a row to the Completed Tasks table (columns: `#`, Slug linking to `completed/...`, `UAT: skipped`, Objective). Use `Edit` calls — never `sed`. The index is `/tackle`'s no-args survey source.
 
+3b. **Roadmap Auto-Checkoff** — scan `.docs/roadmaps/` for any roadmap referencing this task and flip its matching checkbox. Follow the canonical algorithm in [`.docs/roadmaps/README.md#auto-checkoff-contract`](../../../.docs/roadmaps/README.md). Short form: (i) `mcp__serena__list_dir` on `.docs/roadmaps/` (skip `README.md`); (ii) `Read` each roadmap and look for lines matching `- [ ] [TASK-<NNN>:` whose link path ends in `<NNN>-<slug>.md` (either `active/` or `completed/`); (iii) `Edit` each matching line to flip `- [ ]` → `- [x]` (use the full line text as `old_string` for uniqueness) and `Edit` the roadmap's `**Last updated**:` to today; (iv) bump the matching row's `Progress` numerator in `.docs/roadmaps/README.md`. Silent no-op if no roadmap references the task. **Do NOT** auto-flip `Status: active` → `Status: done` even on the last box — that flip is manual. Use `Edit` only — never `sed`, `bash`, or `Write`.
+
 4. **Check for ADR linkage**: Read the moved task file (now in `completed/`) for a line matching `**Implements**: ADR-NNNN#DM`:
    - If found:
      1. Parse the `ADR-NNNN#DM` reference.
@@ -171,12 +173,12 @@ Screenshots deleted: [count or "None"]
 
 .docs/uat/
 ├── pending/          # Generated UATs, not yet walked through
-├── completed/        # All tests passed via /uat
+├── completed/        # All tests passed via /uat-walk
 ├── skipped/          # UAT intentionally skipped via /uat-skip
-└── screenshots/      # Temporary screenshots from /uat
+└── screenshots/      # Temporary screenshots from /uat-walk
 ```
 
-**Task lifecycle**: `active/` → (`/tackle`, stays in `active/`) → (`/uat` | **`/uat-skip`**) → `completed/`
+**Task lifecycle**: `active/` → (`/tackle`, stays in `active/`) → (`/uat-walk` | **`/uat-skip`**) → `completed/`
 
 ---
 

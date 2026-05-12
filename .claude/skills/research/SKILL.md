@@ -132,7 +132,7 @@ For each viable approach, present:
 ### 4d. Next Steps
 
 Suggest concrete next steps:
-- If the user wants to proceed: `To create a task: /add-task <description based on findings>`
+- If the user wants to proceed: `To create a task: /task-add <description based on findings>`
 - If more research is needed: Identify specific areas that need deeper investigation
 - If a decision is needed: Frame the decision clearly with the trade-offs
 

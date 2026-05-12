@@ -6,11 +6,11 @@ PRDs are managed via five slash commands:
 
 | Command | Purpose |
 |---------|---------|
-| `/create-prd <idea>` | Draft a new PRD via a Socratic Q&A session |
-| `/finalize-prd <file>` | Run a completeness audit and flip status from `draft` → `approved` |
-| `/prd-to-decisions <file>` | Extract Architecturally Significant Requirements (ASRs) and propose ADR candidates |
-| `/update-prd <file> <change>` | Append a tracked amendment block (never rewrite); flag downstream impact |
-| `/trash-prd <file>` | Move a cancelled PRD to `trashed/` and surface linked ADRs/tasks for review |
+| `/prd-create <idea>` | Draft a new PRD via a Socratic Q&A session |
+| `/prd-finalize <file>` | Run a completeness audit and flip status from `draft` → `approved` |
+| `/prd-extract-decisions <file>` | Extract Architecturally Significant Requirements (ASRs) and propose ADR candidates |
+| `/prd-update <file> <change>` | Append a tracked amendment block (never rewrite); flag downstream impact |
+| `/prd-trash <file>` | Move a cancelled PRD to `trashed/` and surface linked ADRs/tasks for review |
 
 ---
 
@@ -35,18 +35,18 @@ PRDs sit **upstream** of ADRs and tasks in the spec-driven flow:
 
 ```mermaid
 flowchart LR
-    Idea[Feature idea / problem] --> CreatePRD[/create-prd/]
+    Idea[Feature idea / problem] --> CreatePRD[/prd-create/]
     CreatePRD --> Draft[PRD status: draft]
-    Draft --> FinalizePRD[/finalize-prd/]
+    Draft --> FinalizePRD[/prd-finalize/]
     FinalizePRD --> Approved[PRD status: approved]
-    Approved --> PRDToDecisions[/prd-to-decisions/]
-    PRDToDecisions --> CreateADR[/create-adr/]
+    Approved --> PRDToDecisions[/prd-extract-decisions/]
+    PRDToDecisions --> CreateADR[/adr-create/]
     CreateADR --> ProposedADR[ADR proposed]
-    ProposedADR --> FinalizeADR[/finalize-adr/]
+    ProposedADR --> FinalizeADR[/adr-finalize/]
     FinalizeADR --> AcceptedADR[ADR accepted]
-    AcceptedADR --> AddTask[/add-task --adr/]
+    AcceptedADR --> AddTask[/task-add --adr/]
     AddTask --> Tackle[/tackle/]
-    Tackle --> UAT[/uat/]
+    Tackle --> UAT[/uat-walk/]
 ```
 
 The boundary between PRD and ADR is sharp:
@@ -82,7 +82,7 @@ Write a PRD when **all** of the following are true:
 | Internal tooling / dev-experience tweaks owned by one engineer | An issue or task suffices |
 | Decisions purely about *how* to implement something | That's an ADR, not a PRD |
 
-If the topic doesn't clear the bar above, do not pad the PRL — open a task directly via `/add-task` or close the question in code review.
+If the topic doesn't clear the bar above, do not pad the PRL — open a task directly via `/task-add` or close the question in code review.
 
 ---
 
@@ -92,13 +92,13 @@ Each PRD has a single top-level `Status` that progresses linearly:
 
 | Status | Meaning | Set by | Allowed transitions |
 |--------|---------|--------|---------------------|
-| `draft` | In active authoring; gaps may remain | `/create-prd` | → `approved` (via `/finalize-prd`); → `trashed` (via `/trash-prd`) |
-| `approved` | Audit passed; downstream ADR/task work may begin | `/finalize-prd` | → `archived` (manually, after delivery); → `superseded` (when a successor PRD replaces it); → `trashed` (rare; only if cancelled mid-flight) |
+| `draft` | In active authoring; gaps may remain | `/prd-create` | → `approved` (via `/prd-finalize`); → `trashed` (via `/prd-trash`) |
+| `approved` | Audit passed; downstream ADR/task work may begin | `/prd-finalize` | → `archived` (manually, after delivery); → `superseded` (when a successor PRD replaces it); → `trashed` (rare; only if cancelled mid-flight) |
 | `archived` | The product work landed; PRD preserved as historical reference | Manual edit | Terminal |
 | `superseded` | A new PRD covers this scope and replaces this one | Manual edit referencing successor | Terminal |
-| `trashed` | Cancelled or invalidated before approval | `/trash-prd` | Terminal |
+| `trashed` | Cancelled or invalidated before approval | `/prd-trash` | Terminal |
 
-**Approved PRDs are immutable in substance.** Changes to scope, personas, success criteria, or non-goals after approval go through `/update-prd`, which appends an `## Amendment N` block rather than editing the original sections in place. This preserves the audit trail.
+**Approved PRDs are immutable in substance.** Changes to scope, personas, success criteria, or non-goals after approval go through `/prd-update`, which appends an `## Amendment N` block rather than editing the original sections in place. This preserves the audit trail.
 
 ---
 
@@ -185,7 +185,7 @@ Each PRD lives at `active/NNN-slug.md` (3-digit zero-padded, lowercase-dashed, �
 
 ## Linked ADRs
 
-> Filled in by `/prd-to-decisions`. Each row tracks one Architecturally Significant Requirement that became (or will become) an ADR.
+> Filled in by `/prd-extract-decisions`. Each row tracks one Architecturally Significant Requirement that became (or will become) an ADR.
 
 | ASR | ADR | Status |
 |-----|-----|--------|
@@ -193,7 +193,7 @@ Each PRD lives at `active/NNN-slug.md` (3-digit zero-padded, lowercase-dashed, �
 
 ## Linked Tasks
 
-> Filled in as `/add-task --prd PRD-NNN` runs. The PRD is delivered when all linked tasks complete.
+> Filled in as `/task-add --prd PRD-NNN` runs. The PRD is delivered when all linked tasks complete.
 
 | Task | Status |
 |------|--------|
@@ -201,12 +201,12 @@ Each PRD lives at `active/NNN-slug.md` (3-digit zero-padded, lowercase-dashed, �
 
 ## Amendments
 
-> Appended by `/update-prd`. Never edit prior amendments — append a new one.
+> Appended by `/prd-update`. Never edit prior amendments — append a new one.
 
 <!-- Amendments appear here as `## Amendment 1`, `## Amendment 2`, etc. -->
 ```
 
-**Required, non-empty fields** before `/finalize-prd` will pass:
+**Required, non-empty fields** before `/prd-finalize` will pass:
 
 | Field | Why |
 |-------|-----|
@@ -228,7 +228,7 @@ One row per PRD. Sort by file number ascending.
 
 | File | Title | Status | Created | Owner | Linked ADRs | Linked Tasks |
 |------|-------|--------|---------|-------|-------------|--------------|
-| _No PRDs yet — use `/create-prd <idea>` to draft the first one._ | | | | | | |
+| _No PRDs yet — use `/prd-create <idea>` to draft the first one._ | | | | | | |
 
 When adding a row:
 
@@ -255,9 +255,9 @@ When adding a row:
 | **Acceptance-Criteria-as-Tests** | Acceptance criteria are written as test cases ("test: assert X = Y") | Acceptance criteria describe observable user-facing behavior, not test implementations |
 | **Solution Smuggled into Problem Statement** | "We need to add a Postgres index on `users.email`" | Restate as the user-visible problem ("login takes 8s for users with > 100k records") and let the ADR pick the solution |
 | **PRD Bloat** | The document sprawls past ~3 pages with implementation discussion | Move technical exploration to `/research` notes or to ADRs |
-| **Amendment Avoidance** | The team rewrites the original sections instead of using `/update-prd` | Approved PRDs are immutable in substance — surface scope changes as amendments so the audit trail survives |
-| **Phantom Linkage** | The PRD references ADRs or tasks that don't exist or never got created | `/prd-to-decisions` is the only sanctioned path to populate `## Linked ADRs`; populate `## Linked Tasks` only via `/add-task --prd` |
-| **One-Way Sign-off** | The owner approves the PRD but stakeholders never review | `/finalize-prd` requires explicit confirmation that named stakeholders have reviewed |
+| **Amendment Avoidance** | The team rewrites the original sections instead of using `/prd-update` | Approved PRDs are immutable in substance — surface scope changes as amendments so the audit trail survives |
+| **Phantom Linkage** | The PRD references ADRs or tasks that don't exist or never got created | `/prd-extract-decisions` is the only sanctioned path to populate `## Linked ADRs`; populate `## Linked Tasks` only via `/task-add --prd` |
+| **One-Way Sign-off** | The owner approves the PRD but stakeholders never review | `/prd-finalize` requires explicit confirmation that named stakeholders have reviewed |
 
 ---
 
@@ -265,24 +265,24 @@ When adding a row:
 
 ```mermaid
 flowchart LR
-    Idea[Feature idea] --> Create[/create-prd/]
+    Idea[Feature idea] --> Create[/prd-create/]
     Create --> Draft[draft]
-    Draft --> Finalize[/finalize-prd/]
+    Draft --> Finalize[/prd-finalize/]
     Finalize --> Audit{All required<br/>fields present<br/>and measurable?}
     Audit -- no --> AskUser[AskUserQuestion]
     AskUser --> Audit
     Audit -- yes --> Approved[approved]
-    Approved --> Bridge[/prd-to-decisions/]
+    Approved --> Bridge[/prd-extract-decisions/]
     Bridge --> ASRs{ASRs<br/>identified?}
-    ASRs -- yes --> CreateADR[/create-adr per group/]
-    ASRs -- no --> AddTask[/add-task --prd/ directly]
-    CreateADR --> AcceptedADR[/finalize-adr/]
-    AcceptedADR --> AddTaskFromADR[/add-task --adr/]
+    ASRs -- yes --> CreateADR[/adr-create per group/]
+    ASRs -- no --> AddTask[/task-add --prd/ directly]
+    CreateADR --> AcceptedADR[/adr-finalize/]
+    AcceptedADR --> AddTaskFromADR[/task-add --adr/]
     AddTask --> Tackle[/tackle/]
     AddTaskFromADR --> Tackle
-    Tackle --> UATWalk[/uat/]
+    Tackle --> UATWalk[/uat-walk/]
     UATWalk --> Done[Linked Tasks marked done<br/>in PRD index]
-    Approved --> Update[/update-prd/]
+    Approved --> Update[/prd-update/]
     Update --> Amendment[Amendment N appended<br/>downstream impact flagged]
 ```
 
@@ -290,11 +290,11 @@ flowchart LR
 
 ## See Also
 
-- [`/create-prd` command](../../.claude/skills/create-prd/SKILL.md)
-- [`/finalize-prd` command](../../.claude/skills/finalize-prd/SKILL.md)
-- [`/prd-to-decisions` command](../../.claude/skills/prd-to-decisions/SKILL.md)
-- [`/update-prd` command](../../.claude/skills/update-prd/SKILL.md)
-- [`/trash-prd` command](../../.claude/skills/trash-prd/SKILL.md)
+- [`/prd-create` command](../../.claude/skills/prd-create/SKILL.md)
+- [`/prd-finalize` command](../../.claude/skills/prd-finalize/SKILL.md)
+- [`/prd-extract-decisions` command](../../.claude/skills/prd-extract-decisions/SKILL.md)
+- [`/prd-update` command](../../.claude/skills/prd-update/SKILL.md)
+- [`/prd-trash` command](../../.claude/skills/prd-trash/SKILL.md)
 - [ADR Log](../adr/README.md) — downstream decision records
 - [Atlassian PRD guide](https://www.atlassian.com/agile/product-management/requirements) — agile PRD conventions
 - [Marty Cagan on lean PRDs](https://plan.io/blog/one-pager-prd-product-requirements-document/) — the case for short, living PRDs

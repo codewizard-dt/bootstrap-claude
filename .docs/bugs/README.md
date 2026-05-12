@@ -6,9 +6,9 @@ Bugs are managed via three slash commands:
 
 | Command | Purpose |
 |---------|---------|
-| `/file-bug <description>` | Create a new bug in `open/` with required-on-report fields (steps to reproduce, environment, expected/actual) |
-| `/triage-bug <BUG-NNNN>` | Set priority, assignee, tags, impact; decide next destination (stay triaged, start work, or trash) |
-| `/close-bug <BUG-NNNN>` | Record root cause + resolution + regression test; move to `closed/` |
+| `/bug-file <description>` | Create a new bug in `open/` with required-on-report fields (steps to reproduce, environment, expected/actual) |
+| `/bug-triage <BUG-NNNN>` | Set priority, assignee, tags, impact; decide next destination (stay triaged, start work, or trash) |
+| `/bug-close <BUG-NNNN>` | Record root cause + resolution + regression test; move to `closed/` |
 
 ---
 

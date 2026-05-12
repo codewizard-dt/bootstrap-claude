@@ -84,14 +84,14 @@ echo "subject" | git-commit -F -
 ```bash
 git-commit "Streamline task lifecycle: drop pending-uat stage and add lifecycle guide"
 git-commit "Reinforce ban on shell-based file editing across mcp-tools and task commands"
-git-commit "Force one Bash invocation per test in /uat Step 3A"
+git-commit "Force one Bash invocation per test in /uat-walk Step 3A"
 ```
 
 ### Writing a good single-line subject
 
 If the change feels too complex to summarize in one line, **make the subject more descriptive** — do not reach for a multi-line body. Aim for ~70–100 characters but go longer if it adds real information. Lead with the *what* and the *why* on the same line, separated by a colon when helpful:
 
-- ✅ `Require research for every test type in /uat-generator with checkpoint gate`
+- ✅ `Require research for every test type in /uat-generate with checkpoint gate`
 - ✅ `Allow standard tools for markdown editing; ban bash exploration commands`
 - ❌ `Update commands` (too vague)
 - ❌ `Fix bug` (too vague)

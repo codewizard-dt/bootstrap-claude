@@ -6,8 +6,8 @@ ADRs are managed via two slash commands:
 
 | Command | Purpose |
 |---------|---------|
-| `/create-adr <topic>` | Draft a new ADR file containing 1+ proposed decisions |
-| `/finalize-adr <file>#<decision>` | Resolve open questions for a single decision, flip it to `accepted`, and apply per-decision supersession |
+| `/adr-create <topic>` | Draft a new ADR file containing 1+ proposed decisions |
+| `/adr-finalize <file>#<decision>` | Resolve open questions for a single decision, flip it to `accepted`, and apply per-decision supersession |
 
 ---
 
@@ -85,7 +85,7 @@ The unit of relationship is the **decision**, not the file. Two decisions are re
 | New decision finalized in an **existing** decision area with a prior `accepted` decision (in any file) | The new decision **must** supersede the prior one. Both decision blocks are cross-referenced. |
 | Multiple prior accepted decisions in the same area | New decision supersedes the most recently accepted one in that chain |
 
-`/finalize-adr` enforces this rule per decision. It searches across **all ADR files** for prior `accepted` decisions sharing the new decision's tags; if any are found, finalization is blocked unless the user confirms the supersession or declares a different decision area.
+`/adr-finalize` enforces this rule per decision. It searches across **all ADR files** for prior `accepted` decisions sharing the new decision's tags; if any are found, finalization is blocked unless the user confirms the supersession or declares a different decision area.
 
 ### The two-block cross-reference rule (mandatory)
 
@@ -115,7 +115,7 @@ To change the substance of a past decision, write a new decision (in a new ADR f
 
 ## Decision Area Identification
 
-`/finalize-adr` determines whether two decisions share an area by checking, in this order:
+`/adr-finalize` determines whether two decisions share an area by checking, in this order:
 
 | Tier | Signal | Weight |
 |------|--------|--------|
@@ -125,7 +125,7 @@ To change the substance of a past decision, write a new decision (in a new ADR f
 | 4 | Explicit `Supersedes:` already set in the decision metadata | Authoritative |
 | 5 | User confirmation when automatic detection is ambiguous | Final |
 
-**Tag aggressively per decision.** Because each decision in a group may live in a different decision area, file-level conventions are not enough — every decision block must carry its own `Tags` line. `/create-adr` enforces non-empty `Tags` on every decision block.
+**Tag aggressively per decision.** Because each decision in a group may live in a different decision area, file-level conventions are not enough — every decision block must carry its own `Tags` line. `/adr-create` enforces non-empty `Tags` on every decision block.
 
 ---
 
@@ -138,7 +138,7 @@ Before flipping a single decision's status from `proposed` to `accepted`, all fi
 | **E** | **Evidence** | Grounded in real research — code reading, library docs, prior ADRs, prototypes | `### Context` cites concrete sources |
 | **C** | **Criteria & alternatives** | At least two viable options assessed against explicit drivers | `### Decision Drivers` and `### Considered Options` are non-empty; comparison matrix has no empty cells |
 | **A** | **Agreement** | The decision's named deciders have explicitly ratified the chosen option | `Deciders` metadata is filled; `### Decision Outcome` names the chosen option in bold |
-| **D** | **Documentation** | The decision block is complete: no placeholders, no TBDs, no asymmetric tables, no bullet-list comparisons | `/finalize-adr` audit passes |
+| **D** | **Documentation** | The decision block is complete: no placeholders, no TBDs, no asymmetric tables, no bullet-list comparisons | `/adr-finalize` audit passes |
 | **R** | **Realization & review plan** | The decision states how/when its outcome will be verified and revisited | `### Validation` has at least one measurable signal with threshold and timeframe |
 
 If any criterion fails, leave that decision's status as `proposed` and resolve the gap. Faking acceptance to close a ticket is the worst-case anti-pattern — it makes the entire ADL untrustworthy.
@@ -283,7 +283,7 @@ One row per **decision**, never per file. A file with three decisions occupies t
 
 | File | Decision | Title | Decision Area | Status | Date | Deciders | Supersedes | Superseded By |
 |------|----------|-------|---------------|--------|------|----------|------------|---------------|
-| _No ADRs yet — use `/create-adr <topic>` to draft the first one._ | | | | | | | | |
+| _No ADRs yet — use `/adr-create <topic>` to draft the first one._ | | | | | | | | |
 
 When adding a row:
 
@@ -332,7 +332,7 @@ When adding a row:
 | When a related decision is finalized | Re-read upstream/downstream decisions in adjacent areas for ripple effects |
 | When the responsible team disbands or rotates | Re-confirm or supersede decisions that team owned |
 
-Reviews never edit the decision block — they either confirm it (no action), mark it `deprecated`, or trigger a new decision via `/create-adr` that supersedes it.
+Reviews never edit the decision block — they either confirm it (no action), mark it `deprecated`, or trigger a new decision via `/adr-create` that supersedes it.
 
 ---
 
@@ -359,11 +359,11 @@ Drawn from Olaf Zimmermann's "How to create / review ADRs" (2023). When you spot
 
 ```mermaid
 flowchart LR
-    Topic[Decision needed] --> Create[/create-adr/]
+    Topic[Decision needed] --> Create[/adr-create/]
     Create --> Group{Single<br/>decision<br/>or group?}
     Group -- single --> One[File with one D1 block<br/>status: proposed]
     Group -- group --> Many[File with D1..DN blocks<br/>each status: proposed]
-    One --> Finalize[/finalize-adr file#DM/]
+    One --> Finalize[/adr-finalize file#DM/]
     Many --> Finalize
     Finalize --> Audit{DoD passes<br/>for this decision?}
     Audit -- no --> AskUser[AskUserQuestion]
@@ -375,14 +375,14 @@ flowchart LR
     Standalone --> Accepted
 ```
 
-The crucial property the diagram captures: finalization operates on **one decision at a time**. A file with three proposed decisions is finalized via three independent `/finalize-adr` invocations.
+The crucial property the diagram captures: finalization operates on **one decision at a time**. A file with three proposed decisions is finalized via three independent `/adr-finalize` invocations.
 
 ---
 
 ## See Also
 
-- [`/create-adr` command](../../.claude/skills/create-adr/SKILL.md)
-- [`/finalize-adr` command](../../.claude/skills/finalize-adr/SKILL.md)
+- [`/adr-create` command](../../.claude/skills/adr-create/SKILL.md)
+- [`/adr-finalize` command](../../.claude/skills/adr-finalize/SKILL.md)
 - [MADR 4.0 template](https://adr.github.io/madr/) — upstream format reference
 - [Nygard's original 2011 post](https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions) — origin of the ADR concept
 - [How to create ADRs — and how not to](https://ozimmer.ch/practices/2023/04/03/ADRCreation.html) — ozimmer 2023, anti-patterns

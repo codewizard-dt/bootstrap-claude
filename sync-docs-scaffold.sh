@@ -38,6 +38,7 @@ mkdir -p "$PROJECT_DIR/.docs/bugs/open"
 mkdir -p "$PROJECT_DIR/.docs/bugs/in-progress"
 mkdir -p "$PROJECT_DIR/.docs/bugs/closed"
 mkdir -p "$PROJECT_DIR/.docs/bugs/trashed"
+mkdir -p "$PROJECT_DIR/.docs/roadmaps"
 mkdir -p "$PROJECT_DIR/.claude/skills"
 
 # Sync .docs/guides/ as a full directory (entire contents, no filters)
@@ -74,6 +75,9 @@ rsync -av "$TEMPLATE_DIR/.docs/bugs/open/README.md" "$TEMPLATE_DIR/.docs/bugs/op
 for sub in in-progress closed trashed; do
   rsync -av "$TEMPLATE_DIR/.docs/bugs/$sub/.gitkeep" "$PROJECT_DIR/.docs/bugs/$sub/"
 done
+
+# Sync .docs/roadmaps/ README + .gitkeep only — roadmap files are project-specific and MUST NOT be copied
+rsync -av "$TEMPLATE_DIR/.docs/roadmaps/README.md" "$TEMPLATE_DIR/.docs/roadmaps/.gitkeep" "$PROJECT_DIR/.docs/roadmaps/"
 
 # Sync .claude/skills/ (all skill directories and SKILL.md files)
 rsync -av "$TEMPLATE_DIR/.claude/skills/" "$PROJECT_DIR/.claude/skills/"

@@ -16,13 +16,13 @@ Reflect the **most recent implementation work** in the project's markdown files.
 
 In scope:
 - Task files in `.docs/tasks/active/` — checkbox state
-- UAT files in `.docs/uat/` — folder moves only when triggered by `/uat`, not here
+- UAT files in `.docs/uat/` — folder moves only when triggered by `/uat-walk`, not here
 - `PROJECT_STATUS.md` — progress + next steps (only if it exists)
 - `CLAUDE.md` — only when slash commands, MCP requirements, or key files genuinely changed
 - `README.md` — only when setup steps, tech stack, or project structure genuinely changed
 
 Out of scope (do NOT touch):
-- Serena memories
+- **Serena memories — NEVER call `mcp__serena__write_memory` or `mcp__serena__edit_memory` here, for any reason.**
 - ADR or PRD files
 - `.docs/guides/` files
 - Any doc unrelated to the changes in this session
@@ -40,7 +40,7 @@ In one pass, determine what shipped this session. Prefer `git status` / `git dif
 For each `.docs/tasks/active/NNN-slug.md` whose steps were implemented:
 - Flip `- [ ]` → `- [x]` for each completed step using **`Edit`** (one call per checkbox).
 - Never `sed` / `awk` / `perl -i` / `echo >>`.
-- Do **not** move the file. Task files stay in `active/` until `/uat` moves them.
+- Do **not** move the file. Task files stay in `active/` until `/uat-walk` moves them.
 
 ### Step 3: Update `PROJECT_STATUS.md` (if it exists)
 

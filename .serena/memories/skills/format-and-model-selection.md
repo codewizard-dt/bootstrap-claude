@@ -20,11 +20,11 @@ argument-hint: <preserve from original if present>
 
 | Category | Model | Commands |
 |---|---|---|
-| **Planning** (deep reasoning, architecture, ambiguity) | `claude-opus-4-7` | `research`, `now`, `create-adr`, `finalize-adr`, `add-task`, `update-task`, `uat-generator`, `project-readme`, `create-prd`, `finalize-prd`, `prd-to-decisions`, `update-prd` |
-| **Execution** (mechanical, well-specified) | `claude-sonnet-4-6` | `tackle`, `lint`, `simplify`, `trash-task`, `uat-auto`, `uat-skip`, `uat`, `update-docs`, `serena-config`, `marp-slideshow`, `mermaid-flowchart`, `trash-prd`, `walkthrough-adr`, `type-check` |
+| **Planning** (deep reasoning, architecture, ambiguity) | `claude-opus-4-7` | `research`, `now`, `adr-create`, `adr-finalize`, `task-add`, `task-update`, `uat-generate`, `project-readme`, `prd-create`, `prd-finalize`, `prd-extract-decisions`, `prd-update` |
+| **Execution** (mechanical, well-specified) | `claude-sonnet-4-6` | `tackle`, `lint`, `simplify`, `task-trash`, `uat-auto`, `uat-skip`, `uat-walk`, `update-docs`, `serena-config`, `marp-slideshow`, `mermaid-flowchart`, `prd-trash`, `adr-walkthrough`, `type-check` |
 | **Lightweight** (context refresh, simple commits, no heavy reasoning) | `claude-haiku-4-5-20251001` (or `haiku` shorthand) | `primer`, `git-commit` |
 
-`effort: high` applies to: `research`, `now`, `create-adr`, `finalize-adr`, `create-prd`, `finalize-prd`, `prd-to-decisions`.
+`effort: high` applies to: `research`, `now`, `adr-create`, `adr-finalize`, `prd-create`, `prd-finalize`, `prd-extract-decisions`.
 
 ## Invocation Flags
 

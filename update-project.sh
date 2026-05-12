@@ -23,6 +23,16 @@ fi
 echo "Updating project: $PROJECT_DIR"
 echo ""
 
+# Orphan skill folders from the noun-first rename (task 008-rename-skills-noun-first)
+ORPHAN_SKILLS=(
+  create-prd finalize-prd prd-to-decisions update-prd trash-prd
+  create-adr finalize-adr walkthrough-adr
+  add-task update-task trash-task
+  file-bug triage-bug close-bug
+  uat uat-generator
+  create-roadmap add-to-roadmap next-step
+)
+
 # 1. Detect legacy .claude/commands/ files migrated to .claude/skills/
 # The migration moved each <name>.md slash-command into .claude/skills/<name>/SKILL.md.
 # If any of those legacy files still exist in the target, offer to remove them.
@@ -67,6 +77,39 @@ fi
 echo "Syncing .claude/skills/ and .docs/ scaffold..."
 "$TEMPLATE_DIR/sync-docs-scaffold.sh" "$PROJECT_DIR"
 echo ""
+
+# Detect orphan skill folders from the noun-first rename
+ORPHAN_FOUND=()
+for skill in "${ORPHAN_SKILLS[@]}"; do
+  if [ -d "$PROJECT_DIR/.claude/skills/$skill" ]; then
+    ORPHAN_FOUND+=("$PROJECT_DIR/.claude/skills/$skill")
+  fi
+done
+
+if [ ${#ORPHAN_FOUND[@]} -gt 0 ]; then
+  echo ""
+  echo "Orphan skill folders detected from the noun-first rename:"
+  for p in "${ORPHAN_FOUND[@]}"; do
+    echo "  $p"
+  done
+  echo ""
+  if [ -t 0 ]; then
+    read -r -p "Delete these ${#ORPHAN_FOUND[@]} folder(s)? [y/N]: " REPLY
+    case "$REPLY" in
+      [yY])
+        for p in "${ORPHAN_FOUND[@]}"; do
+          rm -rf "$p"
+        done
+        echo "Removed."
+        ;;
+      *)
+        echo "Skipped. To remove manually: rm -rf .claude/skills/{create-prd,finalize-prd,prd-to-decisions,update-prd,trash-prd,create-adr,finalize-adr,walkthrough-adr,add-task,update-task,trash-task,file-bug,triage-bug,close-bug,uat,uat-generator,create-roadmap,add-to-roadmap,next-step}"
+        ;;
+    esac
+  else
+    echo "Non-interactive mode: skipping deletion. Remove manually if needed."
+  fi
+fi
 
 # 3. Bootstrap Serena project.yml (idempotent)
 echo "Re-checking Serena project.yml bootstrap..."

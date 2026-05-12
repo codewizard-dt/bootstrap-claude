@@ -67,7 +67,7 @@ Rule: if you need the value, print it directly (`echo "$X"`); if it's already kn
 
 **NOT** allowed in `/tackle` verification: running the script against a scratch dir, creating temp dirs, rsync dry-runs, curl calls, spawning servers, seeding fixtures, asserting on output contents.
 
-Everything above belongs in **UAT** (`/uat-generator` → `/uat` / `/uat-auto`). UAT is the phase designed for end-to-end runtime verification.
+Everything above belongs in **UAT** (`/uat-generate` → `/uat-walk` / `/uat-auto`). UAT is the phase designed for end-to-end runtime verification.
 
 Rule of thumb: if the verification step needs more than one command, or creates any file, or reads any file's contents — move it to UAT.
 

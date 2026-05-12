@@ -25,7 +25,7 @@ Autonomous variant of `/uat-auto`. Runs every test in a pending UAT file, auto-j
 
 | Command | Audience | On failure |
 |---------|----------|------------|
-| `/uat` | Human at keyboard | Prompt user, optionally delegate fix |
+| `/uat-walk` | Human at keyboard | Prompt user, optionally delegate fix |
 | `/uat-auto` | Headless, conservative | Record `[FAIL]` and exit; human triages later |
 | `/uat-auto-plus` | Headless, autonomous | Diagnose → fix → re-test → repeat (bounded) |
 
@@ -37,9 +37,9 @@ Pick `/uat-auto-plus` only when:
 `/uat-auto-plus` slots into the same task lifecycle as the other UAT variants:
 
 ```
-/add-task → /tackle → /uat-generator → /uat-auto-plus (autonomous)   ─┐
+/task-add → /tackle → /uat-generate → /uat-auto-plus (autonomous)   ─┐
                                      → /uat-auto    (headless)       ├→ completed/ (or stay pending)
-                                     → /uat        (human)           ─┘
+                                     → /uat-walk   (human)           ─┘
 ```
 
 Identical file-movement outcomes — only the failure-handling procedure differs.
@@ -223,6 +223,7 @@ After every eligible test has a terminal status (`[x] Pass`, pre-existing `[SKIP
 1. `git mv .docs/uat/pending/<slug>.uat.md .docs/uat/completed/<slug>.uat.md` (fall back to `mv`).
 2. Move the associated task: `git mv .docs/tasks/active/<number>-<slug>.md .docs/tasks/completed/<number>-<slug>.md`.
 3. Update internal path references in both moved files (`active/` → `completed/` in the task; `pending/` → `completed/` in the UAT's source-task link).
+3a. **Roadmap Auto-Checkoff** — scan `.docs/roadmaps/` for any roadmap referencing this task and flip its matching checkbox. Follow the canonical algorithm in [`.docs/roadmaps/README.md#auto-checkoff-contract`](../../../.docs/roadmaps/README.md). Short form: (i) `mcp__serena__list_dir` on `.docs/roadmaps/` (skip `README.md`); (ii) `Read` each roadmap and look for lines matching `- [ ] [TASK-<NNN>:` whose link path ends in `<NNN>-<slug>.md` (either `active/` or `completed/`); (iii) `Edit` each matching line to flip `- [ ]` → `- [x]` (use the full line text as `old_string` for uniqueness) and `Edit` the roadmap's `**Last updated**:` to today; (iv) bump the matching row's `Progress` numerator in `.docs/roadmaps/README.md`. Silent no-op if no roadmap references the task. **Do NOT** auto-flip `Status: active` → `Status: done` even on the last box — that flip is manual. Use `Edit` only — never `sed`, `bash`, or `Write`.
 4. Delete screenshots for this task: `mcp__serena__list_dir` on `.docs/uat/screenshots/` to find `<task-number>-*` matches, then `git rm` each (or `rm` if untracked).
 5. Close Puppeteer if launched.
 6. **Terminate every background process** the agent started for prerequisites or fix attempts. Use the `Bash` tool's KillShell as needed. Verify nothing is left running.
@@ -284,7 +285,7 @@ Failed Tests:
   • UAT-API-003: Delete Position — "auto-fix-exhausted: HTTP 500 expected 204 (last attempt)"
 
 Next action:
-  /uat .docs/uat/pending/5-positions.uat.md
+  /uat-walk .docs/uat/pending/5-positions.uat.md
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 

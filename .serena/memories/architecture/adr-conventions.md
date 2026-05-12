@@ -24,7 +24,7 @@ The project's Architecture Decision Log lives in `.docs/adr/`. The data model de
 - The superseded block's **siblings are byte-for-byte unchanged**. Sibling-cascade edits are an anti-pattern.
 
 ### Decision Area detection (for supersession check)
-Order of signals used by `/finalize-adr` Step 2.5:
+Order of signals used by `/adr-finalize` Step 2.5:
 1. Tag overlap on the decision blocks (≥ 1 shared tag) — strongest
 2. Decision sub-title noun-phrase overlap
 3. File-slug stem overlap (only when both are sole `D1` of single-decision files)
@@ -51,12 +51,12 @@ A single decision can flip `proposed → accepted` only when all five pass:
 ## Chain invariant
 **At most one `accepted` decision per decision area** across the entire log. `/finalize-adr` enforces this; if it cannot resolve which decision supersedes which, it leaves status as `proposed` and reports rather than creating parallel `accepted` decisions.
 
-## Companion review skill: `/walkthrough-adr`
+## Companion review skill: `/adr-walkthrough`
 
-A lighter, non-finalizing review pass for ADR files. Walks every `D*` block one at a time; for each `proposed` decision asks the user via `AskUserQuestion` to **Confirm / Change / Defer / Skip**. Sibling blocks are untouched, status is never flipped (that stays with `/finalize-adr`), and supersession + index + relationship-graph work is explicitly out of scope. Useful when an ADR file has multiple proposed decisions and the user wants to align on the choices in one pass before sending each through the E-C-A-D-R gate.
+A lighter, non-finalizing review pass for ADR files. Walks every `D*` block one at a time; for each `proposed` decision asks the user via `AskUserQuestion` to **Confirm / Change / Defer / Skip**. Sibling blocks are untouched, status is never flipped (that stays with `/adr-finalize`), and supersession + index + relationship-graph work is explicitly out of scope. Useful when an ADR file has multiple proposed decisions and the user wants to align on the choices in one pass before sending each through the E-C-A-D-R gate.
 
 ## Why this matters for command authors
-- `/create-adr` writes a file with N decision blocks; each block needs full metadata.
-- `/finalize-adr` argument is `<file>#<DM>` (e.g. `0007-session#D2`) and operates on **one block at a time**. Bare-path inputs auto-resolve only if the file has exactly one proposed decision.
+- `/adr-create` writes a file with N decision blocks; each block needs full metadata.
+- `/adr-finalize` argument is `<file>#<DM>` (e.g. `0007-session#D2`) and operates on **one block at a time**. Bare-path inputs auto-resolve only if the file has exactly one proposed decision.
 - The ADR `.docs/adr/.gitkeep` propagates via `sync-docs-scaffold.sh`; ADR files themselves are project-specific and never copied by the template scripts.
 - The README in `.docs/adr/` is the canonical spec. CLAUDE.md and `project/overview` memory point at it; do not duplicate the spec in those files.
