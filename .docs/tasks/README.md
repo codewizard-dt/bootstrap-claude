@@ -1,11 +1,18 @@
 # Task Index
 
-> **Maintenance contract** — this index is the canonical survey source for `/tackle` no-args mode. Skills mutate it directly:
+**Last task:** [009-audit-skills-vs-sdlc](active/009-audit-skills-vs-sdlc.md)
+**Next task number:** 010
+
+> **Maintenance contract** — this index is the canonical survey source for `/tackle` no-args mode. It lists **only active tasks** (those in `.docs/tasks/active/`, including any with a pending UAT). Completed and trashed tasks are intentionally **not** indexed here — `.docs/tasks/completed/` and `.docs/tasks/trashed/` are the source of truth for those, accessible via directory listing when needed.
 >
-> - `/task-add` → appends a row to **Active**
+> The two header lines (**Last task** and **Next task number**) are also maintained by skills — they let `/task-add` pick the next number without scanning the directory, and let humans see at a glance what was created most recently. **Last task** always points at the highest-numbered task that exists anywhere on disk (`active/`, `completed/`, or `trashed/`), with the link path matching its current location. **Next task number** is always `Last task`'s number + 1, zero-padded to three digits.
+>
+> Skills mutate this index directly:
+>
+> - `/task-add` → appends a row to **Active**; updates **Last task** (to the just-created task) and bumps **Next task number**
 > - `/tackle` → updates `Progress` and `Flags` after each cycle
-> - `/uat-walk`, `/uat-skip` → moves a row from **Active** to **Completed**, sets `UAT`
-> - `/task-trash` → removes a row entirely (or moves it under a Trashed section if one exists)
+> - `/uat-walk`, `/uat-auto`, `/uat-auto-plus`, `/uat-skip` → **removes** the row when the task moves to `completed/`; if the moved task **is** the **Last task**, rewrites its link path from `active/...` to `completed/...`
+> - `/task-trash` → removes the row entirely; if the trashed task **is** the **Last task**, rewrites its link path from `active/...` (or `completed/...`) to `trashed/...` — **Last task** still points at it because **Next task number** must never go down
 >
 > Keep rows accurate. `/tackle` reads only this file (plus a directory listing of `.docs/uat/pending/`) to recommend the next task — stale rows lead to wrong recommendations.
 
@@ -19,14 +26,6 @@
 | 007 | [publish-npm-package](active/007-publish-npm-package.md)              | 0/43     | none    | [DEFERRED-TO-UAT]  | Fix `package.json` `files` field, add `prepublishOnly` guard, publish 1.0.0, verify `npx` works end-to-end against fresh dirs. |
 | 009 | [audit-skills-vs-sdlc](active/009-audit-skills-vs-sdlc.md)            | 0/10     | none    |                    | Audit 32+ skills against SDLC best practices; produce gap analysis and recommendations. |
 
-## Completed Tasks
-
-| #   | Slug                                                          | UAT     | Objective |
-|-----|---------------------------------------------------------------|---------|-----------|
-| 002 | [bootstrap-serena](completed/002-bootstrap-serena.md)         | skipped | bootstrap-serena.sh creates .serena/ via headless `claude --print` and enables 11 optional tools; wired into setup-project.sh and update-project.sh. |
-| 003 | [sync-docs-scaffold](completed/003-sync-docs-scaffold.md)     | —       | Extract sync-docs-scaffold.sh helper; make setup/update scripts sync only guides + directory shells, never this template's task/UAT content. |
-| 008 | [rename-skills-noun-first](completed/008-rename-skills-noun-first.md) | skipped | Rename 19 slash commands from action-first/inconsistent names to a uniform noun-first, action-second kebab-flat pattern and sweep every cross-reference. |
-
 ---
 
 ## Column Reference
@@ -34,6 +33,6 @@
 - **#** — three-digit task number from filename prefix
 - **Slug** — kebab-case slug from filename, linked to the task file
 - **Progress** — `<completed-checkboxes>/<total-checkboxes>` across all `## Steps` sections (count `- [x]` vs all `- [ ]`/`- [x]`)
-- **UAT** — `pending` (file in `.docs/uat/pending/`), `completed`, `skipped`, or `none`
+- **UAT** — `pending` (file in `.docs/uat/pending/`) or `none`. (Tasks whose UAT has reached `completed/` or `skipped/` have moved out of `active/`, so they no longer appear in this index.)
 - **Flags** — any of `[WIP]`, `[BLOCKED: ...]`, `[FAILED: ...]`, `[DEFERRED-TO-UAT]` present in the task file; `—` if none
 - **Objective** — first sentence from the task's `## Objective` section (truncate if needed)

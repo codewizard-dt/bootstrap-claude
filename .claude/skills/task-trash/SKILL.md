@@ -78,7 +78,7 @@ Search for and update any references to the moved files across the project:
    - Any UAT files that reference the task
 
 2. For each reference found:
-   - If in `.docs/tasks/README.md`: **delete the task's row** from the Active or Completed table entirely. Do not move it to a "Trashed" section. The README is the survey source for `/tackle`; trashed tasks should not appear there.
+   - If in `.docs/tasks/README.md`: **delete the task's row** from the Active Tasks table entirely (the index has no Completed or Trashed table — completed tasks live in `.docs/tasks/completed/`, trashed tasks in `.docs/tasks/trashed/`). If the task was already completed and so has no row in the index, the row-removal is a silent no-op. **Then check the header**: if the **Last task:** line at the top of the README references this task (under any prior location — `active/NNN-slug.md` or `completed/NNN-slug.md`), `Edit` it to point at `trashed/NNN-slug.md`. Do **not** decrement **Next task number** — it only ever goes up, even when its referent ends up trashed.
    - If in another status/index file: remove the line or update the path to reflect the new `trashed/` location.
    - If in another task/UAT file's `Source task` or `UAT` link: **update the path** to `trashed/`.
 

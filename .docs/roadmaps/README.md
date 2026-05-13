@@ -143,7 +143,8 @@ Fields that may legitimately be empty: `Linked PRD`, `Linked ADRs`, `Tags`, `Not
 
 - The link path is **repo-relative from the roadmap file's location** — typically `../tasks/active/NNN-slug.md` (or `../tasks/completed/NNN-slug.md` after UAT).
 - The visible link text **must** start with `TASK-NNN:` so the auto-checkoff machinery can detect references.
-- When the linked task moves from `active/` → `completed/`, the path in the roadmap is **not** rewritten — the original `active/` path is what auto-checkoff matches against. (Stale paths are tolerated; the checkbox flips even when the file has moved.)
+- Auto-checkoff matches links regardless of whether the path points at `active/` or `completed/` — the `TASK-NNN:` prefix plus `<NNN>-<slug>.md` filename is the match key, so a stale directory in the path never blocks the match.
+- When a skill that moves a task from `active/` → `completed/` (`/uat-walk`, `/uat-auto`, `/uat-auto-plus`, `/uat-skip`) flips the checkbox, it **must** also rewrite the link path to point at the task's new location in the same step. Stale paths are *not* tolerated — if a reference exists, it gets updated.
 
 ### Inline items (free-form)
 
@@ -210,8 +211,9 @@ When a task transitions to **completed** (whether by `/tackle` finishing all ste
    ```
    where `NNN-<slug>` matches the just-completed task.
 2. Flip the matched `- [ ]` to `- [x]` via the `Edit` tool (never `sed`).
-3. Update the roadmap's `Last updated` field to today.
-4. Update the matching row's `Progress` in the index.
+3. **If the skill also moved the task file** (any `/uat-*` skill), rewrite the link path in the same matched line so it points at the task's new location (e.g. `../tasks/active/NNN-slug.md` → `../tasks/completed/NNN-slug.md`). Do this in one `Edit` that combines the checkbox flip and the path rewrite — never leave a stale path behind just because the checkbox is correct.
+4. Update the roadmap's `Last updated` field to today.
+5. Update the matching row's `Progress` in the index.
 
 If no roadmap references the task, the skills do nothing (silent no-op).
 

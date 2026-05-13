@@ -77,10 +77,10 @@ $ARGUMENTS
 
 7) **Create the task file(s)**: After user confirmation, create fully detailed, execution-ready task file(s) in `.docs/tasks/active/` following the format specified in `.docs/tasks/active/README.md`.
 
-   **7a) Re-verify the next available task number — IMMEDIATELY before writing any file.** The number determined in step 3 may now be stale (other tasks created mid-session, the `active/README.md` index may list reservations not yet on disk, or a sibling task is being created in the same run). Do a fresh scan now:
-   - Use Serena `mcp__serena__list_dir` on `.docs/tasks/active/`, `.docs/tasks/completed/`, and `.docs/tasks/trashed/` (skip any that don't exist).
-   - Use `mcp__serena__search_for_pattern` against `.docs/tasks/README.md` and `.docs/tasks/active/README.md` for `^\d{3}-` entries — these may reserve numbers that haven't been written to disk yet.
-   - Collect every `NNN-` prefix across all sources, take `max + 1`, zero-pad to 3 digits.
+   **7a) Re-verify the next available task number — IMMEDIATELY before writing any file.** The number determined in step 3 may now be stale (other tasks created mid-session, or a sibling task is being created in the same run). Determine the next number now:
+   - **Primary source**: `Read` the **Next task number** header line at the top of `.docs/tasks/README.md`. That value is authoritative — it is maintained by every skill that creates or trashes a task.
+   - **Sanity check**: Use Serena `mcp__serena__list_dir` on `.docs/tasks/active/`, `.docs/tasks/completed/`, and `.docs/tasks/trashed/` (skip any that don't exist). Collect every `NNN-` prefix across all sources, take `max + 1`, zero-pad to 3 digits. If this disagrees with the header, trust the disk and note the drift inline (`Index header was stale: header said NNN, disk says NNN'. Using NNN'.`) — but proceed.
+   - **If `.docs/tasks/README.md` does not exist or lacks the header**, fall back to the disk scan alone.
    - **For ADR splits or multi-task runs**: assign sequential numbers (`NNN`, `NNN+1`, `NNN+2`, …) and reserve them all *before* writing the first file.
    - If the number you planned to use in step 6 has been taken, silently bump to the new next-available number and use it. Do not re-prompt the user.
    - **Never use a `Write` tool call before completing this re-scan.**
@@ -109,6 +109,12 @@ $ARGUMENTS
    ```
 
    Where `<total>` is the count of `- [ ]` checkboxes you just wrote into the task file's `## Steps` sections. Insert the row in numeric order. This index is `/tackle`'s no-args survey source; do not skip this step.
+
+   **Also update the two header lines** at the top of `.docs/tasks/README.md`:
+   - **Last task:** set to `[NNN-slug](active/NNN-slug.md)` for the task you just created (or, in a multi-task run, the highest-numbered one).
+   - **Next task number:** set to `NNN + 1`, zero-padded to 3 digits.
+
+   If the file is being created from scratch in this step, write both header lines along with the table.
 
 8.5) **Update the ADR file** (only when step 2.5 found an accepted ADR reference):
    - In the target decision's `### Links` section, add a `Source task(s):` line:
