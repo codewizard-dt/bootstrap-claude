@@ -185,6 +185,8 @@ Task tool invocation:
 
 **Do this step directly in the main agent context** — do NOT delegate to a sub-agent. This is a simple text replacement that does not warrant the overhead of a sub-agent.
 
+⛔ **HARD RULE — update immediately, never batch.** The moment a sub-agent from Step 2 returns (success, partial, or failure), the *next thing you do* is flip that step's checkboxes in the outline file. Do NOT dispatch the next step's sub-agent, do NOT continue the cycle, do NOT defer updates to the end of the task. The update for step N must land on disk before step N+1 begins. If you find yourself queuing multiple completed steps without updates, stop and flush them now.
+
 After the sub-agent from Step 2 completes (or fails), update the outline file using the native `Edit` tool:
 
 ### Status Markers to Use
@@ -224,6 +226,8 @@ After updating the outline:
 2. **Execute the next step** - Step 2
 3. **Update** - Step 3
 4. **Continue** until all tasks are complete or you are interrupted
+
+**One step per cycle.** Step 2 → Step 3 → Step 2 → Step 3. Never run Step 2 twice in a row. The outline file must visibly progress between every sub-agent dispatch — that's how the user (and any interrupting `/tackle` resumption) sees real-time progress.
 
 ---
 
