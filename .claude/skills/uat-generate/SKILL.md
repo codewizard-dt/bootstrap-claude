@@ -59,7 +59,7 @@ Parse `$ARGUMENTS` to determine the source and output file:
    - If no matching task exists, ask the user:
      - Should a task be created first via `/task-add`?
      - Or assign a standalone UAT number and slug: `.docs/uat/pending/<next-number>-<slug>.uat.md`
-   - To determine `<next-number>`, scan existing files in `.docs/uat/pending/`, `.docs/uat/completed/`, and `.docs/tasks/active/` for the highest number
+   - To determine `<next-number>`, use Serena `list_dir` on `.docs/uat/pending/`, `.docs/uat/completed/`, and `.docs/tasks/active/` to enumerate filenames and pick the highest number
 
 3. Assume `.docs/uat/pending/`, `.docs/uat/completed/`, and `.docs/uat/screenshots/` directories already exist.
 
@@ -250,7 +250,7 @@ For each potential test, apply this decision:
 
 **How to assess relevance:**
 1. Read the task file's scope, acceptance criteria, and listed changes
-2. Use Serena (`find_referencing_symbols`, `search_for_pattern`) or `git diff` against the base branch to identify exactly which files, symbols, and routes were added or modified
+2. Use Serena (`find_referencing_symbols`, `search_for_pattern`, `get_symbols_overview`) to identify the files, symbols, and routes touched by the task. Use `git diff` against the base branch only to enumerate raw changed paths — never use `grep`, `ls`, `find`, `cat`, or `sed` for code exploration
 3. For each candidate test, ask: *"Would this test have a different expected result after the task compared to before?"*
    - **Yes** → include it
    - **No** → exclude it
