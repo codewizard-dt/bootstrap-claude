@@ -4,6 +4,8 @@ description: Run completeness audit on a draft PRD, resolve gaps via Q&A, and fl
 model: claude-sonnet-4-6
 effort: high
 argument-hint: <path/to/prd.md, NNN-slug, or NNN>
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**
@@ -31,10 +33,10 @@ Parse `$ARGUMENTS` to identify the target PRD file:
 
 | Input form | Resolution |
 |------------|------------|
-| `<path>` (e.g. `.docs/prd/active/003-search.md`) | Use as-is |
-| `<NNN-slug>` (e.g. `003-search`) | Search `.docs/prd/active/` for `NNN-slug.md` |
-| `<NNN>` (e.g. `3` or `003`) | Pad to 3 digits; `mcp__serena__find_file` with mask `NNN-*.md` in `.docs/prd/active/` |
-| Empty / missing | List every PRD with `Status: draft` across `.docs/prd/active/` (one row per PRD with title and slug) and ask the user via `AskUserQuestion` to pick one |
+| `<path>` (e.g. `.docs/prd/003-search.md`) | Use as-is |
+| `<NNN-slug>` (e.g. `003-search`) | Search `.docs/prd/` for `NNN-slug.md` |
+| `<NNN>` (e.g. `3` or `003`) | Pad to 3 digits; `mcp__serena__find_file` with mask `NNN-*.md` in `.docs/prd/` |
+| Empty / missing | List every PRD with `Status: draft` across `.docs/prd/` (one row per PRD with title and slug) and ask the user via `AskUserQuestion` to pick one |
 
 If the file cannot be located, **stop** and report — do not invent or create.
 
@@ -85,7 +87,7 @@ Inspect the file section by section and build a gap report. Required-field gaps 
 Output to the user **before any edits** as a tabular summary — never bullets:
 
 ```
-File: .docs/prd/active/003-search.md
+File: .docs/prd/003-search.md
 Title: Federated search across knowledge bases
 Current status: draft
 Required-field gaps: N
@@ -187,7 +189,7 @@ If this PRD's row does not yet exist in the README's Index table (e.g. the place
 
 | Column | Format |
 |--------|--------|
-| `File` | `[PRD-NNN](active/NNN-slug.md)` |
+| `File` | `[PRD-NNN](NNN-slug.md)` |
 | `Title` | The PRD's H1 sub-title (without the `PRD NNN:` prefix) |
 | `Status` | `approved` |
 | `Created` | The PRD's `Created:` date |

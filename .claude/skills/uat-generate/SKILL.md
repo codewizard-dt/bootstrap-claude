@@ -1,8 +1,10 @@
 ---
 name: uat-generate
-description: Generate UAT tests in .docs/uat/pending/ mirroring task naming conventions
+description: Generate UAT tests in .docs/uat/ mirroring task naming conventions
 model: claude-sonnet-4-6
 argument-hint: <path/to/task-file.md, number-slug, or feature description>
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Always obey `.docs/guides/task-lifecycle.md`. Read it now if not already in context.**
@@ -11,7 +13,7 @@ argument-hint: <path/to/task-file.md, number-slug, or feature description>
 
 # UAT Generator
 
-Generate comprehensive User Acceptance Tests (UAT) for a feature, writing them to `.docs/uat/pending/`.
+Generate comprehensive User Acceptance Tests (UAT) for a feature, writing them to `.docs/uat/`.
 
 UAT is the phase that owns **runtime and end-to-end verification**. `/tackle` only runs static gates (typecheck, `bash -n`, lint, unit tests). Any behavior that requires executing the feature — running a helper script against real paths, hitting an API, walking a user flow, asserting on produced files — is a UAT test, not a tackle verification step. See `.docs/guides/command-anti-patterns.md`.
 
@@ -42,30 +44,30 @@ This rule sits above the Step 2.3 contract research: that step tells you how to 
 
 Parse `$ARGUMENTS` to determine the source and output file:
 
-1. **If a task file path is provided** (e.g., `.docs/tasks/active/3-user-auth.md`):
+1. **If a task file path is provided** (e.g., `.docs/tasks/3-user-auth.md`):
    - Read the task file
    - Extract the feature requirements and scope
-   - Derive UAT filename from the task filename: `3-user-auth.md` → `.docs/uat/pending/3-user-auth.uat.md`
+   - Derive UAT filename from the task filename: `3-user-auth.md` → `.docs/uat/3-user-auth.uat.md`
 
 2. **If a number-slug is provided** (e.g., `3-user-auth`):
-   - Call Serena `find_file` `.docs/tasks/active/` for `<number-slug>.md`
+   - Call Serena `find_file` `.docs/tasks/` for `<number-slug>.md`
    - If found, read the task file and extract feature requirements
-   - Derive UAT filename: `<number>-<slug>.md` → `.docs/uat/pending/<number>-<slug>.uat.md`
+   - Derive UAT filename: `<number>-<slug>.md` → `.docs/uat/<number>-<slug>.uat.md`
    - If not found in either directory, STOP and report the error
 
 3. **If a feature description is provided** (e.g., "user authentication"):
-   - Call Serena `list_dir` `.docs/tasks/active/` for a matching task file
-   - If a matching task is found, use its naming: `.docs/uat/pending/<number>-<slug>.uat.md`
+   - Call Serena `list_dir` `.docs/tasks/` for a matching task file
+   - If a matching task is found, use its naming: `.docs/uat/<number>-<slug>.uat.md`
    - If no matching task exists, ask the user:
      - Should a task be created first via `/task-add`?
-     - Or assign a standalone UAT number and slug: `.docs/uat/pending/<next-number>-<slug>.uat.md`
-   - To determine `<next-number>`, use Serena `list_dir` on `.docs/uat/pending/`, `.docs/uat/completed/`, and `.docs/tasks/active/` to enumerate filenames and pick the highest number
+     - Or assign a standalone UAT number and slug: `.docs/uat/<next-number>-<slug>.uat.md`
+   - To determine `<next-number>`, use Serena `list_dir` on `.docs/uat/`, `.docs/uat/completed/`, and `.docs/tasks/` to enumerate filenames and pick the highest number
 
-3. Assume `.docs/uat/pending/`, `.docs/uat/completed/`, and `.docs/uat/screenshots/` directories already exist.
+3. Assume `.docs/uat/`, `.docs/uat/completed/`, and `.docs/uat/screenshots/` directories already exist.
 
-4. **Check for existing UAT file** in both `pending/` and `completed/`:
-   - If it exists in `pending/`, ask the user: replace, append, or abort?
-   - If it exists in `completed/`, warn the user that a completed UAT already exists and ask whether to generate a new version in `pending/`
+4. **Check for existing UAT file** in both `.docs/uat/` and `completed/`:
+   - If it exists in `.docs/uat/`, ask the user: replace, append, or abort?
+   - If it exists in `completed/`, warn the user that a completed UAT already exists and ask whether to generate a new version in `.docs/uat/`
 
 ### Step 2: Analyze the Feature
 
@@ -164,7 +166,7 @@ The file MUST follow this structure:
 ```markdown
 # UAT: [Feature Name]
 
-> **Source task**: [`.docs/tasks/active/<number>-<slug>.md`](relative-link) (or "Standalone" if no task)
+> **Source task**: [`.docs/tasks/<number>-<slug>.md`](relative-link) (or "Standalone" if no task)
 > **Generated**: YYYY-MM-DD
 
 ---
@@ -366,14 +368,14 @@ When generating tests, ensure:
 
 ### Step 5: Write UAT File and Cross-Reference
 
-1. **Write the UAT file** to `.docs/uat/pending/<number>-<slug>.uat.md`
+1. **Write the UAT file** to `.docs/uat/<number>-<slug>.uat.md`
 
-2. **Update the source task file** (if one exists, typically in `.docs/tasks/active/`):
+2. **Update the source task file** (if one exists, typically in `.docs/tasks/`):
    - Use **`Read`** to load the task file, then **`Edit`** to append a reference at the bottom. **Never** use `echo >>`, `cat <<EOF`, `sed`, or any other shell command to append. See `.docs/guides/mcp-tools.md` "Common anti-patterns".
    - The reference to append:
      ```markdown
      ---
-     **UAT**: [`.docs/uat/pending/<number>-<slug>.uat.md`](../../uat/pending/<number>-<slug>.uat.md)
+     **UAT**: [`.docs/uat/<number>-<slug>.uat.md`](../uat/<number>-<slug>.uat.md)
      ```
    - If the task already has a UAT reference, use `Edit` to replace the existing one in place
 
@@ -388,10 +390,10 @@ After writing the tests:
 
 2. **Next steps for the user**:
    ```
-   To walk through tests interactively:  /uat-walk .docs/uat/pending/<number>-<slug>.uat.md
+   To walk through tests interactively:  /uat-walk .docs/uat/<number>-<slug>.uat.md
    To create a task first:               /task-add <description>
    ```
-   When all tests pass, `/uat-walk` moves the file from `pending/` to `completed/`.
+   When all tests pass, `/uat-walk` moves the file from `.docs/uat/` to `completed/`.
 
 3. Note any areas that may need additional manual test cases
 
@@ -401,19 +403,18 @@ After writing the tests:
 
 ```
 .docs/uat/
-├── pending/          # Newly generated UATs, not yet fully passed
-│   ├── 3-user-auth.uat.md
-│   └── 5-positions.uat.md
-└── completed/        # All tests passed, UAT signed off
+├── 3-user-auth.uat.md       # Newly generated UATs, not yet fully passed
+├── 5-positions.uat.md
+└── completed/               # All tests passed, UAT signed off
     └── 1-onboarding.uat.md
 
 .docs/tasks/
-├── active/           # Tasks being implemented via /tackle, then awaiting UAT
-└── completed/        # UAT passed, task fully complete
+├── NNN-slug.md              # Tasks being implemented via /tackle, then awaiting UAT
+└── completed/               # UAT passed, task fully complete
 ```
 
-**Task lifecycle**: `active/` → (`/tackle` completes, stays in `active/`) → (`/uat-walk` all pass) → `completed/`
-**UAT lifecycle**: `pending/` → (`/uat-walk` all pass) → `completed/`
+**Task lifecycle**: `.docs/tasks/` → (`/tackle` completes, stays in `.docs/tasks/`) → (`/uat-walk` all pass) → `completed/`
+**UAT lifecycle**: `.docs/uat/` → (`/uat-walk` all pass) → `completed/`
 
 ---
 
@@ -421,10 +422,10 @@ After writing the tests:
 
 | Source | UAT File Path | Example |
 |--------|--------------|---------|
-| Task `.docs/tasks/active/3-user-auth.md` | `.docs/uat/pending/3-user-auth.uat.md` | Mirrors task number and slug |
-| Task `.docs/tasks/active/12-api-refactor.md` | `.docs/uat/pending/12-api-refactor.uat.md` | Mirrors task number and slug |
-| Freeform (matching task found) | `.docs/uat/pending/<task-number>-<task-slug>.uat.md` | Uses discovered task's naming |
-| Freeform (no task) | `.docs/uat/pending/<next-number>-<derived-slug>.uat.md` | Auto-numbered, ask user to confirm slug |
+| Task `.docs/tasks/3-user-auth.md` | `.docs/uat/3-user-auth.uat.md` | Mirrors task number and slug |
+| Task `.docs/tasks/12-api-refactor.md` | `.docs/uat/12-api-refactor.uat.md` | Mirrors task number and slug |
+| Freeform (matching task found) | `.docs/uat/<task-number>-<task-slug>.uat.md` | Uses discovered task's naming |
+| Freeform (no task) | `.docs/uat/<next-number>-<derived-slug>.uat.md` | Auto-numbered, ask user to confirm slug |
 
 The `<number>` prefix ensures UAT files sort alongside their tasks and are easy to cross-reference.
 
@@ -432,12 +433,12 @@ The `<number>` prefix ensures UAT files sort alongside their tasks and are easy 
 
 ## Example
 
-Given task `.docs/tasks/active/5-positions.md`, the generated UAT at `.docs/uat/pending/5-positions.uat.md`:
+Given task `.docs/tasks/5-positions.md`, the generated UAT at `.docs/uat/5-positions.uat.md`:
 
 ```markdown
 # UAT: Positions Management
 
-> **Source task**: [`.docs/tasks/active/5-positions.md`](../../tasks/active/5-positions.md)
+> **Source task**: [`.docs/tasks/5-positions.md`](../tasks/5-positions.md)
 > **Generated**: 2026-03-03
 
 ---

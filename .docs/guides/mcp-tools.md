@@ -52,7 +52,7 @@ These are real mistakes AI agents make on this codebase. Do not repeat them.
 
 ```bash
 # WRONG — never do this
-sed -i '' 's/- \[ \] Launch Puppeteer/- [x] Launch Puppeteer/; s/- \[ \] Navigate and screenshot/- [x] Navigate and screenshot/' .docs/tasks/active/051-ux-conversion-audit.md
+sed -i '' 's/- \[ \] Launch Puppeteer/- [x] Launch Puppeteer/; s/- \[ \] Navigate and screenshot/- [x] Navigate and screenshot/' .docs/tasks/051-ux-conversion-audit.md
 ```
 
 This pattern shows up most often when marking multiple steps complete in a task file. It triggers an approval prompt every time, is fragile against whitespace or escaping, and silently corrupts files when a regex backfires.
@@ -60,10 +60,10 @@ This pattern shows up most often when marking multiple steps complete in a task 
 ✅ **Correct**: call the `Edit` tool once per checkbox (or use `replace_all: true` if every `- [ ]` in the file should become `- [x]`):
 
 ```
-Edit(file_path=".docs/tasks/active/051-ux-conversion-audit.md",
+Edit(file_path=".docs/tasks/051-ux-conversion-audit.md",
      old_string="- [ ] Launch Puppeteer",
      new_string="- [x] Launch Puppeteer")
-Edit(file_path=".docs/tasks/active/051-ux-conversion-audit.md",
+Edit(file_path=".docs/tasks/051-ux-conversion-audit.md",
      old_string="- [ ] Navigate and screenshot each marketing",
      new_string="- [x] Navigate and screenshot each marketing")
 # ...one Edit call per checkbox
@@ -75,7 +75,7 @@ Yes, even if there are ten checkboxes. Ten `Edit` calls is correct. One `sed` is
 
 ```bash
 # WRONG
-cat .docs/tasks/active/051-ux-conversion-audit.md
+cat .docs/tasks/051-ux-conversion-audit.md
 ```
 
 ✅ **Correct**: `Read` tool. Always.

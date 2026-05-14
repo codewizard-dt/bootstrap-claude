@@ -1,8 +1,10 @@
 ---
 name: prd-trash
 description: Move a cancelled PRD to .docs/prd/trashed/, surface linked ADRs/tasks for separate review, and update all references
-model: claude-sonnet-4-6
+model: claude-haiku-4-5-20251001
 argument-hint: <path/to/prd.md, NNN-slug, or NNN>
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**
@@ -26,13 +28,13 @@ Parse `$ARGUMENTS` to locate the PRD:
 
 | Input form | Resolution |
 |------------|------------|
-| `<path>` (e.g. `.docs/prd/active/003-search.md`) | Confirm the file exists via `mcp__serena__find_file` or `mcp__serena__list_dir`. If missing, STOP. |
-| `<NNN-slug>` (e.g. `003-search`) | Search `.docs/prd/active/` first, then `.docs/prd/archived/` for `<NNN-slug>.md`. |
-| `<NNN>` (e.g. `3` or `003`) | Pad to 3 digits. Use `mcp__serena__find_file` with mask `NNN-*.md` across `.docs/prd/active/` and `.docs/prd/archived/`. |
+| `<path>` (e.g. `.docs/prd/003-search.md`) | Confirm the file exists via `mcp__serena__find_file` or `mcp__serena__list_dir`. If missing, STOP. |
+| `<NNN-slug>` (e.g. `003-search`) | Search `.docs/prd/` first, then `.docs/prd/archived/` for `<NNN-slug>.md`. |
+| `<NNN>` (e.g. `3` or `003`) | Pad to 3 digits. Use `mcp__serena__find_file` with mask `NNN-*.md` across `.docs/prd/` and `.docs/prd/archived/`. |
 | Description (e.g. `search`) | Search both directories. If ambiguous, list matches and ask via `AskUserQuestion`. |
-| Empty / missing | List every PRD across `.docs/prd/active/` and `.docs/prd/archived/` and ask the user via `AskUserQuestion`. |
+| Empty / missing | List every PRD across `.docs/prd/` and `.docs/prd/archived/` and ask the user via `AskUserQuestion`. |
 
-Determine which directory the PRD currently lives in (`active/` or `archived/`). Extract the file's `NNN-slug` identifier.
+Determine which directory the PRD currently lives in (`.docs/prd/` or `archived/`). Extract the file's `NNN-slug` identifier.
 
 ### Step 2: Read the PRD and Identify Linked Downstream Artifacts
 
@@ -40,14 +42,14 @@ Determine which directory the PRD currently lives in (`active/` or `archived/`).
 2. Extract `## Linked ADRs` table rows — collect each `ADR-NNNN#DM` reference.
 3. Extract `## Linked Tasks` table rows — collect each task path.
 4. For each linked ADR, use `mcp__serena__list_dir` and `Read` to verify the ADR file exists and capture the per-decision status (`proposed` / `accepted` / `superseded`).
-5. For each linked task, verify the file exists in `.docs/tasks/active/` or `.docs/tasks/completed/` and capture its status.
+5. For each linked task, verify the file exists in `.docs/tasks/` or `.docs/tasks/completed/` and capture its status.
 6. Build a downstream artifacts table:
 
 | Artifact | Type | Current Status | Suggested User Action |
 |----------|------|----------------|------------------------|
 | ADR-0007#D2 | linked ADR | accepted | Review independently — accepted ADRs are immutable; if no longer needed, write a deprecating successor via `/adr-create` |
 | ADR-0008#D1 | linked ADR | proposed | Review independently — consider whether to abandon, finalize, or modify via `/adr-create` |
-| `.docs/tasks/active/004-foo.md` | linked task | WIP | Run `/task-trash .docs/tasks/active/004-foo.md` if the task is also cancelled |
+| `.docs/tasks/004-foo.md` | linked task | WIP | Run `/task-trash .docs/tasks/004-foo.md` if the task is also cancelled |
 | `.docs/tasks/completed/003-bar.md` | linked task | done | No action — completed work stands |
 
 ### Step 3: Confirm With the User
@@ -66,7 +68,7 @@ If the user says **No** to the move, STOP.
 
 ### Step 4: Move the PRD File
 
-Use `git mv <source> .docs/prd/trashed/<filename>` to preserve git history. Fall back to `mv` only if `git mv` fails.
+Use `git mv .docs/prd/<filename> .docs/prd/trashed/<filename>` to preserve git history. Fall back to `mv` only if `git mv` fails.
 
 **Preserve the filename — do not rename.**
 
@@ -77,13 +79,13 @@ Use `mcp__serena__search_for_pattern` (or `Grep` as fallback) to find references
 - `.docs/prd/README.md` (PRD index)
 - `PROJECT_STATUS.md`
 - All ADR files in `.docs/adr/` (looking for `Source PRD:` cross-links)
-- All task files in `.docs/tasks/active/` and `.docs/tasks/completed/` (looking for `**PRD**:` lines)
+- All task files in `.docs/tasks/` and `.docs/tasks/completed/` (looking for `**PRD**:` lines)
 
 For each reference found:
 
 | Reference location | Update rule |
 |--------------------|-------------|
-| **PRD index row in `.docs/prd/README.md`** | Update the `Status` column to `trashed` and update the `File` column path to `trashed/<filename>`. **The row stays in the index** for traceability — never delete it. |
+| **PRD index row in `.docs/prd/README.md`** | Update the `Status` column to `trashed` and update the `File` column link to `trashed/<filename>`. **The row stays in the index** for traceability — never delete it. |
 | **Cross-link in an ADR or task** (`Source PRD:` / `**PRD**:`) | Update the path to `trashed/<filename>`. **Never delete the cross-link** — it documents historical lineage. |
 
 Use `Edit` for each replacement — **one `Edit` call per file**. Never use `sed`, `awk`, `perl -i`, or `echo >>`. See `.docs/guides/mcp-tools.md` "Common anti-patterns".
@@ -119,7 +121,7 @@ Then list the suggested next-action commands (one per surfaced artifact, where a
 
 ```
 To act on linked tasks (each independently):
-  /task-trash .docs/tasks/active/004-foo.md  # if also cancelled
+  /task-trash .docs/tasks/004-foo.md  # if also cancelled
 
 To act on linked ADRs (each independently):
   # Accepted ADRs are immutable — write a deprecating successor:
@@ -130,7 +132,7 @@ To act on linked ADRs (each independently):
 Also include undo instructions:
 
 ```
-To undo, move back:  git mv .docs/prd/trashed/<filename> .docs/prd/active/<filename>
+To undo, move back:  git mv .docs/prd/trashed/<filename> .docs/prd/<filename>
                      # then re-edit Status and remove the trash callout
 ```
 

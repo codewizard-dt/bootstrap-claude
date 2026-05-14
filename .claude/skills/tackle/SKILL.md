@@ -3,6 +3,8 @@ name: tackle
 description: Execute an outlined task file step-by-step with subagent delegation
 model: claude-sonnet-4-6
 argument-hint: <path/to/task.md, number-slug, or description>
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Always obey `.docs/guides/task-lifecycle.md`. Read it now if not already in context.**
@@ -22,32 +24,32 @@ Execute a pre-planned task file step-by-step. The task file IS the plan — no r
 
 Parse `$ARGUMENTS` to locate the task file:
 
-1. **If a file path is provided** (e.g., `.docs/tasks/active/3-user-auth.md`):
+1. **If a file path is provided** (e.g., `.docs/tasks/3-user-auth.md`):
    - Confirm the file exists (use Serena `find_file` or `list_dir`)
    - If the file does not exist, fall through to case 4
 
 2. **If a number-slug is provided** (e.g., `3-user-auth`):
-   - Search `.docs/tasks/active/` for `<number-slug>.md`
+   - Search `.docs/tasks/` for `<number-slug>.md`
    - If not found, fall through to case 4
 
 3. **If only a description or number is provided** (e.g., `user auth` or `3`):
-   - Search `.docs/tasks/active/` for a matching task file
+   - Search `.docs/tasks/` for a matching task file
    - If ambiguous, list matches and ask the user to clarify
    - If no match found, fall through to case 4
 
 4. **If `$ARGUMENTS` is empty OR the input above did not resolve to a task file** — survey active tasks from the index and recommend, do NOT auto-pick:
-   - **Read only `.docs/tasks/README.md`** using the `Read` tool. This file is the canonical task index and already contains the columns the survey needs (`#`, `Slug`, `Progress`, `UAT`, `Flags`, `Objective`). Do **NOT** read individual task files in `.docs/tasks/active/` for the survey — that's what the index exists to prevent.
+   - **Read only `.docs/tasks/README.md`** using the `Read` tool. This file is the canonical task index and already contains the columns the survey needs (`#`, `Slug`, `Progress`, `UAT`, `Flags`, `Objective`). Do **NOT** read individual task files in `.docs/tasks/` for the survey — that's what the index exists to prevent.
    - **If the README is missing, has no `## Active Tasks` table, or the table is missing the expected columns**, STOP and report: `Task index at .docs/tasks/README.md is not bootstrapped. Run /primer to bootstrap it, or invoke /tackle <path-or-slug> directly.` Do not fall back to scanning every task file.
-   - Use `mcp__serena__list_dir` on `.docs/uat/pending/` only to sanity-check the index's `UAT` column against on-disk reality. If they disagree, trust the disk and quietly note the drift in your output (don't block on it).
+   - Use `mcp__serena__list_dir` on `.docs/uat/` only to sanity-check the index's `UAT` column against on-disk reality. If they disagree, trust the disk and quietly note the drift in your output (don't block on it).
    - If the **Active Tasks** table is empty, STOP and report "No active tasks to tackle".
-   - **Tool discipline** — DO NOT enumerate, count, grep, or aggregate across `.docs/tasks/active/` with `bash`, `Read`, or any other tool. The whole point of this gate is to avoid that work. The index row is authoritative for the survey; the only acceptable per-file read is on the chosen task in Step 1.
-   - **If the index appears stale** (e.g. you noticed a row with `Progress: 0/0`, missing rows for files in `active/`, or an obviously stale `UAT` column), warn the user inline with one sentence — `Index may be stale: <observation>. Treating its rows as authoritative for now.` — and continue. Do not fix the index pre-emptively; whichever skill mutated state without updating the index should be fixed instead.
+   - **Tool discipline** — DO NOT enumerate, count, grep, or aggregate across `.docs/tasks/` with `bash`, `Read`, or any other tool. The whole point of this gate is to avoid that work. The index row is authoritative for the survey; the only acceptable per-file read is on the chosen task in Step 1.
+   - **If the index appears stale** (e.g. you noticed a row with `Progress: 0/0`, missing rows for files in `.docs/tasks/`, or an obviously stale `UAT` column), warn the user inline with one sentence — `Index may be stale: <observation>. Treating its rows as authoritative for now.` — and continue. Do not fix the index pre-emptively; whichever skill mutated state without updating the index should be fixed instead.
    - Present the index's Active rows back to the user as a compact table (you may copy the index table verbatim or compress it). Use `—` for empty cells.
    - Below the table, output a **Recommendation** section ranking the top 1–3 candidates with one-line reasoning each, using this priority order (highest first):
      1. **In-progress tasks without a pending UAT** — at least one `[x]` checkbox, not all complete, no pending UAT (finish what's started)
      2. **Unblock-able tasks** — `[BLOCKED: ...]`/`[FAILED: ...]` whose blocker is plausibly resolvable now (skip if blocker is clearly still outstanding)
      3. **Lowest-numbered fully-pending task** — all `[ ]` checkboxes, no pending UAT, lowest `<NNN>` prefix
-     - Tasks with a **pending UAT** must be excluded from the recommendation list and instead surfaced under a separate `**Awaiting UAT**:` line that suggests `/uat-walk .docs/uat/pending/<NNN>-<slug>.uat.md` for each.
+     - Tasks with a **pending UAT** must be excluded from the recommendation list and instead surfaced under a separate `**Awaiting UAT**:` line that suggests `/uat-walk .docs/uat/<NNN>-<slug>.uat.md` for each.
    - Use `AskUserQuestion` to ask the user which task to tackle. Offer the top recommendation as the first option (label it `(Recommended)`), include up to 2 additional candidates as further options, and rely on the auto-provided `Other` for free-form input. Use the `header` field for the task number-slug.
    - If `$ARGUMENTS` was non-empty but unresolved, prefix the survey output with one line: `Input \`<arguments>\` did not match an active task — surveying all active tasks instead.`
    - Once the user answers, resolve their choice to a task file path and use it as the outline for all subsequent steps. Do NOT proceed to Step 1 until the user has chosen.
@@ -286,7 +288,7 @@ Now execute the cycle:
 ⛔ **This gate MUST run before Step 7. Never skip it, never reorder it, never let `/update-docs` (which triggers `/git-commit`) run first.**
 
 Once all outline steps are complete, ask the user: **"Generate UAT tests for this task?"** using `AskUserQuestion`:
-- **Yes** — Run `/uat-generate .docs/tasks/active/<filename>` to create a UAT file in `.docs/uat/pending/` matching this task's naming
+- **Yes** — Run `/uat-generate .docs/tasks/<filename>` to create a UAT file in `.docs/uat/` matching this task's naming
 - **No** — Skip UAT generation
 
 **Wait** for the user's answer (and for `/uat-generate` to finish, if invoked) before proceeding to Step 7. The UAT file produced here must exist on disk before `/update-docs` runs so it's included in the same documentation update and commit.
@@ -297,9 +299,10 @@ Once every checkbox in the task outline is complete (and after Step 6 has resolv
 
 1. Identify the task's `<NNN>-<slug>` from the outline filename.
 2. Use `mcp__serena__list_dir` on `.docs/roadmaps/` to enumerate `*.md` files (skip `README.md`).
-3. For each roadmap, `Read` the file and look for lines matching `- [ ] [TASK-<NNN>:` whose link path ends in `<NNN>-<slug>.md` (whether under `active/` or `completed/`).
+3. For each roadmap, `Read` the file and look for lines matching `- [ ] [TASK-<NNN>:` whose link path ends in `<NNN>-<slug>.md` (whether in `.docs/tasks/` or `completed/`).
 4. For each match, `Edit` the line to flip `- [ ]` → `- [x]` (use the full line text as `old_string` for uniqueness), and `Edit` the roadmap's `**Last updated**:` field to today.
 5. After all roadmap edits, `Edit` the matching row's `Progress` numerator in `.docs/roadmaps/README.md` (e.g. `3/12` → `4/12`).
+6. **Phase sweep** — for each roadmap where a match was found in step 3, identify the `## Phase N:` block that contained the matched item; scan all other `- [ ] [TASK-NNN:` lines in that same phase; for each, use `mcp__serena__find_file` to check if `NNN-slug.md` exists under `.docs/tasks/completed/`; if it does, `Edit` that line in one call to flip `- [ ]` → `- [x]` and rewrite the link path to `../tasks/completed/NNN-slug.md`, then bump `Progress` in the index for each additional item.
 
 Silent no-op if no roadmap references the task. **Do NOT** auto-flip `Status: active` → `Status: done` even when this is the last unchecked box — that flip is intentionally manual. Use `Edit` only — never `sed`, `bash`, or `Write`.
 
@@ -309,6 +312,6 @@ Only after Step 6 has resolved, run the `/update-docs` skill. This skill ends by
 
 ### Step 8: Suggest UAT
 
-If UAT was generated in Step 6, suggest: `/uat-walk .docs/uat/pending/<file>.uat.md`
+If UAT was generated in Step 6, suggest: `/uat-walk .docs/uat/<file>.uat.md`
 
 **Start now - read the outline and begin the first cycle.**

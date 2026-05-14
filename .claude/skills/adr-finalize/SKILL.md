@@ -4,6 +4,8 @@ description: Finalize a single proposed decision block; run E-C-A-D-R audit, sup
 model: claude-haiku-4-5-20251001
 effort: high
 argument-hint: <path/to/adr.md#DM, NNNN-slug#DM, or NNNN#DM>
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**
@@ -246,6 +248,24 @@ If the accepted decision creates a non-obvious pattern, integration constraint, 
 - Reference the decision (`ADR-NNNN#DM`), not just the file
 - Prefer `mcp__serena__edit_memory` if a memory already covers this area
 
+### Step 8.5: Offer to move the file to `completed/` (only when all decisions are terminal)
+
+After applying all edits for this decision, re-read the file and check the status of every `## D*` block.
+
+| Condition | Action |
+|-----------|--------|
+| ≥ 1 decision still has `Status: proposed` | Skip this step entirely — the file is not complete |
+| Every decision is `accepted`, `superseded by …`, or `deprecated` | Offer the user the option to move the file to `.docs/adr/completed/` |
+
+If the user agrees to move:
+
+1. Use `Bash` to run `git mv <current-path> .docs/adr/completed/<filename>.md`
+2. Update the `File` column in the **Index** in `.docs/adr/README.md`: change `[NNNN](NNNN-slug.md)` → `[NNNN](completed/NNNN-slug.md)`
+3. Update any `### Links` entries in other ADR files that reference the moved file (use `mcp__serena__search_for_pattern` to find references, then `Edit` each)
+4. Update relative-path references inside the moved file's own `### Links` sections if they point at sibling ADR files using `../` paths — those paths are unchanged since the file stayed within `.docs/adr/`
+
+Do **not** move the file automatically — always confirm with the user via `AskUserQuestion` first.
+
 ### Step 9: Report completion
 
 Print:
@@ -253,12 +273,13 @@ Print:
 | Field | Value |
 |-------|-------|
 | Decision | `ADR-NNNN#DM` |
-| File | `<path>` |
+| File | `<path>` (new path if moved to `completed/`) |
 | Old → New status | `proposed → accepted` |
 | Gaps resolved | count |
 | Format fixes applied | count (bullet→table conversions, mermaid added, etc.) |
 | Supersession | `ADR-MMMM#DK` (also updated) or `none` |
 | Sibling decisions in this file | `D1: <status>`, `D3: <status>` (unchanged by this run) |
+| File moved to completed/ | yes / no |
 | Index updated | yes |
 | Graph updated | yes |
 | Suggested next steps | `/task-add ...`, `/schedule ...`, `/adr-finalize <file>#Dother`, etc. |

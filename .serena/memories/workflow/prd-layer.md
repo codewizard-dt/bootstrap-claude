@@ -13,7 +13,7 @@ This project implements a spec-driven development pipeline. PRDs sit upstream of
 
 | Skill | Purpose |
 |-------|---------|
-| `/prd-create` | Socratic Q&A elicitation → `.docs/prd/active/NNN-slug.md` (status: draft) |
+| `/prd-create` | Socratic Q&A elicitation → `.docs/prd/NNN-slug.md` (status: draft) |
 | `/prd-finalize` | Completeness audit + stakeholder gate → flip to approved |
 | `/prd-extract-decisions` | Extract Architecturally Significant Requirements (ASRs); propose Decision Groups; surface `/adr-create` commands; bidirectional cross-link |
 | `/prd-update` | Append-only `## Amendment N` for approved PRDs; direct edits for drafts; surface downstream ADR/task impact |

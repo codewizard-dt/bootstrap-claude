@@ -3,6 +3,8 @@ name: adr-walkthrough
 description: Walk through an ADR file decision-by-decision, presenting each architecture choice and confirming it with the user via Q&A
 model: claude-sonnet-4-6
 argument-hint: <path/to/adr.md, NNNN-slug, or NNNN>
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**

@@ -111,7 +111,91 @@ if [ ${#ORPHAN_FOUND[@]} -gt 0 ]; then
   fi
 fi
 
-# 3. Bootstrap Serena project.yml (idempotent)
+# 3. Migrate files from old active/pending/open subfolders to parent directories
+# These subfolders were removed in favour of flat placement (files go directly under the parent).
+declare -A LEGACY_SUBDIRS=(
+  [".docs/tasks/active"]=".docs/tasks"
+  [".docs/uat/pending"]=".docs/uat"
+  [".docs/bugs/open"]=".docs/bugs"
+  [".docs/prd/active"]=".docs/prd"
+)
+
+MIGRATE_FOUND=()
+for subdir in "${!LEGACY_SUBDIRS[@]}"; do
+  legacy_path="$PROJECT_DIR/$subdir"
+  if [ -d "$legacy_path" ]; then
+    # Count moveable files (non-.gitkeep markdown files, skip README which was an index)
+    shopt -s nullglob
+    moveable=("$legacy_path"/*.md)
+    shopt -u nullglob
+    # Filter out README.md (old active index, not a content file)
+    real_files=()
+    for f in "${moveable[@]}"; do
+      [[ "$(basename "$f")" != "README.md" ]] && real_files+=("$f")
+    done
+    if [ ${#real_files[@]} -gt 0 ] || [ -d "$legacy_path" ]; then
+      MIGRATE_FOUND+=("$subdir")
+    fi
+  fi
+done
+
+if [ ${#MIGRATE_FOUND[@]} -gt 0 ]; then
+  echo ""
+  echo "Legacy subdirectories detected (flat layout now; files belong in the parent folder):"
+  for subdir in "${MIGRATE_FOUND[@]}"; do
+    parent="${LEGACY_SUBDIRS[$subdir]}"
+    legacy_path="$PROJECT_DIR/$subdir"
+    shopt -s nullglob
+    moveable=("$legacy_path"/*.md)
+    shopt -u nullglob
+    real_files=()
+    for f in "${moveable[@]}"; do
+      [[ "$(basename "$f")" != "README.md" ]] && real_files+=("$f")
+    done
+    if [ ${#real_files[@]} -gt 0 ]; then
+      echo "  $subdir/ → $parent/  (${#real_files[@]} file(s))"
+      for f in "${real_files[@]}"; do echo "    $(basename "$f")"; done
+    else
+      echo "  $subdir/  (empty — will be removed)"
+    fi
+  done
+  echo ""
+  if [ -t 0 ]; then
+    read -r -p "Move files to parent folders and remove legacy subdirectories? [y/N]: " REPLY
+    case "$REPLY" in
+      [yY])
+        for subdir in "${MIGRATE_FOUND[@]}"; do
+          parent="${LEGACY_SUBDIRS[$subdir]}"
+          legacy_path="$PROJECT_DIR/$subdir"
+          dest_path="$PROJECT_DIR/$parent"
+          shopt -s nullglob
+          moveable=("$legacy_path"/*.md)
+          shopt -u nullglob
+          for f in "${moveable[@]}"; do
+            fname="$(basename "$f")"
+            [[ "$fname" == "README.md" ]] && continue
+            if [ -e "$dest_path/$fname" ]; then
+              echo "  Skipped (already exists): $parent/$fname"
+            else
+              mv "$f" "$dest_path/$fname"
+              echo "  Moved: $subdir/$fname → $parent/$fname"
+            fi
+          done
+          rm -rf "$legacy_path"
+          echo "  Removed: $subdir/"
+        done
+        ;;
+      *)
+        echo "  Skipped legacy subfolder migration."
+        ;;
+    esac
+  else
+    echo "Non-interactive mode: skipping legacy subfolder migration. Move manually if needed."
+  fi
+  echo ""
+fi
+
+# 5. Bootstrap Serena project.yml (idempotent)
 echo "Re-checking Serena project.yml bootstrap..."
 "$TEMPLATE_DIR/bootstrap-serena.sh" "$PROJECT_DIR"
 echo ""

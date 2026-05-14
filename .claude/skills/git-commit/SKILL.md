@@ -2,6 +2,8 @@
 name: git-commit
 description: Stage all changed files and create a commit with an auto-generated message
 model: claude-haiku-4-5-20251001
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 

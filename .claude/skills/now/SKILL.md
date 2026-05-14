@@ -4,6 +4,8 @@ description: Plan and delegate a task to subagents (max 3 concurrent)
 model: claude-sonnet-4-6
 effort: high
 argument-hint: <task description>
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**

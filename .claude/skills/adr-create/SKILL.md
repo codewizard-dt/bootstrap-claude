@@ -4,6 +4,8 @@ description: Create an ADR Decision Group file in .docs/adr/ with one or more pr
 model: claude-sonnet-4-6
 effort: high
 argument-hint: <decision topic, group title, or "group: <title>" for an explicit multi-decision file>
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**
@@ -253,7 +255,7 @@ flowchart LR
 
 - Related decisions: ADR-NNNN#DM, ADR-NNNN#DM
 - Supersedes: ADR-MMMM#DK (if applicable)
-- Source task(s): `.docs/tasks/active/NNN-slug.md`
+- Source task(s): `.docs/tasks/NNN-slug.md`
 
 ---
 
@@ -303,7 +305,7 @@ After writing the ADR file, update `<adr-dir>/README.md`:
 
 For any decision in the group that was prompted by an active task or feature work, cross-link both directions:
 
-- In the source task file (`.docs/tasks/active/NNN-slug.md` if it exists), append: `**ADR**: ADR-NNNN#DM ([file](<relative-link>))`
+- In the source task file (`.docs/tasks/NNN-slug.md` if it exists), append: `**ADR**: ADR-NNNN#DM ([file](<relative-link>))`
 - In the decision's `### Links` section, list the source task path
 
 Use `Read` then `Edit` for these updates — **never** `echo >>` or `sed`.

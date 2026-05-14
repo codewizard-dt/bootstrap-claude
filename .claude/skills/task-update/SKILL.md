@@ -3,6 +3,8 @@ name: task-update
 description: Assess and modify an existing task's scope or steps
 model: claude-sonnet-4-6
 argument-hint: <path/to/task.md, number-slug, or number> [optional instructions]
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Always obey `.docs/guides/task-lifecycle.md`. Read it now if not already in context.**
@@ -22,16 +24,16 @@ Assess an existing task file against the task spec and update it until it is exe
 
 Parse the first part of `$ARGUMENTS` to locate the task file. Any remaining text after the file reference is treated as **user instructions** for how to update the task.
 
-1. **If a file path is provided** (e.g., `.docs/tasks/active/3-user-auth.md`):
+1. **If a file path is provided** (e.g., `.docs/tasks/3-user-auth.md`):
    - Confirm the file exists (use Serena `find_file` or `list_dir`)
    - If the file does not exist, STOP and report the error
 
 2. **If a number-slug is provided** (e.g., `3-user-auth`):
-   - Search `.docs/tasks/active/` for `<number-slug>.md`
+   - Search `.docs/tasks/` for `<number-slug>.md`
    - If not found, STOP and report the error
 
 3. **If only a number is provided** (e.g., `3`):
-   - Search `.docs/tasks/active/` for a file starting with that number
+   - Search `.docs/tasks/` for a file starting with that number
    - If ambiguous, list matches and ask the user to clarify
    - If no match found, STOP and report the error
 
@@ -40,7 +42,7 @@ Parse the first part of `$ARGUMENTS` to locate the task file. Any remaining text
 ## Step 2: Read the Task Spec, Add-Task Command, and Task File
 
 Read all three files:
-1. `.docs/tasks/active/README.md` — the authoritative task file spec (format and naming rules)
+1. `.docs/tasks/README.md` — the authoritative task file spec (format and naming rules)
 2. `.claude/skills/task-add/SKILL.md` — the full overview of how to structure a task (research process, execution-readiness criteria, agent annotations, level of detail required)
 3. The resolved task file from Step 1
 

@@ -1,9 +1,11 @@
 ---
 name: prd-create
-description: Create a lean Product Requirements Document in .docs/prd/active/ via Socratic Q&A capturing problem, personas, user stories, success metrics, and non-goals
+description: Create a lean Product Requirements Document in .docs/prd/ via Socratic Q&A capturing problem, personas, user stories, success metrics, and non-goals
 model: claude-sonnet-4-6
 effort: high
 argument-hint: <feature description, problem statement, or product initiative title>
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**
@@ -48,13 +50,13 @@ If the topic is a bug fix, a refactor, a one-line config change, or a question p
    - `CLAUDE.md` (project conventions)
    - `PROJECT_STATUS.md` (if it exists)
    - `.docs/prd/README.md` (the PRD template, lifecycle, and anti-patterns — this is authoritative)
-   - A sample of recent PRDs in `.docs/prd/active/` to learn local conventions
+   - A sample of recent PRDs in `.docs/prd/` to learn local conventions
 
 ### Step 2: Locate the PRD directory and assign a number
 
-PRDs live at `.docs/prd/active/NNN-slug.md`. Numbers are 3-digit zero-padded.
+PRDs live at `.docs/prd/NNN-slug.md`. Numbers are 3-digit zero-padded.
 
-1. **Use `mcp__serena__list_dir` on `.docs/prd/active/`** to scan existing files. Find the highest 3-digit prefix. Increment by 1. The first PRD is `001`.
+1. **Use `mcp__serena__list_dir` on `.docs/prd/`** to scan existing files. Find the highest 3-digit prefix. Increment by 1. The first PRD is `001`.
 2. **Derive the file slug** — names the **initiative**. Lowercase, dash-separated, ≤ 60 chars:
    - "Self-serve billing portal" → `004-self-serve-billing-portal.md`
    - "On-call runbook search" → `012-oncall-runbook-search.md`
@@ -133,7 +135,7 @@ If the user requests edits, loop back to the relevant Step 4 elicitation, re-ask
 
 ### Step 6: Write the PRD file
 
-After confirmation, use `Write` to create `.docs/prd/active/NNN-slug.md` following the template in `.docs/prd/README.md` **exactly**.
+After confirmation, use `Write` to create `.docs/prd/NNN-slug.md` following the template in `.docs/prd/README.md` **exactly**.
 
 | Field | Value at draft time |
 |-------|--------------------|
@@ -168,7 +170,7 @@ Edit `.docs/prd/README.md` to add a new row in the Index table.
 
    | Column | Format |
    |--------|--------|
-   | `File` | `[PRD-NNN](active/NNN-slug.md)` |
+   | `File` | `[PRD-NNN](NNN-slug.md)` |
    | `Title` | The PRD's H1 sub-title (without the `PRD NNN:` prefix) |
    | `Status` | `draft` |
    | `Created` | `YYYY-MM-DD` |
@@ -185,7 +187,7 @@ If the topic was prompted by an existing task, research note, or external refere
 | Site | Edit |
 |------|------|
 | Source artifact (task file, research note, etc.) | Append a `**PRD**: PRD-NNN ([file](<relative-link>))` line in a sensible header section |
-| New PRD | Reference the source in a footer note (e.g. *"Originated from `.docs/tasks/active/012-runbook-triage.md`"*) below `## Amendments` or in the appropriate context section |
+| New PRD | Reference the source in a footer note (e.g. *"Originated from `.docs/tasks/012-runbook-triage.md`"*) below `## Amendments` or in the appropriate context section |
 
 Use `Read` then `Edit` on each site — never `sed` or shell redirection.
 
@@ -211,7 +213,7 @@ Print a tabular summary:
 
 | Field | Value |
 |-------|-------|
-| File path | `.docs/prd/active/NNN-slug.md` |
+| File path | `.docs/prd/NNN-slug.md` |
 | Status | `draft` |
 | Personas count | N |
 | User Stories count | N |
@@ -221,7 +223,7 @@ Print a tabular summary:
 | Index updated | yes (1 row added) |
 | Cross-links | list of artifacts updated, or *none* |
 | Memory written | name (or *skipped*) |
-| Suggested next step | `/prd-finalize .docs/prd/active/NNN-slug.md` |
+| Suggested next step | `/prd-finalize .docs/prd/NNN-slug.md` |
 
 If any elicitation was challenging or any field was reduced to placeholder content (e.g. an Assumption could not be sourced), note it in a separate **Gaps** section so the user can address it before `/prd-finalize`.
 

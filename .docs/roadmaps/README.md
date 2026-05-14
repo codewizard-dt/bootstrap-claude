@@ -25,8 +25,8 @@ There is no `/finalize-roadmap` or `/trash-roadmap`. Completion is implicit — 
 |------|------------|
 | **Roadmap** | A single markdown file containing an ordered, phased checklist that drives execution toward a stated goal |
 | **Phase** | A `## Phase N: <name>` block. Phases group items that should complete together before the next phase begins. Order matters |
-| **Item** | A single `- [ ] ...` bullet within a phase. May be a **task-link item** (`- [ ] [TASK-NNN: title](../tasks/active/NNN-slug.md)`) or an **inline item** (`- [ ] Free-form description`) |
-| **Task-link item** | A checkbox whose body is a markdown link to a `.docs/tasks/active/NNN-slug.md` (or `completed/`) file. These are auto-checked when the linked task is completed |
+| **Item** | A single `- [ ] ...` bullet within a phase. May be a **task-link item** (`- [ ] [TASK-NNN: title](../tasks/NNN-slug.md)`) or an **inline item** (`- [ ] Free-form description`) |
+| **Task-link item** | A checkbox whose body is a markdown link to a `.docs/tasks/NNN-slug.md` (or `completed/NNN-slug.md`) file. These are auto-checked when the linked task is completed |
 | **Inline item** | A checkbox whose body is free-form text — no task file backing it. Must be checked manually (open the file and edit `- [ ]` to `- [x]`) |
 | **Hybrid checklist** | A roadmap's mixture of task-link items and inline items. Both forms are valid in the same phase |
 
@@ -102,14 +102,14 @@ Each roadmap lives at `.docs/roadmaps/NNN-slug.md` (3-digit zero-padded, lowerca
 
 > <Optional one-line phase intent.>
 
-- [ ] [TASK-014: Add user table schema](../tasks/active/014-user-table-schema.md)
-- [ ] [TASK-015: Wire migrations](../tasks/active/015-wire-migrations.md)
+- [ ] [TASK-014: Add user table schema](../tasks/014-user-table-schema.md)
+- [ ] [TASK-015: Wire migrations](../tasks/015-wire-migrations.md)
 - [ ] Confirm staging DB matches prod schema (inline — no task file)
 
 ## Phase 2: <Phase Name>
 
-- [ ] [TASK-016: Build /signup endpoint](../tasks/active/016-signup-endpoint.md)
-- [ ] [TASK-017: Build /login endpoint](../tasks/active/017-login-endpoint.md)
+- [ ] [TASK-016: Build /signup endpoint](../tasks/016-signup-endpoint.md)
+- [ ] [TASK-017: Build /login endpoint](../tasks/017-login-endpoint.md)
 
 ## Phase 3: <Phase Name>
 
@@ -138,13 +138,13 @@ Fields that may legitimately be empty: `Linked PRD`, `Linked ADRs`, `Tags`, `Not
 ### Task-link items (preferred when a task file exists)
 
 ```markdown
-- [ ] [TASK-NNN: <task title>](../tasks/active/NNN-slug.md)
+- [ ] [TASK-NNN: <task title>](../tasks/NNN-slug.md)
 ```
 
-- The link path is **repo-relative from the roadmap file's location** — typically `../tasks/active/NNN-slug.md` (or `../tasks/completed/NNN-slug.md` after UAT).
+- The link path is **repo-relative from the roadmap file's location** — typically `../tasks/NNN-slug.md` (or `../tasks/completed/NNN-slug.md` after UAT).
 - The visible link text **must** start with `TASK-NNN:` so the auto-checkoff machinery can detect references.
-- Auto-checkoff matches links regardless of whether the path points at `active/` or `completed/` — the `TASK-NNN:` prefix plus `<NNN>-<slug>.md` filename is the match key, so a stale directory in the path never blocks the match.
-- When a skill that moves a task from `active/` → `completed/` (`/uat-walk`, `/uat-auto`, `/uat-auto-plus`, `/uat-skip`) flips the checkbox, it **must** also rewrite the link path to point at the task's new location in the same step. Stale paths are *not* tolerated — if a reference exists, it gets updated.
+- Auto-checkoff matches links regardless of whether the path points at `.docs/tasks/` or `completed/` — the `TASK-NNN:` prefix plus `<NNN>-<slug>.md` filename is the match key, so a stale directory in the path never blocks the match.
+- When a skill that moves a task from `.docs/tasks/` → `completed/` (`/uat-walk`, `/uat-auto`, `/uat-auto-plus`, `/uat-skip`) flips the checkbox, it **must** also rewrite the link path to point at the task's new location in the same step. Stale paths are *not* tolerated — if a reference exists, it gets updated.
 
 ### Inline items (free-form)
 
@@ -172,6 +172,25 @@ A roadmap has exactly two statuses:
 
 There is no `trashed` or `archived` state — if a roadmap is no longer relevant, delete the file or move it elsewhere by hand. The Roadmap Log is intentionally lightweight.
 
+### Moving a `done` roadmap to `completed/`
+
+Once a roadmap's `Status` is `done`, the file may be moved to `.docs/roadmaps/completed/` to keep the active directory tidy.
+
+**How to move:**
+
+1. Flip `Status: active` → `Status: done` in the file (if not already done).
+2. Move the file: `git mv .docs/roadmaps/NNN-slug.md .docs/roadmaps/completed/NNN-slug.md`
+3. Update the `File` column in the **Index** below: change `[ROADMAP-NNN](NNN-slug.md)` → `[ROADMAP-NNN](completed/NNN-slug.md)`
+4. Update any task links inside the roadmap that used `../tasks/` → already correct if those tasks have been completed; no other path changes are needed within the roadmap file itself.
+
+**What stays the same:**
+
+- The `ROADMAP-NNN` identifier is stable regardless of where the file lives.
+- The file remains full history — all auto-checkoff references in task files are unaffected.
+- Files in `completed/` are **not** deleted or further edited; they are read-only history by convention.
+
+`/roadmap-next` will suggest this move when it detects that all items are checked.
+
 ---
 
 ## Index
@@ -186,7 +205,7 @@ When adding a row:
 
 | Column | Format |
 |--------|--------|
-| `File` | `[ROADMAP-NNN](NNN-slug.md)` |
+| `File` | `[ROADMAP-NNN](NNN-slug.md)` — update to `[ROADMAP-NNN](completed/NNN-slug.md)` when the file is moved to `completed/` |
 | `Title` | The roadmap's H1 sub-title (without the `Roadmap NNN:` prefix) |
 | `Status` | `active` \| `done` |
 | `Progress` | `<checked>/<total>` counted across all `## Phase N:` sections (e.g. `3/12`) |
@@ -205,15 +224,16 @@ The index is updated by:
 
 When a task transitions to **completed** (whether by `/tackle` finishing all steps, by `/uat-walk`/`/uat-auto`/`/uat-auto-plus` passing all tests, or by `/uat-skip` moving it to `completed/`), those skills **must**:
 
-1. Scan `.docs/roadmaps/*.md` for any line matching:
+1. Scan `.docs/roadmaps/*.md` and `.docs/roadmaps/completed/*.md` for any line matching:
    ```
    - [ ] [TASK-NNN: ...]( ... NNN-<slug>.md)
    ```
    where `NNN-<slug>` matches the just-completed task.
 2. Flip the matched `- [ ]` to `- [x]` via the `Edit` tool (never `sed`).
-3. **If the skill also moved the task file** (any `/uat-*` skill), rewrite the link path in the same matched line so it points at the task's new location (e.g. `../tasks/active/NNN-slug.md` → `../tasks/completed/NNN-slug.md`). Do this in one `Edit` that combines the checkbox flip and the path rewrite — never leave a stale path behind just because the checkbox is correct.
+3. **If the skill also moved the task file** (any `/uat-*` skill), rewrite the link path in the same matched line so it points at the task's new location (e.g. `../tasks/NNN-slug.md` → `../tasks/completed/NNN-slug.md`). Do this in one `Edit` that combines the checkbox flip and the path rewrite — never leave a stale path behind just because the checkbox is correct.
 4. Update the roadmap's `Last updated` field to today.
 5. Update the matching row's `Progress` in the index.
+6. **Phase sweep** — for each roadmap where step 1 found a match, identify the `## Phase N:` block that contained the matched item; scan all other `- [ ] [TASK-NNN:` lines in that same phase; for each, use `mcp__serena__find_file` to check whether `NNN-slug.md` exists under `.docs/tasks/completed/`; if it does, apply a single `Edit` call that both flips `- [ ]` → `- [x]` and rewrites the link path to `../tasks/completed/NNN-slug.md`, then bump `Progress` in the index for each additional item checked.
 
 If no roadmap references the task, the skills do nothing (silent no-op).
 

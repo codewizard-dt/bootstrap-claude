@@ -3,6 +3,8 @@ name: roadmap-add
 description: Append a new item (task link or inline) to an existing roadmap in .docs/roadmaps/, optionally under a named phase
 model: claude-sonnet-4-6
 argument-hint: <ROADMAP-NNN> [--phase "<name>"] [--task NNN | <task path> | <inline text>]
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Read `.docs/roadmaps/README.md` first — it is authoritative for item format rules and index format this skill must respect.**
@@ -30,7 +32,7 @@ Detect, in order:
 | `ROADMAP-NNN`, `NNN`, or `.docs/roadmaps/NNN-slug.md` (first token) | Roadmap reference — resolve in Step 2 |
 | `--phase "<name>"` (anywhere after the first token) | Target phase name — strip from remaining args |
 | `--task NNN` (anywhere after the first token) | Task-number lookup — strip from remaining args |
-| `.docs/tasks/active/NNN-slug.md` or `.docs/tasks/completed/NNN-slug.md` | Task-path lookup — entire remaining args **is** the path |
+| `.docs/tasks/NNN-slug.md` or `.docs/tasks/completed/NNN-slug.md` | Task-path lookup — entire remaining args **is** the path |
 | anything else | Inline item text (free-form) |
 
 Mirror the flag-detection style used by `.claude/skills/task-add/SKILL.md` (which detects `--adr` and `--prd` in similar fashion). Treat each flag as a removable token; what remains after stripping flags is either the inline text or fallback text accompanying `--task NNN`.
@@ -58,7 +60,7 @@ If multiple files match a bare `NNN` (should not happen — numbers are unique �
 ## Step 3: If the arg is a task reference, resolve the task title
 
 Only perform this step when the remaining args after flag-stripping are either:
-- A task path (`.docs/tasks/active/NNN-slug.md` or `.docs/tasks/completed/NNN-slug.md`), or
+- A task path (`.docs/tasks/NNN-slug.md` or `.docs/tasks/completed/NNN-slug.md`), or
 - `--task NNN` (then look up the task file).
 
 Otherwise skip to Step 4 with the remaining text as the inline-item body.
@@ -68,7 +70,7 @@ Otherwise skip to Step 4 with the remaining text as the inline-item body.
 | Input | Action |
 |-------|--------|
 | Task path | Verify with `mcp__serena__find_file`. If missing, see 3c |
-| `--task NNN` | Pad `NNN` to 3 digits. Search `.docs/tasks/active/` first, then `.docs/tasks/completed/`. If neither has a match, see 3c |
+| `--task NNN` | Pad `NNN` to 3 digits. Search `.docs/tasks/` first, then `.docs/tasks/completed/`. If neither has a match, see 3c |
 
 ### 3b. Extract the H1 title
 
@@ -83,7 +85,7 @@ Strip the leading `# NNN: ` prefix; the remainder is the **task title** (e.g. `U
 Build the item line. The link path **must** be repo-relative from the roadmap file's location — typically:
 
 ```markdown
-- [ ] [TASK-NNN: <task title>](../tasks/active/NNN-slug.md)
+- [ ] [TASK-NNN: <task title>](../tasks/NNN-slug.md)
 ```
 
 If the task file currently lives in `completed/`, still write `../tasks/completed/NNN-slug.md`. (Per `.docs/roadmaps/README.md`, the auto-checkoff machinery tolerates stale paths — but write the *current* path on insertion.)
@@ -120,8 +122,10 @@ Phase-name matching is case-sensitive and exact on the text after `## Phase N: `
 The new item line is exactly one of:
 
 ```markdown
-- [ ] [TASK-NNN: <title>](../tasks/<active|completed>/NNN-slug.md)
+- [ ] [TASK-NNN: <title>](../tasks/NNN-slug.md)
 ```
+
+(use `../tasks/completed/NNN-slug.md` when the task is in `completed/`)
 
 or
 
@@ -223,4 +227,4 @@ Print a single tabular summary:
 4. **The skill never changes `Status:`** — that flip is intentionally manual.
 5. **Index numerator stays untouched** — only the denominator increments here.
 6. **Idempotency before edits** — duplicate items abort the run with a friendly message; no edits, no index bump.
-7. **Repo-relative paths** — task-link items use paths relative to the roadmap file's location (`../tasks/active/NNN-slug.md`), not absolute or repo-root paths.
+7. **Repo-relative paths** — task-link items use paths relative to the roadmap file's location (`../tasks/NNN-slug.md`), not absolute or repo-root paths.

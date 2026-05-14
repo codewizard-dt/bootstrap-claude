@@ -3,6 +3,8 @@ name: prd-update
 description: Amend an approved PRD with a tracked Amendment block (append-only); apply direct edits to drafts; surface downstream ADR/task impact
 model: claude-sonnet-4-6
 argument-hint: <path/to/prd.md, NNN-slug, or NNN> [optional change description]
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**
@@ -37,10 +39,10 @@ Resolution table:
 
 | Input form | Resolution |
 |------------|------------|
-| `<path>` (e.g. `.docs/prd/active/003-billing-portal.md`) | Use as-is. **Refuse paths in `archived/`, `superseded/`, `trashed/`** — those statuses block updates anyway |
-| `<NNN-slug>` (e.g. `003-billing-portal`) | Search `.docs/prd/active/` for `<NNN-slug>.md` (Serena `find_file`) |
-| `<NNN>` (e.g. `3` or `003`) | Pad to 3 digits; search `.docs/prd/active/` for files starting with that number; if ambiguous, list matches and ask the user via `AskUserQuestion` |
-| Empty | List every PRD in `active/` and ask the user via `AskUserQuestion` to pick |
+| `<path>` (e.g. `.docs/prd/003-billing-portal.md`) | Use as-is. **Refuse paths in `archived/`, `superseded/`, `trashed/`** — those statuses block updates anyway |
+| `<NNN-slug>` (e.g. `003-billing-portal`) | Search `.docs/prd/` for `<NNN-slug>.md` (Serena `find_file`) |
+| `<NNN>` (e.g. `3` or `003`) | Pad to 3 digits; search `.docs/prd/` for files starting with that number; if ambiguous, list matches and ask the user via `AskUserQuestion` |
+| Empty | List every PRD in `.docs/prd/` and ask the user via `AskUserQuestion` to pick |
 
 If the file cannot be located, **stop** and report — do not invent or create.
 
@@ -222,7 +224,7 @@ Print a tabular report listing every linked ADR and linked task that might need 
 | Artifact | Type | Status | Suggested Action |
 |----------|------|--------|------------------|
 | `ADR-0007#D2` | linked ADR | accepted | Review whether amendment invalidates the decision; if so, write a successor via `/adr-create` and finalize via `/adr-finalize` to supersede |
-| `.docs/tasks/active/004-billing-checkout.md` | linked task | WIP | Review whether amendment changes the task scope; if so, run `/task-update .docs/tasks/active/004-billing-checkout.md "<change summary>"` |
+| `.docs/tasks/004-billing-checkout.md` | linked task | WIP | Review whether amendment changes the task scope; if so, run `/task-update .docs/tasks/004-billing-checkout.md "<change summary>"` |
 | `.docs/tasks/completed/002-prior-feature.md` | linked task | done | No action — already shipped under prior scope |
 
 If there are no linked artifacts, print: *"No downstream ADRs or tasks linked. No further action."*

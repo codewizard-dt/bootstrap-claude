@@ -3,6 +3,8 @@ name: serena-config
 description: Interactively configure Serena language servers in .serena/project.yml
 model: claude-sonnet-4-6
 argument-hint: (no arguments)
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 

@@ -4,6 +4,8 @@ description: Deep research on a topic using codebase analysis, library docs, and
 model: claude-sonnet-4-6
 effort: high
 argument-hint: <topic or question to research>
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**

@@ -4,6 +4,8 @@ description: Extract Architecturally Significant Requirements from an approved P
 model: claude-sonnet-4-6
 effort: high
 argument-hint: <path/to/prd.md, NNN-slug, or NNN>
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**
@@ -31,12 +33,12 @@ Parse `$ARGUMENTS` to identify the PRD:
 
 | Input form | Resolution |
 |------------|------------|
-| `<path>` (e.g. `.docs/prd/active/003-onboarding.md`) | Use as-is; verify the file exists |
-| `<NNN-slug>` (e.g. `003-onboarding`) | `mcp__serena__find_file` with mask `003-onboarding.md` under `.docs/prd/active/` |
-| `<NNN>` (e.g. `3` or `003`) | Pad to 3 digits; `mcp__serena__find_file` with mask `NNN-*.md` under `.docs/prd/active/` |
-| Empty / missing | List every PRD in `.docs/prd/active/` whose `Status` is `approved`, one row per PRD, and ask the user via `AskUserQuestion` to pick one |
+| `<path>` (e.g. `.docs/prd/003-onboarding.md`) | Use as-is; verify the file exists |
+| `<NNN-slug>` (e.g. `003-onboarding`) | `mcp__serena__find_file` with mask `003-onboarding.md` under `.docs/prd/` |
+| `<NNN>` (e.g. `3` or `003`) | Pad to 3 digits; `mcp__serena__find_file` with mask `NNN-*.md` under `.docs/prd/` |
+| Empty / missing | List every PRD in `.docs/prd/` whose `Status` is `approved`, one row per PRD, and ask the user via `AskUserQuestion` to pick one |
 
-Search **only** `.docs/prd/active/`. PRDs in `archived/`, `superseded/`, or `trashed/` do not produce new decisions — refuse to run on them in Step 2.
+Search **only** `.docs/prd/` (top-level live files). PRDs in `archived/`, `superseded/`, or `trashed/` do not produce new decisions — refuse to run on them in Step 2.
 
 If the file cannot be located, **stop** and report — do not invent or create.
 
@@ -172,7 +174,7 @@ For each affected ADR file:
 1. `Read` the file
 2. Locate the target decision's `### Links` section
 3. Check whether `Source PRD: PRD-NNN` already exists in that block — **skip if present** (idempotent)
-4. `Edit` to append a new line: `- Source PRD: [PRD-NNN](../prd/active/NNN-slug.md)`
+4. `Edit` to append a new line: `- Source PRD: [PRD-NNN](../prd/NNN-slug.md)`
 
 Touch only the target decision's `### Links`. Sibling decisions in the same ADR file are out of scope. Do not modify any decision's status, metadata, or content beyond the `### Links` append.
 

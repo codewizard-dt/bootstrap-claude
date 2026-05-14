@@ -214,7 +214,7 @@ flowchart LR
 ### Links
 - Related decisions: ADR-NNNN#DM, ADR-NNNN#DM
 - Supersedes: ADR-MMMM#DK (if applicable)
-- Source task(s): <`.docs/tasks/active/NNN-slug.md`>
+- Source task(s): <`.docs/tasks/NNN-slug.md`>
 
 ---
 
@@ -319,7 +319,37 @@ When adding a row:
 | Required per-decision metadata | `Status`, `Date`, `Deciders`, `Tags` (non-empty) |
 | Optional RACI metadata | `Consulted`, `Informed` — adopted from MADR 4.0 |
 | Subdirectories | Allowed for very large logs (≥ 30 files). Group by architectural area: `.docs/adr/data-layer/`, `.docs/adr/api/`. Numbering remains globally unique |
+| `completed/` subfolder | ADR files whose every decision has reached a terminal state (`accepted`, `superseded by …`, or `deprecated`) — and whose accepted decisions are no longer expected to evolve soon — may be moved to `.docs/adr/completed/`. The file is never deleted; the index links and cross-references are updated to the new path. Files in `completed/` are still valid history and still the authoritative source for supersession chains. |
 | Bidirectional task links | When a decision is implemented by a task, link both ways: decision's `### Links` references the task; task footer references `ADR-NNNN#DM` |
+
+---
+
+## File Lifecycle: Moving to `completed/`
+
+An ADR file is **complete** when every decision block it contains has reached a terminal status (`accepted`, `superseded by ADR-N#DX`, or `deprecated`) — meaning no decision remains `proposed`.
+
+When to move a file to `.docs/adr/completed/`:
+
+| Trigger | Action |
+|---------|--------|
+| Last `proposed` decision in the file is finalized via `/adr-finalize` | Move the file to `.docs/adr/completed/NNNN-slug.md` |
+| All decisions were accepted long ago and are considered stable | Move at any point as a housekeeping step |
+
+**How to move:**
+
+1. Move the file: `git mv .docs/adr/NNNN-slug.md .docs/adr/completed/NNNN-slug.md`
+2. Update the `File` column in the **Index** below: change `[NNNN](NNNN-slug.md)` → `[NNNN](completed/NNNN-slug.md)`
+3. Update any `### Links` entries in other ADR files that reference the moved file — adjust the relative path accordingly (e.g. `../0007-session.md` → `../completed/0007-session.md` from the same directory level, or just `completed/0007-session.md` if linked from within `.docs/adr/`)
+4. Update the Relationship Graph node references if the graph uses file links
+
+**What stays the same:**
+
+- The file's content is **never edited** as part of the move — it is history.
+- The `ADR-NNNN#DM` decision identifiers are stable regardless of where the file lives.
+- The file remains in git history and is still authoritative for supersession chains.
+- Files in `completed/` are **not** archived or read-only in any tool sense — they can still be superseded by new decisions. A supersession just updates the cross-reference links as normal.
+
+`/adr-finalize` will offer to move the file after it finalizes the last `proposed` decision.
 
 ---
 

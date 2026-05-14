@@ -1,7 +1,9 @@
 ---
 name: lint
 description: Get IDE diagnostics then fix issues one-by-one in verify cycles
-model: claude-sonnet-4-6
+model: claude-haiku-4-5-20251001
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 

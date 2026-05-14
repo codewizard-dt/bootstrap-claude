@@ -3,6 +3,8 @@ name: uat-auto
 description: Non-interactively run every test in a pending UAT file and auto-judge verdicts (headless, fail-closed)
 model: claude-sonnet-4-6
 argument-hint: <path/to/uat-file.md, number-slug, or description>
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Always obey `.docs/guides/task-lifecycle.md`. Read it now if not already in context.**
@@ -46,17 +48,17 @@ This is the single most important rule in this command. A false pass is worse th
 
 Parse `$ARGUMENTS` to locate the UAT file (same resolver as `/uat-walk`):
 
-1. **File path** (e.g. `.docs/uat/pending/3-user-auth.uat.md`) — use directly.
-2. **Number-slug** (e.g. `3-user-auth`) — Call Serena `list_dir` or `find_file` in `.docs/uat/pending/`, fall back to `.docs/uat/completed/`.
-3. **Number or description** (e.g. `3`, `user auth`) — Call Serena `list_dir` or `find_file` in `.docs/uat/pending/`. If ambiguous, **STOP** and report in the completion summary (do not prompt).
+1. **File path** (e.g. `.docs/uat/3-user-auth.uat.md`) — use directly.
+2. **Number-slug** (e.g. `3-user-auth`) — Call Serena `list_dir` or `find_file` in `.docs/uat/`, fall back to `.docs/uat/completed/`.
+3. **Number or description** (e.g. `3`, `user auth`) — Call Serena `list_dir` or `find_file` in `.docs/uat/`. If ambiguous, **STOP** and report in the completion summary (do not prompt).
 4. **If `$ARGUMENTS` is empty OR the input above did not resolve to a UAT file** — auto-pick from pending:
-   - Use `mcp__serena__list_dir` on `.docs/uat/pending/` to enumerate all `*.uat.md` files
+   - Use `mcp__serena__list_dir` on `.docs/uat/` to enumerate all `*.uat.md` files
    - If none exist, **STOP** and exit: "No pending UAT files found"
    - Pick the lowest-numbered file (by the `<NNN>` prefix) as the stable default
    - Announce the auto-pick in one line before proceeding: `No matching UAT file — running \`<filename>\`` (if `$ARGUMENTS` was non-empty but unresolved, prefix with `Input \`<arguments>\` did not match — `)
    - Do **not** prompt for confirmation; proceed immediately
 
-If the resolved file does not exist, is empty, or is not in `.docs/uat/pending/`, **STOP** and exit with an explanatory summary.
+If the resolved file does not exist, is empty, or is not in `.docs/uat/`, **STOP** and exit with an explanatory summary.
 
 Parse the file:
 - **Test sections**: `### UAT-*` headings (e.g. `UAT-API-001:`, `UAT-UI-002:`)
@@ -157,11 +159,11 @@ After every eligible test has a non-blocking status (`[x] Pass`, `[SKIP: ...]` a
 
 ### All Pass (no `[FAIL]` or `[FIXING]` markers remain)
 
-1. Move the UAT file: `git mv .docs/uat/pending/<slug>.uat.md .docs/uat/completed/<slug>.uat.md` (fall back to `mv` if `git mv` fails).
-3. Move the associated task file: derive from UAT name (`<number>-<slug>.uat.md` → `<number>-<slug>.md`), then `git mv .docs/tasks/active/<number>-<slug>.md .docs/tasks/completed/<number>-<slug>.md` (fall back to `mv`).
-4. Update internal path references in both moved files (`active/` → `completed/` in the task, `pending/` → `completed/` in the UAT's source-task link).
-4a-pre. **Update `.docs/tasks/README.md`** — remove this task's row from the Active Tasks table entirely. The index lists active tasks only; completed tasks are tracked by their presence in `.docs/tasks/completed/` and do **not** belong in the index. Use a single `Edit` call — never `sed`. **Also check the header**: if the **Last task:** line at the top of the README references this task's `active/NNN-slug.md`, `Edit` it to point at `completed/NNN-slug.md` instead. Do **not** decrement **Next task number** — it only ever goes up. The index is `/tackle`'s no-args survey source.
-4a. **Roadmap Auto-Checkoff** — scan `.docs/roadmaps/` for any roadmap referencing this task and flip its matching checkbox. Follow the canonical algorithm in [`.docs/roadmaps/README.md#auto-checkoff-contract`](../../../.docs/roadmaps/README.md). Short form: (i) `mcp__serena__list_dir` on `.docs/roadmaps/` (skip `README.md`); (ii) `Read` each roadmap and look for lines matching `- [ ] [TASK-<NNN>:` whose link path ends in `<NNN>-<slug>.md` (either `active/` or `completed/`); (iii) `Edit` each matching line in **one** call that **both** flips `- [ ]` → `- [x]` **and** rewrites the link path to the task's new location (e.g. `../tasks/active/NNN-slug.md` → `../tasks/completed/NNN-slug.md`) — use the full line text as `old_string` for uniqueness. Stale paths are **not** tolerated: if a reference exists, the path is updated. Then `Edit` the roadmap's `**Last updated**:` to today; (iv) bump the matching row's `Progress` numerator in `.docs/roadmaps/README.md`. Silent no-op if no roadmap references the task. **Do NOT** auto-flip `Status: active` → `Status: done` even on the last box — that flip is manual. Use `Edit` only — never `sed`, `bash`, or `Write`.
+1. Move the UAT file: `git mv .docs/uat/<slug>.uat.md .docs/uat/completed/<slug>.uat.md` (fall back to `mv` if `git mv` fails).
+3. Move the associated task file: derive from UAT name (`<number>-<slug>.uat.md` → `<number>-<slug>.md`), then `git mv .docs/tasks/<number>-<slug>.md .docs/tasks/completed/<number>-<slug>.md` (fall back to `mv`).
+4. Update internal path references in both moved files (update any stale paths in the task, `pending/` → `completed/` in the UAT's source-task link).
+4a-pre. **Update `.docs/tasks/README.md`** — remove this task's row from the Active Tasks table entirely. The index lists active tasks only; completed tasks are tracked by their presence in `.docs/tasks/completed/` and do **not** belong in the index. Use a single `Edit` call — never `sed`. **Also check the header**: if the **Last task:** line at the top of the README references this task's `NNN-slug.md`, `Edit` it to point at `completed/NNN-slug.md` instead. Do **not** decrement **Next task number** — it only ever goes up. The index is `/tackle`'s no-args survey source.
+4a. **Roadmap Auto-Checkoff** — scan `.docs/roadmaps/` and `.docs/roadmaps/completed/` for any roadmap referencing this task and flip its matching checkbox. Follow the canonical algorithm in [`.docs/roadmaps/README.md#auto-checkoff-contract`](../../../.docs/roadmaps/README.md). Short form: (i) `mcp__serena__list_dir` on `.docs/roadmaps/` (skip `README.md`) and on `.docs/roadmaps/completed/`; (ii) `Read` each roadmap and look for lines matching `- [ ] [TASK-<NNN>:` whose link path ends in `<NNN>-<slug>.md` (either at `.docs/tasks/` or `completed/`); (iii) `Edit` each matching line in **one** call that **both** flips `- [ ]` → `- [x]` **and** rewrites the link path to the task's new location (e.g. `../tasks/NNN-slug.md` → `../tasks/completed/NNN-slug.md`) — use the full line text as `old_string` for uniqueness. Stale paths are **not** tolerated: if a reference exists, the path is updated. Then `Edit` the roadmap's `**Last updated**:` to today; (iv) bump the matching row's `Progress` numerator in `.docs/roadmaps/README.md`; (v) **Phase sweep** — for each roadmap where a match was found, identify the `## Phase N:` block containing that matched item and scan all other `- [ ] [TASK-NNN:` lines in that same phase; for each, use `mcp__serena__find_file` to check if `NNN-slug.md` exists under `.docs/tasks/completed/`; if it does, `Edit` that line in one call to flip `- [ ]` → `- [x]` and rewrite the link path to `../tasks/completed/NNN-slug.md`, then bump `Progress` in the index for each additional item. Silent no-op if no roadmap references the task. **Do NOT** auto-flip `Status: active` → `Status: done` even on the last box — that flip is manual. Use `Edit` only — never `sed`, `bash`, or `Write`.
 5. Delete screenshots for this task: use `mcp__serena__list_dir` on `.docs/uat/screenshots/` to find files matching `<task-number>-*` — **never** `ls` — then `git rm` each (or `rm` if untracked).
 6. Close Puppeteer: `puppeteer_close_browser` if it was launched.
 7. Run `/update-docs` to refresh project documentation.
@@ -169,9 +171,9 @@ After every eligible test has a non-blocking status (`[x] Pass`, `[SKIP: ...]` a
    - If found:
      1. Parse the `ADR-NNNN#DM` reference.
      2. Locate the ADR file using Serena `mcp__serena__find_file` for `NNNN-*.md` in `.docs/adr/`.
-     3. Use Serena `mcp__serena__search_for_pattern` on `.docs/tasks/active/` for the same `**Implements**: ADR-NNNN#DM` pattern to check for remaining WIP tasks.
+     3. Use Serena `mcp__serena__search_for_pattern` on `.docs/tasks/` for the same `**Implements**: ADR-NNNN#DM` pattern to check for remaining WIP tasks.
      4. **If no other WIP tasks remain** (last or only task for this decision):
-        - **Single-task**: replace `Source task(s): .docs/tasks/active/...` line with `Source task(s): .docs/tasks/completed/NNN-slug.md — **implemented** YYYY-MM-DD`
+        - **Single-task**: replace `Source task(s): .docs/tasks/...` line with `Source task(s): .docs/tasks/completed/NNN-slug.md — **implemented** YYYY-MM-DD`
         - **Multi-task**: update this task's sub-line from `**WIP**` to `**done** YYYY-MM-DD`; append `- **Decision fully implemented** YYYY-MM-DD` after the last sub-line
      5. **If other WIP tasks remain**: update only this task's sub-line to `**done** YYYY-MM-DD`
      - Use `Read` then `Edit` — never `sed`, `echo >>`, or shell redirection
@@ -180,7 +182,7 @@ After every eligible test has a non-blocking status (`[x] Pass`, `[SKIP: ...]` a
 
 ### Any Fail (`[FAIL: ...]` markers remain)
 
-1. **Leave the UAT file in `pending/`** — it is not complete.
+1. **Leave the UAT file in `.docs/uat/`** — it is not complete.
 3. **Keep screenshots** — they are diagnostic evidence for the next human walkthrough.
 4. Close Puppeteer if launched.
 5. Emit the completion summary.
@@ -192,8 +194,8 @@ After every eligible test has a non-blocking status (`[x] Pass`, `[SKIP: ...]` a
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 UAT AUTO COMPLETE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-File:    .docs/uat/pending/5-positions.uat.md
-Source:  .docs/tasks/active/5-positions.md
+File:    .docs/uat/5-positions.uat.md
+Source:  .docs/tasks/5-positions.md
 Mode:    headless
 
 Results:
@@ -209,7 +211,7 @@ Failed Tests:
   • UAT-EDGE-001: Empty Positions — "auto-judge: manual test requires human verification"
 
 Next action:
-  /uat-walk .docs/uat/pending/5-positions.uat.md
+  /uat-walk .docs/uat/5-positions.uat.md
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 

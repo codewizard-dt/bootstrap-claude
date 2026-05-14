@@ -3,6 +3,8 @@ name: roadmap-create
 description: Create a structured execution-plan roadmap in .docs/roadmaps/ via short Socratic Q&A — captures goal, phases, and the initial hybrid (task-link OR inline) checklist
 model: claude-sonnet-4-6
 argument-hint: <initiative/goal description>
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Read `.docs/roadmaps/README.md` first — it is authoritative for the roadmap template, file template, status lifecycle, item format rules, index format, and anti-patterns this skill must enforce.**
@@ -47,7 +49,7 @@ If the topic is a single task with several steps, **stop and tell the user** —
    - `CLAUDE.md` (project conventions)
    - `.docs/roadmaps/README.md` (template, lifecycle, anti-patterns — authoritative)
    - A sample of recent roadmaps in `.docs/roadmaps/` to learn local conventions
-   - The Active Tasks table in `.docs/tasks/README.md` so you know what task files already exist and can be linked
+   - The Tasks table in `.docs/tasks/README.md` so you know what task files already exist and can be linked
 
 ### Step 2: Locate the roadmap directory and assign a number
 
@@ -87,7 +89,7 @@ Then **per-phase**, in a single follow-up `AskUserQuestion` round (one question 
 
 When the user supplies a task reference:
 
-- Look it up in `.docs/tasks/active/` (and `completed/` if not found) via `mcp__serena__find_file` to confirm the slug and path. The link must read `[TASK-NNN: <task title>](../tasks/active/NNN-slug.md)` (or `../tasks/completed/` if completed).
+- Look it up in `.docs/tasks/` (and `completed/` if not found) via `mcp__serena__find_file` to confirm the slug and path. The link must read `[TASK-NNN: <task title>](../tasks/NNN-slug.md)` (or `../tasks/completed/` if completed).
 - If the user supplies a task reference that does **not** exist, treat it as an inline placeholder (do not fabricate a link). Note in the per-phase clarification that the task can be filed later via `/task-add --roadmap ROADMAP-NNN`.
 
 **Redirection rule**: if the user starts spelling out implementation detail under an item (file paths, function names, sub-steps), respond:
@@ -140,7 +142,7 @@ Use `Write` to create `.docs/roadmaps/NNN-slug.md` following the template in `.d
 
 **Item rendering rules** (must match `.docs/roadmaps/README.md` "Item Format Rules" exactly):
 
-- Task-link item: `- [ ] [TASK-NNN: <task title>](../tasks/active/NNN-slug.md)`
+- Task-link item: `- [ ] [TASK-NNN: <task title>](../tasks/NNN-slug.md)`
 - Inline item: `- [ ] <free-form description>`
 
 **Refuse to write** if:
@@ -204,8 +206,8 @@ If any phase was left empty by design (user plans to fill via `/roadmap-add`), n
 ## CRITICAL Rules
 
 1. **Refuse to write the file if any required field is empty or fails its quality bar** (Goal, Owner, ≥1 phase with ≥1 item). Loop back to Step 3 — do not silently fill gaps with invented content.
-2. **Never invent task links.** Every `[TASK-NNN: ...](path)` link must point at a real file under `.docs/tasks/active/` or `.docs/tasks/completed/`. Verify with `mcp__serena__find_file` before rendering.
+2. **Never invent task links.** Every `[TASK-NNN: ...](path)` link must point at a real file under `.docs/tasks/` or `.docs/tasks/completed/`. Verify with `mcp__serena__find_file` before rendering.
 3. **Never use `sed`, `awk`, `echo >>`, or shell redirection to edit markdown.** Always `Read` then `Edit`. See `.docs/guides/mcp-tools.md`.
 4. **Never auto-create downstream artifacts.** This skill creates exactly one roadmap file (plus the index row edit). Do **not** create tasks, PRDs, or ADRs as a side effect — the user can file tasks afterward via `/task-add --roadmap ROADMAP-NNN`.
 5. **Redirect step-level detail to task territory** — if the user starts specifying *how* under an item, restate the question as "what's the single checkable unit?" and re-elicit.
-6. **Status starts as `active` and stays there.** This skill never writes `done`. The flip from `active` → `done` is a manual decision the human makes when every box is `[x]`.
+6. **Status starts as `active` and stays there.** This skill never writes `done`. The flip from `active` → `done` is a manual decision the human makes when every box is `[x]`. After flipping, the file may be moved to `.docs/roadmaps/completed/` — `/roadmap-next` will suggest this step.

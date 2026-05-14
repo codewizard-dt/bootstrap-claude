@@ -3,6 +3,8 @@ name: roadmap-next
 description: Read-only — point at the first unchecked item in a roadmap and suggest /tackle if it's a task link
 model: claude-haiku-4-5-20251001
 argument-hint: <path to roadmap file, NNN-slug, or number>
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**
@@ -66,7 +68,7 @@ For each item, capture:
 | `checked` | `true` if `- [x]`, `false` if `- [ ]` |
 | `text` | Bullet body after the checkbox |
 | `kind` | `task-link` if body matches `[TASK-NNN: ...](<path>)`, else `inline` |
-| `task_path` | For task-links: the URL portion of the markdown link, resolved relative to the roadmap file's directory (typically `.docs/tasks/active/NNN-slug.md`) |
+| `task_path` | For task-links: the URL portion of the markdown link, resolved relative to the roadmap file's directory (typically `.docs/tasks/NNN-slug.md`) |
 
 ---
 
@@ -84,9 +86,22 @@ Emit a single concise output to the user. Choose the matching shape:
 
 ### A. All items checked (`done == total`, `total > 0`)
 
+Check whether `Status: done` is already set in the file's front matter.
+
+If `Status: active` (not yet flipped):
+
 ```
 Progress: <total>/<total>
 All items complete. Flip Status: active to Status: done in <roadmap path> when ready.
+Then move the file to .docs/roadmaps/completed/ and update its index entry path.
+```
+
+If `Status: done` (already flipped):
+
+```
+Progress: <total>/<total> — Status: done
+Move to completed/: git mv <roadmap path> .docs/roadmaps/completed/<filename>
+Then update the File column in .docs/roadmaps/README.md: [ROADMAP-NNN](NNN-slug.md) → [ROADMAP-NNN](completed/NNN-slug.md)
 ```
 
 ### B. Task-link item is next
@@ -97,7 +112,7 @@ Next up (Phase <N>: <name>): <item text>
 → /tackle <task_path>
 ```
 
-The `<task_path>` is the link target as written in the roadmap (e.g. `.docs/tasks/active/014-user-table-schema.md`). If the path is repo-relative (starts with `../`), normalize it to a repo-root path for display. If the file doesn't exist on disk (e.g. it was moved to `completed/`), note it inline on a follow-up line: `(task file not found at that path — check .docs/tasks/completed/ or trashed/)`. Do **not** rewrite the roadmap.
+The `<task_path>` is the link target as written in the roadmap (e.g. `.docs/tasks/014-user-table-schema.md`). If the path is repo-relative (starts with `../`), normalize it to a repo-root path for display. If the file doesn't exist on disk (e.g. it was moved to `completed/`), note it inline on a follow-up line: `(task file not found at that path — check .docs/tasks/completed/ or trashed/)`. Do **not** rewrite the roadmap.
 
 ### C. Inline item is next
 

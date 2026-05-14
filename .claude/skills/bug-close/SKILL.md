@@ -1,8 +1,10 @@
 ---
 name: bug-close
-description: Close an in-progress bug — record root cause and resolution, require a regression test, then move it to closed/ (or to trashed/ for late wontfix decisions)
+description: Close an in-progress bug — record root cause and resolution, require a regression test, then move it to closed/ (or delete it for late wontfix decisions)
 model: claude-haiku-4-5-20251001
 argument-hint: <BUG-NNNN, path, or number-slug>
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Always obey `.docs/guides/bug-lifecycle.md`. Read it now if not already in context.**
@@ -31,7 +33,7 @@ Parse `$ARGUMENTS`. Accepted forms:
 Resolution order:
 1. If full path: confirm with `mcp__serena__list_dir`.
 2. Otherwise normalize and search `.docs/bugs/in-progress/` first via `mcp__serena__find_file`.
-3. If found in `open/`: STOP and tell the user the bug must be triaged and worked first — `/bug-triage` → choose "Start work now" → land a fix → re-run `/bug-close`.
+3. If found in `.docs/bugs/` root: STOP and tell the user the bug must be triaged and worked first — `/bug-triage` → choose "Start work now" → land a fix → re-run `/bug-close`.
 4. If found in `closed/` or `trashed/`: STOP — already terminal.
 5. If not found anywhere: STOP and report the error.
 
@@ -84,7 +86,7 @@ Use `AskUserQuestion` (batched where the UI permits):
 | Fix commit | Short SHA (or "see PR") | **Yes** |
 | Fix version | Release tag or `—` | No |
 | Linked PR | `#NNN` or full URL or `—` | No (recommended) |
-| Linked task | `.docs/tasks/...` path or `—` | No |
+| Linked task | `.docs/tasks/NNN-slug.md` path or `—` | No |
 | **Regression test** | Path to an automated test that fails-before / passes-after, **or** path to a UAT entry that exercises the fix | **Yes** |
 
 For **Verify and close**, both required fields must be supplied. If the user cannot name a regression test, STOP and tell them:

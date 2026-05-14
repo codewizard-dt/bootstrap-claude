@@ -10,13 +10,13 @@ This is the operational companion to [`.docs/bugs/README.md`](../bugs/README.md)
 
 ```
 .docs/bugs/
-├── open/           # Reported; not yet being actively worked on
-├── in-progress/    # Fix in flight
-├── closed/         # Fix verified; terminal
-└── trashed/        # wontfix / duplicate / cannot-reproduce; terminal
+├── (new/triaged files here)  # Reported; not yet being actively worked on
+├── in-progress/              # Fix in flight
+├── closed/                   # Fix verified; terminal
+└── trashed/                  # wontfix / duplicate / cannot-reproduce; terminal
 ```
 
-Folder location is the **coarse** status. The `Status:` field inside each file carries the **fine** status (e.g. `new` vs `triaged` while still in `open/`; `in-progress` vs `fixed` while still in `in-progress/`).
+Active bugs (`new` and `triaged`) live directly in `.docs/bugs/`. Only lifecycle subfolders exist. Folder location is the **coarse** status. The `Status:` field inside each file carries the **fine** status (e.g. `new` vs `triaged` while still in `.docs/bugs/`; `in-progress` vs `fixed` while still in `in-progress/`).
 
 ---
 
@@ -38,14 +38,14 @@ Each arrow is a deliberate action with required preconditions (below). The file'
 
 | From | To | Fine-status change | Folder move | Required before transition |
 |------|----|--------------------|-------------|----------------------------|
-| — | `open/` (`new`) | — | **create** | `Steps to Reproduce`, `Expected`, `Actual`, `Environment`, `Severity`, `Reporter`, `Reported` date all filled |
-| `open/` (`new`) | `open/` (`triaged`) | `new` → `triaged` | — | `Priority`, `Assignee`, `Tags` set; `Impact` summarized |
-| `open/` (`triaged`) | `in-progress/` (`in-progress`) | `triaged` → `in-progress` | **`open/` → `in-progress/`** | Assignee has actually started work; bug is reproducible (or a repro plan is documented) |
+| — | `.docs/bugs/` (`new`) | — | **create** | `Steps to Reproduce`, `Expected`, `Actual`, `Environment`, `Severity`, `Reporter`, `Reported` date all filled |
+| `.docs/bugs/` (`new`) | `.docs/bugs/` (`triaged`) | `new` → `triaged` | — | `Priority`, `Assignee`, `Tags` set; `Impact` summarized |
+| `.docs/bugs/` (`triaged`) | `in-progress/` (`in-progress`) | `triaged` → `in-progress` | **`.docs/bugs/` → `in-progress/`** | Assignee has actually started work; bug is reproducible (or a repro plan is documented) |
 | `in-progress/` (`in-progress`) | `in-progress/` (`fixed`) | `in-progress` → `fixed` | — | Patch merged to main; `Root Cause Analysis` filled in; fix commit recorded under `Resolution` |
 | `in-progress/` (`fixed`) | `closed/` (`verified`) | `fixed` → `verified` | **`in-progress/` → `closed/`** | Regression test exists and passes; fix confirmed in the relevant environment (test/UAT/staging/prod as appropriate); `Resolution` block complete |
 | any | `trashed/` (`wontfix`) | → `wontfix` | **→ `trashed/`** | A note added to `## Resolution` explaining the decision and who made it |
 | any | `trashed/` (`duplicate`) | → `duplicate` | **→ `trashed/`** | `Duplicate of: BUG-NNNN` set in `## Related`; canonical bug exists |
-| `open/` or `in-progress/` | `trashed/` (`cannot-reproduce`) | → `cannot-reproduce` | **→ `trashed/`** | A note in `## Resolution` listing what was attempted; cooldown period (suggested ≥ 14 days in `open/` with no new sighting) |
+| `.docs/bugs/` or `in-progress/` | `trashed/` (`cannot-reproduce`) | → `cannot-reproduce` | **→ `trashed/`** | A note in `## Resolution` listing what was attempted; cooldown period (suggested ≥ 14 days in `.docs/bugs/` with no new sighting) |
 
 **On every transition**, update `Last updated: YYYY-MM-DD` and refresh the row in `.docs/bugs/README.md`'s Index (status, closed-date, assignee).
 
@@ -99,7 +99,7 @@ When a bug moves folders, the **filename does not change** — only the director
 | Cadence | Action |
 |---------|--------|
 | Per new report | Within 1 business day: confirm reproducibility, set severity/priority/assignee, flip `new` → `triaged` |
-| Weekly | Walk `open/` — re-prioritize, age stale items, escalate criticals that have not started |
+| Weekly | Walk `.docs/bugs/` — re-prioritize, age stale items, escalate criticals that have not started |
 | Monthly | Walk `in-progress/` — flag bugs stuck > 30 days; either resource them, downgrade priority, or move to `trashed/` with rationale |
 | Quarterly | Walk `closed/` for the period — surface clusters that indicate a systemic issue (informs ADR or refactor tasks) |
 
@@ -110,6 +110,6 @@ Triage never edits a closed bug's substance — if new information emerges that 
 ## See Also
 
 - [`.docs/bugs/README.md`](../bugs/README.md) — index, glossary, severity/priority rubric, file template
-- [`.docs/bugs/open/README.md`](../bugs/open/README.md) — bug file structure spec
+- [`.docs/bugs/README.md`](../bugs/README.md) — bug file structure spec
 - [`task-lifecycle.md`](./task-lifecycle.md) — parallel model for tasks and UAT
 - [`command-anti-patterns.md`](./command-anti-patterns.md) — verification split (static gates vs runtime/UAT) — informs where regression tests live

@@ -203,7 +203,7 @@ The bug ID `BUG-NNNN` (e.g. `BUG-0042`) is the stable handle referenced from com
 | Fix commit | <SHA> |
 | Fix version | <version / release tag> |
 | Linked PR | <#NNN> |
-| Linked task | <`.docs/tasks/active/NNN-slug.md`, if work warranted a task> |
+| Linked task | <`.docs/tasks/NNN-slug.md`, if work warranted a task> |
 | Regression test | <path to the test that locks in the fix> |
 
 ## Related

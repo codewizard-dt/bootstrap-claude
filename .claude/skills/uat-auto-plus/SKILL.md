@@ -3,6 +3,8 @@ name: uat-auto-plus
 description: Autonomous-fix variant of /uat-auto — runs every test, diagnoses failures, applies fixes itself, and re-runs until green or attempts are exhausted. Intended for headless agents launched with --dangerously-skip-permissions.
 model: claude-sonnet-4-6
 argument-hint: <path/to/uat-file.md, number-slug, or description>
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Always obey `.docs/guides/task-lifecycle.md`. Read it now if not already in context.**
@@ -60,11 +62,11 @@ Closely related: **never delete or `[SKIP: ...]` a test** to avoid having to fix
 
 Identical to `/uat-auto` Step 1. Parse `$ARGUMENTS` to locate the UAT file:
 
-1. **File path** (e.g. `.docs/uat/pending/3-user-auth.uat.md`) — use directly.
-2. **Number-slug** (e.g. `3-user-auth`) — Call Serena `list_dir` or `find_file` in `.docs/uat/pending/`, fall back to `.docs/uat/completed/`.
-3. **Number or description** (e.g. `3`, `user auth`) — Call Serena `list_dir` or `find_file` in `.docs/uat/pending/`. If ambiguous, **STOP** and report in the completion summary (do not prompt).
+1. **File path** (e.g. `.docs/uat/3-user-auth.uat.md`) — use directly.
+2. **Number-slug** (e.g. `3-user-auth`) — Call Serena `list_dir` or `find_file` in `.docs/uat/`, fall back to `.docs/uat/completed/`.
+3. **Number or description** (e.g. `3`, `user auth`) — Call Serena `list_dir` or `find_file` in `.docs/uat/`. If ambiguous, **STOP** and report in the completion summary (do not prompt).
 4. **If `$ARGUMENTS` is empty OR did not resolve** — auto-pick from pending:
-   - `mcp__serena__list_dir` on `.docs/uat/pending/` to enumerate `*.uat.md`.
+   - `mcp__serena__list_dir` on `.docs/uat/` to enumerate `*.uat.md`.
    - If none, **STOP** with: "No pending UAT files found".
    - Pick the lowest-numbered file by `<NNN>` prefix.
    - Announce the auto-pick in one line: `No matching UAT file — running \`<filename>\``.
@@ -220,11 +222,11 @@ After every eligible test has a terminal status (`[x] Pass`, pre-existing `[SKIP
 
 ### All Pass (no `[FAIL]` or `[FIXING]` markers remain)
 
-1. `git mv .docs/uat/pending/<slug>.uat.md .docs/uat/completed/<slug>.uat.md` (fall back to `mv`).
-2. Move the associated task: `git mv .docs/tasks/active/<number>-<slug>.md .docs/tasks/completed/<number>-<slug>.md`.
-3. Update internal path references in both moved files (`active/` → `completed/` in the task; `pending/` → `completed/` in the UAT's source-task link).
-3a-pre. **Update `.docs/tasks/README.md`** — remove this task's row from the Active Tasks table entirely. The index lists active tasks only; completed tasks are tracked by their presence in `.docs/tasks/completed/` and do **not** belong in the index. Use a single `Edit` call — never `sed`. **Also check the header**: if the **Last task:** line at the top of the README references this task's `active/NNN-slug.md`, `Edit` it to point at `completed/NNN-slug.md` instead. Do **not** decrement **Next task number** — it only ever goes up. The index is `/tackle`'s no-args survey source.
-3a. **Roadmap Auto-Checkoff** — scan `.docs/roadmaps/` for any roadmap referencing this task and flip its matching checkbox. Follow the canonical algorithm in [`.docs/roadmaps/README.md#auto-checkoff-contract`](../../../.docs/roadmaps/README.md). Short form: (i) `mcp__serena__list_dir` on `.docs/roadmaps/` (skip `README.md`); (ii) `Read` each roadmap and look for lines matching `- [ ] [TASK-<NNN>:` whose link path ends in `<NNN>-<slug>.md` (either `active/` or `completed/`); (iii) `Edit` each matching line in **one** call that **both** flips `- [ ]` → `- [x]` **and** rewrites the link path to the task's new location (e.g. `../tasks/active/NNN-slug.md` → `../tasks/completed/NNN-slug.md`) — use the full line text as `old_string` for uniqueness. Stale paths are **not** tolerated: if a reference exists, the path is updated. Then `Edit` the roadmap's `**Last updated**:` to today; (iv) bump the matching row's `Progress` numerator in `.docs/roadmaps/README.md`. Silent no-op if no roadmap references the task. **Do NOT** auto-flip `Status: active` → `Status: done` even on the last box — that flip is manual. Use `Edit` only — never `sed`, `bash`, or `Write`.
+1. `git mv .docs/uat/<slug>.uat.md .docs/uat/completed/<slug>.uat.md` (fall back to `mv`).
+2. Move the associated task: `git mv .docs/tasks/<number>-<slug>.md .docs/tasks/completed/<number>-<slug>.md`.
+3. Update internal path references in both moved files (update any stale paths in the task; `pending/` → `completed/` in the UAT's source-task link).
+3a-pre. **Update `.docs/tasks/README.md`** — remove this task's row from the Active Tasks table entirely. The index lists active tasks only; completed tasks are tracked by their presence in `.docs/tasks/completed/` and do **not** belong in the index. Use a single `Edit` call — never `sed`. **Also check the header**: if the **Last task:** line at the top of the README references this task's `NNN-slug.md`, `Edit` it to point at `completed/NNN-slug.md` instead. Do **not** decrement **Next task number** — it only ever goes up. The index is `/tackle`'s no-args survey source.
+3a. **Roadmap Auto-Checkoff** — scan `.docs/roadmaps/` and `.docs/roadmaps/completed/` for any roadmap referencing this task and flip its matching checkbox. Follow the canonical algorithm in [`.docs/roadmaps/README.md#auto-checkoff-contract`](../../../.docs/roadmaps/README.md). Short form: (i) `mcp__serena__list_dir` on `.docs/roadmaps/` (skip `README.md`) and on `.docs/roadmaps/completed/`; (ii) `Read` each roadmap and look for lines matching `- [ ] [TASK-<NNN>:` whose link path ends in `<NNN>-<slug>.md` (either at `.docs/tasks/` or `completed/`); (iii) `Edit` each matching line in **one** call that **both** flips `- [ ]` → `- [x]` **and** rewrites the link path to the task's new location (e.g. `../tasks/NNN-slug.md` → `../tasks/completed/NNN-slug.md`) — use the full line text as `old_string` for uniqueness. Stale paths are **not** tolerated: if a reference exists, the path is updated. Then `Edit` the roadmap's `**Last updated**:` to today; (iv) bump the matching row's `Progress` numerator in `.docs/roadmaps/README.md`; (v) **Phase sweep** — for each roadmap where a match was found, identify the `## Phase N:` block containing that matched item and scan all other `- [ ] [TASK-NNN:` lines in that same phase; for each, use `mcp__serena__find_file` to check if `NNN-slug.md` exists under `.docs/tasks/completed/`; if it does, `Edit` that line in one call to flip `- [ ]` → `- [x]` and rewrite the link path to `../tasks/completed/NNN-slug.md`, then bump `Progress` in the index for each additional item. Silent no-op if no roadmap references the task. **Do NOT** auto-flip `Status: active` → `Status: done` even on the last box — that flip is manual. Use `Edit` only — never `sed`, `bash`, or `Write`.
 4. Delete screenshots for this task: `mcp__serena__list_dir` on `.docs/uat/screenshots/` to find `<task-number>-*` matches, then `git rm` each (or `rm` if untracked).
 5. Close Puppeteer if launched.
 6. **Terminate every background process** the agent started for prerequisites or fix attempts. Use the `Bash` tool's KillShell as needed. Verify nothing is left running.
@@ -233,9 +235,9 @@ After every eligible test has a terminal status (`[x] Pass`, pre-existing `[SKIP
    - If found:
      1. Parse the `ADR-NNNN#DM` reference.
      2. `mcp__serena__find_file` for `NNNN-*.md` in `.docs/adr/`.
-     3. `mcp__serena__search_for_pattern` on `.docs/tasks/active/` for the same `**Implements**: ADR-NNNN#DM` to check for remaining WIP tasks.
+     3. `mcp__serena__search_for_pattern` on `.docs/tasks/` for the same `**Implements**: ADR-NNNN#DM` to check for remaining WIP tasks.
      4. **If no other WIP tasks remain**:
-        - Single-task: replace `Source task(s): .docs/tasks/active/...` with `Source task(s): .docs/tasks/completed/NNN-slug.md — **implemented** YYYY-MM-DD`.
+        - Single-task: replace `Source task(s): .docs/tasks/...` with `Source task(s): .docs/tasks/completed/NNN-slug.md — **implemented** YYYY-MM-DD`.
         - Multi-task: update this task's sub-line from `**WIP**` to `**done** YYYY-MM-DD`; append `- **Decision fully implemented** YYYY-MM-DD`.
      5. **If other WIP tasks remain**: update only this task's sub-line to `**done** YYYY-MM-DD`.
      - Use `Read` then `Edit`. Never `sed`, `echo >>`, or shell redirection.
@@ -245,7 +247,7 @@ After every eligible test has a terminal status (`[x] Pass`, pre-existing `[SKIP
 
 ### Any Fail (`[FAIL: ...]` markers remain)
 
-1. **Leave the UAT file in `pending/`**.
+1. **Leave the UAT file in `.docs/uat/`**.
 2. **Keep screenshots** for failing tests — diagnostic evidence for the next walkthrough.
 3. Close Puppeteer if launched.
 4. Terminate all background processes.
@@ -261,8 +263,8 @@ After every eligible test has a terminal status (`[x] Pass`, pre-existing `[SKIP
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 UAT AUTO-PLUS COMPLETE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-File:    .docs/uat/pending/5-positions.uat.md
-Source:  .docs/tasks/active/5-positions.md
+File:    .docs/uat/5-positions.uat.md
+Source:  .docs/tasks/5-positions.md
 Mode:    autonomous-fix
 Budget:  attempts used 7/N · wall 12m22s/30m
 
@@ -286,7 +288,7 @@ Failed Tests:
   • UAT-API-003: Delete Position — "auto-fix-exhausted: HTTP 500 expected 204 (last attempt)"
 
 Next action:
-  /uat-walk .docs/uat/pending/5-positions.uat.md
+  /uat-walk .docs/uat/5-positions.uat.md
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 

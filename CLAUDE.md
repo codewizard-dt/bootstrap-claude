@@ -29,11 +29,11 @@ Follow `basic-project-setup.md` to configure a new project, or use the npm packa
 | `/research <topic>` | Deep research using codebase analysis, library docs, and web search |
 | `/now <task>` | Plan and delegate task to subagents (max 3 concurrent) |
 | `/tackle <path>` | Execute outlined task file step-by-step with subagent delegation |
-| `/task-add <desc>` | Create structured task in `.docs/tasks/active/`. Optional flags: `--adr ADR-NNNN#DM` (auto-link to an accepted ADR decision); `--roadmap ROADMAP-NNN` (auto-append the new task to a roadmap) |
+| `/task-add <desc>` | Create structured task in `.docs/tasks/`. Optional flags: `--adr ADR-NNNN#DM` (auto-link to an accepted ADR decision); `--roadmap ROADMAP-NNN` (auto-append the new task to a roadmap) |
 | `/roadmap-create <topic>` | Create an execution-plan roadmap in `.docs/roadmaps/` via short Socratic Q&A — captures goal, phases, and a hybrid (task-link OR inline) checklist |
 | `/roadmap-add <ROADMAP-NNN> <item>` | Append a new item (task link or inline) to an existing roadmap, optionally under a named phase |
 | `/roadmap-next <file>` | Read-only — point at the first unchecked item in a roadmap and suggest `/tackle` if it's a task link |
-| `/prd-create <idea>` | Create a lean PRD in `.docs/prd/active/` via Socratic Q&A capturing problem, personas, user stories, success metrics, and non-goals |
+| `/prd-create <idea>` | Create a lean PRD in `.docs/prd/` via Socratic Q&A capturing problem, personas, user stories, success metrics, and non-goals |
 | `/prd-finalize <file>` | Run completeness audit on a draft PRD, resolve gaps via Q&A, and flip status from `draft` to `approved` |
 | `/prd-extract-decisions <file>` | Extract Architecturally Significant Requirements from an approved PRD, cross-check existing ADRs, and propose Decision Group candidates for `/adr-create` |
 | `/prd-update <file> [change]` | Amend an approved PRD with an append-only Amendment block; apply direct edits to drafts; surface downstream ADR/task impact |
@@ -43,12 +43,12 @@ Follow `basic-project-setup.md` to configure a new project, or use the npm packa
 | `/adr-walkthrough <file>` | Walk an ADR file decision-by-decision, presenting each architecture choice and confirming it with the user via Q&A; light edits only (no status flips) |
 | `/task-trash <path>` | Move task + related UAT files to `trashed/` directories and update references |
 | `/task-update <path> <changes>` | Modify an existing task's scope or steps |
-| `/uat-generate <target>` | Generate UAT tests in `.docs/uat/pending/` mirroring task naming conventions |
+| `/uat-generate <target>` | Generate UAT tests in `.docs/uat/` mirroring task naming conventions |
 | `/uat-walk <path>` | Interactively walk through a pending UAT file test-by-test with the user |
 | `/uat-auto <path>` | Non-interactively run every test in a pending UAT file and auto-judge verdicts (headless, fail-closed) |
 | `/uat-auto-plus <path>` | Autonomous-fix variant of `/uat-auto`: diagnoses failures, applies fixes itself, re-runs until green or attempts are exhausted (intended for `--dangerously-skip-permissions` agents) |
 | `/uat-skip <path>` | Skip UAT for a task, move task to completed and UAT to skipped |
-| `/bug-file <description>` | File a new bug in `.docs/bugs/open/` with required-on-report fields and update the bug index |
+| `/bug-file <description>` | File a new bug in `.docs/bugs/` with required-on-report fields and update the bug index |
 | `/bug-triage <BUG-NNNN>` | Triage an open bug (priority, assignee, tags, impact) and decide its next destination: stay triaged, start work (→ `in-progress/`), or trash (wontfix / duplicate / cannot-reproduce) |
 | `/bug-close <BUG-NNNN>` | Close an in-progress bug — requires root-cause analysis, fix commit, and a regression test before moving to `.docs/bugs/closed/` |
 | `/lint` | Get IDE diagnostics, fix issues one-by-one in verify cycles |
@@ -80,7 +80,7 @@ Standard Read/Edit/Write tools are permitted for markdown and config files (JSON
 - `.claude/skills/` — All custom skill definitions (in Skills directory format)
 - `setup-project.sh` — Script to set up a new project (Serena MCP + copy commands/docs + bootstrap Serena project.yml); delegates `.docs/` sync to `sync-docs-scaffold.sh`
 - `update-project.sh` — Script to sync `.claude/skills/` and `.docs/` into a target project (re-runs bootstrap-serena.sh idempotently); delegates `.docs/` sync to `sync-docs-scaffold.sh`; includes orphan-skill cleanup prompt for the noun-first rename
-- `sync-docs-scaffold.sh` — Syncs only the scaffold structure of `.docs/` (guides + directory shells + `active/README.md`), never template-specific task or UAT content; called by both setup and update scripts
+- `sync-docs-scaffold.sh` — Syncs only the scaffold structure of `.docs/` (guides + directory shells + `.gitkeep` files), never template-specific task or UAT content; called by both setup and update scripts
 - `bootstrap-serena.sh` — Headlessly triggers `.serena/project.yml` creation via `claude --print` and enables 11 optional Serena tools; called by both setup and update scripts
 - `bin/cli.js` — CLI entry point for the npm package
 - `package.json` — npm package configuration with bin and files fields

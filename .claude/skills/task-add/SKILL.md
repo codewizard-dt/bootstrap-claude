@@ -1,8 +1,10 @@
 ---
 name: task-add
-description: Create a structured, execution-ready task file in .docs/tasks/active/
+description: Create a structured, execution-ready task file in .docs/tasks/
 model: claude-sonnet-4-6
 argument-hint: <task description> [--adr ADR-NNNN#DM] [--roadmap ROADMAP-NNN]
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Always obey `.docs/guides/task-lifecycle.md`. Read it now if not already in context.**
@@ -15,7 +17,7 @@ $ARGUMENTS
 
 **Instructions:**
 
-1) **Read the task spec**: Read `.docs/tasks/active/README.md` for the required file format, naming convention, and example output. Follow it exactly.
+1) **Read the task spec**: Read `.docs/tasks/README.md` for the required file format, naming convention, and example output. Follow it exactly.
 
 2) **Summarize the user input**: Extract the core task objective, scope, and any specific requirements from the provided arguments.
 
@@ -60,7 +62,7 @@ $ARGUMENTS
    - Store `(roadmap_file_path, roadmap_number)` for use in step 8.7.
    - If no roadmap reference is present in `$ARGUMENTS`: skip this step entirely. All subsequent roadmap steps are no-ops.
 
-3) **Assess existing tasks** (preview only): Check `.docs/tasks/active/` and `.docs/tasks/completed/` for a tentative next task number to use during planning. The authoritative re-check happens in step 7a, immediately before file creation — so do not over-invest here.
+3) **Assess existing tasks** (preview only): Check `.docs/tasks/` and `.docs/tasks/completed/` for a tentative next task number to use during planning. The authoritative re-check happens in step 7a, immediately before file creation — so do not over-invest here.
 
 4) **Research**: Run the `/research` workflow (see `.claude/skills/research/SKILL.md`) scoped to this task:
    - **Phase 2 (Internal)**: Review `PROJECT_STATUS.md`, `CLAUDE.md`, and related code via Serena to understand constraints, dependencies, patterns, and data flow.
@@ -75,11 +77,11 @@ $ARGUMENTS
    - High-level step breakdown
    Ask the user to confirm before proceeding.
 
-7) **Create the task file(s)**: After user confirmation, create fully detailed, execution-ready task file(s) in `.docs/tasks/active/` following the format specified in `.docs/tasks/active/README.md`.
+7) **Create the task file(s)**: After user confirmation, create fully detailed, execution-ready task file(s) in `.docs/tasks/` following the format specified in `.docs/tasks/README.md`.
 
    **7a) Re-verify the next available task number — IMMEDIATELY before writing any file.** The number determined in step 3 may now be stale (other tasks created mid-session, or a sibling task is being created in the same run). Determine the next number now:
    - **Primary source**: `Read` the **Next task number** header line at the top of `.docs/tasks/README.md`. That value is authoritative — it is maintained by every skill that creates or trashes a task.
-   - **Sanity check**: Use Serena `mcp__serena__list_dir` on `.docs/tasks/active/`, `.docs/tasks/completed/`, and `.docs/tasks/trashed/` (skip any that don't exist). Collect every `NNN-` prefix across all sources, take `max + 1`, zero-pad to 3 digits. If this disagrees with the header, trust the disk and note the drift inline (`Index header was stale: header said NNN, disk says NNN'. Using NNN'.`) — but proceed.
+   - **Sanity check**: Use Serena `mcp__serena__list_dir` on `.docs/tasks/`, `.docs/tasks/completed/`, and `.docs/tasks/trashed/` (skip any that don't exist). Collect every `NNN-` prefix across all sources, take `max + 1`, zero-pad to 3 digits. If this disagrees with the header, trust the disk and note the drift inline (`Index header was stale: header said NNN, disk says NNN'. Using NNN'.`) — but proceed.
    - **If `.docs/tasks/README.md` does not exist or lacks the header**, fall back to the disk scan alone.
    - **For ADR splits or multi-task runs**: assign sequential numbers (`NNN`, `NNN+1`, `NNN+2`, …) and reserve them all *before* writing the first file.
    - If the number you planned to use in step 6 has been taken, silently bump to the new next-available number and use it. Do not re-prompt the user.
@@ -105,13 +107,13 @@ $ARGUMENTS
 8) **Update the task index**: Append a row to the **Active Tasks** table in `.docs/tasks/README.md` (create the file if it doesn't exist — match the column layout described there). The row format is:
 
    ```
-   | NNN | [slug](active/NNN-slug.md) | 0/<total> | none | — | <objective first sentence> |
+   | NNN | [slug](NNN-slug.md) | 0/<total> | none | — | <objective first sentence> |
    ```
 
    Where `<total>` is the count of `- [ ]` checkboxes you just wrote into the task file's `## Steps` sections. Insert the row in numeric order. This index is `/tackle`'s no-args survey source; do not skip this step.
 
    **Also update the two header lines** at the top of `.docs/tasks/README.md`:
-   - **Last task:** set to `[NNN-slug](active/NNN-slug.md)` for the task you just created (or, in a multi-task run, the highest-numbered one).
+   - **Last task:** set to `[NNN-slug](NNN-slug.md)` for the task you just created (or, in a multi-task run, the highest-numbered one).
    - **Next task number:** set to `NNN + 1`, zero-padded to 3 digits.
 
    If the file is being created from scratch in this step, write both header lines along with the table.
@@ -120,13 +122,13 @@ $ARGUMENTS
    - In the target decision's `### Links` section, add a `Source task(s):` line:
      - **Single task**:
        ```
-       - Source task(s): `.docs/tasks/active/NNN-slug.md` — **WIP** (added YYYY-MM-DD)
+       - Source task(s): `.docs/tasks/NNN-slug.md` — **WIP** (added YYYY-MM-DD)
        ```
      - **Multiple tasks** (split implementation, all created in this run):
        ```
        - Source task(s):
-         - `.docs/tasks/active/NNN-slug.md` — **WIP** (added YYYY-MM-DD)
-         - `.docs/tasks/active/NNN2-slug2.md` — **WIP** (added YYYY-MM-DD)
+         - `.docs/tasks/NNN-slug.md` — **WIP** (added YYYY-MM-DD)
+         - `.docs/tasks/NNN2-slug2.md` — **WIP** (added YYYY-MM-DD)
        ```
    - If no `### Links` section exists in the decision block, create one before the closing `---` separator of that decision block.
    - If a `Source task(s):` entry already exists (a prior incomplete run), append the new task(s) to it rather than replacing.
@@ -137,7 +139,7 @@ $ARGUMENTS
    - Identify the **last existing `## Phase N:` section**. Append a new `- [ ]` line to the bottom of that phase — just before the next `##` header, the `## Notes` section (if present), or end of file (whichever comes first).
    - Item format (one line per newly created task):
      ```
-     - [ ] [TASK-NNN: <task title>](../tasks/active/NNN-slug.md)
+     - [ ] [TASK-NNN: <task title>](../tasks/NNN-slug.md)
      ```
      where `<task title>` is taken from the task file's H1, stripped of the `NNN:` prefix.
    - For multi-task ADR splits, append one line per new task in sequential order.
@@ -149,9 +151,9 @@ $ARGUMENTS
 
 10) **Confirm completion**: Report the created task file path and summary to the user. Suggest next steps:
    ```
-   To implement this task:  /tackle .docs/tasks/active/<number>-<slug>.md
+   To implement this task:  /tackle .docs/tasks/<number>-<slug>.md
    ```
-   Note: After `/tackle` completes, the task stays in `active/`. Use `/uat-generate` to create UAT tests, then `/uat-walk` to move the task to `completed/`.
+   Note: After `/tackle` completes, the task stays in `.docs/tasks/`. Use `/uat-generate` to create UAT tests, then `/uat-walk` to move the task to `completed/`.
    If this task implements an ADR decision, the ADR's `### Links` section will be updated to **implemented** automatically when all linked tasks pass UAT.
    If this task was linked to a roadmap (step 2.6), mention which roadmap was updated and suggest:
    ```

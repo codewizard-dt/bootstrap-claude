@@ -1,8 +1,10 @@
 ---
 name: bug-file
-description: File a new bug report in .docs/bugs/open/ with required-on-report fields and append it to the bug index
+description: File a new bug report in .docs/bugs/ with required-on-report fields and append it to the bug index
 model: claude-sonnet-4-6
 argument-hint: <short bug description>
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Always obey `.docs/guides/bug-lifecycle.md`. Read it now if not already in context.**
@@ -10,7 +12,7 @@ argument-hint: <short bug description>
 
 # File Bug
 
-Create a new bug file in `.docs/bugs/open/` with status `new`. Gather every required-on-report field before writing — a bug without reliable reproduction is a complaint, not a bug.
+Create a new bug file in `.docs/bugs/` with status `new`. Gather every required-on-report field before writing — a bug without reliable reproduction is a complaint, not a bug.
 
 ---
 
@@ -23,8 +25,7 @@ Create a new bug file in `.docs/bugs/open/` with status `new`. Gather every requ
 ### Step 1: Read the Spec
 
 Read both files — they are the authoritative format:
-1. `.docs/bugs/README.md` — full file template, severity/priority rubrics, glossary
-2. `.docs/bugs/open/README.md` — bug file structure spec and required-fields rules
+1. `.docs/bugs/README.md` — full file template, severity/priority rubrics, glossary, and required-fields rules
 
 ### Step 2: Summarize the Reported Symptom
 
@@ -59,7 +60,7 @@ If the user cannot supply reliable Steps to Reproduce, STOP and tell them:
 ### Step 4: Determine the Next Bug Number
 
 Scan **all four** bug folders to find the next available 4-digit ID:
-- `mcp__serena__list_dir` on `.docs/bugs/open/`, `.docs/bugs/in-progress/`, `.docs/bugs/closed/`, `.docs/bugs/trashed/` (skip any that don't exist)
+- `mcp__serena__list_dir` on `.docs/bugs/`, `.docs/bugs/in-progress/`, `.docs/bugs/closed/`, `.docs/bugs/trashed/` (skip any that don't exist)
 - Collect every `NNNN-` prefix; take `max + 1`; zero-pad to 4 digits.
 - Also scan `.docs/bugs/README.md`'s Index table for any reserved IDs not yet on disk.
 - Never re-use a number — IDs are immutable references.
@@ -69,7 +70,7 @@ Derive the slug from the title: lowercase, hyphen-separated, 2–5 words, ≤ 60
 ### Step 5: Present and Confirm
 
 Before writing, present:
-- Resolved filename: `.docs/bugs/open/NNNN-<slug>.md`
+- Resolved filename: `.docs/bugs/NNNN-<slug>.md`
 - Title, Severity, Reporter
 - The gathered Environment, Steps, Expected, Actual, Reproducibility values
 
@@ -77,7 +78,7 @@ Ask the user to confirm via `AskUserQuestion` ("File this bug? Yes / Edit / Canc
 
 ### Step 6: Write the Bug File
 
-Use `Write` to create `.docs/bugs/open/NNNN-<slug>.md` following the **File Template** in `.docs/bugs/README.md` exactly. Set:
+Use `Write` to create `.docs/bugs/NNNN-<slug>.md` following the **File Template** in `.docs/bugs/README.md` exactly. Set:
 
 - `Status: new`
 - `Priority: —` (filled in triage)
@@ -92,7 +93,7 @@ Use `Write` to create `.docs/bugs/open/NNNN-<slug>.md` following the **File Temp
 Append a row to the Index table in `.docs/bugs/README.md`. Insert in numeric order. Row format:
 
 ```
-| [BUG-NNNN](open/NNNN-slug.md) | <title> | <severity> | — | new | <reporter> | — | YYYY-MM-DD | — |
+| [BUG-NNNN](NNNN-slug.md) | <title> | <severity> | — | new | <reporter> | — | YYYY-MM-DD | — |
 ```
 
 If the Index still shows the placeholder row (`_No bugs yet — …_`), replace it with the new row.
@@ -102,7 +103,7 @@ Use **`Edit`** — one targeted call. Never `sed`, `awk`, `perl -i`, or `echo >>
 ### Step 8: Report Completion
 
 Print:
-- Created file: `.docs/bugs/open/NNNN-<slug>.md`
+- Created file: `.docs/bugs/NNNN-<slug>.md`
 - Bug ID: `BUG-NNNN`
 - Status: `new`
 - Next step:

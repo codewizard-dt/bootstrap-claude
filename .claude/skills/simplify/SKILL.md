@@ -3,6 +3,8 @@ name: simplify
 description: Analyze files or directories to remove redundancy and simplify complexity
 model: claude-sonnet-4-6
 argument-hint: [relative_path]
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**

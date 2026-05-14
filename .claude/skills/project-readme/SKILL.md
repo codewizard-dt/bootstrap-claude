@@ -3,6 +3,8 @@ name: project-readme
 description: Generate or update a portfolio-ready project README
 model: claude-sonnet-4-6
 argument-hint: [path to project directory (defaults to cwd)] [custom instructions to alter the output]
+disable-model-invocation: false
+user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 

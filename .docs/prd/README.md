@@ -197,7 +197,7 @@ Each PRD lives at `active/NNN-slug.md` (3-digit zero-padded, lowercase-dashed, â
 
 | Task | Status |
 |------|--------|
-| `.docs/tasks/active/NNN-slug.md` | WIP / done |
+| `.docs/tasks/NNN-slug.md` | WIP / done |
 
 ## Amendments
 
