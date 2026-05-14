@@ -34,7 +34,7 @@ Resolution order:
 1. If full path: confirm with `mcp__serena__list_dir`.
 2. Otherwise normalize and search `.docs/bugs/in-progress/` first via `mcp__serena__find_file`.
 3. If found in `.docs/bugs/` root: STOP and tell the user the bug must be triaged and worked first — `/bug-triage` → choose "Start work now" → land a fix → re-run `/bug-close`.
-4. If found in `closed/` or `trashed/`: STOP — already terminal.
+4. If found in `closed/`: STOP — already terminal.
 5. If not found anywhere: STOP and report the error.
 
 Read the bug file in full.
@@ -62,8 +62,8 @@ Use `AskUserQuestion` (single-select):
 |--------|--------|--------------|
 | **Verify and close** (default) | Status → `verified`; **move file** `in-progress/` → `closed/` | A fix has been merged and validated |
 | **Mark fixed (not yet verified)** | Status → `fixed`; file stays in `in-progress/` | Patch landed but waiting on UAT or staging soak |
-| **Won't fix (late decision)** | Status → `wontfix`; **move file** → `trashed/` | Investigation revealed the fix isn't worth the cost or invalidates a constraint |
-| **Cannot reproduce (re-evaluated)** | Status → `cannot-reproduce`; **move file** → `trashed/` | Work started, repro never re-surfaced, abandoning |
+| **Won't fix (late decision)** | Status → `wontfix`; **delete file** | Investigation revealed the fix isn't worth the cost or invalidates a constraint |
+| **Cannot reproduce (re-evaluated)** | Status → `cannot-reproduce`; **delete file** | Work started, repro never re-surfaced, abandoning |
 
 For **Mark fixed** and **Verify and close**, continue to Steps 5–6. For trash outcomes, jump to Step 7 (with rationale captured in `## Resolution`).
 
@@ -103,7 +103,7 @@ Edit the bug file to populate the `## Resolution` table with the gathered values
 |---------|------|
 | Verify and close | `git mv .docs/bugs/in-progress/NNNN-slug.md .docs/bugs/closed/` |
 | Mark fixed | No move |
-| Trash outcomes | `git mv .docs/bugs/in-progress/NNNN-slug.md .docs/bugs/trashed/` |
+| Trash outcomes | `git rm .docs/bugs/in-progress/NNNN-slug.md` (fall back to `rm` if `git rm` fails) |
 
 Fall back to `mv` if `git mv` fails. Update `Status:` and `Last updated:` in the file via `Edit`.
 
@@ -112,8 +112,9 @@ Fall back to `mv` if `git mv` fails. Update `Status:` and `Last updated:` in the
 In `.docs/bugs/README.md`, update the row for this bug:
 
 - `Status` column → new fine status
-- Folder path in the `[BUG-NNNN](...)` link → new location (if moved)
+- Folder path in the `[BUG-NNNN](...)` link → new location (if moved to `closed/`)
 - `Closed` column → today's `YYYY-MM-DD` for any terminal state (`verified`, `wontfix`, `cannot-reproduce`); leave `—` for `fixed`
+- For trash outcomes: **remove the entire row** from the index — the file is deleted, not relocated
 
 Use **`Edit`** — one targeted call. Never `sed`, `awk`, `perl -i`, or `echo >>`.
 

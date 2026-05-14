@@ -1,6 +1,6 @@
 ---
 name: prd-trash
-description: Move a cancelled PRD to .docs/prd/trashed/, surface linked ADRs/tasks for separate review, and update all references
+description: Delete a cancelled PRD, surface linked ADRs/tasks for separate review, and remove all references
 model: claude-haiku-4-5-20251001
 argument-hint: <path/to/prd.md, NNN-slug, or NNN>
 disable-model-invocation: false
@@ -8,11 +8,11 @@ user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**
-**Read `.docs/prd/README.md` first** — it defines the PRD lifecycle and the `trashed` terminal status.
+**Read `.docs/prd/README.md` first** — it defines the PRD lifecycle and terminal states.
 
 # Trash PRD
 
-Move a cancelled or invalidated PRD to `.docs/prd/trashed/`, update all references, and **surface** any linked ADRs and tasks so the user can act on them independently. This skill never auto-cascades downstream — the PRD layer cannot transitively cancel decisions or work that may have value on their own.
+Delete a cancelled or invalidated PRD, remove all references, and **surface** any linked ADRs and tasks so the user can act on them independently. This skill never auto-cascades downstream — the PRD layer cannot transitively cancel decisions or work that may have value on their own.
 
 ---
 
@@ -32,7 +32,7 @@ Parse `$ARGUMENTS` to locate the PRD:
 | `<NNN-slug>` (e.g. `003-search`) | Search `.docs/prd/` first, then `.docs/prd/archived/` for `<NNN-slug>.md`. |
 | `<NNN>` (e.g. `3` or `003`) | Pad to 3 digits. Use `mcp__serena__find_file` with mask `NNN-*.md` across `.docs/prd/` and `.docs/prd/archived/`. |
 | Description (e.g. `search`) | Search both directories. If ambiguous, list matches and ask via `AskUserQuestion`. |
-| Empty / missing | List every PRD across `.docs/prd/` and `.docs/prd/archived/` and ask the user via `AskUserQuestion`. |
+| Empty / missing | List every PRD in `.docs/prd/` and `.docs/prd/archived/` and ask the user via `AskUserQuestion`. |
 
 Determine which directory the PRD currently lives in (`.docs/prd/` or `archived/`). Extract the file's `NNN-slug` identifier.
 
@@ -54,23 +54,21 @@ Determine which directory the PRD currently lives in (`.docs/prd/` or `archived/
 
 ### Step 3: Confirm With the User
 
-Use `AskUserQuestion` to confirm the move. Show:
+Use `AskUserQuestion` to confirm the deletion. Show:
 
-- The PRD file to be trashed (full path)
+- The PRD file to be deleted (full path)
 - The downstream artifacts table from Step 2
-- Ask: **"Move this PRD to trashed? (yes / no)"**
+- Ask: **"Delete this PRD? (yes / no)"**
 
 **Do NOT ask whether to trash the linked ADRs or tasks** — they are surfaced as suggestions only. The PRD layer cannot transitively cancel decisions or work that may have independent value.
 
 If the user did not supply a trash reason in `$ARGUMENTS`, also ask: **"Reason for trashing this PRD? (one line)"**
 
-If the user says **No** to the move, STOP.
+If the user says **No**, STOP.
 
-### Step 4: Move the PRD File
+### Step 4: Delete the PRD File
 
-Use `git mv .docs/prd/<filename> .docs/prd/trashed/<filename>` to preserve git history. Fall back to `mv` only if `git mv` fails.
-
-**Preserve the filename — do not rename.**
+Use `git rm .docs/prd/<filename>` to remove the file. Fall back to `rm` only if `git rm` fails.
 
 ### Step 5: Update References Across the Project
 
@@ -85,25 +83,12 @@ For each reference found:
 
 | Reference location | Update rule |
 |--------------------|-------------|
-| **PRD index row in `.docs/prd/README.md`** | Update the `Status` column to `trashed` and update the `File` column link to `trashed/<filename>`. **The row stays in the index** for traceability — never delete it. |
-| **Cross-link in an ADR or task** (`Source PRD:` / `**PRD**:`) | Update the path to `trashed/<filename>`. **Never delete the cross-link** — it documents historical lineage. |
+| **PRD index row in `.docs/prd/README.md`** | **Remove the row entirely** — the PRD is deleted, not relocated. |
+| **Cross-link in an ADR or task** (`Source PRD:` / `**PRD**:`) | **Remove the cross-link line** — the PRD no longer exists. |
 
 Use `Edit` for each replacement — **one `Edit` call per file**. Never use `sed`, `awk`, `perl -i`, or `echo >>`. See `.docs/guides/mcp-tools.md` "Common anti-patterns".
 
-### Step 6: Update the PRD Body Status and Add Trash Callout
-
-After the move, the PRD itself still says `Status: draft` or `Status: approved`. Edit the file at its new `trashed/` location:
-
-1. Flip the `Status:` field to `trashed`.
-2. Insert a top-of-file callout directly under the H1 (mirroring the `/adr-finalize` supersession callout pattern):
-
-   ```markdown
-   > **Trashed on YYYY-MM-DD.** Reason: <one-line reason given by user>.
-   ```
-
-Use today's date (`2026-05-05` format). The reason comes from `$ARGUMENTS` or the `AskUserQuestion` answer in Step 3.
-
-### Step 7: Report Completion
+### Step 6: Report Completion
 
 Output a tabular summary:
 
@@ -111,9 +96,8 @@ Output a tabular summary:
 |-------|-------|
 | PRD | `PRD-NNN <title>` |
 | Old path | `<original>` |
-| New path | `.docs/prd/trashed/<filename>` |
+| New path | deleted |
 | References updated | <count> |
-| Status flipped | yes (was: <old>, now: trashed) |
 | Linked ADRs surfaced for review | <count> |
 | Linked tasks surfaced for review | <count> |
 
@@ -129,33 +113,25 @@ To act on linked ADRs (each independently):
   # Proposed ADRs may be left, finalized, or modified
 ```
 
-Also include undo instructions:
-
-```
-To undo, move back:  git mv .docs/prd/trashed/<filename> .docs/prd/<filename>
-                     # then re-edit Status and remove the trash callout
-```
-
 ---
 
 ## Output Formatting Rules
 
 1. Use tables for the downstream artifacts list and the completion report — never paragraph prose.
 2. **One `Edit` call per cross-reference update** — never bulk rewrites.
-3. **Cross-links in ADRs/tasks are updated, never deleted** — they preserve historical lineage.
-4. **The PRD index row is updated, never deleted** — PRDs in `trashed` status remain in the log for traceability.
+3. **Cross-links in ADRs/tasks are removed** — the PRD no longer exists and dead links must not be left behind.
+4. **The PRD index row is removed on deletion** — the PRD is gone, not relocated.
 5. **The skill never auto-trashes or auto-deprecates downstream artifacts** — it surfaces them with suggested commands.
-6. **`git mv` preferred over `mv`** to preserve git history; fall back only on failure.
 
 ---
 
 ## Critical Rules
 
 1. **Never auto-cascade** to linked ADRs or tasks. Surface them as suggestions only.
-2. **Index rows are preserved** — flip status to `trashed`, do not delete the row.
-3. **Cross-links are preserved** — update paths to `trashed/`, do not delete the references.
-4. **Use `git mv`** to preserve history; fall back to `mv` only if `git mv` fails.
+2. **Index rows are removed** — the PRD is deleted; remove the row, do not preserve it.
+3. **Cross-links are removed** — the PRD no longer exists; remove dead references, do not update paths.
+4. **Use `git rm`** to delete the file; fall back to `rm` only if `git rm` fails.
 5. **Never use `sed` / `awk` / `perl -i` / `echo >>`** — always `Edit`. See `.docs/guides/mcp-tools.md` "Common anti-patterns".
-6. **Confirm with the user before any move** — `AskUserQuestion` is mandatory before any filesystem change.
+6. **Confirm with the user before deletion** — `AskUserQuestion` is mandatory before any filesystem change.
 7. Maximum 3 sub-processes at a time if delegating any step.
 8. Always terminate background processes when done.

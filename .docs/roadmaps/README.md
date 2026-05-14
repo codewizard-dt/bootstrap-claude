@@ -13,7 +13,7 @@ Roadmaps are managed via three slash commands:
 Roadmaps cross-cut the spec-driven pipeline:
 
 - `/task-add --roadmap ROADMAP-NNN` appends the new task to a roadmap as an unchecked item.
-- `/tackle`, `/uat`, `/uat-auto`, `/uat-auto-plus`, and `/uat-skip` automatically check off any roadmap items that reference the task being completed.
+- `/uat-walk`, `/uat-auto`, `/uat-auto-plus`, and `/uat-skip` automatically check off any roadmap items that reference the task being completed.
 
 There is no `/finalize-roadmap` or `/trash-roadmap`. Completion is implicit — once every checkbox is `[x]`, the roadmap has delivered. Editing (reordering, removing items, splitting phases) is ad hoc — open the file and use `Edit`.
 
@@ -62,7 +62,7 @@ flowchart LR
     Roadmap -.may reference.-> PRD
     Roadmap -.may reference.-> ADR
     AddTask[/task-add --roadmap/] --> Roadmap
-    Tackle[/tackle/] -.auto-check.-> Roadmap
+    Tackle[/tackle/] -.executes.-> Task
     UAT[/uat-walk /uat-auto/] -.auto-check.-> Roadmap
 ```
 
@@ -153,7 +153,7 @@ Fields that may legitimately be empty: `Linked PRD`, `Linked ADRs`, `Tags`, `Not
 ```
 
 - Use inline items for work too small to warrant a task file (e.g. "tag the release", "post to #engineering"), or for placeholders that will be replaced with task links later.
-- An inline item is **never** auto-checked. Open the file and edit `- [ ]` to `- [x]` when done.
+- Inline items are checked manually, or auto-checked by the UAT phase sweep if a completing task is judged to have fulfilled them (see Auto-Checkoff Contract step 7).
 
 ### Mixing both in one phase is fine
 
@@ -216,13 +216,13 @@ The index is updated by:
 
 - `/roadmap-create` — appends a new row
 - `/roadmap-add` — bumps the `Progress` denominator
-- `/tackle`, `/uat-walk`, `/uat-auto`, `/uat-auto-plus`, `/uat-skip` — bumps the `Progress` numerator after auto-checkoff
+- `/uat-walk`, `/uat-auto`, `/uat-auto-plus`, `/uat-skip` — bumps the `Progress` numerator after auto-checkoff
 
 ---
 
 ## Auto-Checkoff Contract
 
-When a task transitions to **completed** (whether by `/tackle` finishing all steps, by `/uat-walk`/`/uat-auto`/`/uat-auto-plus` passing all tests, or by `/uat-skip` moving it to `completed/`), those skills **must**:
+When a task transitions to **completed** (whether by `/uat-walk`/`/uat-auto`/`/uat-auto-plus` passing all tests, or by `/uat-skip` moving it to `completed/`), those skills **must**:
 
 1. Scan `.docs/roadmaps/*.md` and `.docs/roadmaps/completed/*.md` for any line matching:
    ```
@@ -233,7 +233,8 @@ When a task transitions to **completed** (whether by `/tackle` finishing all ste
 3. **If the skill also moved the task file** (any `/uat-*` skill), rewrite the link path in the same matched line so it points at the task's new location (e.g. `../tasks/NNN-slug.md` → `../tasks/completed/NNN-slug.md`). Do this in one `Edit` that combines the checkbox flip and the path rewrite — never leave a stale path behind just because the checkbox is correct.
 4. Update the roadmap's `Last updated` field to today.
 5. Update the matching row's `Progress` in the index.
-6. **Phase sweep** — for each roadmap where step 1 found a match, identify the `## Phase N:` block that contained the matched item; scan all other `- [ ] [TASK-NNN:` lines in that same phase; for each, use `mcp__serena__find_file` to check whether `NNN-slug.md` exists under `.docs/tasks/completed/`; if it does, apply a single `Edit` call that both flips `- [ ]` → `- [x]` and rewrites the link path to `../tasks/completed/NNN-slug.md`, then bump `Progress` in the index for each additional item checked.
+6. **Phase sweep — task-link items** — for each roadmap where step 1 found a match, identify the `## Phase N:` block that contained the matched item; scan all other `- [ ] [TASK-NNN:` lines in that same phase; for each, use `mcp__serena__find_file` to check whether `NNN-slug.md` exists under `.docs/tasks/completed/`; if it does, apply a single `Edit` call that both flips `- [ ]` → `- [x]` and rewrites the link path to `../tasks/completed/NNN-slug.md`, then bump `Progress` in the index for each additional item checked.
+7. **Phase sweep — inline items** — in the same phase block, collect every remaining `- [ ]` line whose body is free-form text (not a `[TASK-NNN:` link). For each, read the just-completed task file and use judgment to decide whether the task's work fulfilled what the inline item describes. If yes, flip `- [ ]` → `- [x]` via `Edit` and bump `Progress` in the index. If uncertain, leave the item unchecked. Never prompt the user during this sweep — err on the side of leaving items unchecked rather than over-checking.
 
 If no roadmap references the task, the skills do nothing (silent no-op).
 

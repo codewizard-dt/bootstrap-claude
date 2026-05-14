@@ -116,7 +116,14 @@ Store the chosen (or auto-selected) mode for the duration of this walkthrough.
 ## Step 2: Find the Next Test Batch
 
 ### Prerequisites (always first, regardless of mode)
-- If any prerequisites are unchecked (`- [ ]`), present **all of them at once as a batch** before tests — do not present them one at a time
+- If any prerequisites are unchecked (`- [ ]`), **attempt to auto-verify each one before presenting it to the user**:
+  - For runnable checks (e.g. "dev server running at localhost:4321", "database migrated"), attempt to verify with a single deterministic command (`curl`, `pg_isready`, a file existence check). One Bash call per prerequisite.
+  - For descriptive-only prerequisites (e.g. "test data loaded"), mark them as **unverifiable** — they must be confirmed by the user.
+- After auto-checking, present **all prerequisites at once** grouped by status:
+  - **Auto-verified** ✅: ones that passed the check (user can ignore these unless they notice something wrong)
+  - **Needs confirmation** ❓: ones that are unverifiable or whose check failed
+- If all prerequisites are auto-verified with no failures, note "All prerequisites verified automatically" and proceed without asking the user
+- If any prerequisite fails or is unverifiable, present those to the user for confirmation before proceeding
 
 ### Test Selection (based on chosen mode)
 
@@ -588,7 +595,7 @@ Failed Tests:
   2. Move associated task file (derive name: `<number>-<slug>.uat.md` → `<number>-<slug>.md`): `git mv .docs/tasks/<number>-<slug>.md .docs/tasks/completed/<number>-<slug>.md` (fall back to `mv` if `git mv` fails)
   3. **Update references** in both moved files: update any remaining stale paths in the task file, update `pending/` → `completed/` in the UAT file's source task link
   3a. **Update `.docs/tasks/README.md`** — remove this task's row from the Active Tasks table entirely. The index lists active tasks only; completed tasks are tracked by their presence in `.docs/tasks/completed/` and do **not** belong in the index. Use a single `Edit` call — never `sed`. **Also check the header**: if the **Last task:** line at the top of the README references this task's `NNN-slug.md`, `Edit` it to point at `completed/NNN-slug.md` instead. Do **not** decrement **Next task number** — it only ever goes up. The index is `/tackle`'s no-args survey source.
-  3b. **Roadmap Auto-Checkoff** — scan `.docs/roadmaps/` and `.docs/roadmaps/completed/` for any roadmap referencing this task and flip its matching checkbox. Follow the canonical algorithm in [`.docs/roadmaps/README.md#auto-checkoff-contract`](../../../.docs/roadmaps/README.md). Short form: (i) `mcp__serena__list_dir` on `.docs/roadmaps/` (skip `README.md`) and on `.docs/roadmaps/completed/`; (ii) `Read` each roadmap and look for lines matching `- [ ] [TASK-<NNN>:` whose link path ends in `<NNN>-<slug>.md` (either at `.docs/tasks/` or `completed/`); (iii) `Edit` each matching line in **one** call that **both** flips `- [ ]` → `- [x]` **and** rewrites the link path to the task's new location (e.g. `../tasks/NNN-slug.md` → `../tasks/completed/NNN-slug.md`) — use the full line text as `old_string` for uniqueness. Stale paths are **not** tolerated: if a reference exists, the path is updated. Then `Edit` the roadmap's `**Last updated**:` to today; (iv) bump the matching row's `Progress` numerator in `.docs/roadmaps/README.md`; (v) **Phase sweep** — for each roadmap where a match was found, identify the `## Phase N:` block containing that matched item and scan all other `- [ ] [TASK-NNN:` lines in that same phase; for each, use `mcp__serena__find_file` to check if `NNN-slug.md` exists under `.docs/tasks/completed/`; if it does, `Edit` that line in one call to flip `- [ ]` → `- [x]` and rewrite the link path to `../tasks/completed/NNN-slug.md`, then bump `Progress` in the index for each additional item. Silent no-op if no roadmap references the task. **Do NOT** auto-flip `Status: active` → `Status: done` even on the last box — that flip is manual. Use `Edit` only — never `sed`, `bash`, or `Write`.
+  3b. **Roadmap Auto-Checkoff** — scan `.docs/roadmaps/` and `.docs/roadmaps/completed/` for any roadmap referencing this task and flip its matching checkbox. Follow the canonical algorithm in [`.docs/roadmaps/README.md#auto-checkoff-contract`](../../../.docs/roadmaps/README.md). Short form: (i) `mcp__serena__list_dir` on `.docs/roadmaps/` (skip `README.md`) and on `.docs/roadmaps/completed/`; (ii) `Read` each roadmap and look for lines matching `- [ ] [TASK-<NNN>:` whose link path ends in `<NNN>-<slug>.md` (either at `.docs/tasks/` or `completed/`); (iii) `Edit` each matching line in **one** call that **both** flips `- [ ]` → `- [x]` **and** rewrites the link path to the task's new location (e.g. `../tasks/NNN-slug.md` → `../tasks/completed/NNN-slug.md`) — use the full line text as `old_string` for uniqueness. Stale paths are **not** tolerated: if a reference exists, the path is updated. Then `Edit` the roadmap's `**Last updated**:` to today; (iv) bump the matching row's `Progress` numerator in `.docs/roadmaps/README.md`; (v) **Phase sweep** — for each roadmap where a match was found, identify the `## Phase N:` block containing that matched item and scan all other `- [ ] [TASK-NNN:` lines in that same phase; for each, use `mcp__serena__find_file` to check if `NNN-slug.md` exists under `.docs/tasks/completed/`; if it does, `Edit` that line in one call to flip `- [ ]` → `- [x]` and rewrite the link path to `../tasks/completed/NNN-slug.md`, then bump `Progress` in the index for each additional item; (vi) **Inline item sweep** — in the same phase block, collect every remaining `- [ ]` line whose body is free-form text (not a `[TASK-NNN:` link); `Read` the completing task file; use judgment to decide whether each inline item was accomplished by the completing task's work; if yes, `Edit` `- [ ]` → `- [x]` and bump `Progress` in the index; if uncertain, leave the item unchecked — err on the side of leaving items unchecked rather than over-checking. Silent no-op if no roadmap references the task. **Do NOT** auto-flip `Status: active` → `Status: done` even on the last box — that flip is manual. Use `Edit` only — never `sed`, `bash`, or `Write`.
   4. **Delete all screenshots** for this task (they are no longer needed once all tests pass):
      - Use `mcp__serena__list_dir` on `.docs/uat/screenshots/` to find files matching `<task-number>-*` — **never use `ls`**
      - Run `git rm` on each matched file (or `rm` if not tracked)
@@ -633,8 +640,10 @@ Failed Tests:
 - `[FIXING: ...]` is always temporary — must resolve to `[x] Pass`, `[FAIL: ...]`, `[SKIP: ...]`, or `[ ] Pass` before moving on
 
 ### Prerequisites
-- Present **all unchecked prerequisites at once** as a single batch before any tests
-- Ask the user to confirm all are ready in one response
+- **Auto-verify first**: for each unchecked prerequisite, attempt a deterministic check (one Bash call per item) before involving the user
+- After checking, show verified ones (✅) and unverifiable/failed ones (❓) together in a single block
+- Only ask the user to confirm the ones that couldn't be auto-verified or that failed
+- If all prerequisites pass auto-verification, proceed without asking — note it in one line
 - If a prerequisite fails, warn the user that subsequent tests may be affected but let them decide whether to continue
 
 ### Puppeteer Browser Lifecycle

@@ -293,19 +293,6 @@ Once all outline steps are complete, ask the user: **"Generate UAT tests for thi
 
 **Wait** for the user's answer (and for `/uat-generate` to finish, if invoked) before proceeding to Step 7. The UAT file produced here must exist on disk before `/update-docs` runs so it's included in the same documentation update and commit.
 
-### Step 6.5: Roadmap Auto-Checkoff
-
-Once every checkbox in the task outline is complete (and after Step 6 has resolved), scan `.docs/roadmaps/` for any roadmap that references this task and flip its matching checkbox. Follow the canonical algorithm in [`.docs/roadmaps/README.md#auto-checkoff-contract`](../../../.docs/roadmaps/README.md) — do not duplicate it here. The short form:
-
-1. Identify the task's `<NNN>-<slug>` from the outline filename.
-2. Use `mcp__serena__list_dir` on `.docs/roadmaps/` to enumerate `*.md` files (skip `README.md`).
-3. For each roadmap, `Read` the file and look for lines matching `- [ ] [TASK-<NNN>:` whose link path ends in `<NNN>-<slug>.md` (whether in `.docs/tasks/` or `completed/`).
-4. For each match, `Edit` the line to flip `- [ ]` → `- [x]` (use the full line text as `old_string` for uniqueness), and `Edit` the roadmap's `**Last updated**:` field to today.
-5. After all roadmap edits, `Edit` the matching row's `Progress` numerator in `.docs/roadmaps/README.md` (e.g. `3/12` → `4/12`).
-6. **Phase sweep** — for each roadmap where a match was found in step 3, identify the `## Phase N:` block that contained the matched item; scan all other `- [ ] [TASK-NNN:` lines in that same phase; for each, use `mcp__serena__find_file` to check if `NNN-slug.md` exists under `.docs/tasks/completed/`; if it does, `Edit` that line in one call to flip `- [ ]` → `- [x]` and rewrite the link path to `../tasks/completed/NNN-slug.md`, then bump `Progress` in the index for each additional item.
-
-Silent no-op if no roadmap references the task. **Do NOT** auto-flip `Status: active` → `Status: done` even when this is the last unchecked box — that flip is intentionally manual. Use `Edit` only — never `sed`, `bash`, or `Write`.
-
 ### Step 7: Run `/update-docs`
 
 Only after Step 6 has resolved, run the `/update-docs` skill. This skill ends by invoking `/git-commit`, which has its own confirmation gate — that is the *git-commit* prompt the user should see only after the UAT prompt above.

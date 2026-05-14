@@ -195,6 +195,52 @@ if [ ${#MIGRATE_FOUND[@]} -gt 0 ]; then
   echo ""
 fi
 
+# 4. Offer to delete legacy trashed/ subfolders (trashed items are now deleted outright, not archived)
+TRASHED_SUBDIRS=(
+  ".docs/tasks/trashed"
+  ".docs/uat/trashed"
+  ".docs/bugs/trashed"
+  ".docs/prd/trashed"
+)
+
+TRASHED_FOUND=()
+for subdir in "${TRASHED_SUBDIRS[@]}"; do
+  if [ -d "$PROJECT_DIR/$subdir" ]; then
+    TRASHED_FOUND+=("$subdir")
+  fi
+done
+
+if [ ${#TRASHED_FOUND[@]} -gt 0 ]; then
+  echo ""
+  echo "Legacy trashed/ directories found (trashed items are now deleted outright):"
+  for subdir in "${TRASHED_FOUND[@]}"; do
+    trashed_path="$PROJECT_DIR/$subdir"
+    shopt -s nullglob
+    files=("$trashed_path"/*.md "$trashed_path"/.gitkeep)
+    shopt -u nullglob
+    echo "  $subdir/  (${#files[@]} file(s))"
+    for f in "${files[@]}"; do echo "    $(basename "$f")"; done
+  done
+  echo ""
+  if [ -t 0 ]; then
+    read -r -p "Delete these trashed/ directories and their contents? [y/N]: " REPLY
+    case "$REPLY" in
+      [yY])
+        for subdir in "${TRASHED_FOUND[@]}"; do
+          rm -rf "$PROJECT_DIR/$subdir"
+          echo "  Removed: $subdir/"
+        done
+        ;;
+      *)
+        echo "  Skipped. Remove manually if desired."
+        ;;
+    esac
+  else
+    echo "Non-interactive mode: skipping trashed/ cleanup. Remove manually if desired."
+  fi
+  echo ""
+fi
+
 # 5. Bootstrap Serena project.yml (idempotent)
 echo "Re-checking Serena project.yml bootstrap..."
 "$TEMPLATE_DIR/bootstrap-serena.sh" "$PROJECT_DIR"

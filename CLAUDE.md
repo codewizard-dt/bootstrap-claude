@@ -41,6 +41,7 @@ Follow `basic-project-setup.md` to configure a new project, or use the npm packa
 | `/adr-create <topic>` | Create an ADR file (Decision Group) in `.docs/adr/` containing 1+ proposed decisions; per-decision tags/status; table-only comparisons; mermaid flowcharts |
 | `/adr-finalize <file>#<DM>` | Finalize a single proposed decision (e.g. `0007-session#D2`); per-decision E-C-A-D-R audit; per-decision supersession check; siblings remain untouched |
 | `/adr-walkthrough <file>` | Walk an ADR file decision-by-decision, presenting each architecture choice and confirming it with the user via Q&A; light edits only (no status flips) |
+| `/adr-next [file or NNNN]` | Read-only — find the first accepted ADR decision with no task reference and suggest `/task-add` |
 | `/task-trash <path>` | Move task + related UAT files to `trashed/` directories and update references |
 | `/task-update <path> <changes>` | Modify an existing task's scope or steps |
 | `/uat-generate <target>` | Generate UAT tests in `.docs/uat/` mirroring task naming conventions |

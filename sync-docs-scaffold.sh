@@ -27,17 +27,14 @@ mkdir -p "$PROJECT_DIR/.docs/tasks/completed"
 mkdir -p "$PROJECT_DIR/.docs/uat"
 mkdir -p "$PROJECT_DIR/.docs/uat/completed"
 mkdir -p "$PROJECT_DIR/.docs/uat/skipped"
-mkdir -p "$PROJECT_DIR/.docs/uat/trashed"
 mkdir -p "$PROJECT_DIR/.docs/uat/screenshots"
 mkdir -p "$PROJECT_DIR/.docs/adr"
 mkdir -p "$PROJECT_DIR/.docs/adr/completed"
 mkdir -p "$PROJECT_DIR/.docs/prd"
 mkdir -p "$PROJECT_DIR/.docs/prd/archived"
-mkdir -p "$PROJECT_DIR/.docs/prd/trashed"
 mkdir -p "$PROJECT_DIR/.docs/bugs"
 mkdir -p "$PROJECT_DIR/.docs/bugs/in-progress"
 mkdir -p "$PROJECT_DIR/.docs/bugs/closed"
-mkdir -p "$PROJECT_DIR/.docs/bugs/trashed"
 mkdir -p "$PROJECT_DIR/.docs/roadmaps"
 mkdir -p "$PROJECT_DIR/.docs/roadmaps/completed"
 mkdir -p "$PROJECT_DIR/.claude/skills"
@@ -51,16 +48,13 @@ rsync -av "$TEMPLATE_DIR/.docs/tasks/.gitkeep" "$PROJECT_DIR/.docs/tasks/"
 # Sync .docs/tasks/completed/.gitkeep only
 rsync -av "$TEMPLATE_DIR/.docs/tasks/completed/.gitkeep" "$PROJECT_DIR/.docs/tasks/completed/"
 
-# Sync .docs/tasks/trashed/.gitkeep only
-rsync -av "$TEMPLATE_DIR/.docs/tasks/trashed/.gitkeep" "$PROJECT_DIR/.docs/tasks/trashed/"
-
 # Explicitly DO NOT sync .docs/tasks/README.md (top-level task index is project-specific)
 
 # Sync .docs/uat/ root .gitkeep (UAT files live here directly; no pending/ subfolder)
 rsync -av "$TEMPLATE_DIR/.docs/uat/.gitkeep" "$PROJECT_DIR/.docs/uat/"
 
 # Loop over UAT subfolders and sync only .gitkeep from each
-for sub in completed skipped trashed screenshots; do
+for sub in completed skipped screenshots; do
   rsync -av "$TEMPLATE_DIR/.docs/uat/$sub/.gitkeep" "$PROJECT_DIR/.docs/uat/$sub/"
 done
 
@@ -70,13 +64,13 @@ rsync -av "$TEMPLATE_DIR/.docs/adr/completed/.gitkeep" "$PROJECT_DIR/.docs/adr/c
 
 # Sync .docs/prd/ README + per-subfolder .gitkeep only — PRD files are project-specific and MUST NOT be copied
 rsync -av "$TEMPLATE_DIR/.docs/prd/README.md" "$PROJECT_DIR/.docs/prd/"
-for sub in archived trashed; do
+for sub in archived; do
   rsync -av "$TEMPLATE_DIR/.docs/prd/$sub/.gitkeep" "$PROJECT_DIR/.docs/prd/$sub/"
 done
 
 # Sync .docs/bugs/ README + per-subfolder .gitkeep only — bug records are project-specific and MUST NOT be copied
 rsync -av "$TEMPLATE_DIR/.docs/bugs/README.md" "$PROJECT_DIR/.docs/bugs/"
-for sub in in-progress closed trashed; do
+for sub in in-progress closed; do
   rsync -av "$TEMPLATE_DIR/.docs/bugs/$sub/.gitkeep" "$PROJECT_DIR/.docs/bugs/$sub/"
 done
 
