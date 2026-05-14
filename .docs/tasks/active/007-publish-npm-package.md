@@ -24,7 +24,7 @@ Replace the narrow file-list in `package.json` `files` with directory entries pl
 - [ ] Run `npm pack --dry-run --json` and capture the file list
   - Save the file count and total size for comparison after Step 2
 - [ ] Cross-check the tarball file list against every script reference:
-  - `bin/cli.js` invokes `setup-project.sh` and `update-project.sh` via `execFileSync` — both must be in the tarball ✓ (already present)
+  - `bin/cli.js` invokes `setup-project.sh` and `update-project.sh` via `execFileSync` — both must be in the tarball ✅ (already present)
   - `setup-project.sh` invokes `"$TEMPLATE_DIR/sync-docs-scaffold.sh"` and `"$TEMPLATE_DIR/bootstrap-serena.sh"` — confirm whether each is present
   - `update-project.sh` invokes the same two scripts — confirm whether each is present
   - `sync-docs-scaffold.sh` rsyncs `.docs/guides/`, `.docs/tasks/active/README.md`, `.docs/adr/README.md`, and `.claude/skills/` — confirm each source path is present in the tarball

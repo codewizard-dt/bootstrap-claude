@@ -67,7 +67,7 @@ Parse `$ARGUMENTS` to locate the UAT file:
    - If not found in either, STOP and report the error
 
 3. **If only a description or number is provided** (e.g., `user auth` or `3`):
-   - Search `.docs/uat/pending/` for a matching UAT file
+   - Use Serena list_dir `.docs/uat/pending/` for a matching UAT file
    - If ambiguous, list matches and ask the user to clarify
    - If no match found, STOP and report the error
 
@@ -198,15 +198,15 @@ API TEST BATCH [tests 3–7 of 18]
   - HTTP 201
   - Response: {"id": 1, "title": "Engineer", "created_at": "2026-04-04T..."}
 
-▶ **RESULT:** ✓ Matches expected
+▶ **RESULT:** ✅ Matches expected
 ───────────────────────────────────────────
 ```
 
 **Layout rule:** EXPECTED must always appear immediately above ACTUAL with no other content between them — never side-by-side prose, never separated by intervening output. The user must be able to compare the two blocks at a glance without scrolling. If a response body is truncated for display, truncate it inside the ACTUAL block; do not move it elsewhere.
 
 **Assessment rule (mandatory, applies on every presentation including retests):** After the ACTUAL block, always output a `▶ **RESULT:**` line with a clear indicator:
-- `✓ Matches expected` — when all expected criteria appear to be met
-- `✗ Does not match expected — <one-line reason>` — when the output diverges (wrong status code, missing field, error body, etc.)
+- `✅ Matches expected` — when all expected criteria appear to be met
+- `❌ Does not match expected — <one-line reason>` — when the output diverges (wrong status code, missing field, error body, etc.)
 
 This indicator is the agent's observation, not a verdict — the user still issues the final pass/fail. It must appear on every API/CLI result presentation, including after a Fix Now retest.
 
@@ -218,7 +218,7 @@ This indicator is the agent's observation, not a verdict — the user still issu
    - Any errors (connection refused, timeout, etc.)
 
 5. **If a command fails to execute** (connection refused, timeout, etc.) **OR the actual result does not match the expected result** (e.g., HTTP status mismatch, error in response body, missing fields, exception output):
-   - Show the error or mismatch in the ACTUAL section, then show `▶ **RESULT:** ✗ Does not match expected — <reason>`
+   - Show the error or mismatch in the ACTUAL section, then show `▶ **RESULT:** ❌ Does not match expected — <reason>`
    - **STOP immediately. Do NOT continue executing the remaining tests in the batch.**
    - Ask the user inline for that single failing test: `Pass / Fail / Fix now / Skip?`
    - **Wait for explicit direction.** The agent never moves on to another test after a failure without explicit user direction.
@@ -572,10 +572,10 @@ File:    .docs/uat/pending/5-positions.uat.md
 Source:  .docs/tasks/active/5-positions.md
 
 Results:
-  ✓ Passed:  6
-  ⊘ Skipped: 1
-  ✗ Failed:  2
-  - Pending: 0
+  ✅ Passed:  6
+  ⚠️ Skipped: 1
+  ❌ Failed:  2
+  ❔ Pending: 0
   Total:     9
 
 Failed Tests:

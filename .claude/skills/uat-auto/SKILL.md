@@ -46,9 +46,9 @@ This is the single most important rule in this command. A false pass is worse th
 
 Parse `$ARGUMENTS` to locate the UAT file (same resolver as `/uat-walk`):
 
-1. **File path** (e.g. `.docs/uat/pending/3-user-auth.uat.md`) — use directly
-2. **Number-slug** (e.g. `3-user-auth`) — search `.docs/uat/pending/`, fall back to `.docs/uat/completed/`
-3. **Number or description** (e.g. `3`, `user auth`) — search `.docs/uat/pending/` for a match. If ambiguous, **STOP** and report the ambiguity in the completion summary (do not prompt)
+1. **File path** (e.g. `.docs/uat/pending/3-user-auth.uat.md`) — use directly.
+2. **Number-slug** (e.g. `3-user-auth`) — Call Serena `list_dir` or `find_file` in `.docs/uat/pending/`, fall back to `.docs/uat/completed/`.
+3. **Number or description** (e.g. `3`, `user auth`) — Call Serena `list_dir` or `find_file` in `.docs/uat/pending/`. If ambiguous, **STOP** and report in the completion summary (do not prompt).
 4. **If `$ARGUMENTS` is empty OR the input above did not resolve to a UAT file** — auto-pick from pending:
    - Use `mcp__serena__list_dir` on `.docs/uat/pending/` to enumerate all `*.uat.md` files
    - If none exist, **STOP** and exit: "No pending UAT files found"
@@ -197,12 +197,12 @@ Source:  .docs/tasks/active/5-positions.md
 Mode:    headless
 
 Results:
-  ✓ Passed:       6
-  ⊘ Skipped:      1  (pre-existing, untouched)
-  ✗ Failed:       2
+  ✅ Passed:       6
+  ⚠️ Skipped:      1  (pre-existing, untouched)
+  ❌ Failed:       2
     of which auto-judge-uncertain:  1
-  - Pending:      0
-  Total:          9
+  ❔ Pending:      0
+  Total:           9
 
 Failed Tests:
   • UAT-API-003: Delete Position — "auto-judge: HTTP 500 expected 204"

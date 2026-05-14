@@ -37,11 +37,12 @@ Parse `$ARGUMENTS` to locate the task file:
    - If the file does not exist, STOP and report the error
 
 2. **If a number-slug is provided** (e.g., `3-user-auth`):
-   - Search `.docs/tasks/active/` for `<number-slug>.md`
+   - Use Serena find_file or list_dir `.docs/tasks/active/` for `<number-slug>.md`
    - If not found, also check `.docs/tasks/active/` as a fallback
    - If still not found, STOP and report the error
 
 3. **If only a description or number is provided**:
+   - Use Serena list_dir `.docs/tasks/active` for a matching task file
    - Search `.docs/tasks/active/` for a matching task file
    - If ambiguous, list matches and ask the user to clarify
 

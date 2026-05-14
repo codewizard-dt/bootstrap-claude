@@ -61,8 +61,8 @@ Closely related: **never delete or `[SKIP: ...]` a test** to avoid having to fix
 Identical to `/uat-auto` Step 1. Parse `$ARGUMENTS` to locate the UAT file:
 
 1. **File path** (e.g. `.docs/uat/pending/3-user-auth.uat.md`) — use directly.
-2. **Number-slug** (e.g. `3-user-auth`) — search `.docs/uat/pending/`, fall back to `.docs/uat/completed/`.
-3. **Number or description** (e.g. `3`, `user auth`) — search `.docs/uat/pending/`. If ambiguous, **STOP** and report in the completion summary (do not prompt).
+2. **Number-slug** (e.g. `3-user-auth`) — Call Serena `list_dir` or `find_file` in `.docs/uat/pending/`, fall back to `.docs/uat/completed/`.
+3. **Number or description** (e.g. `3`, `user auth`) — Call Serena `list_dir` or `find_file` in `.docs/uat/pending/`. If ambiguous, **STOP** and report in the completion summary (do not prompt).
 4. **If `$ARGUMENTS` is empty OR did not resolve** — auto-pick from pending:
    - `mcp__serena__list_dir` on `.docs/uat/pending/` to enumerate `*.uat.md`.
    - If none, **STOP** with: "No pending UAT files found".
@@ -267,13 +267,13 @@ Mode:    autonomous-fix
 Budget:  attempts used 7/N · wall 12m22s/30m
 
 Results:
-  ✓ Passed:                 7   (of which fixed during run: 4)
-  ⊘ Skipped:                1   (pre-existing, untouched)
-  ✗ Failed:                 1
+  ✅ Passed:                 7   (of which fixed during run: 4)
+  ⚠️ Skipped:                1   (pre-existing, untouched)
+  ❌ Failed:                 1
     auto-fix-exhausted:     1
     auto-fix-declined:      0
     auto-judge-uncertain:   0
-  - Pending:                0
+  ❔ Pending:                0
   Total:                    9
 
 Fixes Applied:
