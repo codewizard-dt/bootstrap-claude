@@ -1,7 +1,7 @@
 ---
 name: bug-close
 description: Close an in-progress bug — record root cause and resolution, require a regression test, then move it to closed/ (or to trashed/ for late wontfix decisions)
-model: claude-sonnet-4-6
+model: claude-haiku-4-5-20251001
 argument-hint: <BUG-NNNN, path, or number-slug>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**

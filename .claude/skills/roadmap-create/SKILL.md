@@ -1,7 +1,7 @@
 ---
 name: roadmap-create
 description: Create a structured execution-plan roadmap in .docs/roadmaps/ via short Socratic Q&A — captures goal, phases, and the initial hybrid (task-link OR inline) checklist
-model: claude-opus-4-7
+model: claude-sonnet-4-6
 argument-hint: <initiative/goal description>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**

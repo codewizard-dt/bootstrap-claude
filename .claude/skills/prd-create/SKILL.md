@@ -1,7 +1,7 @@
 ---
 name: prd-create
 description: Create a lean Product Requirements Document in .docs/prd/active/ via Socratic Q&A capturing problem, personas, user stories, success metrics, and non-goals
-model: claude-opus-4-7
+model: claude-sonnet-4-6
 effort: high
 argument-hint: <feature description, problem statement, or product initiative title>
 ---

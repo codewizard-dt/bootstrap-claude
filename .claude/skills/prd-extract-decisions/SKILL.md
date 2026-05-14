@@ -1,7 +1,7 @@
 ---
 name: prd-extract-decisions
 description: Extract Architecturally Significant Requirements from an approved PRD, cross-check existing ADRs, and propose Decision Group candidates for /adr-create
-model: claude-opus-4-7
+model: claude-sonnet-4-6
 effort: high
 argument-hint: <path/to/prd.md, NNN-slug, or NNN>
 ---

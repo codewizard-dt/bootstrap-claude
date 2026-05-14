@@ -1,7 +1,7 @@
 ---
 name: task-add
 description: Create a structured, execution-ready task file in .docs/tasks/active/
-model: claude-opus-4-7
+model: claude-sonnet-4-6
 argument-hint: <task description> [--adr ADR-NNNN#DM] [--roadmap ROADMAP-NNN]
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**

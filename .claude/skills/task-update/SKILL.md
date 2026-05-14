@@ -1,7 +1,7 @@
 ---
 name: task-update
 description: Assess and modify an existing task's scope or steps
-model: claude-opus-4-7
+model: claude-sonnet-4-6
 argument-hint: <path/to/task.md, number-slug, or number> [optional instructions]
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**

@@ -1,7 +1,7 @@
 ---
 name: now
 description: Plan and delegate a task to subagents (max 3 concurrent)
-model: claude-opus-4-7
+model: claude-sonnet-4-6
 effort: high
 argument-hint: <task description>
 ---

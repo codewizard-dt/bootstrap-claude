@@ -1,7 +1,7 @@
 ---
 name: research
 description: Deep research on a topic using codebase analysis, library docs, and web search
-model: claude-opus-4-7
+model: claude-sonnet-4-6
 effort: high
 argument-hint: <topic or question to research>
 ---

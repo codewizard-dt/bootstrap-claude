@@ -1,7 +1,7 @@
 ---
 name: adr-finalize
 description: Finalize a single proposed decision block; run E-C-A-D-R audit, supersession check, and flip status to accepted
-model: claude-opus-4-7
+model: claude-haiku-4-5-20251001
 effort: high
 argument-hint: <path/to/adr.md#DM, NNNN-slug#DM, or NNNN#DM>
 ---

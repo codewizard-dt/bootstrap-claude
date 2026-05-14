@@ -1,7 +1,7 @@
 ---
 name: uat-generate
 description: Generate UAT tests in .docs/uat/pending/ mirroring task naming conventions
-model: claude-opus-4-7
+model: claude-sonnet-4-6
 argument-hint: <path/to/task-file.md, number-slug, or feature description>
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**

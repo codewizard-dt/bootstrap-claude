@@ -1,7 +1,7 @@
 ---
 name: prd-finalize
 description: Run completeness audit on a draft PRD, resolve gaps via Q&A, and flip status to approved
-model: claude-opus-4-7
+model: claude-sonnet-4-6
 effort: high
 argument-hint: <path/to/prd.md, NNN-slug, or NNN>
 ---

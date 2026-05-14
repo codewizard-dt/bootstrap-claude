@@ -1,7 +1,7 @@
 ---
 name: prd-update
 description: Amend an approved PRD with a tracked Amendment block (append-only); apply direct edits to drafts; surface downstream ADR/task impact
-model: claude-opus-4-7
+model: claude-sonnet-4-6
 argument-hint: <path/to/prd.md, NNN-slug, or NNN> [optional change description]
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
