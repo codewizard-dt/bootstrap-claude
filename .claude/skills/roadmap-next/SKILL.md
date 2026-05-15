@@ -1,8 +1,8 @@
 ---
 name: roadmap-next
-description: Read-only — point at the first unchecked item in a roadmap and suggest /tackle if it's a task link
+description: Point at the first unchecked item(s) in a roadmap; auto-move fully-checked roadmaps to completed/
 model: claude-haiku-4-5-20251001
-argument-hint: <path to roadmap file, NNN-slug, or number>
+argument-hint: "[path to roadmap file, NNN-slug, or number] (optional)"
 disable-model-invocation: false
 user-invocable: true
 ---
@@ -11,7 +11,7 @@ user-invocable: true
 
 # Next Step
 
-Surface the first unchecked item in a roadmap and tell the user how to act on it. This skill is **strictly read-only** — never edit the roadmap, never flip checkboxes, never touch the index. The roadmap's auto-checkoff is the job of `/tackle` and the `/uat*` family; manual checks are the user's job.
+Surface unchecked roadmap items and tell the user how to act on them. When a roadmap has all items checked, automatically move it to `completed/` and update the README reference.
 
 ---
 
@@ -19,48 +19,46 @@ Surface the first unchecked item in a roadmap and tell the user how to act on it
 
 ---
 
-## Step 0: Resolve the Roadmap File
+## Step 0: Choose Mode
 
-Parse `$ARGUMENTS` to locate the roadmap file. Use `mcp__serena__find_file` / `mcp__serena__list_dir` for discovery — never `bash`.
-
-1. **If a file path is provided** (e.g. `.docs/roadmaps/001-auth-rollout.md`):
-   - Confirm the file exists with `mcp__serena__find_file`
-   - If it does not exist, fall through to case 4
-
-2. **If a `NNN-slug` is provided** (e.g. `001-auth-rollout`):
-   - Search `.docs/roadmaps/` for `<NNN-slug>.md`
-   - If not found, fall through to case 4
-
-3. **If only a number is provided** (e.g. `1` or `001`):
-   - List `.docs/roadmaps/` with `mcp__serena__list_dir` and match a file whose prefix equals the zero-padded number
-   - If ambiguous, list matches and ask the user to clarify via `AskUserQuestion`
-   - If no match, fall through to case 4
-
-4. **If `$ARGUMENTS` is empty OR the input did not resolve** — survey roadmaps from the index:
-   - Read `.docs/roadmaps/README.md` with `Read` and locate the `## Index` table
-   - If the directory is missing or the index lists `_No roadmaps yet_`, STOP and report: `No roadmaps found in .docs/roadmaps/. Use /roadmap-create <topic> to draft one.`
-   - Otherwise present the index rows as a compact table (File / Title / Status / Progress) and use `AskUserQuestion` to pick one. Rely on the auto-provided `Other` for free-form input.
-   - If `$ARGUMENTS` was non-empty but unresolved, prefix the survey with: `Input \`<arguments>\` did not match a roadmap — listing all roadmaps instead.`
-
-Use the resolved file path for all subsequent steps.
+- If `$ARGUMENTS` is **non-empty** → **Single-Roadmap Mode**: resolve the argument to one file and proceed to Step 1S.
+- If `$ARGUMENTS` is **empty** → **Scan Mode**: collect the next 3 unchecked items across all roadmaps and proceed to Step 1M.
 
 ---
 
-## Step 1: Read the Roadmap
+## Single-Roadmap Mode
+
+### Step 1S: Resolve the Roadmap File
+
+Parse `$ARGUMENTS` to locate the roadmap file. Use `mcp__serena__find_file` / `mcp__serena__list_dir` — never `bash`.
+
+1. **If a file path is provided** (e.g. `.docs/roadmaps/001-auth-rollout.md`):
+   - Confirm the file exists with `mcp__serena__find_file`
+   - If it does not exist, report: `Roadmap file not found: <path>` and STOP.
+
+2. **If a `NNN-slug` is provided** (e.g. `001-auth-rollout`):
+   - Search `.docs/roadmaps/` for `<NNN-slug>.md`
+   - If not found, report: `No roadmap matching '<input>' found in .docs/roadmaps/.` and STOP.
+
+3. **If only a number is provided** (e.g. `1` or `001`):
+   - List `.docs/roadmaps/` with `mcp__serena__list_dir` and match a file whose prefix equals the zero-padded number.
+   - If ambiguous, list matches and ask the user to clarify via `AskUserQuestion`.
+   - If no match, report: `No roadmap with number '<input>' found.` and STOP.
+
+Use the resolved file path for Steps 2S and 3S.
+
+---
+
+### Step 2S: Parse the Roadmap
 
 Use `Read` on the resolved roadmap file (markdown — `Read` is correct here, not Serena).
 
-Parse the structure:
-
+Parse:
 - **Phases** — `## Phase N: <name>` headings, in document order.
-- **Items** — bullet lines under each phase matching either:
-  - `- [ ] ...` (unchecked)
-  - `- [x] ...` (checked)
+- **Items** — bullet lines matching `- [ ] ...` (unchecked) or `- [x] ...` (checked).
 - **Status field** — the `- **Status**: active | done` line in the front-matter block.
 
-Ignore non-checkbox bullets (sub-notes, prose, the `## Goal` / `## Notes` sections).
-
-For each item, capture:
+For each item capture:
 
 | Field | How |
 |-------|-----|
@@ -68,61 +66,59 @@ For each item, capture:
 | `checked` | `true` if `- [x]`, `false` if `- [ ]` |
 | `text` | Bullet body after the checkbox |
 | `kind` | `task-link` if body matches `[TASK-NNN: ...](<path>)`, else `inline` |
-| `task_path` | For task-links: the URL portion of the markdown link, resolved relative to the roadmap file's directory (typically `.docs/tasks/NNN-slug.md`) |
+| `task_path` | For task-links: the URL portion of the markdown link |
 
----
-
-## Step 2: Find the Next Unchecked Item
-
-Walk items in document order (phase order, then bullet order within each phase). The **next-up** item is the first one where `checked == false`.
+Walk items in document order. Collect up to **3** unchecked items (`checked == false`) in order — these are the `next_up` list.
 
 Compute progress: `total = count(items)`, `done = count(items where checked == true)`.
 
 ---
 
-## Step 3: Report
+### Step 3S: Report (Single Roadmap)
 
-Emit a single concise output to the user. Choose the matching shape:
+Emit one concise block. Choose the matching shape:
 
-### A. All items checked (`done == total`, `total > 0`)
+#### A. All items checked (`done == total`, `total > 0`)
 
-Check whether `Status: done` is already set in the file's front matter.
+Execute the following automatically (do not ask the user first):
 
-If `Status: active` (not yet flipped):
+1. If `Status: active`, use `Edit` to flip `Status: active` → `Status: done` in the roadmap file.
+2. Use `Bash` to move the file:
+   ```bash
+   mkdir -p .docs/roadmaps/completed && git mv <roadmap_path> .docs/roadmaps/completed/<filename>
+   ```
+3. If `.docs/roadmaps/README.md` exists, use `Read` + `Edit` to update the entry:
+   - `(<filename>)` → `(completed/<filename>)`
+4. Report:
+   ```
+   Progress: <total>/<total> — all done!
+   Moved → .docs/roadmaps/completed/<filename>
+   README.md updated.
+   ```
 
-```
-Progress: <total>/<total>
-All items complete. Flip Status: active to Status: done in <roadmap path> when ready.
-Then move the file to .docs/roadmaps/completed/ and update its index entry path.
-```
+#### B/C. One or more unchecked items
 
-If `Status: done` (already flipped):
-
-```
-Progress: <total>/<total> — Status: done
-Move to completed/: git mv <roadmap path> .docs/roadmaps/completed/<filename>
-Then update the File column in .docs/roadmaps/README.md: [ROADMAP-NNN](NNN-slug.md) → [ROADMAP-NNN](completed/NNN-slug.md)
-```
-
-### B. Task-link item is next
-
-```
-Progress: <done>/<total>
-Next up (Phase <N>: <name>): <item text>
-→ /tackle <task_path>
-```
-
-The `<task_path>` is the link target as written in the roadmap (e.g. `.docs/tasks/014-user-table-schema.md`). If the path is repo-relative (starts with `../`), normalize it to a repo-root path for display. If the file doesn't exist on disk (e.g. it was moved to `completed/`), note it inline on a follow-up line: `(task file not found at that path — check .docs/tasks/completed/ or trashed/)`. Do **not** rewrite the roadmap.
-
-### C. Inline item is next
+Emit a progress line, then a table with one row per item in `next_up` (up to 3):
 
 ```
 Progress: <done>/<total>
-Next up (Phase <N>: <name>): <item text>
-→ Manual item — open <roadmap path> and flip - [ ] to - [x] when done.
+
+| # | Phase | Item | Action |
+|---|-------|------|--------|
+| 1 | Phase N: name | item text | `/tackle <task_path>` |
+| 2 | Phase N: name | item text | Manual |
 ```
 
-### D. Roadmap has zero items (`total == 0`)
+Action cell rules:
+- **task-link**: `` `/tackle <task_path>` `` — if the file doesn't exist on disk, append ` (file not found)` in the cell.
+- **inline**: `Manual` — the user flips the checkbox themselves.
+
+If `total - done > 3`, add a footer line:
+```
+Showing 3 of <total_unchecked> unchecked items.
+```
+
+#### D. Zero items
 
 ```
 Roadmap has no checklist items yet. Add some with /roadmap-add <ROADMAP-NNN> <item>.
@@ -130,9 +126,84 @@ Roadmap has no checklist items yet. Add some with /roadmap-add <ROADMAP-NNN> <it
 
 ---
 
+## Scan Mode (no argument given)
+
+### Step 1M: Discover Roadmaps
+
+Use `mcp__serena__list_dir` on `.docs/roadmaps/` to get all `.md` files **directly in that directory** (not in `completed/` or other subdirectories). Sort them by filename (ascending — `001-` before `002-`, etc.). Skip `README.md`.
+
+If no roadmap files are found, STOP and report:
+```
+No roadmaps found in .docs/roadmaps/. Use /roadmap-create <topic> to draft one.
+```
+
+---
+
+### Step 2M: Collect Unchecked Items (and auto-move completed roadmaps)
+
+For each roadmap file in sorted order:
+
+1. Use `Read` to load the file.
+2. Parse items exactly as in Step 2S (phase, checked, text, kind, task_path). Compute `total` and `done`.
+3. **If `total > 0` and `done == total`** — the roadmap is fully complete. Execute the move automatically (same procedure as Shape A in Single-Roadmap Mode: flip Status if needed, `git mv` to `completed/`, update README). Record in `moved_files`. **Do not add any unchecked items** — continue to the next file.
+4. Otherwise, for each unchecked item (`checked == false`), record:
+   - `roadmap_file` — the file path
+   - `roadmap_title` — the `# <Title>` heading or filename if heading not found
+   - `roadmap_id` — the `ROADMAP-NNN` identifier from the front matter or filename prefix
+   - `phase` — nearest preceding phase heading (or `"(no phase)"` if none)
+   - `text`, `kind`, `task_path`
+5. Append to a shared `unchecked` list. **Stop collecting as soon as you have 3 items total** — skip reading further roadmap files once the limit is reached.
+
+---
+
+### Step 3M: Report (Multi-Roadmap)
+
+If `moved_files` is non-empty, prepend a move summary before any other output:
+```
+Moved to completed/:
+  • <filename> — all items checked
+  [repeat for each moved file]
+```
+
+If `unchecked` is empty after scanning all roadmaps (and no moves occurred or only moves occurred):
+```
+All roadmap items are checked off. Nothing left to do.
+```
+
+Otherwise emit a table of up to 3 items followed by a footer line:
+
+```
+| # | Roadmap | Phase | Item | Action |
+|---|---------|-------|------|--------|
+| 1 | ROADMAP-NNN · Title | Phase X: name | item text | `/tackle <task_path>` |
+| 2 | ROADMAP-NNN · Title | Phase X: name | item text | Manual |
+
+Showing <count> of <total_unchecked_scanned> unchecked item(s) across <files_scanned> roadmap(s).
+```
+
+Action cell rules:
+- **task-link**: `` `/tackle <task_path>` `` — if the file doesn't exist, append ` (file not found)`.
+- **inline**: `Manual`
+
+`total_unchecked_scanned` is the count of all unchecked items found before the 3-item cap; `files_scanned` is the number of roadmap files actually read.
+
+Example of well-formatted output:
+
+```
+| # | Roadmap | Phase | Item | Action |
+|---|---------|-------|------|--------|
+| 1 | ROADMAP-001 · Adversario MVP | Phase 5: Report Pipeline | TASK-026: Wire Vuln-Store Deferred Foreign Keys | `/tackle .docs/tasks/active/026-wire-deferred-fks.md` |
+| 2 | ROADMAP-002 · Comprehensive Eval Suite | Phase 2: Golden Sets | 10–20 golden cases for Red Team prompt rendering | Manual |
+| 3 | ROADMAP-002 · Comprehensive Eval Suite | Phase 3: Labeled Scenarios | Labeled-scenario schema with tags | Manual |
+
+Showing 3 of 5 unchecked item(s) across 2 roadmap(s).
+```
+
+---
+
 ## Constraints
 
-- **Never edit the roadmap, the index, or any task file.** This skill is pure read + report.
-- Use only `mcp__serena__list_dir`, `mcp__serena__find_file`, `Read`, and `AskUserQuestion`.
-- Never use `bash` for file ops (`ls`, `cat`, `find`, `grep`, `sed` are all forbidden).
-- Keep the final report terse — one block, no preamble, no closing summary. The user wants the next action, not a status essay.
+- Never flip checkboxes or edit roadmap content. Only permitted writes: `Status: active → done` flip before moving, README path update, and `git mv` via `Bash`.
+- Use only `mcp__serena__list_dir`, `mcp__serena__find_file`, `Read`, `Edit`, `Bash`, and `AskUserQuestion`.
+- `Bash` is permitted only for `mkdir -p` and `git mv` when moving a fully-completed roadmap. Never use `bash` for reads (`cat`, `find`, `grep`, `sed`, `ls`).
+- Keep the final report terse — one block, no preamble, no closing summary.

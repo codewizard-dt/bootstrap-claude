@@ -134,6 +134,20 @@ $ARGUMENTS
    - If a `Source task(s):` entry already exists (a prior incomplete run), append the new task(s) to it rather than replacing.
    - Use `Read` then `Edit` — never `sed`, `echo >>`, or shell redirection. See `.docs/guides/mcp-tools.md`.
 
+8.6) **Check if the ADR is now fully implemented** (only when step 2.5 found an accepted ADR reference):
+   - Re-read the ADR file at `adr_file_path`.
+   - Walk every `## D*` decision block. For each one with `Status: accepted`, confirm its `### Links` section contains a `Source task(s):` line with at least one path.
+   - If **every** accepted decision now has a task reference (no unlinked decisions remain):
+     1. Determine `adr_completed_dir` = `<adr_dir>/completed/`.
+     2. Use `Bash` to move the file:
+        ```bash
+        mkdir -p <adr_completed_dir> && git mv <adr_file_path> <adr_completed_dir><filename>
+        ```
+     3. If a `README.md` exists in the ADR directory, use `Read` + `Edit` to update the entry:
+        - Change `(<filename>)` → `(completed/<filename>)` for this ADR's entry.
+     4. Set `adr_moved = true` — include a note in step 10's report.
+   - If any accepted decision is still unlinked, do nothing.
+
 8.7) **Update the roadmap file** (only when step 2.6 found a roadmap reference):
    - Read the roadmap file at `roadmap_file_path`.
    - Identify the **last existing `## Phase N:` section**. Append a new `- [ ]` line to the bottom of that phase — just before the next `##` header, the `## Notes` section (if present), or end of file (whichever comes first).
@@ -154,7 +168,10 @@ $ARGUMENTS
    To implement this task:  /tackle .docs/tasks/<number>-<slug>.md
    ```
    Note: After `/tackle` completes, the task stays in `.docs/tasks/`. Use `/uat-generate` to create UAT tests, then `/uat-walk` to move the task to `completed/`.
-   If this task implements an ADR decision, the ADR's `### Links` section will be updated to **implemented** automatically when all linked tasks pass UAT.
+   If `adr_moved == true` (step 8.6), include:
+   ```
+   ADR fully linked → moved to completed/: <adr_completed_dir><filename>
+   ```
    If this task was linked to a roadmap (step 2.6), mention which roadmap was updated and suggest:
    ```
    To see what's next on the roadmap:  /roadmap-next .docs/roadmaps/NNN-slug.md

@@ -1,8 +1,8 @@
 ---
 name: adr-next
-description: Read-only — find the first accepted ADR decision that has no task reference in its Links section and suggest /task-add
+description: Find the first accepted ADR decision missing a task reference; auto-move fully-implemented ADR files to completed/
 model: claude-haiku-4-5-20251001
-argument-hint: [optional: path to a specific ADR file or NNNN prefix to scope the search]
+argument-hint: "[optional: path to a specific ADR file or NNNN prefix to scope the search]"
 disable-model-invocation: false
 user-invocable: true
 ---
@@ -10,7 +10,9 @@ user-invocable: true
 
 # ADR Next Task
 
-Scan accepted ADR decisions for ones missing a task reference and surface the first gap. This skill is **strictly read-only** — never edit ADR files, task files, or the index.
+Scan accepted ADR decisions for ones missing a task reference and surface the first gap. When every accepted decision in a file is linked to a **completed** task, automatically move the ADR file to `completed/`.
+
+**Fully implemented** = every accepted decision in a file has a `Source task(s):` line with at least one task path (i.e. no task-less accepted decisions remain).
 
 ---
 
@@ -59,7 +61,37 @@ For each file (in order), use `Read` to load it, then:
    - Its status is `accepted`, AND
    - Its `### Links` section is absent, OR has no `Source task(s):` line, OR the `Source task(s):` line is blank / contains only a placeholder
 
-4. **Record the first task-less decision found** (file path + decision ID + decision title). Stop scanning immediately — this is the target.
+4. **Record per-file tracking**:
+   - `accepted_count` — number of accepted decisions in this file
+   - `task_less` — list of task-less decisions found
+   - `all_completed` — whether every accepted decision links to a task in `completed/` (see Step 2.5)
+
+5. **Record the first task-less decision found** (file path + decision ID + decision title). After recording it, continue scanning the remaining files only to check for `all_completed` — do not surface more gaps.
+
+---
+
+## Step 2.5: Check Whether a File Is Fully Implemented
+
+For a file where `accepted_count > 0` and `task_less` is empty (no gaps found):
+
+Set `all_completed = true` — every accepted decision has at least one `Source task(s):` path, so there are no decisions left to be turned into tasks.
+
+---
+
+## Step 2.6: Move a Fully-Implemented File to `completed/`
+
+If `all_completed == true` for a file:
+
+1. Determine `adr_completed_dir` = `<adr_dir>/completed/`.
+2. Use `Bash` to create the directory if needed and move the file:
+   ```bash
+   mkdir -p <adr_completed_dir> && git mv <file_path> <adr_completed_dir><filename>
+   ```
+3. If a `README.md` exists in the ADR directory, update its reference using `Read` + `Edit`:
+   - Change `(<filename>)` → `(completed/<filename>)` for this file's entry.
+4. Record the move in a `moved_files` list for inclusion in Step 4.
+
+Continue scanning remaining files after a move.
 
 ---
 
@@ -71,7 +103,14 @@ If a decision has a `Source task(s):` line with one or more paths, verify at lea
 
 ## Step 4: Report
 
-Choose the matching shape:
+If any files were moved during the scan, prepend a move summary before the main report shape:
+
+```
+Moved to completed/:
+  • <filename> — all accepted decisions fully implemented
+```
+
+Then choose the matching shape:
 
 ### A. No task-less accepted decision found
 
@@ -115,8 +154,7 @@ Suggested next steps:
 
 ## Constraints
 
-- **Never edit any file.** This skill is pure read + report.
-- Use only `mcp__serena__list_dir`, `mcp__serena__find_file`, `Read`, and `AskUserQuestion`.
-- Never use `bash` for file ops (`ls`, `cat`, `find`, `grep`, `sed` are all forbidden).
+- Use only `mcp__serena__list_dir`, `mcp__serena__find_file`, `Read`, `Edit`, `Bash`, and `AskUserQuestion`.
+- `Bash` is permitted only for `mkdir -p` and `git mv` when moving a fully-implemented file. Never use `bash` for reads (`cat`, `find`, `grep`, `sed`, `ls`).
 - Stop at the **first** gap — do not enumerate all gaps. The user runs `/adr-next` again after actioning each one.
 - Keep the report terse — one block, no preamble, no closing summary.

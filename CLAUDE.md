@@ -32,7 +32,7 @@ Follow `basic-project-setup.md` to configure a new project, or use the npm packa
 | `/task-add <desc>` | Create structured task in `.docs/tasks/`. Optional flags: `--adr ADR-NNNN#DM` (auto-link to an accepted ADR decision); `--roadmap ROADMAP-NNN` (auto-append the new task to a roadmap) |
 | `/roadmap-create <topic>` | Create an execution-plan roadmap in `.docs/roadmaps/` via short Socratic Q&A — captures goal, phases, and a hybrid (task-link OR inline) checklist |
 | `/roadmap-add <ROADMAP-NNN> <item>` | Append a new item (task link or inline) to an existing roadmap, optionally under a named phase |
-| `/roadmap-next <file>` | Read-only — point at the first unchecked item in a roadmap and suggest `/tackle` if it's a task link |
+| `/roadmap-next [file]` | Read-only — point at the first unchecked item in a specific roadmap, or surface the next 3 unchecked items across all roadmaps when no file is given |
 | `/prd-create <idea>` | Create a lean PRD in `.docs/prd/` via Socratic Q&A capturing problem, personas, user stories, success metrics, and non-goals |
 | `/prd-finalize <file>` | Run completeness audit on a draft PRD, resolve gaps via Q&A, and flip status from `draft` to `approved` |
 | `/prd-extract-decisions <file>` | Extract Architecturally Significant Requirements from an approved PRD, cross-check existing ADRs, and propose Decision Group candidates for `/adr-create` |
