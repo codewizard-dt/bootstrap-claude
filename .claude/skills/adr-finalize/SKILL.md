@@ -248,24 +248,6 @@ If the accepted decision creates a non-obvious pattern, integration constraint, 
 - Reference the decision (`ADR-NNNN#DM`), not just the file
 - Prefer `mcp__serena__edit_memory` if a memory already covers this area
 
-### Step 8.5: Offer to move the file to `completed/` (only when all decisions are terminal)
-
-After applying all edits for this decision, re-read the file and check the status of every `## D*` block.
-
-| Condition | Action |
-|-----------|--------|
-| ≥ 1 decision still has `Status: proposed` | Skip this step entirely — the file is not complete |
-| Every decision is `accepted`, `superseded by …`, or `deprecated` | Offer the user the option to move the file to `.docs/adr/completed/` |
-
-If the user agrees to move:
-
-1. Use `Bash` to run `git mv <current-path> .docs/adr/completed/<filename>.md`
-2. Update the `File` column in the **Index** in `.docs/adr/README.md`: change `[NNNN](NNNN-slug.md)` → `[NNNN](completed/NNNN-slug.md)`
-3. Update any `### Links` entries in other ADR files that reference the moved file (use `mcp__serena__search_for_pattern` to find references, then `Edit` each)
-4. Update relative-path references inside the moved file's own `### Links` sections if they point at sibling ADR files using `../` paths — those paths are unchanged since the file stayed within `.docs/adr/`
-
-Do **not** move the file automatically — always confirm with the user via `AskUserQuestion` first.
-
 ### Step 9: Report completion
 
 Print:
@@ -279,12 +261,13 @@ Print:
 | Format fixes applied | count (bullet→table conversions, mermaid added, etc.) |
 | Supersession | `ADR-MMMM#DK` (also updated) or `none` |
 | Sibling decisions in this file | `D1: <status>`, `D3: <status>` (unchanged by this run) |
-| File moved to completed/ | yes / no |
 | Index updated | yes |
 | Graph updated | yes |
-| Suggested next steps | `/task-add ...`, `/schedule ...`, `/adr-finalize <file>#Dother`, etc. |
+| Suggested next steps | `/task-add ...`, `/schedule ...`, `/adr-finalize <file>#Dother`, `/adr-next` once all decisions have tasks |
 
 If other proposed siblings remain in the same file, mention them so the user can finalize them next when ready.
+
+The ADR file stays in the main `.docs/adr/` folder after this step. Moving it to `completed/` is handled by `/adr-next`, which auto-moves the file only after every accepted decision has an associated task reference.
 
 ---
 

@@ -397,6 +397,17 @@ After writing the tests:
 
 3. Note any areas that may need additional manual test cases
 
+4. **Output this banner verbatim** so the user knows generation is complete:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  UAT GENERATED
+  File: .docs/uat/<number>-<slug>.uat.md
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+(Replace `<number>-<slug>` with the actual filename.)
+
 ---
 
 ## Directory Structure

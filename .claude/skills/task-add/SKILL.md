@@ -64,6 +64,23 @@ $ARGUMENTS
 
 3) **Assess existing tasks** (preview only): Check `.docs/tasks/` and `.docs/tasks/completed/` for a tentative next task number to use during planning. The authoritative re-check happens in step 7a, immediately before file creation — so do not over-invest here.
 
+3.5) **Identify dependencies**: Before researching, determine whether this task has dependencies on other active tasks or blocks any.
+
+   - Read `.docs/tasks/README.md` to review the Active Tasks table (you already have it from step 3).
+   - For each active task, consider whether:
+     - This new task **depends on** it (requires it to complete first)
+     - This new task **blocks** it (must complete before that task can start)
+     - This new task is **parallel-safe with** it (can run concurrently without conflict)
+   - Use `AskUserQuestion` to present your assessment and let the user confirm or correct it. Show a compact table of active tasks and your inferred relationship (if any) to each:
+
+     | Task | Proposed relationship | Reason |
+     |------|----------------------|--------|
+     | 001-project-registry-push | Depends on | This task needs the registry to exist |
+     | 005-command-anti-patterns | Parallel-safe | No shared files or state |
+     | — | — | — |
+
+   - Store the confirmed `depends_on`, `blocks`, and `parallel_safe` lists for use in step 7.
+
 4) **Research**: Run the `/research` workflow (see `.claude/skills/research/SKILL.md`) scoped to this task:
    - **Phase 2 (Internal)**: Review `PROJECT_STATUS.md`, `CLAUDE.md`, and related code via Serena to understand constraints, dependencies, patterns, and data flow.
    - **Phase 3 (External)**: Use Context7 MCP for library docs and Brave Search MCP for best practices, pitfalls, package discovery, and community recommendations.
@@ -88,6 +105,26 @@ $ARGUMENTS
    - **Never use a `Write` tool call before completing this re-scan.**
 
    **ADR split (only when step 2.5 found an accepted ADR reference)**: If the decision is large enough to warrant multiple tasks (determined during step 6 clarification), create all task files in this single invocation — one file per logical chunk. Present the planned task list to the user for confirmation before creating any files. Each task file implements one portion of the decision and gets its own `**Implements**:` line (see below). The goal is that when all tasks complete, the decision is fully implemented.
+
+   **Dependency block (mandatory)**: Every task file must open with a dependency block immediately after the `# NNN —` title line and before `## Objective`. Use the confirmed lists from step 3.5. Write `none` for any empty list:
+
+   ```markdown
+   # NNN — Task Title
+
+   > **Depends on**: [002-foo](002-foo.md), [003-bar](003-bar.md)
+   > **Blocks**: [008-baz](008-baz.md)
+   > **Parallel-safe with**: [005-qux](005-qux.md), [006-quux](006-quux.md)
+
+   ## Objective
+   ```
+
+   If all three fields are `none`, write them anyway so `/task-audit` can parse the file without special-casing missing blocks:
+
+   ```markdown
+   > **Depends on**: none
+   > **Blocks**: none
+   > **Parallel-safe with**: none
+   ```
 
    **CRITICAL — The task file IS the plan.** `/tackle` will execute steps verbatim without re-planning. Every step must include:
    - **Specific file paths** to create or modify
@@ -161,7 +198,35 @@ $ARGUMENTS
    - Update the matching row in `.docs/roadmaps/README.md` Index — bump the `Progress` denominator: `M/N` → `M/N+k` where `k` is the number of tasks appended.
    - Use `Read` then `Edit` — never `sed`, `echo >>`, or shell redirection. See `.docs/guides/mcp-tools.md`.
 
-9) **Update `PROJECT_STATUS.md`**: If it exists, update any references to this task or add it under the appropriate phase.
+9) **Update `PROJECT_STATUS.md`**:
+   - Use Serena `mcp__serena__find_file` to check whether `PROJECT_STATUS.md` exists in the project root.
+   - **If it does not exist**, create it with the `Write` tool using this template (substituting today's date and the new task details):
+
+     ```markdown
+     # Project Status
+
+     **Last updated:** YYYY-MM-DD
+
+     ## Current Focus
+
+     - [TASK-NNN: <task title>](.docs/tasks/NNN-slug.md) — <objective first sentence>
+
+     ## Active Tasks
+
+     | # | Task | Objective |
+     |---|------|-----------|
+     | NNN | [slug](.docs/tasks/NNN-slug.md) | <objective first sentence> |
+
+     ## Recently Completed
+
+     (none yet)
+
+     ## Upcoming
+
+     (none yet)
+     ```
+
+   - **If it exists**, update it: add the new task under `## Current Focus` and `## Active Tasks` (or the nearest equivalent sections), and set `**Last updated**` to today's date. Use `Read` then `Edit` — never `sed` or shell redirection.
 
 10) **Confirm completion**: Report the created task file path and summary to the user. Suggest next steps:
    ```

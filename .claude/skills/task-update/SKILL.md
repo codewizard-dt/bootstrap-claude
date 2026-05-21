@@ -56,6 +56,13 @@ Evaluate the task file against every requirement in the spec. Check for:
 
 ### Structure Compliance
 - [ ] Has `# NNN — Task Title` heading
+- [ ] Has dependency block immediately after the title and before `## Objective`:
+  ```markdown
+  > **Depends on**: [NNN-slug](NNN-slug.md) or `none`
+  > **Blocks**: [NNN-slug](NNN-slug.md) or `none`
+  > **Parallel-safe with**: [NNN-slug](NNN-slug.md) or `none`
+  ```
+  If the block is missing entirely, add it during Step 5 — consult the active task index and ask the user to confirm the relationships (same process as `/task-add` step 3.5) before writing.
 - [ ] Has `## Objective` with one-sentence description
 - [ ] Has `## Approach` with 1-3 sentence summary
 - [ ] Has `## Prerequisites` section (can be empty if none)

@@ -158,7 +158,7 @@ Tests are presented based on their type:
 ### Completion Check
 - If no more tests match the current mode:
   - **A UAT file is complete when no tests have a blocking status.** Blocking statuses are `[FAIL: ...]` and `[FIXING: ...]`. Non-blocking statuses are `[x] Pass` (passed) and `[SKIP: ...]` (user decided the test is not necessary). Only `- [ ] Pass` (untested) is ambiguous — it is non-blocking only if the current mode excluded it (e.g., "Failed only" mode skips pending tests).
-  - Proceed to the **Completion** section at the bottom of this skill and execute **Post-Walkthrough Actions** in full. Do not STOP here — all file moves, index updates, roadmap auto-checkoff, screenshot cleanup, `/update-docs`, and ADR linkage checks happen there.
+  - Proceed to the **Completion** section at the bottom of this skill and execute **Post-Walkthrough Actions** in full. Do not STOP here — all file moves, index updates, roadmap auto-checkoff, screenshot cleanup, and ADR linkage checks happen there.
 
 ---
 
@@ -599,8 +599,7 @@ Failed Tests:
   4. **Delete all screenshots** for this task (they are no longer needed once all tests pass):
      - Use `mcp__serena__list_dir` on `.docs/uat/screenshots/` to find files matching `<task-number>-*` — **never use `ls`**
      - Run `git rm` on each matched file (or `rm` if not tracked)
-  5. Run the `/update-docs` command to update all project documentation
-  6. **Check for ADR linkage**: Read the moved task file (now in `completed/`) for a line matching `**Implements**: ADR-NNNN#DM`:
+  5. **Check for ADR linkage**: Read the moved task file (now in `completed/`) for a line matching `**Implements**: ADR-NNNN#DM`:
      - If found:
        1. Parse the `ADR-NNNN#DM` reference (e.g. `ADR-0007#D2`).
        2. Locate the ADR file using Serena `mcp__serena__find_file` for `NNNN-*.md` in `.docs/adr/`.
@@ -612,7 +611,7 @@ Failed Tests:
        6. **ADR inline checkbox sweep** — `Read` the full `## DM.` decision block in the ADR file (the H2 block whose identifier matches the `DM` from the `**Implements**:` reference); collect every remaining `- [ ]` line in that block; `Read` the completing task file; for each `- [ ]` item, use judgment to decide whether the completing task accomplished it; if yes, `Edit` `- [ ]` → `- [x]`; if uncertain, leave the item unchecked — err on the side of leaving items unchecked rather than over-checking. This sweep runs regardless of whether steps 4 or 5 applied. Use `Edit` only — never `sed`, `bash`, or `Write`.
        - Use `Read` then `Edit` on the ADR file — never `sed`, `echo >>`, or shell redirection
      - If no `**Implements**:` line is found: skip silently
-  7. Report the new file paths for both UAT and task files
+  6. Report the new file paths for both UAT and task files
 - **Some failed** (any `[FAIL]` or `[FIXING]` markers remain): Keep file in `.docs/uat/`. Keep screenshots (useful for debugging). Suggest next steps:
   ```
   To fix failures and re-test:  /uat-walk .docs/uat/<file>.uat.md

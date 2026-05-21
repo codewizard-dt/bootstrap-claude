@@ -79,24 +79,7 @@ Using the task's number-slug identifier:
 This task's UAT was intentionally skipped via `/uat-skip`. No test cases were generated or executed.
 ```
 
-### Step 3: Confirm with the User
-
-Before moving anything, present a summary and ask for confirmation inline:
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-UAT SKIP — Confirm
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Task:  .docs/tasks/<number>-<slug>.md → .docs/tasks/completed/
-UAT:   .docs/uat/<slug>.uat.md → .docs/uat/skipped/
-       (or: No existing UAT — skeleton will be created in skipped/)
-
-Proceed? (Yes/No)
-```
-
-If the user says **No**, STOP.
-
-### Step 4: Move and Create Files
+### Step 3: Move and Create Files
 
 1. **Ensure target directories exist**:
    - `.docs/uat/skipped/` — create if it does not exist
@@ -110,7 +93,7 @@ If the user says **No**, STOP.
    - **If UAT exists in `.docs/uat/`**: `git mv .docs/uat/<number>-<slug>.uat.md .docs/uat/skipped/<number>-<slug>.uat.md` (fall back to `mv`)
    - **If no UAT exists**: Create the skeleton file directly in `.docs/uat/skipped/<number>-<slug>.uat.md` using the template from Step 2
 
-### Step 5: Update References
+### Step 4: Update References
 
 1. **Update the task file** (now in `completed/`) using the **`Edit`** tool. **Never** use `sed`, `echo >>`, or any other shell command for these edits. See `.docs/guides/mcp-tools.md` "Common anti-patterns".
    - If it contains a UAT reference pointing to `pending/`, `Edit` to update the path to `skipped/`
@@ -144,13 +127,13 @@ If the user says **No**, STOP.
      - Use `Read` then `Edit` — never `sed`, `echo >>`, or shell redirection
    - If not found: skip silently
 
-### Step 6: Delete Related Screenshots
+### Step 5: Delete Related Screenshots
 
 If any screenshots exist for this task in `.docs/uat/screenshots/`:
 - Delete them: `git rm .docs/uat/screenshots/<task-number>-*` (fall back to `rm` if `git rm` fails)
 - If no screenshots exist, skip silently
 
-### Step 7: Report Completion
+### Step 6: Report Completion
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

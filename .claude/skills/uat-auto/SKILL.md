@@ -166,8 +166,7 @@ After every eligible test has a non-blocking status (`[x] Pass`, `[SKIP: ...]` a
 4a. **Roadmap Auto-Checkoff** — scan `.docs/roadmaps/` and `.docs/roadmaps/completed/` for any roadmap referencing this task and flip its matching checkbox. Follow the canonical algorithm in [`.docs/roadmaps/README.md#auto-checkoff-contract`](../../../.docs/roadmaps/README.md). Short form: (i) `mcp__serena__list_dir` on `.docs/roadmaps/` (skip `README.md`) and on `.docs/roadmaps/completed/`; (ii) `Read` each roadmap and look for lines matching `- [ ] [TASK-<NNN>:` whose link path ends in `<NNN>-<slug>.md` (either at `.docs/tasks/` or `completed/`); (iii) `Edit` each matching line in **one** call that **both** flips `- [ ]` → `- [x]` **and** rewrites the link path to the task's new location (e.g. `../tasks/NNN-slug.md` → `../tasks/completed/NNN-slug.md`) — use the full line text as `old_string` for uniqueness. Stale paths are **not** tolerated: if a reference exists, the path is updated. Then `Edit` the roadmap's `**Last updated**:` to today; (iv) bump the matching row's `Progress` numerator in `.docs/roadmaps/README.md`; (v) **Phase sweep** — for each roadmap where a match was found, identify the `## Phase N:` block containing that matched item and scan all other `- [ ] [TASK-NNN:` lines in that same phase; for each, use `mcp__serena__find_file` to check if `NNN-slug.md` exists under `.docs/tasks/completed/`; if it does, `Edit` that line in one call to flip `- [ ]` → `- [x]` and rewrite the link path to `../tasks/completed/NNN-slug.md`, then bump `Progress` in the index for each additional item; (vi) **Inline item sweep** — across the entire roadmap (not limited to the phase block that contains the task reference), collect every remaining `- [ ]` line whose body is free-form text (not a `[TASK-NNN:` link); `Read` the completing task file; use judgment to decide whether each inline item was accomplished by the completing task's work; if yes, `Edit` `- [ ]` → `- [x]` and bump `Progress` in the index; if uncertain, leave the item unchecked — err on the side of leaving items unchecked rather than over-checking. Silent no-op if no roadmap references the task. **Do NOT** auto-flip `Status: active` → `Status: done` even on the last box — that flip is manual. Use `Edit` only — never `sed`, `bash`, or `Write`.
 5. Delete screenshots for this task: use `mcp__serena__list_dir` on `.docs/uat/screenshots/` to find files matching `<task-number>-*` — **never** `ls` — then `git rm` each (or `rm` if untracked).
 6. Close Puppeteer: `puppeteer_close_browser` if it was launched.
-7. Run `/update-docs` to refresh project documentation.
-8. **Check for ADR linkage**: Read the moved task file (now in `completed/`) for a line matching `**Implements**: ADR-NNNN#DM`:
+7. **Check for ADR linkage**: Read the moved task file (now in `completed/`) for a line matching `**Implements**: ADR-NNNN#DM`:
    - If found:
      1. Parse the `ADR-NNNN#DM` reference.
      2. Locate the ADR file using Serena `mcp__serena__find_file` for `NNNN-*.md` in `.docs/adr/`.
@@ -179,7 +178,7 @@ After every eligible test has a non-blocking status (`[x] Pass`, `[SKIP: ...]` a
      6. **ADR inline checkbox sweep** — `Read` the full `## DM.` decision block in the ADR file (the H2 block whose identifier matches the `DM` from the `**Implements**:` reference); collect every remaining `- [ ]` line in that block; `Read` the completing task file; for each `- [ ]` item, use judgment to decide whether the completing task accomplished it; if yes, `Edit` `- [ ]` → `- [x]`; if uncertain, leave the item unchecked — err on the side of leaving items unchecked rather than over-checking. This sweep runs regardless of whether steps 4 or 5 applied. Use `Edit` only — never `sed`, `bash`, or `Write`.
      - Use `Read` then `Edit` — never `sed`, `echo >>`, or shell redirection
    - If not found: skip silently
-9. Emit the completion summary (see below).
+8. Emit the completion summary (see below).
 
 ### Any Fail (`[FAIL: ...]` markers remain)
 
@@ -264,8 +263,10 @@ Now start:
 
 1. Resolve the UAT file from `$ARGUMENTS` (Step 1).
 2. Verify prerequisites (Step 2). Abort on failure.
-3. Classify and execute each eligible test in document order (Steps 3, 4).
-4. Update the file after each verdict (Step 5).
+3. Classify all eligible tests (Step 3).
+4. For **each** eligible test in document order:
+   a. Execute the test (Step 4).
+   b. **Immediately** write the verdict to the file via `Edit` (Step 5) — do not buffer verdicts or batch updates.
 5. On completion, move files if all pass, keep in pending if any fail, emit summary (Step 6).
 
 **Start now — resolve the UAT file and begin.**

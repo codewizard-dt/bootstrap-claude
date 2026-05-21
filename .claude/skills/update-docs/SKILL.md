@@ -72,4 +72,4 @@ No exhaustive audit — flag drift you happen to notice, do not search for it.
 
 ## Finish
 
-Report what was edited (file paths, one line each). Then run `/git-commit`.
+Report what was edited (file paths, one line each).

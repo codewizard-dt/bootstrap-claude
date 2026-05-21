@@ -283,21 +283,41 @@ Now execute the cycle:
 4. Update the outline
 5. Repeat until done
 
-### Step 6: UAT Generation Gate (HARD STOP — must precede /update-docs and /git-commit)
+### Step 6: UAT Generation Gate (HARD STOP)
 
-⛔ **This gate MUST run before Step 7. Never skip it, never reorder it, never let `/update-docs` (which triggers `/git-commit`) run first.**
+⛔ **This gate MUST run before declaring completion. Never skip it, never reorder it.**
 
 Once all outline steps are complete, ask the user: **"Generate UAT tests for this task?"** using `AskUserQuestion`:
 - **Yes** — Run `/uat-generate .docs/tasks/<filename>` to create a UAT file in `.docs/uat/` matching this task's naming
 - **No** — Skip UAT generation
 
-**Wait** for the user's answer (and for `/uat-generate` to finish, if invoked) before proceeding to Step 7. The UAT file produced here must exist on disk before `/update-docs` runs so it's included in the same documentation update and commit.
+**Wait** for the user's answer (and for `/uat-generate` to finish, if invoked) before proceeding to Step 6b.
 
-### Step 7: Run `/update-docs`
+### Step 6b: Type-Check Gate
 
-Only after Step 6 has resolved, run the `/update-docs` skill. This skill ends by invoking `/git-commit`, which has its own confirmation gate — that is the *git-commit* prompt the user should see only after the UAT prompt above.
+Before declaring completion, check whether the project has a type-checking mechanism and, if so, run it.
 
-### Step 8: Suggest UAT
+**Detection order** (stop at the first match):
+
+1. **`/type-check` skill** — check whether `.claude/skills/type-check/` exists using Serena `find_file`. If found, invoke `/type-check`.
+2. **`make` type-check target** — check whether a `Makefile` exists (Serena `find_file` for `Makefile` in `.`). If found, run `make --dry-run type-check 2>/dev/null` to test whether the target exists; if it does, run `make type-check`.
+3. **Neither found** — skip silently and proceed.
+
+**On failure**: If type checks surface errors, report them to the user, mark the relevant task step `[FAILED: type errors]` in the outline, and **do not proceed** to the banner. The user must resolve the errors (or explicitly instruct you to skip) before continuing.
+
+**On pass or skip**: proceed to the banner.
+
+### Banner: Output Completion Banner
+
+Output this banner verbatim so the user knows tackle has finished all implementation steps:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TACKLE COMPLETED — all steps done
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### Step 7: Suggest UAT
 
 If UAT was generated in Step 6, suggest: `/uat-walk .docs/uat/<file>.uat.md`
 

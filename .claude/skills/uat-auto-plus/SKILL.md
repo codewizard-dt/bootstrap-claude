@@ -230,8 +230,7 @@ After every eligible test has a terminal status (`[x] Pass`, pre-existing `[SKIP
 4. Delete screenshots for this task: `mcp__serena__list_dir` on `.docs/uat/screenshots/` to find `<task-number>-*` matches, then `git rm` each (or `rm` if untracked).
 5. Close Puppeteer if launched.
 6. **Terminate every background process** the agent started for prerequisites or fix attempts. Use the `Bash` tool's KillShell as needed. Verify nothing is left running.
-7. Run `/update-docs` to refresh project documentation.
-8. **Check for ADR linkage**: read the moved task file for a line matching `**Implements**: ADR-NNNN#DM`:
+7. **Check for ADR linkage**: read the moved task file for a line matching `**Implements**: ADR-NNNN#DM`:
    - If found:
      1. Parse the `ADR-NNNN#DM` reference.
      2. `mcp__serena__find_file` for `NNNN-*.md` in `.docs/adr/`.
@@ -243,8 +242,7 @@ After every eligible test has a terminal status (`[x] Pass`, pre-existing `[SKIP
      6. **ADR inline checkbox sweep** — `Read` the full `## DM.` decision block in the ADR file (the H2 block whose identifier matches the `DM` from the `**Implements**:` reference); collect every remaining `- [ ]` line in that block; `Read` the completing task file; for each `- [ ]` item, use judgment to decide whether the completing task accomplished it; if yes, `Edit` `- [ ]` → `- [x]`; if uncertain, leave the item unchecked — err on the side of leaving items unchecked rather than over-checking. This sweep runs regardless of whether steps 4 or 5 applied. Use `Edit` only — never `sed`, `bash`, or `Write`.
      - Use `Read` then `Edit`. Never `sed`, `echo >>`, or shell redirection.
    - If not found: skip silently.
-9. **Commit the autonomous fixes.** Stage the application/config/fixture changes from Step 6 fix attempts plus the file moves, and create a single commit summarizing what was fixed and which UAT now passes. Use `Skill` to invoke `git-commit` rather than constructing the commit by hand. **Never** use `--no-verify`.
-10. Emit the completion summary.
+8. Emit the completion summary.
 
 ### Any Fail (`[FAIL: ...]` markers remain)
 
@@ -252,11 +250,8 @@ After every eligible test has a terminal status (`[x] Pass`, pre-existing `[SKIP
 2. **Keep screenshots** for failing tests — diagnostic evidence for the next walkthrough.
 3. Close Puppeteer if launched.
 4. Terminate all background processes.
-5. **Decide whether to commit partial fixes:**
-   - If the run made any successful fixes (tests that started failing and ended passing), commit those changes via `Skill` → `git-commit`. The orchestrator will see green on the previously-failing tests and red on the still-failing ones — this is more useful than discarding partial progress.
-   - If no test status improved during the run, do **not** commit anything; leave the working tree as-is so a human can inspect what the agent attempted.
-6. Emit the completion summary.
-7. Exit 0 — the orchestrator treats `/uat-auto-plus` exiting as the task being done from its perspective.
+5. Emit the completion summary.
+6. Exit 0 — the orchestrator treats `/uat-auto-plus` exiting as the task being done from its perspective.
 
 ### Summary Format
 
@@ -340,11 +335,6 @@ On all-pass, replace `Next action` with `Moved to completed/` and the new paths.
 - No `sed`, `awk`, `ls`, `find`, `grep`, `cat` on any file. See `.docs/guides/mcp-tools.md`.
 - Never emit literal password or token values. Only `"$UAT_AUTH_TOKEN"` and `"$UAT_TEST_PASSWORD"` env-var references are permitted.
 
-### Commit Hygiene
-- Final commit (when fixes were applied) goes through `Skill` → `git-commit`.
-- Never use `--no-verify`. If a pre-commit hook fails, fix the underlying issue and create a new commit.
-- Do not amend prior commits.
-
 ---
 
 ## Begin Autonomous Walkthrough
@@ -353,9 +343,11 @@ Now start:
 
 1. Resolve the UAT file from `$ARGUMENTS` (Step 1).
 2. Verify and auto-repair prerequisites (Step 2). Abort on failure after one repair attempt.
-3. Classify and execute each eligible test in document order (Steps 3, 4).
-4. On failure, enter the fix loop (Step 6) — diagnose, fix, re-run, up to 3 attempts. Sweep regressions after each successful fix.
-5. Update the file after each verdict (Step 5).
-6. On completion, move files if all pass; commit fixes (full or partial) via `git-commit`; emit summary (Step 7).
+3. Classify all eligible tests (Step 3).
+4. For **each** eligible test in document order:
+   a. Execute the test (Step 4).
+   b. **Immediately** write the verdict to the file via `Edit` (Step 5) — do not buffer verdicts or batch updates.
+   c. If the test failed, enter the fix loop (Step 6) — diagnose, fix, re-run, up to 3 attempts. After each attempt, **immediately** update the file with the current status (`[FIXING: ...]` or final verdict). Sweep regressions after each successful fix.
+5. On completion, move files if all pass; emit summary (Step 7).
 
 **Start now — resolve the UAT file and begin.**
