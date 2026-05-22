@@ -37,7 +37,6 @@ mkdir -p "$PROJECT_DIR/.docs/bugs/in-progress"
 mkdir -p "$PROJECT_DIR/.docs/bugs/closed"
 mkdir -p "$PROJECT_DIR/.docs/roadmaps"
 mkdir -p "$PROJECT_DIR/.docs/roadmaps/completed"
-mkdir -p "$PROJECT_DIR/.claude/skills"
 
 # Sync .docs/guides/ as a full directory (entire contents, no filters)
 rsync -av "$TEMPLATE_DIR/.docs/guides/" "$PROJECT_DIR/.docs/guides/"
@@ -78,7 +77,4 @@ done
 rsync -av "$TEMPLATE_DIR/.docs/roadmaps/README.md" "$TEMPLATE_DIR/.docs/roadmaps/.gitkeep" "$PROJECT_DIR/.docs/roadmaps/"
 rsync -av "$TEMPLATE_DIR/.docs/roadmaps/completed/.gitkeep" "$PROJECT_DIR/.docs/roadmaps/completed/"
 
-# Sync .claude/skills/ (all skill directories and SKILL.md files)
-rsync -av "$TEMPLATE_DIR/.claude/skills/" "$PROJECT_DIR/.claude/skills/"
-
-echo ".docs/ scaffold and .claude/skills/ synced."
+echo ".docs/ scaffold synced."

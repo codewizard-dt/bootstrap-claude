@@ -1,6 +1,6 @@
 ---
 name: roadmap-next
-description: Point at the first unchecked item(s) in a roadmap; auto-move fully-checked roadmaps to completed/
+description: Point at the first unchecked item(s) in a roadmap; create task files for inline placeholders; auto-move fully-checked roadmaps to completed/
 model: claude-haiku-4-5-20251001
 argument-hint: "[path to roadmap file, NNN-slug, or number] (optional)"
 disable-model-invocation: false
@@ -72,6 +72,33 @@ Walk items in document order. Collect up to **3** unchecked items (`checked == f
 
 Compute progress: `total = count(items)`, `done = count(items where checked == true)`.
 
+Also extract the `ROADMAP-NNN` identifier from the roadmap file's front matter (the `- **ID**: ROADMAP-NNN` line) or from the filename prefix (e.g. `003-billing-overhaul.md` → `ROADMAP-003`). Store it as `roadmap_id` — needed when invoking task-add.
+
+---
+
+### Step 2.5S: Upgrade Inline Items to Task Files
+
+**All roadmap items must eventually be task files.** Before reporting, upgrade every inline item in `next_up` to a task-link. Inline items are placeholders — they exist because the task file had not been created yet when the roadmap was authored.
+
+For each item in `next_up` where `kind == 'inline'`:
+
+1. Announce to the user (one line):
+   ```
+   Inline item found: "<item text>" — creating task file before surfacing this item.
+   ```
+2. Use the `Skill` tool to invoke `task-add` with the item text as `args` (do **not** pass `--roadmap`, since the roadmap link will be managed here instead of appending a duplicate item).
+3. After `task-add` completes, extract the new task's file path and identifier from the task-add completion output (the `File path` row of its summary table). If parsing fails, use `mcp__serena__list_dir` on `.docs/tasks/` to identify the newest `.md` file that was not present before the invocation.
+4. `Read` the new task file to confirm the `TASK-NNN` number and title (from the `# NNN: <title>` H1 heading).
+5. Use `Edit` on the roadmap file to replace the inline item line:
+   - `old_string`: `- [ ] <item_text>` (exact text, including leading `- [ ] `)
+   - `new_string`: `- [ ] [TASK-NNN: <title>](../tasks/NNN-slug.md)`
+6. Update the item record in `next_up`: set `kind = 'task-link'` and `task_path` to the relative path `../tasks/NNN-slug.md`.
+
+If `task-add` fails or is cancelled by the user, **stop** and report:
+```
+Task creation cancelled for: "<item text>". Inline items cannot be worked on without a task file. Re-run /roadmap-next after creating a task with: /task-add <description>
+```
+
 ---
 
 ### Step 3S: Report (Single Roadmap)
@@ -98,7 +125,7 @@ Execute the following automatically (do not ask the user first):
 
 #### B/C. One or more unchecked items
 
-Emit a progress line, then a table with one row per item in `next_up` (up to 3):
+Emit a progress line, then a table with one row per item in `next_up` (up to 3). By this point every item in `next_up` is a task-link (Step 2.5S will have upgraded any inline placeholders).
 
 ```
 Progress: <done>/<total>
@@ -106,12 +133,12 @@ Progress: <done>/<total>
 | # | Phase | Item | Action |
 |---|-------|------|--------|
 | 1 | Phase N: name | item text | `/tackle <task_path>` |
-| 2 | Phase N: name | item text | Manual |
+| 2 | Phase N: name | item text | `/tackle <task_path>` |
 ```
 
 Action cell rules:
 - **task-link**: `` `/tackle <task_path>` `` — if the file doesn't exist on disk, append ` (file not found)` in the cell.
-- **inline**: `Manual` — the user flips the checkbox themselves.
+- There is no `Manual` case — every item must be a task-link before it can be reported here. Inline items are upgraded in Step 2.5S.
 
 If `total - done > 3`, add a footer line:
 ```
@@ -156,6 +183,23 @@ For each roadmap file in sorted order:
 
 ---
 
+### Step 2.5M: Upgrade Inline Items to Task Files (Scan Mode)
+
+Apply the same inline-upgrade logic as Step 2.5S to every inline item in the shared `unchecked` list before reporting.
+
+For each item in `unchecked` where `kind == 'inline'`:
+
+1. Announce: `Inline item found: "<item text>" (in <roadmap_title>) — creating task file.`
+2. Invoke `Skill` `task-add` with the item text as `args` (no `--roadmap` flag).
+3. Extract the new task path from task-add's output (or via `mcp__serena__list_dir` fallback as in Step 2.5S).
+4. `Read` the new task file to confirm `TASK-NNN` and title.
+5. `Edit` the roadmap file (`roadmap_file` stored on the item record) to replace `- [ ] <item_text>` with `- [ ] [TASK-NNN: <title>](../tasks/NNN-slug.md)`.
+6. Update the item record: `kind = 'task-link'`, `task_path = '../tasks/NNN-slug.md'`.
+
+If `task-add` fails or is cancelled, apply the same stop-and-report behavior as Step 2.5S but name the roadmap: `(in <roadmap_title>)`.
+
+---
+
 ### Step 3M: Report (Multi-Roadmap)
 
 If `moved_files` is non-empty, prepend a move summary before any other output:
@@ -176,25 +220,25 @@ Otherwise emit a table of up to 3 items followed by a footer line:
 | # | Roadmap | Phase | Item | Action |
 |---|---------|-------|------|--------|
 | 1 | ROADMAP-NNN · Title | Phase X: name | item text | `/tackle <task_path>` |
-| 2 | ROADMAP-NNN · Title | Phase X: name | item text | Manual |
+| 2 | ROADMAP-NNN · Title | Phase X: name | item text | `/tackle <task_path>` |
 
 Showing <count> of <total_unchecked_scanned> unchecked item(s) across <files_scanned> roadmap(s).
 ```
 
 Action cell rules:
 - **task-link**: `` `/tackle <task_path>` `` — if the file doesn't exist, append ` (file not found)`.
-- **inline**: `Manual`
+- There is no `Manual` case — all inline items are upgraded in Step 2.5M before this report is emitted.
 
 `total_unchecked_scanned` is the count of all unchecked items found before the 3-item cap; `files_scanned` is the number of roadmap files actually read.
 
-Example of well-formatted output:
+Example of well-formatted output (all items are task-links after upgrade):
 
 ```
 | # | Roadmap | Phase | Item | Action |
 |---|---------|-------|------|--------|
 | 1 | ROADMAP-001 · Adversario MVP | Phase 5: Report Pipeline | TASK-026: Wire Vuln-Store Deferred Foreign Keys | `/tackle .docs/tasks/active/026-wire-deferred-fks.md` |
-| 2 | ROADMAP-002 · Comprehensive Eval Suite | Phase 2: Golden Sets | 10–20 golden cases for Red Team prompt rendering | Manual |
-| 3 | ROADMAP-002 · Comprehensive Eval Suite | Phase 3: Labeled Scenarios | Labeled-scenario schema with tags | Manual |
+| 2 | ROADMAP-002 · Comprehensive Eval Suite | Phase 2: Golden Sets | TASK-031: Golden cases for Red Team prompt rendering | `/tackle .docs/tasks/031-golden-cases-red-team.md` |
+| 3 | ROADMAP-002 · Comprehensive Eval Suite | Phase 3: Labeled Scenarios | TASK-032: Labeled-scenario schema with tags | `/tackle .docs/tasks/032-labeled-scenario-schema.md` |
 
 Showing 3 of 5 unchecked item(s) across 2 roadmap(s).
 ```
@@ -203,7 +247,12 @@ Showing 3 of 5 unchecked item(s) across 2 roadmap(s).
 
 ## Constraints
 
-- Never flip checkboxes or edit roadmap content. Only permitted writes: `Status: active → done` flip before moving, README path update, and `git mv` via `Bash`.
-- Use only `mcp__serena__list_dir`, `mcp__serena__find_file`, `Read`, `Edit`, `Bash`, and `AskUserQuestion`.
+- **Never flip checkboxes** — the skill does not check off items. Only permitted content writes are:
+  1. `Status: active → done` flip before moving a fully-completed roadmap.
+  2. README path update when moving to `completed/`.
+  3. Replacing inline placeholder lines with task-link lines (Steps 2.5S / 2.5M).
+- Permitted tools: `mcp__serena__list_dir`, `mcp__serena__find_file`, `Read`, `Edit`, `Bash`, `AskUserQuestion`, and `Skill` (for invoking `task-add` on inline items).
 - `Bash` is permitted only for `mkdir -p` and `git mv` when moving a fully-completed roadmap. Never use `bash` for reads (`cat`, `find`, `grep`, `sed`, `ls`).
+- `Edit` is permitted only for: the `Status` flip, the README path update, and the inline→task-link replacement in Steps 2.5S/2.5M.
+- `Skill` is permitted only for invoking `task-add` when upgrading inline items.
 - Keep the final report terse — one block, no preamble, no closing summary.

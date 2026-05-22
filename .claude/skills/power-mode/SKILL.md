@@ -74,20 +74,29 @@ This sets the default for every invocation of that named agent, even if the call
 
 ---
 
-## Mandatory rule for all sub-agent spawning
+## Mandatory rules for all sub-agents
 
 **Whenever you spawn any sub-agent using the Agent tool — regardless of the skill or context — you MUST include `mode: "bypassPermissions"` on every call.** This is not optional in power-mode runs; omitting it causes the sub-agent to prompt for permissions and block headless execution.
+
+**Sub-agents MUST invoke `/research` before attempting any solution when:**
+- they are not 100% confident about the correct fix or approach
+- they encounter an unfamiliar error, API, or library behaviour
+- they are choosing between two or more implementation strategies
+
+The `/research` skill runs codebase analysis, Context7 doc lookups, and Brave web search in a single pass and returns a ranked recommendation. Sub-agents must not guess or proceed on partial knowledge — use `/research` first, then act on its output.
 
 ---
 
 ## Canonical pattern for this project's `/now` skill
 
-When `/now` or `/tackle` spawns sub-agents for a headless team run, every `Agent(...)` call must include `"mode": "bypassPermissions"`:
+When `/now` or `/tackle` spawns sub-agents for a headless team run, every `Agent(...)` call must include `"mode": "bypassPermissions"` and the prompt must include the `/research` instruction:
 
 ```
 Agent({
   description: "Tackle task 065",
-  prompt: "...",
+  prompt: "...task brief...
+
+IMPORTANT: If at any point you are not 100% sure how to fix an issue or which implementation strategy to use, invoke the /research skill first and act on its recommendation before proceeding.",
   mode: "bypassPermissions",
   subagent_type: "claude"
 })
@@ -110,3 +119,4 @@ Tracked upstream: GitHub issues #40241, #37442, #58663.
 - [ ] Parent process started with `--dangerously-skip-permissions` or `--permission-mode bypassPermissions`
 - [ ] Every `Agent(...)` call includes `"mode": "bypassPermissions"`
 - [ ] Any named agent `.md` files include `permissionMode: bypassPermissions` in frontmatter
+- [ ] Every sub-agent prompt includes the `/research`-before-guessing instruction

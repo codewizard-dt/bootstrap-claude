@@ -16,7 +16,7 @@ Serena must be added to each project individually because it requires the projec
 claude mcp add serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context claude-code --project "$(pwd)"
 ```
 
-## Step 2: Add Commands and Instructions
+## Step 2: Install Skills and Sync Docs
 
 Run the sync script from this repo:
 
@@ -24,7 +24,15 @@ Run the sync script from this repo:
 ./update-project.sh <path-to-project>
 ```
 
-This copies `.claude/skills/` and `.docs/` into the target project and runs `bootstrap-serena.sh` (idempotent) to ensure `.serena/project.yml` exists and has the 11 optional Serena tools enabled. Re-run after pulling template updates.
+This installs skills globally to `~/.claude/skills/` (available to all projects), syncs the `.docs/` scaffold into the target project, and runs `bootstrap-serena.sh` (idempotent) to ensure `.serena/project.yml` exists and has the 11 optional Serena tools enabled. Re-run after pulling template updates.
+
+To install or refresh MCPs and skills globally without a project path:
+
+```bash
+./install-global.sh
+# or
+npx bootstrap-claude install
+```
 
 ## Step 3: Initialize
 

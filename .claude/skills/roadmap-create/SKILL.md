@@ -90,7 +90,9 @@ Then **per-phase**, in a single follow-up `AskUserQuestion` round (one question 
 When the user supplies a task reference:
 
 - Look it up in `.docs/tasks/` (and `completed/` if not found) via `mcp__serena__find_file` to confirm the slug and path. The link must read `[TASK-NNN: <task title>](../tasks/NNN-slug.md)` (or `../tasks/completed/` if completed).
-- If the user supplies a task reference that does **not** exist, treat it as an inline placeholder (do not fabricate a link). Note in the per-phase clarification that the task can be filed later via `/task-add --roadmap ROADMAP-NNN`.
+- If the user supplies a task reference that does **not** exist, treat it as an inline placeholder (do not fabricate a link). Note in the per-phase clarification that a task file must be created before this item can be worked on — it will be created automatically when `/roadmap-next` is run.
+
+**Inline placeholders**: items without a corresponding task file are written as `- [ ] <description>`. They are valid at creation time because tasks may not exist yet. However, **inline items cannot be worked on** — `/roadmap-next` will automatically invoke `/task-add` to create a task file for each inline item before surfacing it. The roadmap item is then upgraded to a task-link in place.
 
 **Redirection rule**: if the user starts spelling out implementation detail under an item (file paths, function names, sub-steps), respond:
 
@@ -186,9 +188,17 @@ Print a tabular summary:
 | Linked PRD | PRD-NNN or `—` |
 | Linked ADRs | list or `—` |
 | Index updated | yes (1 row added) |
-| Suggested next steps | `/roadmap-next .docs/roadmaps/NNN-slug.md` — see what's first  •  `/task-add --roadmap ROADMAP-NNN <description>` — file a new task auto-linked to this roadmap |
+| Suggested next steps | `/roadmap-next .docs/roadmaps/NNN-slug.md` — surfaces the first item and creates task files for any inline placeholders  •  `/task-add --roadmap ROADMAP-NNN <description>` — file a new task auto-linked to this roadmap |
 
 If any phase was left empty by design (user plans to fill via `/roadmap-add`), note it in a separate **Gaps** section so the user can address it before execution begins.
+
+If the roadmap contains any inline placeholder items (items without a task-link), include a **Placeholders** section listing them:
+
+> **Placeholders (task file pending):** These items will have task files created for them automatically when `/roadmap-next` runs. They cannot be tackled until a task file exists.
+> - Phase N: "<item text>"
+> - ...
+
+This is informational only — no action required now.
 
 ---
 
@@ -196,7 +206,7 @@ If any phase was left empty by design (user plans to fill via `/roadmap-add`), n
 
 1. **Tables, not bullets, for every preview and summary in the conversation.** The roadmap file itself uses checklists (that's its format), but every Q&A preview and Step 8 report uses tables.
 2. **Phase names are short and execution-flavored.** "Foundation", "API", "Tests", "Release" — not "Phase where we figure out the database stuff".
-3. **Items are single checkbox-sized.** No sub-bullets, no indented steps, no embedded code blocks. If an item needs detail, it's a task — file one.
+3. **Items are single checkbox-sized.** No sub-bullets, no indented steps, no embedded code blocks. If an item needs detail, it's a task — file one. Items without a task file are written as inline placeholders (`- [ ] <description>`) and are valid at creation time, but will be converted to task-links automatically by `/roadmap-next` before they can be worked on.
 4. **Task-link items must include the `TASK-NNN:` prefix in the visible link text.** Otherwise the auto-checkoff machinery cannot detect references. See the `.docs/roadmaps/README.md` "Auto-Checkoff Contract" section.
 5. **At least one phase must contain at least one item.** An empty roadmap is a hard fail — loop back to Step 3 #5.
 6. **Never invent task references.** If the user says "TASK-42" and no `042-*.md` file exists, render it as an inline placeholder, not a broken markdown link.

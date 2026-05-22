@@ -295,13 +295,12 @@ Once all outline steps are complete, ask the user: **"Generate UAT tests for thi
 
 ### Step 6b: Type-Check Gate
 
-Before declaring completion, check whether the project has a type-checking mechanism and, if so, run it.
+Before declaring completion, try each of the following in order and stop at the first one that succeeds (exit 0) or fails with type errors. Skip to the next only if a command is not found / the target does not exist.
 
-**Detection order** (stop at the first match):
+1. `Skill(typecheck)`
+2. `make typecheck`
 
-1. **`/type-check` skill** — check whether `.claude/skills/type-check/` exists using Serena `find_file`. If found, invoke `/type-check`.
-2. **`make` type-check target** — check whether a `Makefile` exists (Serena `find_file` for `Makefile` in `.`). If found, run `make --dry-run type-check 2>/dev/null` to test whether the target exists; if it does, run `make type-check`.
-3. **Neither found** — skip silently and proceed.
+Suppress all output from commands that are not found or whose targets don't exist — only surface output when a command runs and produces type errors. If none of the above are available, skip silently and proceed.
 
 **On failure**: If type checks surface errors, report them to the user, mark the relevant task step `[FAILED: type errors]` in the outline, and **do not proceed** to the banner. The user must resolve the errors (or explicitly instruct you to skip) before continuing.
 

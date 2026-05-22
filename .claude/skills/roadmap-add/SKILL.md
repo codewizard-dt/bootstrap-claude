@@ -21,6 +21,16 @@ Append a new `- [ ]` checklist item to an existing roadmap file in `.docs/roadma
 
 ---
 
+## Inline Placeholders
+
+Roadmap items fall into two categories:
+- **Task-link items** — `- [ ] [TASK-NNN: <title>](../tasks/NNN-slug.md)` — backed by a real task file; can be worked on immediately with `/tackle`.
+- **Inline placeholder items** — `- [ ] <free-form description>` — no task file exists yet; valid to add, but **cannot be tackled** until `/roadmap-next` automatically creates a task file for them.
+
+When adding an inline item, include a note in the Step 8 report reminding the user that this placeholder will be upgraded to a task-link automatically when `/roadmap-next` runs.
+
+---
+
 ## Step 1: Parse `$ARGUMENTS`
 
 The first whitespace-separated token is the roadmap reference. Everything after it is the item spec, possibly prefixed with flags.
@@ -198,10 +208,14 @@ Print a single tabular summary:
 |-------|-------|
 | Roadmap | `<path>` |
 | Phase | `<phase name>` (new or existing) |
-| Item type | `task-link` or `inline` |
+| Item type | `task-link` or `inline (placeholder — task pending)` |
 | Item body | `<the line just inserted, minus the leading "- [ ] ">` |
 | Index updated | `M/N → M/N+1` (or `skipped — <reason>`) |
 | Last updated | today's date |
+
+If the added item is an inline placeholder, append this note after the table:
+
+> **Note:** This item has no task file yet and cannot be worked on directly. Run `/roadmap-next` to automatically create a task file for it and convert it to a task-link.
 
 ---
 

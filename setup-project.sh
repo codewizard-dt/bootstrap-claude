@@ -36,71 +36,19 @@ fi
 echo "Setting up project: $PROJECT_DIR"
 echo ""
 
-# 1. Ensure global MCP servers are installed (user scope)
-echo "Checking global MCP servers (user scope)..."
-
-# brave-search
-if claude mcp get "brave-search" &>/dev/null; then
-  echo "  brave-search: already installed, skipping."
-else
-  echo "  Installing brave-search MCP..."
-  if [ -z "${BRAVE_API_KEY:-}" ]; then
-    echo -n "  Enter your Brave Search API key (get one at https://brave.com/search/api/): "
-    read -r BRAVE_API_KEY
-  fi
-  claude mcp add --scope user brave-search \
-    --env "BRAVE_API_KEY=${BRAVE_API_KEY}" \
-    -- npx -y @modelcontextprotocol/server-brave-search
-  echo "  brave-search MCP installed."
-fi
-
-# context7
-if claude mcp get "context7" &>/dev/null; then
-  echo "  context7: already installed, skipping."
-else
-  echo "  Installing context7 MCP..."
-  if [ -z "${CONTEXT7_API_KEY:-}" ]; then
-    echo -n "  Enter your Context7 API key (optional — press Enter to skip, get one at https://context7.com/dashboard): "
-    read -r CONTEXT7_API_KEY
-  fi
-  if [ -n "${CONTEXT7_API_KEY:-}" ]; then
-    claude mcp add --scope user --transport http \
-      --header "CONTEXT7_API_KEY: ${CONTEXT7_API_KEY}" \
-      context7 https://mcp.context7.com/mcp
-  else
-    claude mcp add --scope user --transport http context7 https://mcp.context7.com/mcp
-  fi
-  echo "  context7 MCP installed."
-fi
-
-# puppeteer-mcp-claude
-if claude mcp get "puppeteer-mcp-claude" &>/dev/null; then
-  echo "  puppeteer-mcp-claude: already installed, skipping."
-else
-  echo "  Installing puppeteer-mcp-claude MCP..."
-  claude mcp add --scope user puppeteer-mcp-claude -- npx puppeteer-mcp-claude serve
-  echo "  puppeteer-mcp-claude MCP installed."
-fi
-
-# serena (global, user scope; resolves project from cwd via --project .)
-if claude mcp get "serena" &>/dev/null; then
-  echo "  serena: already installed, skipping."
-else
-  echo "  Installing serena MCP..."
-  claude mcp add --scope user serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context claude-code --project .
-  echo "  serena MCP installed."
-fi
+# 1. Install global MCPs and skills
+"$TEMPLATE_DIR/install-global.sh"
 echo ""
 
-# 2. Copy .claude and docs directories
-echo "Copying .claude/ commands and .docs/..."
+echo "Copying project .claude/ content and .docs/ scaffold..."
 mkdir -p "$PROJECT_DIR/.claude"
-rsync -av "$TEMPLATE_DIR/.claude/" "$PROJECT_DIR/.claude/"
-echo "Copied .claude/ to $PROJECT_DIR/.claude"
+# Copy non-skills .claude/ content (prompt-template, etc.) but NOT skills/ (now global)
+rsync -av --exclude 'skills/' --exclude 'settings.local.json' "$TEMPLATE_DIR/.claude/" "$PROJECT_DIR/.claude/"
+echo "Copied .claude/ content to $PROJECT_DIR/.claude"
 "$TEMPLATE_DIR/sync-docs-scaffold.sh" "$PROJECT_DIR"
 echo ""
 
-# 3. Bootstrap Serena project.yml
+# 2. Bootstrap Serena project.yml
 echo "Bootstrapping Serena project.yml..."
 "$TEMPLATE_DIR/bootstrap-serena.sh" "$PROJECT_DIR"
 echo ""

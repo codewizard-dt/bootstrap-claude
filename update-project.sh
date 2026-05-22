@@ -73,8 +73,12 @@ if [ -d "$LEGACY_COMMANDS_DIR" ]; then
   fi
 fi
 
-# 2. Sync .claude/skills/ and .docs/
-echo "Syncing .claude/skills/ and .docs/ scaffold..."
+# 2. Install skills globally and sync .docs/ scaffold
+echo "Installing skills globally (~/.claude/skills/)..."
+"$TEMPLATE_DIR/install-global.sh"
+echo ""
+
+echo "Syncing .docs/ scaffold..."
 "$TEMPLATE_DIR/sync-docs-scaffold.sh" "$PROJECT_DIR"
 echo ""
 
@@ -108,6 +112,39 @@ if [ ${#ORPHAN_FOUND[@]} -gt 0 ]; then
     esac
   else
     echo "Non-interactive mode: skipping deletion. Remove manually if needed."
+  fi
+fi
+
+# Also clean up orphan skill folders at global level (~/.claude/skills/)
+GLOBAL_ORPHAN_FOUND=()
+for skill in "${ORPHAN_SKILLS[@]}"; do
+  if [ -d "$HOME/.claude/skills/$skill" ]; then
+    GLOBAL_ORPHAN_FOUND+=("$HOME/.claude/skills/$skill")
+  fi
+done
+
+if [ ${#GLOBAL_ORPHAN_FOUND[@]} -gt 0 ]; then
+  echo ""
+  echo "Orphan skill folders detected in global ~/.claude/skills/ from the noun-first rename:"
+  for p in "${GLOBAL_ORPHAN_FOUND[@]}"; do
+    echo "  $p"
+  done
+  echo ""
+  if [ -t 0 ]; then
+    read -r -p "Delete these ${#GLOBAL_ORPHAN_FOUND[@]} global folder(s)? [y/N]: " REPLY
+    case "$REPLY" in
+      [yY])
+        for p in "${GLOBAL_ORPHAN_FOUND[@]}"; do
+          rm -rf "$p"
+        done
+        echo "Removed."
+        ;;
+      *)
+        echo "Skipped."
+        ;;
+    esac
+  else
+    echo "Non-interactive mode: skipping global orphan deletion."
   fi
 fi
 
