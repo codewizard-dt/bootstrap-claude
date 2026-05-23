@@ -73,6 +73,49 @@ if [ -d "$LEGACY_COMMANDS_DIR" ]; then
   fi
 fi
 
+# 1b. Detect per-project .claude/skills/ (now obsolete — skills are global)
+PROJECT_SKILLS_DIR="$PROJECT_DIR/.claude/skills"
+if [ -d "$PROJECT_SKILLS_DIR" ]; then
+  # Identify actual skill directories (contain a SKILL.md file)
+  PER_PROJECT_SKILLS=()
+  for skill_dir in "$PROJECT_SKILLS_DIR"/*/; do
+    [ -f "${skill_dir}SKILL.md" ] && PER_PROJECT_SKILLS+=("$skill_dir")
+  done
+
+  if [ ${#PER_PROJECT_SKILLS[@]} -gt 0 ]; then
+    echo ""
+    echo "Per-project skill folders detected in .claude/skills/ (skills are now global — these should be deleted):"
+    for p in "${PER_PROJECT_SKILLS[@]}"; do
+      echo "  ${p#"$PROJECT_DIR"/}"
+    done
+    echo ""
+    echo "  Skills are now installed globally to ~/.claude/skills/ and no longer need to live in each project."
+    echo ""
+    if [ -t 0 ]; then
+      read -r -p "Delete these ${#PER_PROJECT_SKILLS[@]} per-project skill folder(s)? [y/N]: " REPLY
+      case "$REPLY" in
+        [yY])
+          for p in "${PER_PROJECT_SKILLS[@]}"; do
+            rm -rf "$p"
+          done
+          echo "  Removed."
+          # If .claude/skills/ is now empty, remove it too
+          if [ -z "$(ls -A "$PROJECT_SKILLS_DIR" 2>/dev/null)" ]; then
+            rmdir "$PROJECT_SKILLS_DIR"
+            echo "  Removed empty directory: .claude/skills/"
+          fi
+          ;;
+        *)
+          echo "  Skipped. Remove manually: rm -rf $PROJECT_SKILLS_DIR"
+          ;;
+      esac
+    else
+      echo "  Non-interactive mode: skipping per-project skill cleanup. Remove manually if desired."
+    fi
+    echo ""
+  fi
+fi
+
 # 2. Install skills globally and sync .docs/ scaffold
 echo "Installing skills globally (~/.claude/skills/)..."
 "$TEMPLATE_DIR/install-global.sh"

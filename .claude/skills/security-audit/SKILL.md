@@ -1,0 +1,340 @@
+---
+name: security-audit
+description: Audit an LLM/AI application for security vulnerabilities across 11 categories — internal posture (observability, rate limiting, access controls, HITL policy, benchmarking) and external threats (prompt injection, data leakage, output XSS, excessive agency, supply chain, token DoS). Run a full audit or a single named category.
+model: claude-sonnet-4-6
+argument-hint: "[category-name | full]"
+disable-model-invocation: false
+user-invocable: true
+---
+
+# AI Security Audit
+
+Perform a structured security audit of this project's LLM/AI integration.
+
+**Invocation**: `$ARGUMENTS`
+
+- Empty or `full` → run all 11 categories
+- Named category (e.g. `prompt-injection`, `observability`) → run that category only
+- `internal` → run all 5 internal posture categories
+- `external` → run all 6 external threat categories
+
+---
+
+## Setup
+
+Before beginning any category:
+
+1. **Read project context** — `mcp__serena__list_dir` on root and key directories (src, app, api, lib, server, agents, tools, utils). Understand the shape of the codebase.
+2. **Identify AI/LLM integration points** — search for patterns: API client initialization (`openai`, `anthropic`, `langchain`, `llama`, `ollama`, model client constructors), agent/tool definitions, RAG pipelines, prompt templates, system prompt strings.
+3. **Note the deployment context** — local only, server, edge, or third-party hosted. This affects which threats are most critical.
+
+Use `mcp__serena__find_symbol` and `mcp__serena__search_for_pattern` to locate code. Never use `grep`/`find` via shell for code exploration.
+
+---
+
+## Category Reference
+
+| ID | Category | Group |
+|----|----------|-------|
+| `observability` | Observability & Audit Logging | Internal |
+| `rate-limiting` | Rate Limiting & Resource Controls | Internal |
+| `access-controls` | Access Controls & Least Privilege | Internal |
+| `hitl-policy` | Human-in-the-Loop Policy | Internal |
+| `benchmarking` | Security Benchmarking | Internal |
+| `prompt-injection` | Prompt Injection | External |
+| `data-leakage` | Sensitive Data Leakage | External |
+| `output-sanitization` | Output Sanitization / XSS | External |
+| `excessive-agency` | Excessive Agency & Tool Abuse | External |
+| `supply-chain` | Supply Chain & Data Poisoning | External |
+| `token-dos` | Token Flood / DoS | External |
+
+---
+
+## Internal Posture Categories
+
+### `observability` — Observability & Audit Logging
+
+Required for enterprise compliance (HIPAA, GDPR, SOC2). Without full traceability, security incidents cannot be investigated.
+
+**Check each item:**
+
+| # | Check | How to verify |
+|---|-------|---------------|
+| O1 | Prompts and responses are logged with a trace/session ID | Search for logging calls around LLM invocations |
+| O2 | Logs are structured (JSON) and include: timestamp, user ID, model, token counts | Read log format definitions or middleware |
+| O3 | PII is redacted or masked before logs are stored | Look for a redaction/sanitization step before log write |
+| O4 | Audit trail is append-only or tamper-evident | Check log sink config (immutable S3, CloudWatch, SIEM) |
+| O5 | Trace IDs propagate through multi-step/agentic workflows | Follow a request ID through multiple LLM calls in code |
+| O6 | Logs are retained per compliance requirements (e.g. ≥90 days) | Check retention policy in infra config |
+| O7 | Anomaly alerting exists for unexpected output patterns or errors | Look for monitoring/alerting config |
+| O8 | Logging is model-agnostic (works if model is swapped) | Check whether logging is in a wrapper vs. per-model code |
+
+**Severity if missing**: CRITICAL for O1–O4, HIGH for O5–O8.
+
+---
+
+### `rate-limiting` — Rate Limiting & Resource Controls
+
+Token flood attacks (OWASP LLM10) can exhaust budget and degrade availability. Even non-malicious users can cause runaway costs through poor prompt engineering.
+
+**Check each item:**
+
+| # | Check | How to verify |
+|---|-------|---------------|
+| R1 | Per-user or per-session token limits are enforced | Search for token counting, budget checks, or middleware |
+| R2 | Request-level rate limiting is in place (requests/min per user) | Check API gateway, middleware, or rate limit config |
+| R3 | LLM API calls have a timeout / max-wait | Look for timeout params on API client |
+| R4 | Input length is capped before sending to model | Check for input truncation or max-tokens validation |
+| R5 | Recursive or looping agent calls have a circuit breaker / max-iterations cap | Search for loop guards in agent orchestration code |
+| R6 | Cost anomaly alerting exists (e.g. spend spike > X% triggers alert) | Check billing/cost monitoring config |
+| R7 | Context window growth is bounded in multi-turn conversations | Look for conversation history pruning logic |
+
+**Severity if missing**: HIGH for R1–R5, MEDIUM for R6–R7.
+
+---
+
+### `access-controls` — Access Controls & Least Privilege
+
+Agents should only be able to do what a human user would be comfortable with them doing autonomously. Overly permissioned agents are the root cause of most OWASP LLM06 incidents.
+
+**Check each item:**
+
+| # | Check | How to verify |
+|---|-------|---------------|
+| A1 | Each agent/tool has an explicit scope definition (what it can access) | Read tool/agent definitions |
+| A2 | RBAC or role scoping prevents users from accessing other users' data via the LLM | Trace a data-fetch tool call back to its auth check |
+| A3 | Sessions are isolated — one user's context cannot bleed into another's | Check session storage and context construction |
+| A4 | Agents cannot enumerate or invoke undocumented tools | Verify tool list is not exposed to the model dynamically |
+| A5 | Delete, write, and payment operations require elevated scope or explicit confirmation | Find dangerous tool implementations and check caller auth |
+| A6 | Agent tool permissions are reviewed on a cadence (not set-and-forget) | Check if there's a permission manifest or review process |
+| A7 | Principle of least privilege: agents request only tools needed for the task | Count tools available to each agent and flag overprovisioning |
+
+**Severity if missing**: CRITICAL for A3, HIGH for A1–A2, A4–A5, MEDIUM for A6–A7.
+
+---
+
+### `hitl-policy` — Human-in-the-Loop Policy
+
+Read-only actions can be autonomous. Reversible actions should usually be confirmed. Destructive or financial actions must have human approval. Without a formal policy, teams default to no gates.
+
+**Check each item:**
+
+| # | Check | How to verify |
+|---|-------|---------------|
+| H1 | A written policy (even a comment block or doc) defines action categories: read-only / reversible / destructive | Search docs, ADRs, or code comments |
+| H2 | Destructive actions (delete, pay, send, publish) are gated behind an explicit confirmation step | Find destructive tool implementations and trace call path |
+| H3 | Reversible actions prompt for confirmation in at least medium-risk contexts | Check confirmation UX for update/modify operations |
+| H4 | Approval events are logged (who approved, what action, when) | Look for audit log writes at approval points |
+| H5 | HITL gates cannot be bypassed by prompt manipulation (e.g. "skip confirmation") | Test whether system prompt or user prompt can disable a gate |
+
+**Severity if missing**: CRITICAL for H2, H5; HIGH for H1, H3–H4.
+
+---
+
+### `benchmarking` — Security Benchmarking
+
+Security posture decays as models are updated or swapped. Without a benchmark baseline, regressions go undetected.
+
+**Check each item:**
+
+| # | Check | How to verify |
+|---|-------|---------------|
+| B1 | A baseline injection-resistance test suite exists for the current model | Look for security tests, red-team scripts, or eval files |
+| B2 | New model versions are tested against the baseline before promotion to production | Check CI/CD pipeline or deployment runbook |
+| B3 | System prompt leakage is tested (can a user extract the system prompt?) | Look for tests that attempt extraction attacks |
+| B4 | Benchmark results are tracked over time (not just pass/fail per deploy) | Check test artifacts, dashboards, or logs |
+| B5 | Red-team or adversarial testing is scheduled (not ad-hoc) | Look for a security review cadence in docs or tickets |
+| B6 | Third-party benchmarks (e.g. OWASP LLM Top 10 test suite) are referenced | Check if any standard benchmark framework is used |
+
+**Severity if missing**: HIGH for B1–B3, MEDIUM for B4–B6.
+
+---
+
+## External Threat Categories
+
+### `prompt-injection` — Prompt Injection (OWASP LLM01)
+
+The #1 LLM vulnerability. Traditional XSS exploits bugs; prompt injection exploits the model's core capability — understanding instructions. Both direct (user input) and indirect (document/RAG) injection must be addressed.
+
+**Check each item:**
+
+| # | Check | How to verify |
+|---|-------|---------------|
+| P1 | User input is validated before being interpolated into a system prompt | Find system prompt construction and check for raw user input interpolation |
+| P2 | Known injection patterns are screened (role-play overrides, "ignore previous instructions", DAN-style, prefix directives) | Look for an input validation layer or detection model call |
+| P3 | Documents and RAG content are treated as untrusted — sanitized before being added to context | Trace RAG/document pipeline from retrieval to prompt construction |
+| P4 | A cheap detection model or regex classifier screens inputs before the main model call | Look for a pre-screening step |
+| P5 | Injection attempts are logged and can trigger alerts | Check logging around input validation failures |
+| P6 | Encoding normalization is applied (unicode homoglyphs, base64, HTML entities) | Look for a normalization step before validation |
+| P7 | Outputs that will become system prompts in the next step are re-validated | Trace multi-step/agentic workflows for blind prompt passthrough |
+
+**Severity if missing**: CRITICAL for P1, P3; HIGH for P2, P4, P7; MEDIUM for P5–P6.
+
+---
+
+### `data-leakage` — Sensitive Data Leakage (OWASP LLM02, LLM07)
+
+LLMs can memorize PII and credentials from training. RAG can surface data outside its intended scope. System prompts can be extracted. Cross-session bleeding can expose one user's data to another.
+
+**Check each item:**
+
+| # | Check | How to verify |
+|---|-------|---------------|
+| D1 | LLM outputs are scanned for PII (names, emails, SSNs, phone numbers) before returning to users | Find output post-processing layer; look for PII detection |
+| D2 | Outputs are scanned for credentials (API keys, tokens, passwords, connection strings) | Same layer — check if credential pattern matching is included |
+| D3 | System prompt contents are not echoed back or extractable via user prompts | Check whether system prompt is referenced in output templates |
+| D4 | RAG retrieval is scoped to the requesting user's authorized data only | Trace a RAG query from user ID → retrieval filter → returned docs |
+| D5 | A signed data processing agreement exists with the model provider | Check vendor agreement docs or infra setup notes |
+| D6 | Cross-session data isolation is enforced at the application level (not just assumed from the model) | Check session context construction for any global/shared state |
+| D7 | Training data opt-out or zero-retention agreement is in place for sensitive deployments | Check vendor API configuration for `store: false` or equivalent |
+
+**Severity if missing**: CRITICAL for D1–D4, HIGH for D5–D7.
+
+---
+
+### `output-sanitization` — Output Sanitization / XSS (OWASP LLM05)
+
+LLMs often agree with users and can be induced to produce malicious HTML, scripts, or structured content that exploits downstream systems. Output sanitization is as critical as input validation.
+
+**Check each item:**
+
+| # | Check | How to verify |
+|---|-------|---------------|
+| X1 | LLM text outputs are HTML-escaped before rendering in a browser context | Find the render path from LLM response to UI |
+| X2 | Markdown rendering is sandboxed (no raw HTML passthrough) | Check markdown renderer config (e.g. `sanitize: true`, DOMPurify usage) |
+| X3 | Generated code is executed only in a sandbox, never eval'd directly | Search for `eval`, `exec`, `subprocess` near LLM output usage |
+| X4 | LLM outputs that feed into the next prompt (agentic chains) are schema-validated and sanitized | Trace inter-step data flow in multi-step agents |
+| X5 | Outputs are checked for banned terms, hate speech, or policy violations before delivery | Look for content filtering on the output path |
+| X6 | Structural outputs (JSON, SQL, CLI commands) are validated against a strict schema, not just parsed | Find JSON/SQL generation and check parser + schema validation |
+
+**Severity if missing**: CRITICAL for X3–X4, HIGH for X1–X2, MEDIUM for X5–X6.
+
+---
+
+### `excessive-agency` — Excessive Agency & Tool Abuse (OWASP LLM06)
+
+Agents with too many tools or too broad permissions become attack surfaces. An attacker can exploit unguarded APIs, trigger deletes, or use familiar endpoint patterns to extract or corrupt data.
+
+**Check each item:**
+
+| # | Check | How to verify |
+|---|-------|---------------|
+| E1 | Every registered tool has a documented justification for why the agent needs it | Read tool registration — are there unused or overly broad tools? |
+| E2 | Dangerous tools (delete, payment, send message, external API write) require explicit, non-LLM-bypassable authorization | Trace dangerous tool call path — can prompt alone trigger it? |
+| E3 | Tool schemas are not fully exposed to end users (attackers cannot enumerate all available endpoints) | Check whether tool definitions are sent to the model in a user-accessible way |
+| E4 | Tool outputs are validated before being trusted downstream (tool results are also untrusted) | Find tool call result handling — is the result used raw? |
+| E5 | Patient/user ID or session ID binding is enforced at the tool level (deterministic check, not LLM-gated) | For data-fetch tools, verify the ID in the request matches the authenticated session |
+| E6 | Tools that call external APIs use scoped, revocable credentials (not long-lived admin keys) | Check credential management for tool integrations |
+
+**Severity if missing**: CRITICAL for E2, E5; HIGH for E1, E4; MEDIUM for E3, E6.
+
+---
+
+### `supply-chain` — Supply Chain & Data Poisoning (OWASP LLM03, LLM04, LLM08)
+
+Third-party components (models, plugins, datasets, RAG sources) can be compromised before they reach your system. Data poisoning can subtly alter model behavior in ways that are hard to detect.
+
+**Check each item:**
+
+| # | Check | How to verify |
+|---|-------|---------------|
+| S1 | Model versions are pinned (not `latest`) in all deployment configs | Check model ID strings in code and infra config |
+| S2 | Third-party model providers are vetted (trust level, data handling agreement) | Review vendor list and agreements |
+| S3 | RAG knowledge base sources are validated (checksums, provenance tracking, ingestion auditing) | Trace the RAG ingestion pipeline |
+| S4 | RAG sources are treated as untrusted input (sanitized before insertion into context) | Check whether RAG content goes through the same injection checks as user input |
+| S5 | Plugin/tool library dependencies are pinned and regularly audited for vulnerabilities | Check `package.json`, `requirements.txt`, or equivalent for pinned versions |
+| S6 | Model behavior drift is monitored — alerts trigger if output distribution changes significantly | Look for model evaluation or drift detection in production |
+| S7 | A process exists to roll back to a prior model version if a new version behaves unexpectedly | Check deployment runbook or CI/CD rollback config |
+
+**Severity if missing**: HIGH for S1–S4, MEDIUM for S5–S7.
+
+---
+
+### `token-dos` — Token Flood / DoS (OWASP LLM10)
+
+Users — malicious or not — can send huge inputs that exhaust token budgets, trigger rate limit spikes, or cause unexpected cost. Recursive agent loops compound this. Prevention is difficult; detection and circuit-breaking are essential.
+
+**Check each item:**
+
+| # | Check | How to verify |
+|---|-------|---------------|
+| T1 | Maximum input length is enforced before the API call (not just relied on by the model provider) | Find input preprocessing — is there a hard character/token cap? |
+| T2 | Conversation history is pruned or summarized to prevent unbounded context growth | Look for history management in multi-turn chat code |
+| T3 | Agent recursion depth or iteration count is capped | Search for max_iterations, recursion guards in agent orchestration |
+| T4 | Rate limiting applies per user and per session (not just global) | Check rate limit implementation — is it keyed by user ID? |
+| T5 | A cost/spend circuit breaker exists — if spend crosses a threshold, calls are halted or throttled | Check billing integration or spend monitoring config |
+| T6 | Unexpected token spike alerts notify the team within a reasonable window (e.g. <1 hour) | Check alerting thresholds for token/cost metrics |
+| T7 | Adversarial prompt length attacks are addressed (e.g. inputs padded with garbage tokens to inflate context) | Check whether input validation normalizes or strips padding |
+
+**Severity if missing**: HIGH for T1–T5, MEDIUM for T6–T7.
+
+---
+
+## Reporting
+
+### Finding format
+
+For each check, assign one of:
+
+| Status | Meaning |
+|--------|---------|
+| ✅ PASS | Evidence found that the control exists and is effective |
+| ⚠️ WARN | Partial implementation, or control exists but has gaps |
+| ❌ FAIL | No evidence of the control; vulnerability is present |
+| ℹ️ N/A | Not applicable to this project's architecture |
+| 🔍 NEEDS-REVIEW | Could not determine from code alone — flag for manual review |
+
+### Report structure
+
+```
+## AI Security Audit — [project name] — [date]
+Categories audited: [list]
+
+---
+
+### [Category Name]
+| Check | Status | Notes |
+|-------|--------|-------|
+| O1    | ✅     | Prompt/response logging in src/middleware/llm-logger.ts |
+| O2    | ⚠️     | Logs are structured but token counts are missing |
+| O3    | ❌     | No PII redaction found before log write |
+...
+
+**Category verdict**: FAIL (1+ CRITICAL failures)
+**Priority mitigations**:
+- [specific action with file reference]
+- [specific action with file reference]
+
+---
+
+### Summary
+| Category | Verdict | Critical | High | Medium |
+|----------|---------|----------|------|--------|
+| Observability | FAIL | 1 | 2 | 0 |
+...
+
+**Overall posture**: [CRITICAL / HIGH / MEDIUM / LOW]
+**Top 3 actions to take now**:
+1. ...
+2. ...
+3. ...
+```
+
+### Verdict rules
+
+- **CRITICAL** posture: any CRITICAL-severity finding is a FAIL
+- **HIGH** posture: all CRITICAL pass, but 2+ HIGH findings fail
+- **MEDIUM** posture: all CRITICAL and HIGH pass or WARN
+- **LOW** posture: only MEDIUM findings and below
+
+---
+
+## CRITICAL Rules
+
+1. **Read code, don't run it** — verify controls by reading implementation, not by attempting actual attacks.
+2. **Cite specific files and line numbers** for every PASS or FAIL finding — "no evidence found" is not enough; say where you looked.
+3. **Use Serena for all code navigation** — `find_symbol`, `search_for_pattern`, `get_symbols_overview`. No shell grep.
+4. **Flag NEEDS-REVIEW honestly** — if a control requires runtime observation (e.g. live traffic rate limiting), mark it and explain what to verify manually.
+5. **Do not fix** — this skill audits and reports only. If fixes are needed, hand off to the user or open tasks via `/task-add`.
+6. **Scope to what's in the repo** — do not speculate about external infra unless config files are present.
+7. **One category at a time** — complete each category fully before moving to the next. Do not interleave findings.

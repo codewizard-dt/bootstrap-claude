@@ -9,6 +9,7 @@ user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**
+**Run `/research <topic>` on the ADR topic BEFORE drafting any decision block. Do not skip this step.**
 
 
 # Create ADR
@@ -104,7 +105,7 @@ This check is mandatory — it prevents accidentally creating two parallel `acce
 
 ### Step 3: Research each decision
 
-Run the `/research` workflow per **decision**, not per file. Each block must produce concrete inputs:
+**Invoke `/research <topic>`** for each decision in the group — call the research skill directly, do not substitute with ad-hoc web searches or Serena lookups alone. Do not proceed to Step 4 until research for every planned decision is complete. Each invocation must produce concrete inputs:
 
 | ADR Section (per decision) | Research must produce |
 |----------------------------|----------------------|

@@ -1,6 +1,6 @@
 ---
 name: roadmap-next
-description: Point at the first unchecked item(s) in a roadmap; create task files for inline placeholders; auto-move fully-checked roadmaps to completed/
+description: Point at the first unchecked item(s) in a roadmap; create task files for inline placeholders; group items into parallelizable waves; auto-move fully-checked roadmaps to completed/
 model: claude-haiku-4-5-20251001
 argument-hint: "[path to roadmap file, NNN-slug, or number] (optional)"
 disable-model-invocation: false
@@ -11,7 +11,7 @@ user-invocable: true
 
 # Next Step
 
-Surface unchecked roadmap items and tell the user how to act on them. When a roadmap has all items checked, automatically move it to `completed/` and update the README reference.
+Surface unchecked roadmap items grouped into parallelizable waves, and tell the user how to act on them. When a roadmap has all items checked, automatically move it to `completed/` and update the README reference.
 
 ---
 
@@ -22,7 +22,7 @@ Surface unchecked roadmap items and tell the user how to act on them. When a roa
 ## Step 0: Choose Mode
 
 - If `$ARGUMENTS` is **non-empty** → **Single-Roadmap Mode**: resolve the argument to one file and proceed to Step 1S.
-- If `$ARGUMENTS` is **empty** → **Scan Mode**: collect the next 3 unchecked items across all roadmaps and proceed to Step 1M.
+- If `$ARGUMENTS` is **empty** → **Scan Mode**: collect unchecked items across all roadmaps and proceed to Step 1M.
 
 ---
 
@@ -45,7 +45,7 @@ Parse `$ARGUMENTS` to locate the roadmap file. Use `mcp__serena__find_file` / `m
    - If ambiguous, list matches and ask the user to clarify via `AskUserQuestion`.
    - If no match, report: `No roadmap with number '<input>' found.` and STOP.
 
-Use the resolved file path for Steps 2S and 3S.
+Use the resolved file path for Steps 2S onward.
 
 ---
 
@@ -68,7 +68,7 @@ For each item capture:
 | `kind` | `task-link` if body matches `[TASK-NNN: ...](<path>)`, else `inline` |
 | `task_path` | For task-links: the URL portion of the markdown link |
 
-Walk items in document order. Collect up to **3** unchecked items (`checked == false`) in order — these are the `next_up` list.
+Walk items in document order. Collect up to **9** unchecked items (`checked == false`) in order — these are the `candidate_items` list.
 
 Compute progress: `total = count(items)`, `done = count(items where checked == true)`.
 
@@ -78,26 +78,50 @@ Also extract the `ROADMAP-NNN` identifier from the roadmap file's front matter (
 
 ### Step 2.5S: Upgrade Inline Items to Task Files
 
-**All roadmap items must eventually be task files.** Before reporting, upgrade every inline item in `next_up` to a task-link. Inline items are placeholders — they exist because the task file had not been created yet when the roadmap was authored.
+**All roadmap items must eventually be task files.** Before reporting, upgrade every inline item in `candidate_items` to a task-link. Inline items are placeholders — they exist because the task file had not been created yet when the roadmap was authored.
 
-For each item in `next_up` where `kind == 'inline'`:
+For each item in `candidate_items` where `kind == 'inline'`:
 
 1. Announce to the user (one line):
    ```
-   Inline item found: "<item text>" — creating task file before surfacing this item.
+   Inline item found: "<item text>" — checking for an existing task before creating one.
    ```
-2. Use the `Skill` tool to invoke `task-add` with the item text as `args` (do **not** pass `--roadmap`, since the roadmap link will be managed here instead of appending a duplicate item).
-3. After `task-add` completes, extract the new task's file path and identifier from the task-add completion output (the `File path` row of its summary table). If parsing fails, use `mcp__serena__list_dir` on `.docs/tasks/` to identify the newest `.md` file that was not present before the invocation.
-4. `Read` the new task file to confirm the `TASK-NNN` number and title (from the `# NNN: <title>` H1 heading).
+2. **Check for an existing task**: `Read` `.docs/tasks/README.md` and scan the **Active Tasks** table for any row whose `Objective` or `Slug` plausibly covers the inline item's intent. If a candidate looks likely, `Read` that task file to confirm. If a matching task is found, use its `TASK-NNN` identifier and file path and skip to step 5 — do **not** invoke `task-add`.
+3. If no existing task covers the inline item, use the `Skill` tool to invoke `task-add` with the item text as `args` (do **not** pass `--roadmap`, since the roadmap link will be managed here instead of appending a duplicate item).
+4. After `task-add` completes, extract the new task's file path and identifier from the task-add completion output (the `File path` row of its summary table). If parsing fails, use `mcp__serena__list_dir` on `.docs/tasks/` to identify the newest `.md` file that was not present before the invocation. `Read` the new task file to confirm the `TASK-NNN` number and title (from the `# NNN: <title>` H1 heading).
 5. Use `Edit` on the roadmap file to replace the inline item line:
    - `old_string`: `- [ ] <item_text>` (exact text, including leading `- [ ] `)
    - `new_string`: `- [ ] [TASK-NNN: <title>](../tasks/NNN-slug.md)`
-6. Update the item record in `next_up`: set `kind = 'task-link'` and `task_path` to the relative path `../tasks/NNN-slug.md`.
+6. Update the item record in `candidate_items`: set `kind = 'task-link'` and `task_path` to the relative path `../tasks/NNN-slug.md`.
 
 If `task-add` fails or is cancelled by the user, **stop** and report:
 ```
 Task creation cancelled for: "<item text>". Inline items cannot be worked on without a task file. Re-run /roadmap-next after creating a task with: /task-add <description>
 ```
+
+---
+
+### Step 2.7S: Parallelism Analysis
+
+After all inline items are upgraded, analyze which `candidate_items` can run concurrently and group them into execution waves.
+
+**For each item in `candidate_items`:**
+
+1. `Read` the task file at `task_path` (resolve relative to project root — e.g. `../tasks/NNN-slug.md` from the roadmap's location becomes `.docs/tasks/NNN-slug.md`).
+2. Look for a `## Dependencies` or `## Blocked by` section. Extract any `TASK-NNN` references listed (e.g. `TASK-042`, `[TASK-042: ...](...)`).
+3. From those extracted references, identify which are **active blockers**: a dependency is an active blocker if its `TASK-NNN` appears in `candidate_items` (i.e., it is itself unchecked and in scope).
+4. Store the set of active blocker TASK-NNN identifiers on the item as `blockers`.
+
+**Build waves via topological sort:**
+
+- **Wave 1**: items whose `blockers` set is empty (nothing is blocking them — ready to start now).
+- **Wave 2**: items whose `blockers` are all members of Wave 1.
+- **Wave 3**: items whose `blockers` are all members of Wave 1 or Wave 2.
+- Items that would belong to Wave 4+ are omitted from the report (too deep in the chain for the current view).
+
+Cap each wave at **3 items** (document order). If a wave has more than 3, note the overflow count.
+
+Store result as `waves`: an ordered array of up to 3 wave objects, each containing its items.
 
 ---
 
@@ -125,25 +149,33 @@ Execute the following automatically (do not ask the user first):
 
 #### B/C. One or more unchecked items
 
-Emit a progress line, then a table with one row per item in `next_up` (up to 3). By this point every item in `next_up` is a task-link (Step 2.5S will have upgraded any inline placeholders).
+Emit a progress line, then one table per wave (up to 3 waves). Every item in every wave is a task-link (Step 2.5S will have upgraded any inline placeholders).
 
 ```
 Progress: <done>/<total>
 
+**Wave 1** — ready now (run these in parallel):
 | # | Phase | Item | Action |
 |---|-------|------|--------|
-| 1 | Phase N: name | item text | `/tackle <task_path>` |
-| 2 | Phase N: name | item text | `/tackle <task_path>` |
+| 1 | Phase N: name | TASK-NNN: item title | `/tackle <task_path>` |
+| 2 | Phase N: name | TASK-NNN: item title | `/tackle <task_path>` |
+
+**Wave 2** — start after Wave 1 completes:
+| # | Phase | Item | Action |
+|---|-------|------|--------|
+| 1 | Phase N: name | TASK-NNN: item title | `/tackle <task_path>` |
+
+**Wave 3** — start after Wave 2 completes:
+| # | Phase | Item | Action |
+|---|-------|------|--------|
+| 1 | Phase N: name | TASK-NNN: item title | `/tackle <task_path>` |
 ```
 
-Action cell rules:
-- **task-link**: `` `/tackle <task_path>` `` — if the file doesn't exist on disk, append ` (file not found)` in the cell.
-- There is no `Manual` case — every item must be a task-link before it can be reported here. Inline items are upgraded in Step 2.5S.
-
-If `total - done > 3`, add a footer line:
-```
-Showing 3 of <total_unchecked> unchecked items.
-```
+Rules:
+- Only emit wave tables for waves that contain at least one item.
+- If Wave 1 has more than 3 items, show 3 and add: `(+N more ready — showing first 3)`
+- Action cell: `` `/tackle <task_path>` `` — if the file doesn't exist on disk, append ` (file not found)`.
+- There is no `Manual` case — every item must be a task-link before it can be reported here.
 
 #### D. Zero items
 
@@ -179,24 +211,35 @@ For each roadmap file in sorted order:
    - `roadmap_id` — the `ROADMAP-NNN` identifier from the front matter or filename prefix
    - `phase` — nearest preceding phase heading (or `"(no phase)"` if none)
    - `text`, `kind`, `task_path`
-5. Append to a shared `unchecked` list. **Stop collecting as soon as you have 3 items total** — skip reading further roadmap files once the limit is reached.
+5. Append to a shared `candidate_items` list. **Stop collecting as soon as you have 9 items total** — skip reading further roadmap files once the limit is reached.
 
 ---
 
 ### Step 2.5M: Upgrade Inline Items to Task Files (Scan Mode)
 
-Apply the same inline-upgrade logic as Step 2.5S to every inline item in the shared `unchecked` list before reporting.
+Apply the same inline-upgrade logic as Step 2.5S to every inline item in the shared `candidate_items` list before reporting.
 
-For each item in `unchecked` where `kind == 'inline'`:
+For each item in `candidate_items` where `kind == 'inline'`:
 
-1. Announce: `Inline item found: "<item text>" (in <roadmap_title>) — creating task file.`
-2. Invoke `Skill` `task-add` with the item text as `args` (no `--roadmap` flag).
-3. Extract the new task path from task-add's output (or via `mcp__serena__list_dir` fallback as in Step 2.5S).
-4. `Read` the new task file to confirm `TASK-NNN` and title.
+1. Announce: `Inline item found: "<item text>" (in <roadmap_title>) — checking for an existing task before creating one.`
+2. **Check for an existing task**: `Read` `.docs/tasks/README.md` and scan the **Active Tasks** table for any row whose `Objective` or `Slug` plausibly covers the inline item's intent. If a candidate looks likely, `Read` that task file to confirm. If a matching task is found, use its `TASK-NNN` identifier and file path and skip to step 5 — do **not** invoke `task-add`.
+3. If no existing task covers the inline item, invoke `Skill` `task-add` with the item text as `args` (no `--roadmap` flag).
+4. Extract the new task path from task-add's output (or via `mcp__serena__list_dir` fallback as in Step 2.5S). `Read` the new task file to confirm `TASK-NNN` and title.
 5. `Edit` the roadmap file (`roadmap_file` stored on the item record) to replace `- [ ] <item_text>` with `- [ ] [TASK-NNN: <title>](../tasks/NNN-slug.md)`.
 6. Update the item record: `kind = 'task-link'`, `task_path = '../tasks/NNN-slug.md'`.
 
 If `task-add` fails or is cancelled, apply the same stop-and-report behavior as Step 2.5S but name the roadmap: `(in <roadmap_title>)`.
+
+---
+
+### Step 2.7M: Parallelism Analysis (Scan Mode)
+
+Apply the same parallelism analysis as Step 2.7S to the full `candidate_items` list (which may span multiple roadmaps).
+
+- Read each task file and extract active blockers (TASK-NNN references that appear in `candidate_items`).
+- Items from different roadmaps with no shared dependencies are naturally parallelizable.
+- Build waves (Wave 1 / Wave 2 / Wave 3) using the same topological-sort logic.
+- Cap each wave at 3 items (document order across roadmaps).
 
 ---
 
@@ -209,36 +252,48 @@ Moved to completed/:
   [repeat for each moved file]
 ```
 
-If `unchecked` is empty after scanning all roadmaps (and no moves occurred or only moves occurred):
+If `candidate_items` is empty after scanning all roadmaps (and no moves occurred or only moves occurred):
 ```
 All roadmap items are checked off. Nothing left to do.
 ```
 
-Otherwise emit a table of up to 3 items followed by a footer line:
+Otherwise emit one table per wave (up to 3 waves), with a footer line:
 
 ```
+**Wave 1** — ready now (run these in parallel):
 | # | Roadmap | Phase | Item | Action |
 |---|---------|-------|------|--------|
-| 1 | ROADMAP-NNN · Title | Phase X: name | item text | `/tackle <task_path>` |
-| 2 | ROADMAP-NNN · Title | Phase X: name | item text | `/tackle <task_path>` |
+| 1 | ROADMAP-NNN · Title | Phase X: name | TASK-NNN: item title | `/tackle <task_path>` |
+| 2 | ROADMAP-NNN · Title | Phase X: name | TASK-NNN: item title | `/tackle <task_path>` |
 
-Showing <count> of <total_unchecked_scanned> unchecked item(s) across <files_scanned> roadmap(s).
+**Wave 2** — start after Wave 1 completes:
+| # | Roadmap | Phase | Item | Action |
+|---|---------|-------|------|--------|
+| 1 | ROADMAP-NNN · Title | Phase X: name | TASK-NNN: item title | `/tackle <task_path>` |
+
+Showing <wave_1_count + wave_2_count + wave_3_count> of <total_unchecked_scanned> unchecked item(s) across <files_scanned> roadmap(s).
 ```
 
-Action cell rules:
-- **task-link**: `` `/tackle <task_path>` `` — if the file doesn't exist, append ` (file not found)`.
+Rules:
+- Only emit wave tables for waves that contain at least one item.
+- Action cell: `` `/tackle <task_path>` `` — if the file doesn't exist, append ` (file not found)`.
 - There is no `Manual` case — all inline items are upgraded in Step 2.5M before this report is emitted.
 
-`total_unchecked_scanned` is the count of all unchecked items found before the 3-item cap; `files_scanned` is the number of roadmap files actually read.
+`total_unchecked_scanned` is the count of all unchecked items found before the 9-item cap; `files_scanned` is the number of roadmap files actually read.
 
-Example of well-formatted output (all items are task-links after upgrade):
+Example of well-formatted output:
 
 ```
+**Wave 1** — ready now (run these in parallel):
 | # | Roadmap | Phase | Item | Action |
 |---|---------|-------|------|--------|
-| 1 | ROADMAP-001 · Adversario MVP | Phase 5: Report Pipeline | TASK-026: Wire Vuln-Store Deferred Foreign Keys | `/tackle .docs/tasks/active/026-wire-deferred-fks.md` |
+| 1 | ROADMAP-001 · Adversario MVP | Phase 5: Report Pipeline | TASK-026: Wire Vuln-Store Deferred Foreign Keys | `/tackle .docs/tasks/026-wire-deferred-fks.md` |
 | 2 | ROADMAP-002 · Comprehensive Eval Suite | Phase 2: Golden Sets | TASK-031: Golden cases for Red Team prompt rendering | `/tackle .docs/tasks/031-golden-cases-red-team.md` |
-| 3 | ROADMAP-002 · Comprehensive Eval Suite | Phase 3: Labeled Scenarios | TASK-032: Labeled-scenario schema with tags | `/tackle .docs/tasks/032-labeled-scenario-schema.md` |
+
+**Wave 2** — start after Wave 1 completes:
+| # | Roadmap | Phase | Item | Action |
+|---|---------|-------|------|--------|
+| 1 | ROADMAP-002 · Comprehensive Eval Suite | Phase 3: Labeled Scenarios | TASK-032: Labeled-scenario schema with tags | `/tackle .docs/tasks/032-labeled-scenario-schema.md` |
 
 Showing 3 of 5 unchecked item(s) across 2 roadmap(s).
 ```
@@ -255,4 +310,4 @@ Showing 3 of 5 unchecked item(s) across 2 roadmap(s).
 - `Bash` is permitted only for `mkdir -p` and `git mv` when moving a fully-completed roadmap. Never use `bash` for reads (`cat`, `find`, `grep`, `sed`, `ls`).
 - `Edit` is permitted only for: the `Status` flip, the README path update, and the inline→task-link replacement in Steps 2.5S/2.5M.
 - `Skill` is permitted only for invoking `task-add` when upgrading inline items.
-- Keep the final report terse — one block, no preamble, no closing summary.
+- Keep the final report terse — one block per wave, no preamble, no closing summary.

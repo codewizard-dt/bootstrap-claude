@@ -9,6 +9,7 @@ user-invocable: true
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Read `.docs/roadmaps/README.md` first — it is authoritative for the roadmap template, file template, status lifecycle, item format rules, index format, and anti-patterns this skill must enforce.**
 **Run `/primer` first if you have not already this session.**
+**Run `/research <topic>` on the roadmap topic BEFORE any Q&A or file creation. Do not skip this step.**
 
 
 # Create Roadmap
@@ -42,7 +43,8 @@ If the topic is a single task with several steps, **stop and tell the user** —
 ### Step 1: Parse the topic and recall project context
 
 1. **Extract** the core initiative from `$ARGUMENTS`. If it is too vague (e.g. "auth", "cleanup", "the next thing"), use `AskUserQuestion` to narrow it before any other work.
-2. **Recall Serena memories** that may inform the execution order:
+2. **Invoke `/research <topic>`** — run the research skill on the roadmap topic now. Do not proceed to Step 2 until this completes. Use its findings to inform phase ordering, known constraints, and item content throughout the Q&A.
+3. **Recall Serena memories** that may inform the execution order:
    - `mcp__serena__list_memories`
    - `mcp__serena__read_memory` for any topic-relevant memory (sequencing constraints, prior roadmaps, known dependency rules)
 3. **Read project context**:
