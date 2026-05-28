@@ -6,7 +6,7 @@ The following MCP servers are configured globally in `~/.claude.json` under the 
 
 - **Brave Search** — web research
 - **Context7** — library documentation
-- **Puppeteer** — browser automation
+- **Playwright** — browser automation
 
 ## Step 1: Serena MCP (Per-Project)
 

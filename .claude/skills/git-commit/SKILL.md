@@ -52,11 +52,11 @@ Use these semver rules to determine the bump:
 | **minor** | New features or capabilities that are backward-compatible; new commands, skills, config options, or APIs added without breaking existing ones |
 | **major** | Breaking changes — removed or renamed commands/APIs/config keys, changed behavior that callers must update for, deleted files that others depend on |
 
-After printing the summary, **wait for the user to confirm or override the bump type** before proceeding. The user may reply with "patch", "minor", "major", or just press Enter / say "yes" to accept the suggestion.
+Print the summary, then **proceed immediately** with the suggested bump — no user confirmation needed.
 
 ## Step 4: Bump Version in Project Files
 
-Once the bump type is confirmed, find and update version numbers in project files.
+Find and update version numbers in project files.
 
 ### Detection (run in parallel)
 

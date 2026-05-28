@@ -118,12 +118,12 @@ If the Expected section contains no machine-checkable assertions at all → `[FA
 
 ### 4B — UI Tests
 
-Launch Puppeteer once, on the first UI test, with headless desktop viewport (1600×950). Reuse it for all subsequent UI tests. Close it at the end of the run.
+Start browser on the first UI test (browser starts automatically on first Playwright tool call). Reuse it for all subsequent UI tests. Close it at the end of the run.
 
 **Pass criteria (ALL must be true):**
 
-1. `puppeteer_navigate` to the test's `Page:` URL succeeds (no navigation error, no 4xx/5xx response).
-2. The Expected section contains at least one selector-based or text-based assertion that `puppeteer_evaluate` or `puppeteer_get_text` can verify (e.g. "element `.panel-empty` is visible", "heading contains 'No strengths yet'").
+1. `browser_navigate` to the test's `Page:` URL succeeds (no navigation error, no 4xx/5xx response).
+2. The Expected section contains at least one selector-based or text-based assertion that `browser_evaluate` or `browser_snapshot` can verify (e.g. "element `.panel-empty` is visible", "heading contains 'No strengths yet'").
 3. Every such assertion returns the expected value.
 
 On fail, screenshot the broken state to `.docs/uat/screenshots/<task-number>-<UAT-ID>-fail.png` before recording the verdict. Task number comes from the UAT filename's `<number>-<slug>.uat.md` prefix.
@@ -165,7 +165,7 @@ After every eligible test has a non-blocking status (`[x] Pass`, `[SKIP: ...]` a
 4a-pre. **Update `.docs/tasks/README.md`** — remove this task's row from the Active Tasks table entirely. The index lists active tasks only; completed tasks are tracked by their presence in `.docs/tasks/completed/` and do **not** belong in the index. Use a single `Edit` call — never `sed`. **Also check the header**: if the **Last task:** line at the top of the README references this task's `NNN-slug.md`, `Edit` it to point at `completed/NNN-slug.md` instead. Do **not** decrement **Next task number** — it only ever goes up. The index is `/tackle`'s no-args survey source.
 4a. **Roadmap Auto-Checkoff** — scan `.docs/roadmaps/` and `.docs/roadmaps/completed/` for any roadmap referencing this task and flip its matching checkbox. Follow the canonical algorithm in [`.docs/roadmaps/README.md#auto-checkoff-contract`](../../../.docs/roadmaps/README.md). Short form: (i) `mcp__serena__list_dir` on `.docs/roadmaps/` (skip `README.md`) and on `.docs/roadmaps/completed/`; (ii) `Read` each roadmap and look for lines matching `- [ ] [TASK-<NNN>:` whose link path ends in `<NNN>-<slug>.md` (either at `.docs/tasks/` or `completed/`); (iii) `Edit` each matching line in **one** call that **both** flips `- [ ]` → `- [x]` **and** rewrites the link path to the task's new location (e.g. `../tasks/NNN-slug.md` → `../tasks/completed/NNN-slug.md`) — use the full line text as `old_string` for uniqueness. Stale paths are **not** tolerated: if a reference exists, the path is updated. Then `Edit` the roadmap's `**Last updated**:` to today; (iv) bump the matching row's `Progress` numerator in `.docs/roadmaps/README.md`; (v) **Phase sweep** — for each roadmap where a match was found, identify the `## Phase N:` block containing that matched item and scan all other `- [ ] [TASK-NNN:` lines in that same phase; for each, use `mcp__serena__find_file` to check if `NNN-slug.md` exists under `.docs/tasks/completed/`; if it does, `Edit` that line in one call to flip `- [ ]` → `- [x]` and rewrite the link path to `../tasks/completed/NNN-slug.md`, then bump `Progress` in the index for each additional item; (vi) **Inline item sweep** — across the entire roadmap (not limited to the phase block that contains the task reference), collect every remaining `- [ ]` line whose body is free-form text (not a `[TASK-NNN:` link); `Read` the completing task file; use judgment to decide whether each inline item was accomplished by the completing task's work; if yes, `Edit` `- [ ]` → `- [x]` and bump `Progress` in the index; if uncertain, leave the item unchecked — err on the side of leaving items unchecked rather than over-checking. Silent no-op if no roadmap references the task. **Do NOT** auto-flip `Status: active` → `Status: done` even on the last box — that flip is manual. Use `Edit` only — never `sed`, `bash`, or `Write`.
 5. Delete screenshots for this task: use `mcp__serena__list_dir` on `.docs/uat/screenshots/` to find files matching `<task-number>-*` — **never** `ls` — then `git rm` each (or `rm` if untracked).
-6. Close Puppeteer: `puppeteer_close_browser` if it was launched.
+6. Close browser: `browser_close` if it was launched.
 7. **Check for ADR linkage**: Read the moved task file (now in `completed/`) for a line matching `**Implements**: ADR-NNNN#DM`:
    - If found:
      1. Parse the `ADR-NNNN#DM` reference.
@@ -244,10 +244,10 @@ On all-pass, replace `Next action` with `Moved to completed/` and the new paths.
 - No `&&`, `;`, `echo` banners, output redirection, temp files, defensive flags, or multi-line line-continuations.
 - Rewrite any generated command that violates these rules before executing.
 
-### Puppeteer Lifecycle
-- Launch once on the first UI test, headless desktop viewport (1600×950).
+### Playwright Browser Lifecycle
+- Browser starts automatically on first Playwright tool call (no explicit launch step needed).
 - Reuse across all UI tests.
-- Always close at end of run (`puppeteer_close_browser`), whether all-pass, any-fail, or aborted.
+- Always close at end of run (`browser_close`), whether all-pass, any-fail, or aborted.
 
 ### MCP Tool Compliance
 - Use Serena for every directory listing and file search (e.g. screenshots cleanup).

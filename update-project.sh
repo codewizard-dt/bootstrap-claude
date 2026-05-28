@@ -73,13 +73,15 @@ if [ -d "$LEGACY_COMMANDS_DIR" ]; then
   fi
 fi
 
-# 1b. Detect per-project .claude/skills/ (now obsolete — skills are global)
+# 1b. Detect per-project .claude/skills/ copies of skills THIS REPO installs globally
 PROJECT_SKILLS_DIR="$PROJECT_DIR/.claude/skills"
 if [ -d "$PROJECT_SKILLS_DIR" ]; then
-  # Identify actual skill directories (contain a SKILL.md file)
+  # Only flag skill directories whose names match skills installed by this repo
   PER_PROJECT_SKILLS=()
-  for skill_dir in "$PROJECT_SKILLS_DIR"/*/; do
-    [ -f "${skill_dir}SKILL.md" ] && PER_PROJECT_SKILLS+=("$skill_dir")
+  for skill_dir in "$TEMPLATE_DIR/.claude/skills/"*/; do
+    skill_name="$(basename "$skill_dir")"
+    project_skill="$PROJECT_SKILLS_DIR/$skill_name"
+    [ -f "$project_skill/SKILL.md" ] && PER_PROJECT_SKILLS+=("$project_skill/")
   done
 
   if [ ${#PER_PROJECT_SKILLS[@]} -gt 0 ]; then

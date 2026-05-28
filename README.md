@@ -6,7 +6,7 @@ Bootstrap new Claude Code projects with reusable slash commands, MCP server setu
 
 ## Description
 
-`bootstrap-claude` is a project setup template and npm-distributed CLI tool that scaffolds a Claude Code workspace with everything needed for structured, AI-assisted development workflows. It installs and configures four MCP servers (Serena for semantic code intelligence, Brave Search for web research, Context7 for library documentation, and Puppeteer for browser automation), copies a library of 20 custom skills into the target project, and establishes a task management, UAT, and Architecture Decision Log (ADL) system under `.docs/`.
+`bootstrap-claude` is a project setup template and npm-distributed CLI tool that scaffolds a Claude Code workspace with everything needed for structured, AI-assisted development workflows. It installs and configures four MCP servers (Serena for semantic code intelligence, Brave Search for web research, Context7 for library documentation, and Playwright for browser automation), copies a library of 20 custom skills into the target project, and establishes a task management, UAT, and Architecture Decision Log (ADL) system under `.docs/`.
 
 The template was built to solve a recurring pain point: every new Claude Code project requires the same tedious setup — adding MCP servers, creating task directories, defining documentation conventions, and writing skill workflows. With `bootstrap-claude`, that entire setup happens in a single `npx bootstrap-claude setup` run, including interactive API key prompts and idempotent installation checks that skip already-configured servers. It implements a full spec-driven development pipeline: Product Requirements Documents (PRDs) upstream of Architecture Decision Records (ADRs) upstream of execution tasks, with bidirectional cross-linking and immutability rules at each layer.
 
@@ -31,7 +31,7 @@ The project is a **template repository** with a thin CLI wrapper for npm distrib
 - Serena MCP — LSP-powered semantic code exploration, symbolic editing, and persistent project memory
 - Brave Search MCP (`@modelcontextprotocol/server-brave-search`) — web research with rate limiting
 - Context7 MCP (HTTP transport) — library and framework documentation lookups
-- Puppeteer MCP — browser automation and screenshot capture for UI testing
+- Playwright MCP (`@playwright/mcp`) — browser automation and screenshot capture for UI testing
 
 **Tooling & Infrastructure**
 - Claude Code CLI (`claude`) — AI coding assistant with custom command support
@@ -42,7 +42,7 @@ The project is a **template repository** with a thin CLI wrapper for npm distrib
 
 - **Bootstrapping new Claude Code projects** — run once to install MCP servers, copy skills, and scaffold the task and UAT directory structure into any project root.
 - **Structured AI-agent delegation** — use the task file format and custom commands (`/tackle`, `/now`) to delegate multi-step implementation work to Claude with clear, machine-readable instructions and agent-type annotations per step.
-- **Feature validation via UAT** — generate acceptance tests with `/uat-generate` and validate them either interactively with `/uat-walk` or headlessly with `/uat-auto` (fail-closed auto-judging for orchestrator-dispatched runs), including automatic API test execution and Puppeteer-assisted UI diagnosis.
+- **Feature validation via UAT** — generate acceptance tests with `/uat-generate` and validate them either interactively with `/uat-walk` or headlessly with `/uat-auto` (fail-closed auto-judging for orchestrator-dispatched runs), including automatic API test execution and Playwright-assisted UI diagnosis.
 - **Product Requirements Documents (PRDs)** — capture *what to build and why* with `/prd-create` (Socratic Q&A elicitation), approve them with `/prd-finalize` (completeness audit), and translate requirements into architectural decisions with `/prd-extract-decisions`. The PRD layer enforces named personas, measurable success metrics, and explicit non-goals before any code decisions are made.
 - **Architecture Decision Records (ADRs)** — capture significant decisions with `/adr-create`, ratify them per-decision with `/adr-finalize`. Each ADR file is a Decision Group of 1+ independently versioned decisions (`ADR-NNNN#DM`); supersession is atomic across the two affected decision blocks plus the index and relationship graph, while sibling decisions in the same file evolve independently. ADRs link back to the PRD that sourced them via `/prd-extract-decisions`.
 - **Knowledge-preserving development** — Serena's memory system persists architectural decisions, gotchas, and integration patterns across sessions, so agents don't repeat mistakes or lose context between conversations.
@@ -58,7 +58,7 @@ The project is a **template repository** with a thin CLI wrapper for npm distrib
 - **Spec-Driven Development Pipeline** — Implemented a full requirements → decisions → implementation pipeline: PRDs (product requirements, `what & why`) flow into ADRs (architectural decisions, `how & why`) which flow into tasks (implementation, `what changes`), with bidirectional cross-linking and immutability enforced at each layer.
 - **Architecture Decision Record (ADR) System Design** — Built a multi-decision-per-file ADR framework on top of MADR 4.0 + Nygard, with per-decision identifiers (`ADR-NNNN#DM`), E-C-A-D-R Definition of Done, atomic two-block supersession, and a relationship graph kept in sync across the index and a mermaid-rendered chain.
 - **Task Lifecycle Management** — Designed and implemented a three-stage task management system (`active` → `completed` → `trashed`) with structured file formats, cross-linked UAT references, and agent-executable step definitions.
-- **User Acceptance Testing (UAT) Framework Design** — Built a custom UAT system supporting API auto-execution, batched UI testing, Puppeteer-assisted visual diagnosis, per-test pass/fail/fix workflows, and parallel pending/completed/skipped tracking.
+- **User Acceptance Testing (UAT) Framework Design** — Built a custom UAT system supporting API auto-execution, batched UI testing, Playwright-assisted visual diagnosis, per-test pass/fail/fix workflows, and parallel pending/completed/skipped tracking.
 - **npm Package Authoring & Distribution** — Configured `package.json` with `bin`, `files`, and repository fields; packaged and published to the npm registry under a scoped namespace (`@codewizard-dt/bootstrap-claude`).
 - **Knowledge Management System Design** — Structured Serena memory hierarchies (topic `/` subtopic convention) for persistent, session-spanning project knowledge retrieval with topic-filtered recall.
 - **Template & Scaffolding System Architecture** — Designed a reusable, rsync-based template distribution system that supports both initial setup and incremental updates without destructive overwrites.

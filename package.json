@@ -1,6 +1,6 @@
 {
   "name": "@codewizard-dt/bootstrap-claude",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Bootstrap Claude Code projects with reusable configurations and commands",
   "homepage": "https://github.com/codewizard-dt/basic-project-setup#readme",
   "bugs": {

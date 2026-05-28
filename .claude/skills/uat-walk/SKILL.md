@@ -328,11 +328,11 @@ After presenting, proceed to Step 4C for a single verdict.
 
 ---
 
-### Puppeteer Assist for UI Tests
+### Playwright Assist for UI Tests
 
-Puppeteer is used **only for troubleshooting** — do NOT take screenshots when initially presenting a test. The user performs their own manual testing and reports the result.
+Playwright is used **only for troubleshooting** — do NOT take screenshots when initially presenting a test. The user performs their own manual testing and reports the result.
 
-Puppeteer MCP is launched when a **UI/layout test** (identified by `UAT-UI-*` prefix, or having `Page:` / `Components:` metadata) receives a **Fail** or **Fix now** verdict. It is used to:
+Playwright MCP is launched when a **UI/layout test** (identified by `UAT-UI-*` prefix, or having `Page:` / `Components:` metadata) receives a **Fail** or **Fix now** verdict. It is used to:
 - Capture the broken state for diagnosis
 - Inspect DOM/styles to identify root causes
 - Capture before/after states during the fix workflow
@@ -340,9 +340,9 @@ Puppeteer MCP is launched when a **UI/layout test** (identified by `UAT-UI-*` pr
 **Viewport**: Always launch with a **desktop viewport** (1600×950) unless the user explicitly requests a different size.
 
 **Lifecycle**:
-1. **Launch browser** (if not already running) on the first Fail or Fix now for a UI test: `puppeteer_launch` with headless mode and desktop viewport
+1. **Browser starts automatically** on the first Fail or Fix now for a UI test (Playwright MCP starts the browser on first tool call — no explicit launch step needed)
 2. **Keep the browser open** for the duration of the walkthrough — reuse it across UI tests
-3. Skip Puppeteer entirely for non-UI tests (API, edge case, integration tests without a `Page:` field)
+3. Skip Playwright entirely for non-UI tests (API, edge case, integration tests without a `Page:` field)
 
 ### Screenshot Naming Convention
 
@@ -436,7 +436,7 @@ The user will type their choice. Accept any unambiguous prefix (e.g., "p", "pass
 #### If Fail
 - Ask a follow-up inline: **"What went wrong? (optional, press Enter to skip)"**
   - For batched fails: ask once per failed test, or accept a single note for all failures
-- For **UI tests**: launch Puppeteer (if not already running, desktop viewport), navigate to the page, and take a screenshot saved as `.docs/uat/screenshots/<task-number>-<UAT-ID>-fail.png` to capture the broken state
+- For **UI tests**: use Playwright (browser starts automatically on first tool call, desktop viewport), navigate to the page, and take a screenshot saved as `.docs/uat/screenshots/<task-number>-<UAT-ID>-fail.png` to capture the broken state
 - Mark the test: `- [FAIL: <user's note or "No details provided">] <!-- YYYY-MM-DD -->`
 
 #### If Fix Now
@@ -506,27 +506,27 @@ Instructions:
 5. Report what was changed and why
 ```
 
-### UI/Layout Fix Workflow (Puppeteer-Assisted)
+### UI/Layout Fix Workflow (Playwright-Assisted)
 
-For **UI/layout tests** (`UAT-UI-*` or tests with `Page:` / `Components:` metadata), the fix subagent should use Puppeteer MCP to diagnose and verify visually:
+For **UI/layout tests** (`UAT-UI-*` or tests with `Page:` / `Components:` metadata), the fix subagent should use Playwright MCP to diagnose and verify visually:
 
 **Before fixing** — Capture the current broken state:
-1. `puppeteer_navigate` to the test's page URL
-2. `puppeteer_screenshot` — save as `.docs/uat/screenshots/<task-number>-<UAT-ID>-before-fix.png`
-3. `puppeteer_evaluate` or `puppeteer_get_text` to inspect DOM state, computed styles, or element visibility
+1. `browser_navigate` to the test's page URL
+2. `browser_take_screenshot` — save as `.docs/uat/screenshots/<task-number>-<UAT-ID>-before-fix.png`
+3. `browser_evaluate` or `browser_snapshot` to inspect DOM state, computed styles, or element visibility
 4. Use findings to inform the root cause analysis
 
 **After fixing** — Capture the new state (do NOT judge pass/fail):
-1. Reload the page: `puppeteer_navigate` to the same URL
-2. `puppeteer_screenshot` — save as `.docs/uat/screenshots/<task-number>-<UAT-ID>-after-fix.png`
+1. Reload the page: `browser_navigate` to the same URL
+2. `browser_take_screenshot` — save as `.docs/uat/screenshots/<task-number>-<UAT-ID>-after-fix.png`
 3. Include the before and after screenshots in the subagent's report
 4. **Do NOT determine if the fix is correct** — that is the user's job
 
 **Subagent prompt addition for UI tests**:
 ```
-This is a UI/layout test. Use Puppeteer MCP tools to diagnose:
+This is a UI/layout test. Use Playwright MCP tools to diagnose:
 - Navigate to the page and screenshot the current (broken) state
-- Inspect the DOM with puppeteer_evaluate to identify layout/style issues
+- Inspect the DOM with browser_snapshot to get the accessibility tree, or browser_evaluate for style issues
 - After implementing the fix, screenshot the new state
 - Report what you changed and include before/after screenshots
 - IMPORTANT: Do NOT mark the test as passing. Do NOT judge whether the fix is correct.
@@ -646,12 +646,12 @@ Failed Tests:
 - If all prerequisites pass auto-verification, proceed without asking — note it in one line
 - If a prerequisite fails, warn the user that subsequent tests may be affected but let them decide whether to continue
 
-### Puppeteer Browser Lifecycle
-- **Do NOT launch on test presentation** — only launch when a UI test receives a Fail or Fix now verdict
-- Launch with **desktop viewport** (1600×950) unless the user specifies otherwise
-- Once launched, keep the browser open and reuse for all subsequent UI troubleshooting
-- Close the browser (`puppeteer_close_browser`) when the walkthrough ends (completion or abort)
-- If no UI tests fail, never launch the browser
+### Playwright Browser Lifecycle
+- **Do NOT use on test presentation** — only use when a UI test receives a Fail or Fix now verdict
+- Browser starts automatically on first Playwright tool call — no explicit launch step needed; Playwright MCP handles headless mode and viewport automatically (default: desktop viewport 1600×950)
+- Once started, keep the browser open and reuse for all subsequent UI troubleshooting
+- Close the browser (`browser_close`) when the walkthrough ends (completion or abort)
+- If no UI tests fail, never use the browser
 - All screenshots go to `.docs/uat/screenshots/` with `<task-number>-` prefix
 - On **all passed**: use `mcp__serena__list_dir` on `.docs/uat/screenshots/` to find `<task-number>-*` files — **never use `ls`** — then `git rm` each one (or `rm` if not tracked)
 - On **failed/aborted**: keep screenshots for debugging reference

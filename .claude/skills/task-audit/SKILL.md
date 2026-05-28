@@ -1,6 +1,6 @@
 ---
 name: task-audit
-description: Generate a dependency graph of active tasks showing which block others and which can run in parallel
+description: Generate a dependency graph of active tasks showing which block others and which can run in parallel; also checks for unannotated implementations and auto-completes tasks
 model: claude-sonnet-4-6
 argument-hint: [--mermaid] [--json]
 disable-model-invocation: false
@@ -9,9 +9,9 @@ user-invocable: true
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Always obey `.docs/guides/task-lifecycle.md`. Read it now if not already in context.**
 
-# Task Audit — Dependency Graph
+# Task Audit
 
-Analyse all active tasks, parse their dependency blocks, build a directed dependency graph, and surface which tasks block others and which can be safely parallelised.
+Analyse all active tasks: verify implementation completeness, auto-check unannotated finished steps, move fully-completed tasks, parse dependency blocks, build a directed dependency graph, and surface which tasks block others and which can be safely parallelised.
 
 ---
 
@@ -34,13 +34,46 @@ Do **not** scan the directory directly. The index is authoritative for active ta
 
 ---
 
-## Step 2: Read Each Task File and Parse Its Dependency Block
+## Step 2: Read Each Task File — Check Completeness and Parse Dependencies
 
-For each task file path collected in Step 1, read the file using the `Read` tool.
+For each task file path collected in Step 1, **read the file once** using the `Read` tool (or Serena's `find_symbol`/`get_symbols_overview` for structured markdown traversal). Do all of 2a–2e in a single pass per file to avoid re-reading.
 
-### 2a. Locate the Dependency Block
+### 2a. Extract All Steps
 
-The dependency block is a blockquote appearing **immediately after the `# NNN —` title line** and **before `## Objective`**. It has this exact shape (one line per field):
+Scan every checklist item in the file — lines matching `- [ ] …` (incomplete) or `- [x] …` / `- [X] …` (complete). Record:
+
+- `unchecked`: list of step descriptions without a checkmark
+- `checked`: list of step descriptions already checked
+- `total`: count of all steps
+
+### 2b. Verify Unannotated Implementations
+
+For each unchecked step, determine whether the work it describes is **actually implemented** in the codebase:
+
+1. Extract the key noun/verb from the step description (e.g. "Add `foo()` helper", "Write migration for `users` table").
+2. Use Serena's `find_symbol` or `search_for_pattern` to look for the relevant symbol, file, or pattern.
+3. If evidence of a complete implementation is found (the symbol exists, the file is present, the migration exists, etc.), mark the step as **auto-completable**.
+
+Be conservative: only mark a step auto-completable when the evidence is unambiguous. When the step is vague or the search returns nothing definitive, leave it unchecked and note it as **unverified**.
+
+### 2c. Apply Checkmarks
+
+For every step confirmed as auto-completable in 2b, update the task file using `Edit` (or Serena's `replace_content`): change `- [ ]` → `- [x]` for that line.
+
+After applying all updates, recount `checked` and `total`. Track which tasks had checkmarks added (include them in the Step 4 report as **auto-completed steps**).
+
+### 2d. Move Fully-Completed Tasks
+
+If `checked == total` (all steps are now checked) after 2c:
+
+1. Move the task file from `.docs/tasks/` to `.docs/tasks/completed/` using `Bash` (`mv`).
+2. Update `.docs/tasks/README.md`: remove the row from the **Active Tasks** table and add it to the **Completed Tasks** table (or create that section if absent).
+3. Scan all other active task files for references to this task's ID (e.g. in their dependency blocks). For each reference found, note it in the Step 4 report as a **now-resolved dependency** — do not auto-edit those files, but suggest `/task-update <NNN>` to clean them up.
+4. Mark the task as `completed: true` in its node record so Step 3 treats it as resolved.
+
+### 2e. Parse the Dependency Block
+
+In the same file read, locate the dependency blockquote appearing **immediately after the `# NNN —` title line** and **before `## Objective`**:
 
 ```markdown
 > **Depends on**: [002-foo](002-foo.md), [003-bar](003-bar.md)
@@ -52,9 +85,9 @@ The dependency block is a blockquote appearing **immediately after the `# NNN �
 - Links follow the pattern `[NNN-slug](NNN-slug.md)` — extract the NNN-slug identifier from each link.
 - A task with no dependency block at all is treated as having `Depends on: none`, `Blocks: none`, `Parallel-safe with: none`.
 
-### 2b. Build the Node Record
+### 2f. Build the Node Record
 
-For each task, produce a record:
+For each task (skipping any moved to completed in 2d), produce a record:
 
 ```
 {
@@ -63,13 +96,15 @@ For each task, produce a record:
   depends_on: ["NNN-slug", ...],   # tasks that must complete before this one
   blocks: ["NNN-slug", ...],        # tasks this one must complete before they can start
   parallel_safe: ["NNN-slug", ...], # tasks explicitly marked safe to run alongside
-  progress: "X/Y",
+  progress: "X/Y",                  # updated count after auto-checkmarks
   flags: "[WIP]" | "—" | etc,
-  missing_block: true/false         # true if the dependency block was absent entirely
+  missing_block: true/false,        # true if the dependency block was absent entirely
+  auto_checked: ["step description", ...],  # steps that were auto-completed in 2c
+  unverified: ["step description", ...]     # unchecked steps whose implementation could not be confirmed
 }
 ```
 
-Note tasks missing the dependency block — list them in the Step 5 report so the user knows to run `/task-update` on them.
+Note tasks missing the dependency block — list them in the Step 4 issues report so the user knows to run `/task-update` on them.
 
 ---
 
@@ -145,7 +180,32 @@ For each wave, note any tasks within it that have an **unknown parallel-safety**
 
 If no blocking chains exist: "No blocking dependencies found — all tasks are independent."
 
-### 4d. Issues Found
+### 4d. Completion Findings
+
+Report what Step 2 discovered and changed:
+
+```
+## Completion Findings
+
+### Auto-Completed Steps
+| Task | Step | Evidence |
+|------|------|----------|
+| 005-command-anti-patterns | "Add mcp-tools.md guide" | File found at .docs/guides/mcp-tools.md |
+
+### Fully-Completed Tasks Moved
+| Task | Action |
+|------|--------|
+| 005-command-anti-patterns | Moved to .docs/tasks/completed/ — update references: /task-update 007 |
+
+### Unverified Steps (implementation unclear)
+| Task | Step |
+|------|------|
+| 009-audit-skills-vs-sdlc | "Configure CI gate for audit output" |
+```
+
+Omit any section whose table would be empty.
+
+### 4e. Issues Found
 
 ```
 ## Issues
@@ -161,10 +221,11 @@ Categories:
 - **Stale reference** — referenced task ID not found in active index
 - **Asymmetric edge** — A blocks B but B doesn't list A in depends_on
 - **Cycle** — dependency cycle detected (list all members)
+- **Now-resolved dependency** — a task was moved to completed; other tasks still reference it in their dependency blocks
 
 If no issues: "No issues found."
 
-### 4e. Suggested Next Actions
+### 4f. Suggested Next Actions
 
 Based on the graph, suggest actionable next steps:
 
@@ -178,6 +239,9 @@ Wave 1 tasks are unblocked and can start immediately:
 Fix missing dependency blocks:
   /task-update 006
   /task-update 009
+
+Clean up now-resolved dependency references:
+  /task-update 007   (005 was moved to completed)
 ```
 
 ---

@@ -14,7 +14,7 @@ Project setup template for Claude Code. Contains reusable `.claude/` configurati
 - `.docs/uat/` — UAT test tracking (pending files at top level → `completed/` / `skipped/` / `trashed/`)
 - `.docs/roadmaps/` — Roadmap Log. Flat folder (no lifecycle subfolders); status field in frontmatter (`active` | `done`). Each roadmap is an ordered, phased checklist with **hybrid items**: task-link items (`- [ ] [TASK-NNN: title](../tasks/NNN-slug.md)`) AND/OR inline items (free-form text). README.md defines format, item-format rules, index, anti-patterns, and the **Auto-Checkoff Contract** that /tackle, /uat, /uat-auto, /uat-auto-plus, and /uat-skip implement: when a task transitions to completed, they flip any matching `- [ ]` to `- [x]` in any roadmap referencing it. Scaffold-only sync: README.md + .gitkeep propagate; roadmap files are project-specific. Orthogonal to the PRD/ADR/Task pipeline — a roadmap may reference tasks across many PRDs/ADRs or none.
 - `basic-project-setup.md` — MCP installation guide
-- `install-global.sh` — Installs MCPs (brave-search, context7, puppeteer-mcp-claude, serena) at user scope AND rsyncs skills to `~/.claude/skills/`. Handles orphan skill cleanup. Called by both `setup-project.sh` and `update-project.sh`. Also exposed as `npx bootstrap-claude install`.
+- `install-global.sh` — Installs MCPs (brave-search, context7, playwright, serena) at user scope AND rsyncs skills to `~/.claude/skills/`. Handles orphan skill cleanup. Called by both `setup-project.sh` and `update-project.sh`. Also exposed as `npx bootstrap-claude install`.
 - `setup-project.sh` — For new projects: calls `install-global.sh` (MCPs + skills), copies non-skills `.claude/` content (prompt-template etc.) to the project, syncs `.docs/` scaffold, bootstraps Serena `project.yml`. Two steps.
 - `update-project.sh` — For existing projects: calls `install-global.sh`, syncs `.docs/` scaffold, handles legacy cleanup (orphan skills, subdirectory migrations), re-runs Serena bootstrap idempotently.
 - `sync-docs-scaffold.sh` — Syncs only the scaffold structure of `.docs/` into target projects (guides, directory shells, `.gitkeep` files, `tasks/README.md`). Does NOT sync `.claude/skills/` — skills are now global. Never copies template task/UAT content. Called by both `setup-project.sh` and `update-project.sh`.
@@ -48,7 +48,7 @@ Project setup template for Claude Code. Contains reusable `.claude/` configurati
 - `/uat-skip <path>` — Skip UAT, move task to completed + UAT to skipped
 - `/lint` — IDE diagnostics with fix cycles
 - `/type-check` — Detect type-checking tools (typecheck/tsc/mypy/pyright/go vet/cargo check/etc.), run each sequentially, and chain into `/git-commit` only if all pass; graceful no-op if no checkers detected; never auto-fixes (verification-only)
-- `/debug-logs [symptom]` — Read-only failure diagnosis: gather session context (recent diff, background processes, recent errors), pick log stores by symptom (TaskOutput, IDE diagnostics, gh run logs, DigitalOcean app logs, conventional `./logs`/`./tmp` paths, Puppeteer console), correlate with code, and produce ranked hypotheses with concrete next actions. Never auto-applies fixes.
+- `/debug-logs [symptom]` — Read-only failure diagnosis: gather session context (recent diff, background processes, recent errors), pick log stores by symptom (TaskOutput, IDE diagnostics, gh run logs, DigitalOcean app logs, conventional `./logs`/`./tmp` paths, Playwright snapshot), correlate with code, and produce ranked hypotheses with concrete next actions. Never auto-applies fixes.
 - `/simplify <path>` — Remove redundancy, simplify complexity
 - `/git-commit` — Stage and commit with auto message
 - `/update-docs` — Update docs + audit/update Serena memories
@@ -69,4 +69,4 @@ PRD layer is optional for small/internal work — jump directly to `/task-add` o
 - Serena — code exploration, editing, memory
 - Brave Search — web research (1 req/sec, sequential)
 - Context7 — library documentation
-- Puppeteer — browser automation + screenshots for UI UAT tests
+- Playwright — browser automation + screenshots for UI UAT tests

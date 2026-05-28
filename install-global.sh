@@ -51,13 +51,13 @@ else
   echo "  context7 MCP installed."
 fi
 
-# puppeteer-mcp-claude
-if claude mcp get "puppeteer-mcp-claude" &>/dev/null; then
-  echo "  puppeteer-mcp-claude: already installed, skipping."
+# playwright
+if claude mcp get "playwright" &>/dev/null; then
+  echo "  playwright: already installed, skipping."
 else
-  echo "  Installing puppeteer-mcp-claude MCP..."
-  claude mcp add --scope user puppeteer-mcp-claude -- npx puppeteer-mcp-claude serve
-  echo "  puppeteer-mcp-claude MCP installed."
+  echo "  Installing playwright MCP..."
+  claude mcp add --scope user playwright -- npx @playwright/mcp@latest
+  echo "  playwright MCP installed."
 fi
 
 # serena (global, user scope; resolves project from cwd via --project .)
@@ -70,7 +70,16 @@ else
 fi
 echo ""
 
-# 2. Install skills globally
+# 2. Install hooks globally
+GLOBAL_HOOKS_DIR="$HOME/.claude/hooks"
+if [ -d "$TEMPLATE_DIR/.claude/hooks" ]; then
+  echo "Installing hooks globally (~/.claude/hooks/)..."
+  mkdir -p "$GLOBAL_HOOKS_DIR"
+  rsync -av "$TEMPLATE_DIR/.claude/hooks/" "$GLOBAL_HOOKS_DIR/"
+  echo ""
+fi
+
+# 3. Install skills globally
 echo "Installing skills globally (~/.claude/skills/)..."
 
 # Ensure the global skills directory exists

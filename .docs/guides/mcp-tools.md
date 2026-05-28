@@ -23,7 +23,7 @@ These MCP servers are **REQUIRED** for all applicable operations. Using standard
 | **Serena** | All **code** exploration and editing; **all** file/directory exploration and search (code, markdown, config, anything) | `Read`, `Edit`, `Write`, `Grep`, `Glob` (for code files); `bash` exploration commands (`ls`, `cat`, `find`, `grep`, `sed`, `awk`, `head`, `tail`, `tree`) for **any** file type |
 | **Context7** | All library/framework documentation lookups | WebSearch, WebFetch (for library docs) |
 | **Brave Search** | All general web research | WebSearch (for non-library topics) |
-| **Puppeteer** | Browser automation, screenshots, UI interaction | WebFetch (for rendered pages) |
+| **Playwright** | Browser automation, screenshots, UI interaction | WebFetch (for rendered pages) |
 
 ### Standard tools (`Read`, `Edit`, `Write`) are permitted for:
 
@@ -221,19 +221,27 @@ Use for general research, best practices, troubleshooting, news. Do NOT use for 
 
 ---
 
-## Puppeteer (Browser Automation)
+## Playwright (Browser Automation)
 
 ### Tools
 
 | Tool | Purpose |
 |------|---------|
-| `puppeteer_navigate` | Navigate to a URL |
-| `puppeteer_screenshot` | Screenshot current page |
-| `puppeteer_click` | Click element by CSS selector |
-| `puppeteer_fill` | Fill an input field |
-| `puppeteer_evaluate` | Execute JavaScript in browser |
-| `puppeteer_select` | Select dropdown option |
-| `puppeteer_hover` | Hover over element |
+| `browser_navigate` | Navigate to a URL |
+| `browser_take_screenshot` | Screenshot current page |
+| `browser_snapshot` | Get accessibility tree (use to get element `ref` IDs before clicking/typing) |
+| `browser_click` | Click element by `ref` ID from snapshot |
+| `browser_type` | Type into an input field by `ref` ID |
+| `browser_evaluate` | Execute JavaScript in browser |
+| `browser_select_option` | Select dropdown option by `ref` ID |
+| `browser_hover` | Hover over element by `ref` ID |
+| `browser_close` | Close the browser |
+
+### Workflow
+
+1. **No explicit launch step** — the browser starts automatically on the first tool call.
+2. **Accessibility-tree first** — always call `browser_snapshot` to get the current page structure and element `ref` IDs before interacting. Pass the `ref` to `browser_click`, `browser_type`, etc.
+3. Use `browser_take_screenshot` for visual verification after navigation or interaction.
 
 Use for visual verification, form interaction, and browser-rendered content. Do NOT use for static content fetching or library docs.
 
@@ -325,4 +333,4 @@ Write memories to persist **non-obvious project knowledge** useful for future ta
 | Edit config files (JSON, YAML, .env) | Standard `Read`/`Edit`/`Write` | `sed`, Serena symbolic tools |
 | Library docs | Context7 | `WebSearch` / `WebFetch` |
 | General research | Brave Search (sequential, 1/sec) | Parallel searches |
-| Browser interaction | Puppeteer | `WebFetch` for rendered content |
+| Browser interaction | Playwright | `WebFetch` for rendered content |
