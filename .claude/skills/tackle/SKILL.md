@@ -37,7 +37,39 @@ Parse `$ARGUMENTS` to locate the task file:
    - If ambiguous, list matches and ask the user to clarify
    - If no match found, fall through to case 4
 
-4. **If `$ARGUMENTS` is empty OR the input above did not resolve to a task file** — survey active tasks from the index and recommend, do NOT auto-pick:
+4. **If `$ARGUMENTS` is empty** — run the **Roadmap Auto-Discovery** path first (see below), then fall through to the task survey only if no roadmap work is found.
+
+5. **If `$ARGUMENTS` was non-empty but did not resolve to a task file** — survey active tasks from the index and recommend, do NOT auto-pick:
+
+---
+
+### Step 0a: Roadmap Auto-Discovery (runs only when `$ARGUMENTS` is empty)
+
+**Goal**: find the first actionable item in the active roadmap and tackle it directly — no user prompt needed.
+
+1. **List roadmaps**: `mcp__serena__list_dir(".docs/roadmaps/", recursive=false)` — collect all `.md` files at the root level (exclude `completed/` and `README.md`).
+
+2. **If no active roadmaps exist**: skip to the task survey (case 5 below).
+
+3. **If one or more active roadmaps exist**:
+   - Read each roadmap file (use the `Read` tool — roadmaps are markdown, not code).
+   - **Select the target roadmap**: pick the one with the most `[x]` items (furthest along). If tied or only one exists, use that one. Do NOT ask the user.
+
+4. **Find the first unchecked phase**:
+   - A roadmap is divided into `## Phase N: <name>` sections (or a flat list if no phases).
+   - Scan top-to-bottom for the first phase that contains at least one `- [ ]` item.
+   - If no phase has unchecked items, the roadmap is done — skip to the task survey.
+
+5. **Find the first unchecked item in that phase**:
+   - Take the first `- [ ]` line in the phase.
+   - **If it is a task link** (format: `- [ ] [TASK-NNN-slug](.docs/tasks/NNN-slug.md)` or similar markdown link pointing into `.docs/tasks/`): extract the file path and use it as the outline for Steps 1–7. Announce: `Roadmap auto-selected: <roadmap filename> → Phase <N>: <phase name> → <task link text>`.
+   - **If it is an inline item** (plain text, no task link): treat the text as a task description and fall through to the task survey so the user can choose or confirm. Announce: `Roadmap auto-selected: <roadmap filename> → Phase <N>: <phase name> → inline item "<text>" (no task file — surveying tasks instead)`.
+
+6. **Do NOT prompt the user** during auto-discovery. This path is designed to be zero-click: invoke `/tackle` with no args and execution starts immediately on the right task.
+
+---
+
+**If `$ARGUMENTS` is empty OR the input above did not resolve to a task file** — survey active tasks from the index and recommend, do NOT auto-pick:
    - **Read only `.docs/tasks/README.md`** using the `Read` tool. This file is the canonical task index and already contains the columns the survey needs (`#`, `Slug`, `Progress`, `UAT`, `Flags`, `Objective`). Do **NOT** read individual task files in `.docs/tasks/` for the survey — that's what the index exists to prevent.
    - **If the README is missing, has no `## Active Tasks` table, or the table is missing the expected columns**, STOP and report: `Task index at .docs/tasks/README.md is not bootstrapped. Run /primer to bootstrap it, or invoke /tackle <path-or-slug> directly.` Do not fall back to scanning every task file.
    - Use `mcp__serena__list_dir` on `.docs/uat/` only to sanity-check the index's `UAT` column against on-disk reality. If they disagree, trust the disk and quietly note the drift in your output (don't block on it).
