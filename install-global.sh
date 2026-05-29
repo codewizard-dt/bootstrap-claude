@@ -75,7 +75,7 @@ GLOBAL_HOOKS_DIR="$HOME/.claude/hooks"
 if [ -d "$TEMPLATE_DIR/.claude/hooks" ]; then
   echo "Installing hooks globally (~/.claude/hooks/)..."
   mkdir -p "$GLOBAL_HOOKS_DIR"
-  rsync -av "$TEMPLATE_DIR/.claude/hooks/" "$GLOBAL_HOOKS_DIR/"
+  rsync -av --exclude='.DS_Store' "$TEMPLATE_DIR/.claude/hooks/" "$GLOBAL_HOOKS_DIR/"
   echo ""
 fi
 
@@ -86,7 +86,7 @@ echo "Installing skills globally (~/.claude/skills/)..."
 mkdir -p "$GLOBAL_SKILLS_DIR"
 
 # Rsync skills from the template to ~/.claude/skills/
-rsync -av "$TEMPLATE_DIR/.claude/skills/" "$GLOBAL_SKILLS_DIR/"
+rsync -av --exclude='.DS_Store' "$TEMPLATE_DIR/.claude/skills/" "$GLOBAL_SKILLS_DIR/"
 
 # Detect orphan skill folders from the noun-first rename
 ORPHAN_FOUND=()

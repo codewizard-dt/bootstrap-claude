@@ -37,6 +37,7 @@ mkdir -p "$PROJECT_DIR/.docs/bugs/in-progress"
 mkdir -p "$PROJECT_DIR/.docs/bugs/closed"
 mkdir -p "$PROJECT_DIR/.docs/roadmaps"
 mkdir -p "$PROJECT_DIR/.docs/roadmaps/completed"
+mkdir -p "$PROJECT_DIR/.docs/company-context"
 
 # Sync .docs/guides/ as a full directory (entire contents, no filters)
 rsync -av "$TEMPLATE_DIR/.docs/guides/" "$PROJECT_DIR/.docs/guides/"
@@ -63,9 +64,7 @@ rsync -av "$TEMPLATE_DIR/.docs/adr/completed/.gitkeep" "$PROJECT_DIR/.docs/adr/c
 
 # Sync .docs/prd/ README + per-subfolder .gitkeep only — PRD files are project-specific and MUST NOT be copied
 rsync -av "$TEMPLATE_DIR/.docs/prd/README.md" "$PROJECT_DIR/.docs/prd/"
-for sub in archived; do
-  rsync -av "$TEMPLATE_DIR/.docs/prd/$sub/.gitkeep" "$PROJECT_DIR/.docs/prd/$sub/"
-done
+rsync -av "$TEMPLATE_DIR/.docs/prd/archived/.gitkeep" "$PROJECT_DIR/.docs/prd/archived/"
 
 # Sync .docs/bugs/ README + per-subfolder .gitkeep only — bug records are project-specific and MUST NOT be copied
 rsync -av "$TEMPLATE_DIR/.docs/bugs/README.md" "$PROJECT_DIR/.docs/bugs/"
@@ -76,5 +75,8 @@ done
 # Sync .docs/roadmaps/ README + .gitkeep only — roadmap files are project-specific and MUST NOT be copied
 rsync -av "$TEMPLATE_DIR/.docs/roadmaps/README.md" "$TEMPLATE_DIR/.docs/roadmaps/.gitkeep" "$PROJECT_DIR/.docs/roadmaps/"
 rsync -av "$TEMPLATE_DIR/.docs/roadmaps/completed/.gitkeep" "$PROJECT_DIR/.docs/roadmaps/completed/"
+
+# Sync .docs/company-context/ .gitkeep only — company research files are project-specific and MUST NOT be copied
+rsync -av "$TEMPLATE_DIR/.docs/company-context/.gitkeep" "$PROJECT_DIR/.docs/company-context/"
 
 echo ".docs/ scaffold synced."

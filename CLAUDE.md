@@ -28,6 +28,8 @@ Follow `basic-project-setup.md` to configure a new project, or use the npm packa
 | `/primer` | Refresh codebase context via Serena memories |
 | `/serena-config` | Interactively configure Serena language servers in `.serena/project.yml` |
 | `/research <topic>` | Deep research using codebase analysis, library docs, and web search |
+| `/research-company <name> [URL]` | Comprehensive company research — mission, operations, leadership, financials, and ~5 years of news |
+| `/company-align [slug]` | Analyse project–company fit against researched context in `.docs/company-context/`; writes `alignment.md` with gaps, strengths, and talking points |
 | `/now <task>` | Plan and delegate task to subagents (max 3 concurrent) |
 | `/tackle <path>` | Execute outlined task file step-by-step with subagent delegation |
 | `/task-add <desc>` | Create structured task in `.docs/tasks/`. Optional flags: `--adr ADR-NNNN#DM` (auto-link to an accepted ADR decision); `--roadmap ROADMAP-NNN` (auto-append the new task to a roadmap) |

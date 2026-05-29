@@ -2,8 +2,8 @@
 'use strict';
 
 // mv-absolute-path-block.js — PreToolUse hook (matcher: Bash, if: Bash(mv *))
-// Blocks `mv` commands where any argument is an absolute path rooted inside the
-// project directory. Directs the user to switch to a relative path instead.
+// Blocks `mv` commands where any argument is an absolute path rooted outside
+// the project directory. Directs the user to check the project root.
 
 const path = require('path');
 
@@ -32,9 +32,9 @@ process.stdin.on('end', () => {
     // Arguments after 'mv', skipping flags (-n, -f, -v, etc.)
     const args = tokens.slice(mvIdx + 1).filter(t => !t.startsWith('-'));
 
-    const offendingArg = args.find(arg =>
-      arg.startsWith('/') && (arg === cwd || arg.startsWith(cwdWithSep))
-    );
+    const offendingArg = args.find(arg => {
+      return arg.startsWith('/') && arg !== cwd && !arg.startsWith(cwdWithSep)
+    });
 
     if (offendingArg) {
       console.log(JSON.stringify({
