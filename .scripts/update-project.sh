@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-TEMPLATE_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+TEMPLATE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 if [ $# -ne 1 ]; then
   echo "Usage: $0 <path-to-project>"
@@ -120,11 +121,12 @@ fi
 
 # 2. Install skills globally and sync .docs/ scaffold
 echo "Installing skills globally (~/.claude/skills/)..."
-"$TEMPLATE_DIR/install-global.sh"
+"$SCRIPT_DIR/install-global.sh"
 echo ""
 
 echo "Syncing .docs/ scaffold..."
-"$TEMPLATE_DIR/sync-docs-scaffold.sh" "$PROJECT_DIR"
+"$SCRIPT_DIR/sync-docs-scaffold.sh" "$PROJECT_DIR"
+"$SCRIPT_DIR/merge-gitignore.sh" "$PROJECT_DIR"
 echo ""
 
 # Detect orphan skill folders from the noun-first rename
@@ -325,7 +327,7 @@ fi
 
 # 5. Bootstrap Serena project.yml (idempotent)
 echo "Re-checking Serena project.yml bootstrap..."
-"$TEMPLATE_DIR/bootstrap-serena.sh" "$PROJECT_DIR"
+"$SCRIPT_DIR/bootstrap-serena.sh" "$PROJECT_DIR"
 echo ""
 
 # Done

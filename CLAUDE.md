@@ -10,16 +10,17 @@ This is a **project setup template** for Claude Code. It contains reusable `.cla
 
 Follow `basic-project-setup.md` to configure a new project, or use the npm package:
 
-- `npx bootstrap-claude setup` — runs setup-project.sh (installs hooks and skills globally, syncs `.docs/` scaffold, bootstraps Serena)
-- `npx bootstrap-claude update` — runs update-project.sh (installs hooks and skills globally, syncs `.docs/` scaffold)
-- `npx bootstrap-claude install` — runs install-global.sh (installs/updates MCPs, hooks, and skills globally without a project path)
+- `npx bootstrap-claude setup` — runs .scripts/setup-project.sh (installs hooks and skills globally, syncs `.docs/` scaffold, scaffolds CI/CD via setup-deployment.sh, bootstraps Serena)
+- `npx bootstrap-claude update` — runs .scripts/update-project.sh (installs hooks and skills globally, syncs `.docs/` scaffold; does NOT touch `.github/` workflows)
+- `npx bootstrap-claude install` — runs .scripts/install-global.sh (installs/updates MCPs, hooks, and skills globally without a project path)
+- `npx bootstrap-claude deploy` — runs .scripts/setup-deployment.sh (scaffolds `.github/` workflows + `.gitleaks.toml` into the project; copy-once so existing workflows are preserved)
 
 **Manual setup steps:**
 
 1. **Serena MCP** — code exploration, editing, and memory: `claude mcp add serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context claude-code --project "$(pwd)"`
 2. **Brave Search MCP** — web search (rate limit: 1 req/sec, sequential only)
 3. **Context7 MCP** — library documentation lookups
-4. **Install MCPs and skills globally** — run `./install-global.sh` (or `npx bootstrap-claude install`) to configure MCPs and copy skills to `~/.claude/skills/`
+4. **Install MCPs and skills globally** — run `./.scripts/install-global.sh` (or `npx bootstrap-claude install`) to configure MCPs and copy skills to `~/.claude/skills/`
 
 ## Custom Commands
 
@@ -83,12 +84,13 @@ Standard Read/Edit/Write tools are permitted for markdown and config files (JSON
 - `.docs/guides/command-anti-patterns.md` — Shell-command and file-operation hygiene rules; defines the `/tackle`-vs-UAT verification split (static gates only in tackle; runtime/E2E in UAT)
 - `.docs/guides/bug-lifecycle.md` — Bug folder-movement rules, state-transition gates, and triage cadence; companion to `.docs/bugs/README.md`
 - `.docs/roadmaps/README.md` — Roadmap format spec: flat folder, `active`/`done` status, hybrid (task-link OR inline) checklist items, auto-checkoff contract that `/tackle` and UAT skills follow
-- `.claude/skills/` — All custom skill definitions (in Skills directory format); installed globally to `~/.claude/skills/` by `install-global.sh`
-- `.claude/hooks/` — Project-managed hook scripts; installed globally to `~/.claude/hooks/` by `install-global.sh` (same sync pattern as skills)
-- `install-global.sh` — Installs/updates MCPs, hooks, and skills globally (configures MCPs in `~/.claude.json`, copies hooks to `~/.claude/hooks/`, copies skills to `~/.claude/skills/`) so they are available across all projects; called by both setup and update scripts
-- `setup-project.sh` — Script to set up a new project (installs MCPs and skills globally, syncs `.docs/` scaffold, bootstraps Serena project.yml); delegates `.docs/` sync to `sync-docs-scaffold.sh`
-- `update-project.sh` — Script to install MCPs and skills globally (via `install-global.sh`) and sync the `.docs/` scaffold into a target project (re-runs bootstrap-serena.sh idempotently)
-- `sync-docs-scaffold.sh` — Syncs only the scaffold structure of `.docs/` (guides + directory shells + `.gitkeep` files), never template-specific task or UAT content; called by both setup and update scripts
-- `bootstrap-serena.sh` — Headlessly triggers `.serena/project.yml` creation via `claude --print` and enables 11 optional Serena tools; called by both setup and update scripts
+- `.claude/skills/` — All custom skill definitions (in Skills directory format); installed globally to `~/.claude/skills/` by `.scripts/install-global.sh`
+- `.claude/hooks/` — Project-managed hook scripts; installed globally to `~/.claude/hooks/` by `.scripts/install-global.sh` (same sync pattern as skills)
+- `.scripts/install-global.sh` — Installs/updates MCPs, hooks, and skills globally (configures MCPs in `~/.claude.json`, copies hooks to `~/.claude/hooks/`, copies skills to `~/.claude/skills/`) so they are available across all projects; called by both setup and update scripts
+- `.scripts/setup-project.sh` — Script to set up a new project (installs MCPs and skills globally, syncs `.docs/` scaffold, scaffolds CI/CD via `.scripts/setup-deployment.sh`, bootstraps Serena project.yml); delegates `.docs/` sync to `.scripts/sync-docs-scaffold.sh`
+- `.scripts/setup-deployment.sh` — Deployment/CI scaffolding seam (separate from the docs/skills/MCP sync flow). Copies `.github/` workflows + `.gitleaks.toml` into a project. Called once by `setup-project.sh`; **never** by `update-project.sh` (workflows are hand-customized per project and must not be clobbered). Also standalone via `npx bootstrap-claude deploy`. Copy-once: `security.yml` always overwritten (generic), `build.yml` + `.gitleaks.toml` skipped if present
+- `.scripts/update-project.sh` — Script to install MCPs and skills globally (via `.scripts/install-global.sh`) and sync the `.docs/` scaffold into a target project (re-runs bootstrap-serena.sh idempotently)
+- `.scripts/sync-docs-scaffold.sh` — Syncs only the scaffold structure of `.docs/` (guides + directory shells + `.gitkeep` files), never template-specific task or UAT content; called by both setup and update scripts
+- `.scripts/bootstrap-serena.sh` — Headlessly triggers `.serena/project.yml` creation via `claude --print` and enables 11 optional Serena tools; called by both setup and update scripts
 - `bin/cli.js` — CLI entry point for the npm package
 - `package.json` — npm package configuration with bin and files fields

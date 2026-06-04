@@ -47,7 +47,7 @@ Wait for all task-creation agents to complete before proceeding.
 
 **Step 3 — Three-phase pipeline for the wave**
 
-Run the full tackle → UAT-generate → UAT-auto-plus pipeline (see below) for all tasks in the current wave.
+Run the full tackle → UAT-generate → UAT-auto pipeline (see below) for all tasks in the current wave.
 
 **Step 4 — Repeat**
 
@@ -65,7 +65,7 @@ Agent({
 Loop until all items are checked:
 1. Run /roadmap-next <path> to get the next parallelizable wave.
 2. For inline placeholders, run /task-add and link the task into the roadmap. Make all scope, naming, and structuring decisions autonomously — infer reasonable defaults from the roadmap context and existing task files; never ask clarifying questions.
-3. Run the three-phase pipeline: /tackle each task (parallel per wave) → /uat-generate each completed task (parallel) → /uat-auto-plus each UAT file (sequential per file).
+3. Run the three-phase pipeline: /tackle each task (parallel per wave) → /uat-generate each completed task (parallel) → /uat-auto each UAT file (sequential per file). After each all-pass UAT run, verify that both the UAT file and task file were moved to their completed/ directories and the task row was removed from .docs/tasks/README.md — if not, do it now before proceeding.
 4. Repeat from step 1.
 
 Stop only when /roadmap-next reports no unchecked items.
@@ -212,13 +212,24 @@ Wait for all UAT generation to complete.
 
 ### Phase 3 — Run UATs autonomously (clear context first)
 
-**Reset context again** before running tests. Then invoke `/uat-auto-plus` for each generated UAT file:
+**Reset context again** before running tests. Then invoke `/uat-auto` for each generated UAT file:
 
 ```
-Agent({ description: "UAT auto-plus TASK-NNN", prompt: "/uat-auto-plus .docs/uat/NNN-slug.md", mode: "bypassPermissions" })
+Agent({
+  description: "UAT auto TASK-NNN",
+  prompt: "/uat-auto .docs/uat/NNN-slug.md
+
+CRITICAL: After all tests pass you MUST complete Step 7 in full before stopping:
+1. git mv the UAT file to .docs/uat/completed/
+2. git mv the task file to .docs/tasks/completed/
+3. Remove the task row from .docs/tasks/README.md
+4. Flip the matching roadmap checkbox and update the task path in the roadmap
+Do not stop after emitting the summary — the file moves are mandatory.",
+  mode: "bypassPermissions"
+})
 ```
 
-`/uat-auto-plus` diagnoses failures and applies fixes itself — do not run it in parallel with other team members that write to the same files.
+`/uat-auto` records failures for human triage — do not run it in parallel with other team members that write to the same files.
 
 ### Summary
 
@@ -229,7 +240,7 @@ Phase 1: tackle (parallel agent team)
 Phase 2: uat-generate (parallel, read-only)
   ↓  wait for all
   ↓  /clear
-Phase 3: uat-auto-plus (one at a time per file)
+Phase 3: uat-auto (parallel if no collisions)
 ```
 
 ---

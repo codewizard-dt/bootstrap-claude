@@ -104,7 +104,7 @@ Each PRD has a single top-level `Status` that progresses linearly:
 
 ## File Template
 
-Each PRD lives at `active/NNN-slug.md` (3-digit zero-padded, lowercase-dashed, ≤ 60 chars). The shape:
+Each PRD lives at `.docs/prd/NNN-slug.md` (3-digit zero-padded, lowercase-dashed, ≤ 60 chars). The shape:
 
 ```markdown
 # PRD NNN: <Product Initiative Title>
@@ -234,7 +234,7 @@ When adding a row:
 
 | Column | Format |
 |--------|--------|
-| `File` | `[PRD-NNN](active/NNN-slug.md)` |
+| `File` | `[PRD-NNN](NNN-slug.md)` |
 | `Title` | The PRD's H1 sub-title (without the `PRD NNN:` prefix) |
 | `Status` | `draft` \| `approved` \| `archived` \| `superseded` \| `trashed` |
 | `Created` | `YYYY-MM-DD` |

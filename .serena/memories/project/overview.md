@@ -1,69 +1,49 @@
 # basic-project-setup — Project Overview
 
 ## Purpose
-Project setup template for Claude Code. Contains reusable `.claude/` configurations (custom skills, guides) and MCP server setup instructions meant to be copied into other project repositories. Published as an npm package (`@codewizard-dt/bootstrap-claude`) with CLI commands `setup` and `update` (`npx bootstrap-claude setup` / `npx bootstrap-claude update`).
+Project setup template for Claude Code. Contains reusable `.claude/` configurations (custom skills, guides) and MCP server setup instructions meant to be copied into other project repositories. Published as an npm package (`@codewizard-dt/bootstrap-claude`) with CLI commands `setup`, `update`, `install`, and `deploy` (`npx bootstrap-claude <cmd>`).
 
 ## Structure
-- `.claude/skills/` — Custom skills in Skills directory format (20 total)
-- `.docs/guides/mcp-tools.md` — MCP tool reference (cross-links to command-anti-patterns.md)
-- `.docs/guides/task-lifecycle.md` — Task lifecycle conventions
-- `.docs/guides/command-anti-patterns.md` — Shell-command and file-operation hygiene rules; defines the /tackle-vs-UAT verification split: static gates only in /tackle (bash -n, typecheck, lint, unit tests), runtime/E2E in UAT
-- `.docs/tasks/` — Task tracking (active files at top level → `completed/` → `trashed/`)
-- `.docs/adr/` — Architecture Decision Log (ADL). Each file is a **Decision Group** with 1+ `## DM. <title>` blocks; each decision has independent `Status`, `Date`, `Deciders`, `Tags`. Identifier `ADR-NNNN#DM`. Per-decision supersession (atomic two-block cross-reference). README.md defines glossary, supersession rule, E-C-A-D-R Definition of Done, anti-patterns, file template, index format (one row per decision), relationship graph (per-decision nodes). Scaffold-only sync: `.gitkeep` propagates, ADR files are project-specific and never copied.
-- `.docs/prd/` — Product Requirements Log (PRL). PRDs sit **upstream** of ADRs and tasks, capturing *what to build and why* (product perspective). Status lifecycle: `draft → approved → archived/superseded/trashed`. Active/draft PRDs live at top level; subfolders: `archived/`, `trashed/`. Scaffold-only sync: README.md + per-subfolder `.gitkeep` propagate; PRD files are project-specific and never copied. Hard boundary rule: **"A PRD never justifies architecture. An ADR never redefines product scope."** Approved PRDs are immutable in substance — changes via append-only `## Amendment N` blocks.
-- `.docs/uat/` — UAT test tracking (pending files at top level → `completed/` / `skipped/` / `trashed/`)
-- `.docs/roadmaps/` — Roadmap Log. Flat folder (no lifecycle subfolders); status field in frontmatter (`active` | `done`). Each roadmap is an ordered, phased checklist with **hybrid items**: task-link items (`- [ ] [TASK-NNN: title](../tasks/NNN-slug.md)`) AND/OR inline items (free-form text). README.md defines format, item-format rules, index, anti-patterns, and the **Auto-Checkoff Contract** that /tackle, /uat, /uat-auto, /uat-auto-plus, and /uat-skip implement: when a task transitions to completed, they flip any matching `- [ ]` to `- [x]` in any roadmap referencing it. Scaffold-only sync: README.md + .gitkeep propagate; roadmap files are project-specific. Orthogonal to the PRD/ADR/Task pipeline — a roadmap may reference tasks across many PRDs/ADRs or none.
+- `.claude/skills/` — Custom skills in Skills directory format
+- `.docs/guides/mcp-tools.md` — MCP tool reference
+- `.docs/guides/command-anti-patterns.md` — Shell-command and file-operation hygiene rules; defines the /tackle-vs-UAT verification split
+- `.docs/tasks/` — Task tracking (active files at top level → `completed/`)
+- `.docs/adr/` — Architecture Decision Log. Each file is a **Decision Group** with 1+ `## DM. <title>` blocks; Identifier `ADR-NNNN#DM`. Scaffold-only sync.
+- `.docs/prd/` — Product Requirements Log. Status: `draft → approved → archived`. Scaffold-only sync.
+- `.docs/uat/` — UAT test tracking (pending files at top level → `completed/` / `skipped/`)
+- `.docs/roadmaps/` — Roadmap Log. Flat folder; status field in frontmatter (`active` | `done`). Scaffold-only sync.
 - `basic-project-setup.md` — MCP installation guide
-- `install-global.sh` — Installs MCPs (brave-search, context7, playwright, serena) at user scope AND rsyncs skills to `~/.claude/skills/`. Handles orphan skill cleanup. Called by both `setup-project.sh` and `update-project.sh`. Also exposed as `npx bootstrap-claude install`.
-- `setup-project.sh` — For new projects: calls `install-global.sh` (MCPs + skills), copies non-skills `.claude/` content (prompt-template etc.) to the project, syncs `.docs/` scaffold, bootstraps Serena `project.yml`. Two steps.
-- `update-project.sh` — For existing projects: calls `install-global.sh`, syncs `.docs/` scaffold, handles legacy cleanup (orphan skills, subdirectory migrations), re-runs Serena bootstrap idempotently.
-- `sync-docs-scaffold.sh` — Syncs only the scaffold structure of `.docs/` into target projects (guides, directory shells, `.gitkeep` files, `tasks/README.md`). Does NOT sync `.claude/skills/` — skills are now global. Never copies template task/UAT content. Called by both `setup-project.sh` and `update-project.sh`.
-- `bootstrap-serena.sh` — Headlessly triggers `.serena/project.yml` creation via `claude --print "exit"` and enables 11 optional Serena tools (list_dir, find_file, find_symbol, find_referencing_symbols, search_for_pattern, replace_content, replace_lines, insert_at_line, insert_after_symbol, insert_before_symbol, delete_lines). Idempotent — skips already-configured projects. Uses a Python one-liner for the find/replace to avoid macOS/GNU `sed -i` portability issues.
+- `.github/workflows/security.yml` — Generic Gitleaks secret-scanning workflow; **always synced** to target projects (idempotent). Triggers on push/PR to main.
+- `.github/workflows/build.yml` — Generic Docker build+push+deploy template. The `build` job is guarded by `if: hashFiles('Dockerfile') != ''` so it **self-skips** (neutral, not failed) on repos with no root Dockerfile; the dependent `deploy` job (`needs: build`) then skips too. Has `workflow_dispatch` + `docker/setup-buildx-action@v3`. Uses `github.repository_owner` / `github.event.repository.name`. TODO comments for Dockerfile paths and deploy mechanism (self-hosted runner OR SSH).
+- `.gitleaks.toml` — Generic Gitleaks config (`useDefault = true`); scaffolded by `setup-deployment.sh`.
+- `.scripts/install-global.sh` — Installs MCPs (brave-search, context7, playwright, serena) at user scope AND rsyncs skills to `~/.claude/skills/`. Called by setup and update scripts. Also `npx bootstrap-claude install`.
+- `.scripts/setup-project.sh` — New projects: install-global → copy `.claude/` content → sync-docs-scaffold → merge-gitignore → setup-deployment → bootstrap-serena.
+- `.scripts/update-project.sh` — Existing projects: install-global → sync-docs-scaffold → merge-gitignore → legacy cleanup → bootstrap-serena (idempotent). **Deliberately does NOT call setup-deployment** (never touches `.github/`).
+- `.scripts/sync-docs-scaffold.sh` — Syncs `.docs/` scaffold structure into target projects (guides, directory shells, `.gitkeep`). Never copies task/UAT/ADR/PRD content files.
+- `.scripts/setup-deployment.sh` — Deployment/CI scaffolding seam, **separate** from the docs/skills/MCP sync flow. Copies `.github/` workflows + `.gitleaks.toml` into a project. Called once by `setup-project.sh`; never by `update-project.sh` (workflows are hand-customized per project). Standalone via `npx bootstrap-claude deploy`. Copy-once: `security.yml` always overwritten (generic), `build.yml` + `.gitleaks.toml` skipped if present.
+- `.scripts/bootstrap-serena.sh` — Initializes `.serena/project.yml` via `claude --print "exit"` and enables 11 optional Serena tools. Idempotent.
+- `.scripts/merge-gitignore.sh` — Merges template `.gitignore` entries into project's `.gitignore` (appends only new lines).
+- `.scripts/setup-runner.sh` — Sets up a GitHub Actions self-hosted runner on a DigitalOcean droplet. Requires `RUNNER_TOKEN`.
+- `.scripts/startup.sh` — Bootstraps a fresh Ubuntu 24.04 VPS: Docker, Zsh, Oh My Zsh.
 - `CLAUDE.md` — Project instructions for Claude Code
-- `bin/cli.js` — CLI entry point for the npm package
-- `package.json` — npm package configuration
+- `bin/cli.js` — CLI entry point; resolves scripts via `path.resolve(__dirname, '..', '.scripts', script)`
+- `package.json` — npm package config; `files` includes `bin/`, `.scripts/`, `.github/`, `.gitleaks.toml`, `.claude/skills/`, `.docs/` scaffold pieces
 
-## Custom Skills (36)
-- `/primer` — Refresh codebase context via Serena memories
-- `/serena-config` — Interactively configure Serena language servers in `.serena/project.yml`; reads current config + auto-detects repo languages, then asks one add/remove question (free-text with `-` prefix for removals)
-- `/research <topic>` — Deep research (codebase + Context7 + Brave)
-- `/now <task>` — Plan and delegate to subagents (max 3 concurrent)
-- `/tackle <path>` — Execute task file step-by-step; verification restricted to static gates only (bash -n, typecheck, lint, unit tests); runtime/E2E verification deferred to UAT via [DEFERRED-TO-UAT] marker
-- `/task-add <desc> [--adr ADR-NNNN#DM] [--roadmap ROADMAP-NNN]` — Create task in `.docs/tasks/`. `--adr` auto-links to an accepted ADR decision; `--roadmap` auto-appends the new task as a `- [ ]` task-link item to the named roadmap.
-- `/roadmap-create <topic>` — Create a roadmap in `.docs/roadmaps/NNN-slug.md` via short Socratic Q&A. Captures goal, phases, owner, initial hybrid checklist. Status starts `active`.
-- `/roadmap-add <ROADMAP-NNN> [--phase "<name>"] <item-or-task-path>` — Append a task-link or inline item to an existing roadmap. Defaults to the last phase; creates a new phase if `--phase` doesn't exist. Bumps the index `Progress` denominator. Never edits the numerator (that's the auto-checkoff machinery's job).
-- `/roadmap-next <file>` — Read-only. Reports first unchecked item in a roadmap. For task-link items, suggests `/tackle <path>`. For inline items, tells the user to flip the checkbox manually. Suggests `Status: done` flip when fully complete.
-- `/prd-create <idea>` — Socratic Q&A elicitation → `.docs/prd/NNN-slug.md` (status: `draft`). Enforces named personas, measurable success metrics, explicit non-goals, acceptance criteria on every story.
-- `/prd-finalize <file>` — Completeness audit + stakeholder gate → flip `draft → approved`. Re-audits after each gap resolution; refuses to flip while any required field is empty.
-- `/prd-extract-decisions <file>` — Bridge skill: extracts ASRs from an approved PRD, cross-checks existing ADRs, groups into Decision Group candidates, surfaces `/adr-create` commands, writes bidirectional cross-links.
-- `/prd-update <file> [change]` — Approved PRDs: append-only `## Amendment N` blocks + `[amended N]` markers; drafts: direct edits. Always surfaces downstream ADR/task impact.
-- `/prd-trash <file>` — Move to `.docs/prd/trashed/`; never auto-cascades to linked ADRs/tasks; preserves index row and cross-links (path updated, not deleted).
-- `/adr-create <topic>` — Create an ADR file in `.docs/adr/`. Each file is a **Decision Group** containing 1+ decision blocks (`D1`, `D2`, …); each decision has its own `Status`, `Date`, `Deciders`, `Tags`, and supersession state. Table-only comparisons, mermaid flowcharts. Status defaults to `proposed`; finalization deferred to `/adr-finalize`.
-- `/adr-walkthrough <file>` — Interactive Q&A walkthrough of every decision in an ADR file. For each `proposed` decision, presents drivers + options + currently-chosen option, then asks the user to **Confirm**, **Change**, **Defer**, or **Skip**. Light edits only (bold chosen option, rewrite outcome justification, fill blank metadata on request). Never flips status; suggests `/adr-finalize <file>#<DM>` per confirmed decision. Treats `accepted`/`superseded`/`deprecated` siblings as informational-only. Sibling blocks remain byte-for-byte unchanged.\n- `/adr-finalize <file>#<DM>` — Ratify a **single decision block** (e.g. `0007-session#D2`). Per-decision audit (E-C-A-D-R DoD), per-decision supersession check across the entire log, atomic two-block cross-reference if superseding. Siblings in the same file are byte-for-byte untouched. Refuses to run on already-accepted decisions (suggests `/adr-create` successor instead).
-- `/task-trash <path>` — Move task + UAT to `trashed/`
-- `/task-update <path> <changes>` — Modify existing task
-- `/uat-generate <target>` — Generate UAT tests; owns runtime and end-to-end verification (what /tackle cannot run); shell script execution against ./tmp/ scratch dirs belongs here, not in /tackle. **Test integrity rule (non-negotiable)**: tests encode required functionality from the task's acceptance criteria — never weakened, narrowed, or reshaped to match buggy/incomplete implementation. Source code grounds *how to invoke*; the requirement grounds *what should happen*. Discrepancies → write the test against the requirement, let it fail, report the gap.
-- `/uat-walk <path>` — Interactive UAT (human at keyboard)
-- `/uat-auto <path>` — Headless UAT auto-judging (fail-closed, for orchestrators like tmux-conductor)
-- `/uat-skip <path>` — Skip UAT, move task to completed + UAT to skipped
-- `/lint` — IDE diagnostics with fix cycles
-- `/type-check` — Detect type-checking tools (typecheck/tsc/mypy/pyright/go vet/cargo check/etc.), run each sequentially, and chain into `/git-commit` only if all pass; graceful no-op if no checkers detected; never auto-fixes (verification-only)
-- `/debug-logs [symptom]` — Read-only failure diagnosis: gather session context (recent diff, background processes, recent errors), pick log stores by symptom (TaskOutput, IDE diagnostics, gh run logs, DigitalOcean app logs, conventional `./logs`/`./tmp` paths, Playwright snapshot), correlate with code, and produce ranked hypotheses with concrete next actions. Never auto-applies fixes.
-- `/simplify <path>` — Remove redundancy, simplify complexity
-- `/git-commit` — Stage and commit with auto message
-- `/update-docs` — Update docs + audit/update Serena memories
-- `/project-readme` — Generate/update portfolio-ready README
-- `/marp-slideshow <input> [output]` — Summarize a source file into a Marp/Marpit slide deck; default output: `.docs/MARP/<stem>.slides.md`; always normalizes filename to `.slides.md`
-- `/mermaid-flowchart <input> [output]` — Summarize an architecture file (markdown, YAML, Docker Compose) into a Mermaid flowchart; output: `<stem>.flowchart.md`
+## Script Path Convention (CRITICAL)
+All scripts in `.scripts/` must use this two-variable pattern — NOT the old single-variable form:
+```bash
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"   # the .scripts/ directory itself
+TEMPLATE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"  # the repo root (bootstrap-claude/)
+```
+- Script-to-script calls: `"$SCRIPT_DIR/other-script.sh"`
+- Template content (`.claude/`, `.docs/`, `.github/`, `.gitignore`): `"$TEMPLATE_DIR/..."`
+
+The old single-line `TEMPLATE_DIR="$(cd "$(dirname "$0")" && pwd)"` was broken after the scripts moved from the repo root into `.scripts/` — it resolved to `.scripts/` instead of the repo root.
 
 ## Workflow Pipeline
 `/prd-create → /prd-finalize → /prd-extract-decisions → /adr-create → /adr-finalize → /task-add → /tackle → /update-docs → /uat-generate → /uat-walk` (human) OR `/uat-auto` (headless)
 
-PRD layer is optional for small/internal work — jump directly to `/task-add` or `/adr-create` when below the PRD threshold (bug fixes, refactors, single-engineer choices). See `.docs/prd/README.md` "When NOT to Write a PRD".
-
-- Task lifecycle: `.docs/tasks/` (top level) → (tackle + UAT all pass) → `completed/`
-- UAT lifecycle: `.docs/uat/` (top level) → (all pass) → `completed/`
-- `/uat-auto` never writes `[SKIP]` (human-only verdict) and never auto-passes without machine-verifiable evidence; manual tests always fail-closed for human re-triage.
+PRD layer is optional for small/internal work — jump directly to `/task-add` or `/adr-create` for bug fixes, refactors, single-engineer choices.
 
 ## Required MCPs
 - Serena — code exploration, editing, memory

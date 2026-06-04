@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-TEMPLATE_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+TEMPLATE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 if [ $# -ne 1 ]; then
   echo "Usage: $0 <path-to-project>" >&2

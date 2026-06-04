@@ -21,15 +21,15 @@ claude mcp add serena -- uvx --from git+https://github.com/oraios/serena serena 
 Run the sync script from this repo:
 
 ```bash
-./update-project.sh <path-to-project>
+./.scripts/update-project.sh <path-to-project>
 ```
 
-This installs skills globally to `~/.claude/skills/` (available to all projects), syncs the `.docs/` scaffold into the target project, and runs `bootstrap-serena.sh` (idempotent) to ensure `.serena/project.yml` exists and has the 11 optional Serena tools enabled. Re-run after pulling template updates.
+This installs skills globally to `~/.claude/skills/` (available to all projects), syncs the `.docs/` scaffold into the target project, and runs `.scripts/bootstrap-serena.sh` (idempotent) to ensure `.serena/project.yml` exists and has the 11 optional Serena tools enabled. Re-run after pulling template updates.
 
 To install or refresh MCPs and skills globally without a project path:
 
 ```bash
-./install-global.sh
+./.scripts/install-global.sh
 # or
 npx bootstrap-claude install
 ```

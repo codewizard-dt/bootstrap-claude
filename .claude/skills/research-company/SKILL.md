@@ -1,6 +1,6 @@
 ---
 name: research-company
-description: Comprehensive company research — mission, operations, leadership, and ~5 years of recent news
+description: Comprehensive company research — mission, operations, leadership, products/services deep-dive, and ~5 years of recent news
 model: claude-opus-4-8
 effort: high
 argument-hint: <company name> [URL]
@@ -61,6 +61,33 @@ Search sequentially for each of the following. Use the company name (and domain 
 
 ---
 
+## Phase 2f: Products & Services Deep Dive
+
+Dig into the product/service portfolio in detail. Sequential, 1 req/sec.
+
+### 2f-i. Product Catalogue
+- Query: `"<company name>" products features pricing tiers plans`
+- Extract: full list of named products/plans, what each does, who it targets, and public pricing tiers or price signals (e.g. "starts at $X/month", "custom enterprise pricing")
+
+### 2f-ii. Platform & Integration Ecosystem
+- Query: `"<company name>" integrations API platform partners ecosystem`
+- Extract: key integrations (native and marketplace), API availability, developer platform features, SDK or webhook support
+
+### 2f-iii. Customer Use Cases & Case Studies
+- Query: `"<company name>" case study customer success how customers use`
+- Extract: 3–5 named customer examples or verticals, the problem solved, measurable outcomes if stated
+
+### 2f-iv. Recent Product Changes & Roadmap Signals
+- Query: `"<company name>" product launch update new feature changelog 2024 2025`
+- Query: `"<company name>" roadmap upcoming release beta 2025`
+- Extract: notable launches in the last 18 months, deprecations, and any publicly telegraphed roadmap direction
+
+### 2f-v. Free Tier, Trial & GTM Motion
+- Query: `"<company name>" free trial freemium self-serve enterprise sales`
+- Extract: whether there is a free/trial tier, self-serve vs. sales-led GTM, typical deal size signals if public
+
+---
+
 ## Phase 3: Recent News (last ~5 years, 2020–2025)
 
 Search year-band by year-band to avoid recency bias. Sequential, 1 req/sec.
@@ -118,6 +145,7 @@ url: <official URL if known>
 | File | Contents |
 |------|----------|
 | [overview.md](overview.md) | Mission, products, business model, size & funding |
+| [products.md](products.md) | Product/service deep-dive — catalogue, pricing, integrations, use cases, roadmap |
 | [leadership.md](leadership.md) | Executives, founders, board |
 | [news.md](news.md) | Chronological news 2020–2025 |
 | [competitive.md](competitive.md) | Competitors and differentiation |
@@ -156,6 +184,45 @@ section: overview
 - Total funding: $X  Latest round: Series X ($Y, Month YYYY)
 - Key investors: ...
 - Valuation / ARR: ... *(if public)*
+```
+
+### `products.md` — product/service deep-dive
+```
+---
+company: <Company Name>
+section: products
+---
+
+# <Company Name> — Products & Services
+
+## Product Catalogue
+
+| Product / Plan | Description | Target Customer | Pricing |
+|----------------|-------------|-----------------|---------|
+| ...            | ...         | ...             | ...     |
+
+## Platform & Integrations
+- **Native integrations**: ...
+- **API / SDK**: ...
+- **Marketplace / ecosystem**: ...
+
+## Customer Use Cases
+
+| Customer / Vertical | Problem Solved | Outcome |
+|---------------------|----------------|---------|
+| ...                 | ...            | ...     |
+
+## Recent Product Launches & Changes *(last 18 months)*
+- **<Mon YYYY>**: <feature/launch> — [source](<url>)
+- ...
+
+## Roadmap Signals
+- ...  *(publicly announced or inferred from blog/conference)*
+
+## GTM Motion
+- Free tier / trial: ...
+- Self-serve vs. sales-led: ...
+- Typical deal size signals: ...
 ```
 
 ### `leadership.md` — executives, founders, board

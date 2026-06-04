@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-TEMPLATE_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+TEMPLATE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # 0. Preflight checks
 if ! command -v claude &> /dev/null; then
@@ -37,7 +38,7 @@ echo "Setting up project: $PROJECT_DIR"
 echo ""
 
 # 1. Install global MCPs and skills
-"$TEMPLATE_DIR/install-global.sh"
+"$SCRIPT_DIR/install-global.sh"
 echo ""
 
 echo "Copying project .claude/ content and .docs/ scaffold..."
@@ -45,12 +46,14 @@ mkdir -p "$PROJECT_DIR/.claude"
 # Copy non-skills .claude/ content (prompt-template, etc.) but NOT skills/ (now global)
 rsync -av --exclude 'skills/' --exclude 'settings.local.json' "$TEMPLATE_DIR/.claude/" "$PROJECT_DIR/.claude/"
 echo "Copied .claude/ content to $PROJECT_DIR/.claude"
-"$TEMPLATE_DIR/sync-docs-scaffold.sh" "$PROJECT_DIR"
+"$SCRIPT_DIR/sync-docs-scaffold.sh" "$PROJECT_DIR"
+"$SCRIPT_DIR/merge-gitignore.sh" "$PROJECT_DIR"
+"$SCRIPT_DIR/setup-deployment.sh" "$PROJECT_DIR"
 echo ""
 
 # 2. Bootstrap Serena project.yml
 echo "Bootstrapping Serena project.yml..."
-"$TEMPLATE_DIR/bootstrap-serena.sh" "$PROJECT_DIR"
+"$SCRIPT_DIR/bootstrap-serena.sh" "$PROJECT_DIR"
 echo ""
 
 # Done

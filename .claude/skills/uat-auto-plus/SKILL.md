@@ -348,6 +348,15 @@ Now start:
    a. Execute the test (Step 4).
    b. **Immediately** write the verdict to the file via `Edit` (Step 5) — do not buffer verdicts or batch updates.
    c. If the test failed, enter the fix loop (Step 6) — diagnose, fix, re-run, up to 3 attempts. After each attempt, **immediately** update the file with the current status (`[FIXING: ...]` or final verdict). Sweep regressions after each successful fix.
-5. On completion, move files if all pass; emit summary (Step 7).
+5. On completion, execute Step 7 in full — **do not skip**:
+   - **If all tests passed** (zero `[FAIL: ...]` or `[FIXING: ...]` remain):
+     1. `git mv` the UAT file → `.docs/uat/completed/<slug>.uat.md`
+     2. `git mv` the task file → `.docs/tasks/completed/<NNN>-<slug>.md`
+     3. Update internal path references in both moved files
+     4. Remove this task's row from `.docs/tasks/README.md`
+     5. Perform roadmap auto-checkoff (scan `.docs/roadmaps/` for matching lines, flip `- [ ]` → `- [x]`, update paths)
+     6. Check for ADR linkage and update if found
+     7. Emit the completion summary with `Moved to completed/` and new paths
+   - **If any test failed**: leave files in place, emit the summary with `Next action: /uat-walk <path>`.
 
 **Start now — resolve the UAT file and begin.**

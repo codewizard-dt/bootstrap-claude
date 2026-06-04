@@ -1,0 +1,15 @@
+title = "Gitleaks Configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Project allowlist"
+# Uncomment and add paths/regexes to suppress false positives:
+# paths = [
+#   '''(?i)test/fixtures''',
+#   '''(?i)\.example$''',
+# ]
+# regexes = [
+#   '''EXAMPLE_PLACEHOLDER''',
+# ]

@@ -19,15 +19,13 @@ Before committing, run the `/lint` workflow to catch and fix any diagnostics:
 
 ## Step 2: Assess Changes
 
-**Before running any commands, scan the current session context** for recently produced output from `git status`, `git diff`, `git log`, or `/update-docs`. If that output is already present and reflects the current working state (i.e., no additional edits have been made since it was produced), reuse it — do not re-run the same commands.
+**Always run all three commands fresh.** Do not rely on session context, prior output, or anything produced earlier in the conversation — those reflect only a subset of what may have changed. The commit message must be based on the complete current working-tree state.
 
-Only run the commands below if the relevant output is absent or stale:
+Run all three in parallel:
 
 - `git status` — see all modified/untracked files
-- `git diff HEAD` — see exact diffs
+- `git diff HEAD` — see exact diffs for ALL staged and unstaged changes
 - `git log --oneline -10` — see recent commit history for context
-
-Run any missing commands in parallel.
 
 ## Step 3: Summarize Changes and Recommend Semver Bump
 

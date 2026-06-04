@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-TEMPLATE_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+TEMPLATE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 GLOBAL_SKILLS_DIR="$HOME/.claude/skills"
 
 # Orphan skill folders from the noun-first rename (task 008-rename-skills-noun-first)
