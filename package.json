@@ -1,5 +1,5 @@
 {
-  "name": "@codewizard-dt/bootstrap-claude",
+  "name": "@codewizard-dt/bootstrap",
   "version": "1.5.0",
   "description": "Bootstrap Claude Code projects with reusable configurations and commands",
   "homepage": "https://github.com/codewizard-dt/basic-project-setup#readme",
@@ -14,7 +14,7 @@
   "author": "",
   "type": "commonjs",
   "bin": {
-    "bootstrap-claude": "./bin/cli.js"
+    "bootstrap": "./bin/cli.js"
   },
   "files": [
     "bin/",
@@ -22,6 +22,7 @@
     ".github/",
     ".gitleaks.toml",
     ".claude/skills/",
+    ".claude/prompt-template/",
     ".docs/guides/mcp-tools.md",
     ".docs/tasks/README.md",
     ".docs/tasks/active/.gitkeep",

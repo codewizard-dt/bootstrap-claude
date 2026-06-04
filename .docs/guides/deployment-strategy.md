@@ -2,6 +2,21 @@
 
 End-to-end guide: build images on GitHub Actions, push to GHCR, auto-deploy to a Linux VPS via a self-hosted runner. No inbound firewall ports required on the VPS.
 
+### Target quick-reference
+
+| Target | When to run |
+|---|---|
+| `make ports` | Check which URLs/ports the stack is using |
+| `make login` | First-time GHCR auth on a new machine or VPS |
+| `make dev` | Day-to-day local development (hot-reload, builds from source) |
+| `make up` | Start production stack from pre-built GHCR images |
+| `make down` | Stop and remove all containers |
+| `make ps` | Check container health/status |
+| `make push` | Build and push prod images manually (CI bypass) |
+| `make deploy` | Full manual deploy: sync files to VPS + pull + restart |
+| `make deploy-pull` | Run on VPS directly after files are already synced |
+| `make ssh-alias` | Add/update the `~/.ssh/config` entry for the VPS |
+
 ---
 
 ## Architecture
@@ -307,32 +322,83 @@ Credentials are stored in `/root/.docker/config.json`. Output should be `Login S
 Useful targets for day-to-day operations (keep a `Makefile` in the repo root):
 
 ```makefile
+-include .env
+export
+
 GHCR_REPO  = ghcr.io/<ORG>/<PROJECT>
 DROPLET_IP ?= <VPS_IP>
 PROJECT    = $(shell basename $(CURDIR))
 
-# Authenticate Docker with GHCR (run once locally and once on the VPS)
+.PHONY: ports ps up dev push deploy deploy-pull ssh-alias login down
+
+# --- Helpers ---
+
+## ports — print all service URLs based on .env values
+ports:
+	@echo "App (HTTPS): https://$(or $(CADDY_DOMAIN),localhost)$(if $(filter-out 443,$(or $(HTTPS_PORT),443)),:$(HTTPS_PORT),)"
+	@echo "Backend:  http://localhost:$(BACKEND_PORT)"
+	@echo "Frontend: http://localhost:$(FRONTEND_PORT)"
+	@echo "Database: localhost:$(DB_PORT)"
+
+## login — authenticate Docker with GHCR (run once locally and once on the VPS)
 login:
 	gh auth token | docker login ghcr.io -u <GITHUB_USER> --password-stdin
 
-# Build and push all prod images manually (bypass CI)
-push:
-	docker buildx build --platform linux/amd64 -t $(GHCR_REPO)-backend:latest --push -f backend/Dockerfile.prod backend
-	docker buildx build --platform linux/amd64 -t $(GHCR_REPO)-frontend:latest --push -f frontend/Dockerfile.prod frontend
-	docker buildx build --platform linux/amd64 -t $(GHCR_REPO)-caddy:latest --push -f Dockerfile.caddy .
+## ps — show running container status
+ps:
+	docker compose ps
 
-# Sync compose file + Makefile to VPS and restart (manual deploy fallback)
-deploy:
-	scp docker-compose.yml Makefile $(PROJECT):/opt/$(PROJECT)/
-	ssh $(PROJECT) "cd /opt/$(PROJECT) && make deploy-pull"
+## down — stop and remove containers
+down:
+	docker compose down
 
-# Run on the VPS directly — pull images and restart
-deploy-pull:
+# --- Local Development ---
+
+## dev — build from source with hot-reload bind mounts (Dockerfile.dev)
+dev:
+	docker compose -f docker-compose.yml -f docker-compose.build.yml up --wait
+
+# --- Production / CI bypass ---
+
+## up — pull latest GHCR images and start the production stack (no build)
+up:
 	docker compose pull && docker compose up -d --wait
 
-# SSH alias setup (run once)
+## push — build linux/amd64 prod images and push to GHCR (bypasses CI)
+push:
+	docker buildx build --platform linux/amd64 \
+		-t $(GHCR_REPO)-backend:latest --push \
+		-f backend/Dockerfile.prod backend
+	docker buildx build --platform linux/amd64 \
+		-t $(GHCR_REPO)-frontend:latest --push \
+		-f frontend/Dockerfile.prod frontend
+	docker buildx build --platform linux/amd64 \
+		-t $(GHCR_REPO)-caddy:latest --push \
+		-f Dockerfile.caddy .
+
+## deploy — sync compose file, Makefile, and .env.production to VPS then restart
+deploy:
+	ssh $(PROJECT) "mkdir -p /opt/$(PROJECT)"
+	scp docker-compose.yml Makefile $(PROJECT):/opt/$(PROJECT)/
+	scp .env.production $(PROJECT):/opt/$(PROJECT)/.env
+	ssh $(PROJECT) "cd /opt/$(PROJECT) && make deploy-pull"
+
+## deploy-pull — alias for `up`; run directly on the VPS after syncing files
+deploy-pull: up
+
+## ssh-alias — upsert ~/.ssh/config Host entry for the prod server (idempotent)
+## Usage: make ssh-alias DROPLET_IP=1.2.3.4
 ssh-alias:
-	@printf "\nHost $(PROJECT)\n  HostName $(DROPLET_IP)\n  User root\n" >> ~/.ssh/config
+	@mkdir -p ~/.ssh && touch ~/.ssh/config
+	@if grep -q "^Host $(PROJECT)$$" ~/.ssh/config; then \
+		awk 'BEGIN{found=0} /^Host $(PROJECT)$$/{found=1} found && /^[[:space:]]+HostName /{sub(/^([[:space:]]+HostName ).*/, "  HostName $(DROPLET_IP)"); found=0} {print}' \
+			~/.ssh/config > /tmp/.ssh_config_tmp && mv /tmp/.ssh_config_tmp ~/.ssh/config; \
+		echo "Updated: Host $(PROJECT) → $(DROPLET_IP)"; \
+	else \
+		printf "\nHost $(PROJECT)\n  HostName $(DROPLET_IP)\n  User root\n" >> ~/.ssh/config; \
+		echo "Added: Host $(PROJECT) → $(DROPLET_IP)"; \
+	fi
+
 ```
 
 ---

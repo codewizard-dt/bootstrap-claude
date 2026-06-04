@@ -4,27 +4,32 @@ const { execFileSync } = require('child_process');
 const path = require('path');
 
 const command = process.argv[2];
+const extraArgs = process.argv.slice(3);
 
 const SCRIPTS = {
-  setup: 'setup-project.sh',
-  update: 'update-project.sh',
-  install: 'install-global.sh',
-  deploy: 'setup-deployment.sh',
+  setup:      { script: 'setup-project.sh',           args: ['.'] },
+  update:     { script: 'update-project.sh',           args: ['.'] },
+  install:    { script: 'install-global.sh',           args: [] },
+  deployment: { script: 'setup-deployment.sh',         args: ['.'] },
+  typechecks: { script: 'setup-strict-typechecks.sh', args: extraArgs },
 };
 
 if (!command || !SCRIPTS[command]) {
-  console.error('Usage: bootstrap-claude <command>');
+  console.error('Usage: bootstrap <command>');
   console.error('');
   console.error('Commands:');
-  console.error('  setup    Set up a new project with Claude Code configurations');
-  console.error('  update   Sync .docs/ scaffold and install skills globally');
-  console.error('  install  Install skills globally into ~/.claude/skills/');
-  console.error('  deploy   Scaffold CI/CD (.github/ workflows + .gitleaks.toml) into the project');
+  console.error('  setup         Set up a new project with Claude Code configurations');
+  console.error('  update        Sync .docs/ scaffold and install skills globally');
+  console.error('  install       Install skills globally into ~/.claude/skills/');
+  console.error('  deployment    Scaffold CI/CD (.github/ workflows + .gitleaks.toml) into the project');
+  console.error('  typechecks    Run strict type-check setup via Claude (optional: language list)');
+  console.error('                e.g. bootstrap typechecks typescript python');
   process.exit(1);
 }
 
-const scriptPath = path.resolve(__dirname, '..', '.scripts', SCRIPTS[command]);
-const scriptArgs = command === 'install' ? [] : ['.'];
+const { script, args } = SCRIPTS[command];
+const scriptPath = path.resolve(__dirname, '..', '.scripts', script);
+const scriptArgs = args;
 
 try {
   execFileSync(scriptPath, scriptArgs, { stdio: 'inherit' });

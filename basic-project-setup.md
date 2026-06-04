@@ -13,8 +13,10 @@ The following MCP servers are configured globally in `~/.claude.json` under the 
 Serena must be added to each project individually because it requires the project path:
 
 ```bash
-claude mcp add serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context claude-code --project "$(pwd)"
+claude mcp add --scope project serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context claude-code --project "$(pwd)"
 ```
+
+This writes `.mcp.json` in the project root (gitignored — machine-local absolute path). Each project gets its own Serena process so language configs never bleed across projects.
 
 ## Step 2: Install Skills and Sync Docs
 

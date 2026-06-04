@@ -325,7 +325,20 @@ if [ ${#TRASHED_FOUND[@]} -gt 0 ]; then
   echo ""
 fi
 
-# 5. Bootstrap Serena project.yml (idempotent)
+# 5. Register Serena per-project if not already registered
+echo "Checking Serena MCP registration for this project..."
+if [ -f "$PROJECT_DIR/.mcp.json" ] && grep -q '"serena"' "$PROJECT_DIR/.mcp.json" 2>/dev/null; then
+  echo "  serena: already registered for this project, skipping."
+else
+  ( cd "$PROJECT_DIR" && \
+    claude mcp add --scope project serena -- \
+      uvx --from git+https://github.com/oraios/serena \
+      serena start-mcp-server --context claude-code --project "$PROJECT_DIR" )
+  echo "  serena MCP registered."
+fi
+echo ""
+
+# 6. Bootstrap Serena project.yml (idempotent)
 echo "Re-checking Serena project.yml bootstrap..."
 "$SCRIPT_DIR/bootstrap-serena.sh" "$PROJECT_DIR"
 echo ""

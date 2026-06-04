@@ -61,15 +61,6 @@ else
   echo "  playwright MCP installed."
 fi
 
-# serena (global, user scope; resolves project from cwd via --project .)
-if claude mcp get "serena" &>/dev/null; then
-  echo "  serena: already installed, skipping."
-else
-  echo "  Installing serena MCP..."
-  claude mcp add --scope user serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context claude-code --project .
-  echo "  serena MCP installed."
-fi
-echo ""
 
 # 2. Install hooks globally
 GLOBAL_HOOKS_DIR="$HOME/.claude/hooks"

@@ -51,7 +51,20 @@ echo "Copied .claude/ content to $PROJECT_DIR/.claude"
 "$SCRIPT_DIR/setup-deployment.sh" "$PROJECT_DIR"
 echo ""
 
-# 2. Bootstrap Serena project.yml
+# 2. Register Serena per-project (absolute path — isolated from all other projects)
+echo "Registering Serena MCP for this project..."
+if [ -f "$PROJECT_DIR/.mcp.json" ] && grep -q '"serena"' "$PROJECT_DIR/.mcp.json" 2>/dev/null; then
+  echo "  serena: already registered for this project, skipping."
+else
+  ( cd "$PROJECT_DIR" && \
+    claude mcp add --scope project serena -- \
+      uvx --from git+https://github.com/oraios/serena \
+      serena start-mcp-server --context claude-code --project "$PROJECT_DIR" )
+  echo "  serena MCP registered."
+fi
+echo ""
+
+# 3. Bootstrap Serena project.yml
 echo "Bootstrapping Serena project.yml..."
 "$SCRIPT_DIR/bootstrap-serena.sh" "$PROJECT_DIR"
 echo ""

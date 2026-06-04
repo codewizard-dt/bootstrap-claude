@@ -44,7 +44,7 @@ Search sequentially for each of the following. Use the company name (and domain 
 - Extract: founding year, HQ, employee count, mission statement, core value proposition
 
 ### 2b. Products & Services
-- Query: `"<company name>" products services offerings 2024 2025`
+- Query: `"<company name>" products services offerings 2024 2026`
 - Extract: product lines, key features, target customers/market, pricing model if public
 
 ### 2c. Business Model & Market Position
@@ -78,8 +78,8 @@ Dig into the product/service portfolio in detail. Sequential, 1 req/sec.
 - Extract: 3–5 named customer examples or verticals, the problem solved, measurable outcomes if stated
 
 ### 2f-iv. Recent Product Changes & Roadmap Signals
-- Query: `"<company name>" product launch update new feature changelog 2024 2025`
-- Query: `"<company name>" roadmap upcoming release beta 2025`
+- Query: `"<company name>" product launch update new feature changelog 2024 2026`
+- Query: `"<company name>" roadmap upcoming release beta 2026`
 - Extract: notable launches in the last 18 months, deprecations, and any publicly telegraphed roadmap direction
 
 ### 2f-v. Free Tier, Trial & GTM Motion
@@ -88,12 +88,12 @@ Dig into the product/service portfolio in detail. Sequential, 1 req/sec.
 
 ---
 
-## Phase 3: Recent News (last ~5 years, 2020–2025)
+## Phase 3: Recent News (last ~5 years, 2021–2026)
 
 Search year-band by year-band to avoid recency bias. Sequential, 1 req/sec.
 
 ### 3a. Major Announcements & Milestones
-- Query: `"<company name>" announcement milestone launch 2023 2024 2025`
+- Query: `"<company name>" announcement milestone launch 2023 2024 2026`
 - Query: `"<company name>" news 2021 2022`
 
 ### 3b. Funding, M&A, Partnerships
@@ -147,7 +147,7 @@ url: <official URL if known>
 | [overview.md](overview.md) | Mission, products, business model, size & funding |
 | [products.md](products.md) | Product/service deep-dive — catalogue, pricing, integrations, use cases, roadmap |
 | [leadership.md](leadership.md) | Executives, founders, board |
-| [news.md](news.md) | Chronological news 2020–2025 |
+| [news.md](news.md) | Chronological news 2021–2026 |
 | [competitive.md](competitive.md) | Competitors and differentiation |
 | [culture.md](culture.md) | Engineering culture and tech stack *(if researched)* |
 
@@ -242,17 +242,17 @@ section: leadership
 - <Date>: <name> joined/departed as <role>
 ```
 
-### `news.md` — chronological news 2020–2025
+### `news.md` — chronological news 2021–2026
 ```
 ---
 company: <Company Name>
 section: news
-period: 2020–2025
+period: 2021–2026
 ---
 
-# <Company Name> — News & Developments (2020–2025)
+# <Company Name> — News & Developments (2021–2026)
 
-## 2025
+## 2026
 - **<Mon YYYY>**: <event> — [source](<url>)
 
 ## 2024
@@ -267,7 +267,7 @@ period: 2020–2025
 ## 2021
 - ...
 
-## 2020
+## 2021
 - ...
 ```
 

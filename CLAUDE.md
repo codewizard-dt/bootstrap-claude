@@ -17,10 +17,10 @@ Follow `basic-project-setup.md` to configure a new project, or use the npm packa
 
 **Manual setup steps:**
 
-1. **Serena MCP** — code exploration, editing, and memory: `claude mcp add serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context claude-code --project "$(pwd)"`
+1. **Serena MCP** — code exploration, editing, and memory (per-project — run from the project root): `claude mcp add --scope project serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context claude-code --project "$(pwd)"` (writes `.mcp.json`; gitignored — machine-local)
 2. **Brave Search MCP** — web search (rate limit: 1 req/sec, sequential only)
 3. **Context7 MCP** — library documentation lookups
-4. **Install MCPs and skills globally** — run `./.scripts/install-global.sh` (or `npx bootstrap-claude install`) to configure MCPs and copy skills to `~/.claude/skills/`
+4. **Install MCPs and skills globally** — run `./.scripts/install-global.sh` (or `npx bootstrap-claude install`) to configure Brave/Context7/Playwright MCPs and copy skills to `~/.claude/skills/`
 
 ## Custom Commands
 
@@ -61,7 +61,9 @@ Follow `basic-project-setup.md` to configure a new project, or use the npm packa
 | `/lint` | Get IDE diagnostics, fix issues one-by-one in verify cycles |
 | `/type-check` | Detect type-checking tools (typecheck/tsc/mypy/pyright/go vet/cargo check/etc.), run each one, and only invoke `/git-commit` if all pass |
 | `/debug-logs [symptom]` | Diagnose failures by inspecting session context, background processes, and conventional log stores; produce ranked hypotheses with next actions (read-only) |
+| `/port-feature <source-path> <functionality>` | Assess a feature in an external project and produce a concrete porting plan (technology mapping, complexity breakdown, ordered steps) targeting the current project's conventions |
 | `/simplify <path>` | Analyze files/directories to remove redundancy and simplify complexity |
+| `/demo [path] [custom instructions]` | Audit all project functionality and produce a 2-3 minute demo run book (`.docs/demo/runbook.md`) plus a Marp slideshow (`.docs/MARP/demo.slides.md`) |
 | `/marp-slideshow <input> [output]` | Summarize a source file into a Marp/Marpit slide deck following best practices |
 | `/mermaid-flowchart <input> [output]` | Summarize an architecture file (markdown, YAML, Docker Compose) into a Mermaid flowchart in a new markdown file |
 | `/git-commit` | Stage all changes and commit with auto-generated message |
