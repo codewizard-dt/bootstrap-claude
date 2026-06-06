@@ -24,8 +24,18 @@ if [ ! -f "$GUIDE" ]; then
   exit 1
 fi
 
+DRY_RUN=false
+POSITIONAL=()
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=true ;;
+    *) POSITIONAL+=("$arg") ;;
+  esac
+done
+set -- "${POSITIONAL[@]}"
+
 if [ $# -ne 1 ]; then
-  echo "Usage: $0 <path-to-project>" >&2
+  echo "Usage: $0 [--dry-run] <path-to-project>" >&2
   exit 1
 fi
 
@@ -37,6 +47,24 @@ PROJECT_DIR="$(cd "$1" 2>/dev/null && pwd)" || {
 if [ ! -d "$PROJECT_DIR" ]; then
   echo "Error: Directory does not exist: $PROJECT_DIR" >&2
   exit 1
+fi
+
+if [ "$DRY_RUN" = true ]; then
+  echo "Docker and Compose files in $PROJECT_DIR:"
+  echo ""
+  echo "  Dockerfiles:"
+  find "$PROJECT_DIR" \( -name node_modules -o -name .git \) -prune -o \
+    -name "Dockerfile*" -print | sort | while read -r f; do
+    echo "    ${f#"$PROJECT_DIR/"}"
+  done
+  echo ""
+  echo "  Docker Compose files:"
+  find "$PROJECT_DIR" \( -name node_modules -o -name .git \) -prune -o \
+    \( -name "docker-compose*.yml" -o -name "docker-compose*.yaml" \
+       -o -name "compose*.yml" -o -name "compose*.yaml" \) -print | sort | while read -r f; do
+    echo "    ${f#"$PROJECT_DIR/"}"
+  done
+  exit 0
 fi
 
 PROMPT="$(cat "$GUIDE")

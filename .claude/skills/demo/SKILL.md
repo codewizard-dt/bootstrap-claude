@@ -11,7 +11,7 @@ user-invocable: true
 
 # Demo
 
-Audit the project's features, produce a **2-3 minute demo run book** at `.docs/demo/runbook.md`, then generate a **Marp slideshow** from it at `.docs/MARP/demo.slides.md`.
+Audit the project's features, produce a **2-3 minute demo run book** at `.docs/demo/runbook.md`, then generate a **Marp slideshow** from it at `.docs/demo/runbook.slides.md`.
 
 ---
 
@@ -135,7 +135,7 @@ Fill every placeholder with real project content. The script must be specific en
 
 Invoke the `marp-slideshow` skill on the run book you just wrote:
 
-> **Delegate to `/marp-slideshow .docs/demo/runbook.md .docs/MARP/demo`**
+> **Delegate to `/marp-slideshow .docs/demo/runbook.md .docs/demo/`**
 
 The resulting deck should have one slide per demo step, the hook as the title slide, and the timing guide as a slide near the end. Speaker notes on each slide should contain the verbatim spoken line from the run book.
 
@@ -149,8 +149,8 @@ Print a summary to the user:
 
 1. **Feature inventory** — bulleted list of what was found.
 2. **Run book path** — `.docs/demo/runbook.md`, estimated word count, step count.
-3. **Slideshow path** — `.docs/MARP/demo.slides.md`, slide count.
-4. **Render command** — `npx @marp-team/marp-cli@latest .docs/MARP/demo.slides.md` (HTML) or `--pdf` for PDF.
+3. **Slideshow path** — `.docs/demo/runbook.slides.md`, slide count.
+4. **Render command** — `npx @marp-team/marp-cli@latest .docs/demo/runbook.slides.md` (HTML) or `--pdf` for PDF.
 5. **Any gaps** — features that exist but couldn't be cleanly demo'd (missing entry point, no happy-path data, etc.).
 
 ---
