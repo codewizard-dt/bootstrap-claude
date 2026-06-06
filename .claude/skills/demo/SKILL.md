@@ -33,7 +33,35 @@ Compile a **feature inventory** — a flat list of distinct, user-visible capabi
 
 ---
 
-## Phase 2 — Demo Narrative
+## Phase 2 — Requirements Inventory
+
+Before designing the narrative, collect every stated requirement so the demo can be checked against them.
+
+**Check for requirements documents in this order:**
+
+1. `.docs/prd/` — read every non-trashed PRD file (skip `trashed/`). Extract:
+   - User stories / personas
+   - Functional requirements
+   - Success metrics / acceptance criteria
+   - Non-goals (so you don't inadvertently demo them)
+
+2. `.docs/adr/` — scan accepted ADR decisions for capabilities they mandate or prohibit.
+
+3. Any other requirements files in `.docs/` (e.g. `requirements.md`, `spec.md`, `brief.md`).
+
+Produce a **requirements checklist** — a flat list of discrete, testable requirements drawn from those sources. Each entry should be one line, e.g. `REQ-01: User can sign up with email and password`. If no requirements documents exist, note that explicitly and continue.
+
+Cross-reference the requirements checklist against the feature inventory from Phase 1:
+
+- **Covered** — a feature in the inventory maps to this requirement.
+- **Gap** — no feature maps to this requirement; flag it.
+- **Undocumented** — a feature exists in code but has no corresponding requirement.
+
+You do not need to invent demo steps for gaps — just flag them in Phase 6. The goal is an honest coverage report, not a padded demo.
+
+---
+
+## Phase 3 — Demo Narrative
 
 Design a narrative arc that fits roughly two to three minutes of live demo time. A good arc moves from problem to solution to the "wow" moment:
 
@@ -45,7 +73,7 @@ End with a single closing sentence pointing to next steps or where to learn more
 
 ---
 
-## Phase 3 — Write the Run Book
+## Phase 4 — Write the Run Book
 
 Create `.docs/demo/` if it doesn't exist. Write `.docs/demo/runbook.md` using this template:
 
@@ -113,7 +141,7 @@ Fill every placeholder with real project content. The run book must be self-cont
 
 ---
 
-## Phase 4 — Generate the Marp Slideshow
+## Phase 5 — Generate the Marp Slideshow
 
 Invoke the `marp-slideshow` skill on the run book you just wrote:
 
@@ -135,13 +163,16 @@ One diagram per slide. Name `.mmd` files after their content (e.g. `system-overv
 
 ---
 
-## Phase 5 — Confirm
+## Phase 6 — Confirm
 
 Print a short summary to the user:
 
 - **Run book** — path, word count, and step count
 - **Slideshow** — path, slide count, and render command (`npx @marp-team/marp-cli@latest .docs/demo/runbook.slides.md`)
-- **Gaps** — features that exist but couldn't be cleanly demo'd
+- **Requirements coverage** — table of all requirements, each marked Covered / Gap / Undocumented
+- **Gaps** — requirements with no demo step, and features that exist but couldn't be cleanly demo'd
+
+If any requirements are Gaps, call them out explicitly so the user knows the demo does not cover them.
 
 ---
 
