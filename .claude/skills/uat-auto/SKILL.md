@@ -96,6 +96,40 @@ Unlike `/uat-walk`, there is no mode prompt. The default is **"pending + previou
 
 ---
 
+## Step 3.5: Stub Detection (Pre-Execution Gate)
+
+Before executing any eligible test, check whether the implementation is a stub or placeholder. A stub test **must remain pending** (`- [ ] Pass`) — do not execute it, do not record `[FAIL]` for it.
+
+For each eligible test:
+
+1. **Identify the implementation target** from the test's metadata:
+   - API/CLI tests: the `Endpoint:` field or URL in `**Command**:`
+   - UI tests: the `Page:` field or component name in `Components:`
+   - Manual tests: the feature name from the test `Description`
+
+2. **Locate the implementation file** using Serena:
+   - `mcp__serena__search_for_pattern` for the route/handler/component name across `src/`, `app/`, `lib/`, or equivalent source directories
+   - If nothing is found, treat as **unlocatable** and proceed with normal execution (cannot confirm stub; run the test)
+
+3. **Check for stub indicators** in the located file(s) using `mcp__serena__find_symbol` or `mcp__serena__search_for_pattern`:
+   - `TODO`, `FIXME`, or `HACK` markers inside function/method bodies
+   - `throw new Error('not implemented')`, `raise NotImplementedError`, `notImplemented()`, `unimplemented!()`
+   - `pass  # TODO`, `pass  # stub`, or a bare `pass` as the only statement in a function
+   - Empty function/method bodies: body is only `{}`, `return`, `return null`, `return undefined`, `return None`
+   - Placeholder comments: `// stub`, `# stub`, `// implement this`, `# TODO: implement`
+
+4. **If stub indicators are found**:
+   - Leave the test status as `- [ ] Pass` — do **not** modify the status line
+   - Record the test in the run's internal tracking as `stub-detected` with the file and indicator found
+   - **Do not execute the test**
+
+5. **If no stub indicators are found** (or the file is unlocatable):
+   - Proceed to Step 4 for normal execution
+
+Run this gate for every eligible test **before** executing any of them (classify all tests in Step 3 first, then sweep with stub detection, then execute the non-stub tests).
+
+---
+
 ## Step 4: Execute and Auto-Judge, Per Type
 
 Work through eligible tests in document order. Update the file immediately after each verdict (see Step 5).
@@ -118,17 +152,13 @@ If the Expected section contains no machine-checkable assertions at all → `[FA
 
 ### 4B — UI Tests
 
-Start browser on the first UI test (browser starts automatically on first Playwright tool call). Reuse it for all subsequent UI tests. Close it at the end of the run.
+UI tests (`UAT-UI-*` prefix, or tests with `Page:` / `Components:` metadata) are **always** recorded as:
 
-**Pass criteria (ALL must be true):**
+```
+[FAIL: auto-judge: UI test requires human verification — use /uat-walk]
+```
 
-1. `browser_navigate` to the test's `Page:` URL succeeds (no navigation error, no 4xx/5xx response).
-2. The Expected section contains at least one selector-based or text-based assertion that `browser_evaluate` or `browser_snapshot` can verify (e.g. "element `.panel-empty` is visible", "heading contains 'No strengths yet'").
-3. Every such assertion returns the expected value.
-
-On fail, screenshot the broken state to `.docs/uat/screenshots/<task-number>-<UAT-ID>-fail.png` before recording the verdict. Task number comes from the UAT filename's `<number>-<slug>.uat.md` prefix.
-
-If the Expected section is purely visual ("panel looks right", "no overflow") with no scriptable check → `[FAIL: auto-judge: expected section requires human visual inspection]`. Screenshot anyway so the next human walkthrough has context.
+Do not navigate, screenshot, or attempt any browser interaction. `/uat-auto` does not use Playwright. Use `/uat-auto-plus` for Playwright-assisted UI runs, or `/uat-walk` for interactive human verification.
 
 ### 4C — Manual Tests
 
@@ -165,8 +195,7 @@ After every eligible test has a non-blocking status (`[x] Pass`, `[SKIP: ...]` a
 4a-pre. **Update `.docs/tasks/README.md`** — remove this task's row from the Active Tasks table entirely. The index lists active tasks only; completed tasks are tracked by their presence in `.docs/tasks/completed/` and do **not** belong in the index. Use a single `Edit` call — never `sed`. **Also check the header**: if the **Last task:** line at the top of the README references this task's `NNN-slug.md`, `Edit` it to point at `completed/NNN-slug.md` instead. Do **not** decrement **Next task number** — it only ever goes up. The index is `/tackle`'s no-args survey source.
 4a. **Roadmap Auto-Checkoff** — scan `.docs/roadmaps/` and `.docs/roadmaps/completed/` for any roadmap referencing this task and flip its matching checkbox. Follow the canonical algorithm in [`.docs/roadmaps/README.md#auto-checkoff-contract`](../../../.docs/roadmaps/README.md). Short form: (i) `mcp__serena__list_dir` on `.docs/roadmaps/` (skip `README.md`) and on `.docs/roadmaps/completed/`; (ii) `Read` each roadmap and look for lines matching `- [ ] [TASK-<NNN>:` whose link path ends in `<NNN>-<slug>.md` (either at `.docs/tasks/` or `completed/`); (iii) `Edit` each matching line in **one** call that **both** flips `- [ ]` → `- [x]` **and** rewrites the link path to the task's new location (e.g. `../tasks/NNN-slug.md` → `../tasks/completed/NNN-slug.md`) — use the full line text as `old_string` for uniqueness. Stale paths are **not** tolerated: if a reference exists, the path is updated. Then `Edit` the roadmap's `**Last updated**:` to today; (iv) bump the matching row's `Progress` numerator in `.docs/roadmaps/README.md`; (v) **Phase sweep** — for each roadmap where a match was found, identify the `## Phase N:` block containing that matched item and scan all other `- [ ] [TASK-NNN:` lines in that same phase; for each, use `mcp__serena__find_file` to check if `NNN-slug.md` exists under `.docs/tasks/completed/`; if it does, `Edit` that line in one call to flip `- [ ]` → `- [x]` and rewrite the link path to `../tasks/completed/NNN-slug.md`, then bump `Progress` in the index for each additional item; (vi) **Inline item sweep** — across the entire roadmap (not limited to the phase block that contains the task reference), collect every remaining `- [ ]` line whose body is free-form text (not a `[TASK-NNN:` link); `Read` the completing task file; use judgment to decide whether each inline item was accomplished by the completing task's work; if yes, `Edit` `- [ ]` → `- [x]` and bump `Progress` in the index; if uncertain, leave the item unchecked — err on the side of leaving items unchecked rather than over-checking. Silent no-op if no roadmap references the task. **Do NOT** auto-flip `Status: active` → `Status: done` even on the last box — that flip is manual. Use `Edit` only — never `sed`, `bash`, or `Write`.
 5. Delete screenshots for this task: use `mcp__serena__list_dir` on `.docs/uat/screenshots/` to find files matching `<task-number>-*` — **never** `ls` — then `git rm` each (or `rm` if untracked).
-6. Close browser: `browser_close` if it was launched.
-7. **Check for ADR linkage**: Read the moved task file (now in `completed/`) for a line matching `**Implements**: ADR-NNNN#DM`:
+6. **Check for ADR linkage**: Read the moved task file (now in `completed/`) for a line matching `**Implements**: ADR-NNNN#DM`:
    - If found:
      1. Parse the `ADR-NNNN#DM` reference.
      2. Locate the ADR file using Serena `mcp__serena__find_file` for `NNNN-*.md` in `.docs/adr/`.
@@ -184,9 +213,8 @@ After every eligible test has a non-blocking status (`[x] Pass`, `[SKIP: ...]` a
 
 1. **Leave the UAT file in `.docs/uat/`** — it is not complete.
 3. **Keep screenshots** — they are diagnostic evidence for the next human walkthrough.
-4. Close Puppeteer if launched.
-5. Emit the completion summary.
-6. Exit 0 — a headless orchestrator treats `/uat-auto` exiting as the task being done from its perspective; the UAT pipeline itself decides what to do with the fail markers.
+4. Emit the completion summary.
+5. Exit 0 — a headless orchestrator treats `/uat-auto` exiting as the task being done from its perspective; the UAT pipeline itself decides what to do with the fail markers.
 
 ### Summary Format
 
@@ -204,7 +232,8 @@ Results:
   ❌ Failed:       2
     of which auto-judge-uncertain:  1
   ❔ Pending:      0
-  Total:           9
+  🔲 Stub-detected (pending): 0  (left untouched — implement first)
+  Total:           9  (includes stub-detected)
 
 Failed Tests:
   • UAT-API-003: Delete Position — "auto-judge: HTTP 500 expected 204"
@@ -245,9 +274,8 @@ On all-pass, replace `Next action` with `Moved to completed/` and the new paths.
 - Rewrite any generated command that violates these rules before executing.
 
 ### Playwright Browser Lifecycle
-- Browser starts automatically on first Playwright tool call (no explicit launch step needed).
-- Reuse across all UI tests.
-- Always close at end of run (`browser_close`), whether all-pass, any-fail, or aborted.
+
+**`/uat-auto` does not use Playwright.** UI tests are always recorded as requiring human verification (see Section 4B). Use `/uat-auto-plus` for Playwright-assisted autonomous UI runs, or `/uat-walk` for interactive human walkthroughs.
 
 ### MCP Tool Compliance
 - Use Serena for every directory listing and file search (e.g. screenshots cleanup).

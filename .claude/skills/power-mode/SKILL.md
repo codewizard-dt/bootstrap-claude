@@ -49,6 +49,8 @@ Wait for all task-creation agents to complete before proceeding.
 
 Run the full tackle → UAT-generate → UAT-auto pipeline (see below) for all tasks in the current wave.
 
+> **Note on `/uat-auto` behavior:** `/uat-auto` does not run UI tests — they are always recorded as `[FAIL: auto-judge: UI test requires human verification]` and require a subsequent `/uat-walk`. If stub indicators are detected in the implementation, those tests remain pending (`- [ ] Pass`) and the task stays in `.docs/tasks/` until the feature is implemented and re-tested.
+
 **Step 4 — Repeat**
 
 Return to Step 1. Continue until `/roadmap-next` confirms the roadmap is fully checked off.
@@ -72,7 +74,9 @@ Stop only when /roadmap-next reports no unchecked items.
 
 IMPORTANT: Follow .docs/guides/mcp-tools.md for all file and code operations. Use Serena (mcp__serena__*) for ALL file/directory exploration and ALL code editing. Never use ls, cat, find, grep, sed, awk, or any shell command to inspect or modify files.
 
-IMPORTANT: If at any point you are not 100% sure how to fix an issue or which implementation strategy to use, invoke /research first and act on its recommendation before proceeding.",
+IMPORTANT: If at any point you are not 100% sure how to fix an issue or which implementation strategy to use, invoke /research first and act on its recommendation before proceeding.
+
+IMPORTANT: /uat-auto does not run UI tests — they always record as [FAIL: auto-judge: UI test requires human verification] and require a manual /uat-walk after the automated run. Do not treat these failures as blocking task completion. If stub-detected tests remain pending after /uat-auto, the task is not complete — the feature must be implemented first.",
   mode: "bypassPermissions"
 })
 ```
@@ -224,7 +228,11 @@ CRITICAL: After all tests pass you MUST complete Step 7 in full before stopping:
 2. git mv the task file to .docs/tasks/completed/
 3. Remove the task row from .docs/tasks/README.md
 4. Flip the matching roadmap checkbox and update the task path in the roadmap
-Do not stop after emitting the summary — the file moves are mandatory.",
+Do not stop after emitting the summary — the file moves are mandatory.
+
+IMPORTANT: If any tests remain as [FAIL: auto-judge: UI test requires human verification] after the run, that is expected behavior — /uat-auto does not run UI tests. Those tests require a human walkthrough via /uat-walk.
+
+IMPORTANT: If any tests remain as - [ ] Pass because stub indicators were detected in the implementation, do NOT mark the task as complete. Leave the UAT file in .docs/uat/ and report the stub-detected tests in your summary. The task cannot be considered done until the stubs are implemented and the tests pass.",
   mode: "bypassPermissions"
 })
 ```

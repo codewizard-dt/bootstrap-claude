@@ -111,6 +111,40 @@ The default is **"pending + previously-failed"**: every test with `- [ ] Pass` o
 
 ---
 
+## Step 3.5: Stub Detection (Pre-Execution Gate)
+
+Before executing any eligible test, check whether the implementation is a stub or placeholder. A stub test **must remain pending** (`- [ ] Pass`) — do not execute it, do not enter the fix loop for it.
+
+For each eligible test:
+
+1. **Identify the implementation target** from the test's metadata:
+   - API/CLI tests: the `Endpoint:` field or URL in `**Command**:`
+   - UI tests: the `Page:` field or component name in `Components:`
+   - Manual tests: the feature name from the test `Description`
+
+2. **Locate the implementation file** using Serena:
+   - `mcp__serena__search_for_pattern` for the route/handler/component name across `src/`, `app/`, `lib/`, or equivalent source directories
+   - If nothing is found, treat as **unlocatable** and proceed with normal execution (cannot confirm stub; run the test)
+
+3. **Check for stub indicators** in the located file(s) using `mcp__serena__find_symbol` or `mcp__serena__search_for_pattern`:
+   - `TODO`, `FIXME`, or `HACK` markers inside function/method bodies
+   - `throw new Error('not implemented')`, `raise NotImplementedError`, `notImplemented()`, `unimplemented!()`
+   - `pass  # TODO`, `pass  # stub`, or a bare `pass` as the only statement in a function
+   - Empty function/method bodies: body is only `{}`, `return`, `return null`, `return undefined`, `return None`
+   - Placeholder comments: `// stub`, `# stub`, `// implement this`, `# TODO: implement`
+
+4. **If stub indicators are found**:
+   - Leave the test status as `- [ ] Pass` — do **not** modify the status line
+   - Record the test in the run's internal tracking as `stub-detected`
+   - **Do not execute the test; do not enter the fix loop** — implementing a feature from scratch is out of scope for autonomous fix. Surface it in the summary.
+
+5. **If no stub indicators are found** (or the file is unlocatable):
+   - Proceed to Step 4 for normal execution
+
+Run this gate for every eligible test **before** executing any of them (classify all tests in Step 3 first, then sweep with stub detection, then execute the non-stub tests).
+
+---
+
 ## Step 4: Execute and Auto-Judge, Per Type
 
 Work through eligible tests in document order. After each verdict, update the file (Step 5). On failure, enter the fix loop (Step 6) before moving to the next test.
@@ -272,6 +306,7 @@ Results:
     auto-fix-declined:      0
     auto-judge-uncertain:   0
   ❔ Pending:                0
+  🔲 Stub-detected (pending): 0  (left untouched — implement first)
   Total:                    9
 
 Fixes Applied:
