@@ -21,7 +21,7 @@ argument-hint: <preserve from original if present>
 | Category | Model | Commands |
 |---|---|---|
 | **Planning** (deep reasoning, architecture, ambiguity) | `claude-opus-4-7` | `research`, `now`, `adr-create`, `adr-finalize`, `task-add`, `task-update`, `uat-generate`, `project-readme`, `prd-create`, `prd-finalize`, `prd-extract-decisions`, `prd-update` |
-| **Execution** (mechanical, well-specified) | `claude-sonnet-4-6` | `tackle`, `lint`, `simplify`, `task-trash`, `uat-auto`, `uat-skip`, `uat-walk`, `update-docs`, `serena-config`, `marp-slideshow`, `mermaid-flowchart`, `prd-trash`, `adr-walkthrough`, `type-check` |
+| **Execution** (mechanical, well-specified) | `claude-sonnet-4-6` | `tackle`, `lint`, `simplify`, `task-trash`, `uat-auto`, `uat-skip`, `uat-walk`, `update-docs`, `serena-config`, `marp-slideshow`, `mermaid-flowchart`, `prd-trash`, `adr-walkthrough`, `typecheck` |
 | **Lightweight** (context refresh, simple commits, no heavy reasoning) | `claude-haiku-4-5-20251001` (or `haiku` shorthand) | `primer`, `git-commit` |
 
 `effort: high` applies to: `research`, `now`, `adr-create`, `adr-finalize`, `prd-create`, `prd-finalize`, `prd-extract-decisions`.

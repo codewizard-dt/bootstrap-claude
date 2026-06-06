@@ -62,7 +62,7 @@ Follow `basic-project-setup.md` to configure a new project, or use the npm packa
 | `/eval-gap [stage]` | Read-only audit of eval coverage — gap report, coverage matrix, anti-pattern check, and prioritised next actions. Never writes files. |
 | `/security-audit [category\|full\|internal\|external]` | Audit LLM/AI integration across 11 categories (5 internal: observability, rate-limiting, access-controls, hitl-policy, benchmarking; 6 external: prompt-injection, data-leakage, output-sanitization, excessive-agency, supply-chain, token-dos). Run a single category, a group, or the full audit. |
 | `/lint` | Get IDE diagnostics, fix issues one-by-one in verify cycles |
-| `/type-check` | Detect type-checking tools (typecheck/tsc/mypy/pyright/go vet/cargo check/etc.), run each one, and only invoke `/git-commit` if all pass |
+| `/typecheck` | Detect type-checking tools (typecheck/tsc/mypy/pyright/go vet/cargo check/etc.), run each one, and only invoke `/git-commit` if all pass |
 | `/debug-logs [symptom]` | Diagnose failures by inspecting session context, background processes, and conventional log stores; produce ranked hypotheses with next actions (read-only) |
 | `/port-feature <source-path> <functionality>` | Assess a feature in an external project and produce a concrete porting plan (technology mapping, complexity breakdown, ordered steps) targeting the current project's conventions |
 | `/simplify <path>` | Analyze files/directories to remove redundancy and simplify complexity |

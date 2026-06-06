@@ -43,7 +43,7 @@ This table is the single source of truth for the rename. Every step below refere
 
 **Explicitly NOT renamed** (out of scope — do not touch their folders, frontmatter, or any reference to them):
 
-`/primer`, `/now`, `/tackle`, `/research`, `/lint`, `/type-check`, `/debug-logs`, `/simplify`, `/git-commit`, `/update-docs`, `/project-readme`, `/marp-slideshow`, `/mermaid-flowchart`, `/serena-config`, `/uat-auto`, `/uat-auto-plus`, `/uat-skip`.
+`/primer`, `/now`, `/tackle`, `/research`, `/lint`, `/typecheck`, `/debug-logs`, `/simplify`, `/git-commit`, `/update-docs`, `/project-readme`, `/marp-slideshow`, `/mermaid-flowchart`, `/serena-config`, `/uat-auto`, `/uat-auto-plus`, `/uat-skip`.
 
 ---
 

@@ -66,14 +66,10 @@ After installing, verify the binaries resolve from the project root before proce
 - Python: `ruff --version` and `mypy --version`
 - Go: `staticcheck --version`
 
-## Phase 4 — Configure and fix errors
+## Phase 4 — Configure
 
-For each language:
-1. Finalize the config files written in Phase 3 to enable strict mode (flags, rules, paths).
-2. Fix any errors that strict mode surfaces in existing code (one error at a time, using Serena symbolic tools for code edits; do not
-just add blanket suppressions — fix root causes; use targeted disables only for intentional framework patterns like
-TanStack Router's `throw redirect(...)`).
-3. Repeat until the tool exits 0.
+For each language, finalize the config files written in Phase 3 to enable strict mode (flags, rules, paths). Do **not** run the type
+checker and do **not** attempt to fix any errors — this phase is setup only.
 
 ## Phase 5 — Makefile
 
@@ -96,13 +92,13 @@ Write .claude/skills/typecheck/SKILL.md with this exact content (do not alter th
 ```
 ---
 name: typecheck
-description: Run type-check, fix the first error, repeat until clean
+description: Run typecheck, fix the first error, repeat until clean
 model: claude-sonnet-4-6
 disable-model-invocation: false
 user-invocable: true
 ---
 
-# Run type-check and fix issues
+# Run typecheck and fix issues
 
 IMPORTANT: Adhere to all rules in `.docs/guides/mcp-tools.md` if it exists.
 
@@ -130,7 +126,14 @@ If there are no errors, this task is done.
 - Do not keep a to-do list of separate errors — just run the command again to get the next one
 ```
 
-Completion check
+## Phase 7 — Report
 
-Run make typecheck and confirm it exits 0 with no errors (warnings from advisory-only rules like fast-refresh are acceptable). Report
-which languages were configured and what strict flags were enabled for each.
+Do **not** run `make typecheck`. Report to the user:
+
+- Which languages were configured and what strict flags were enabled for each
+- Which config files were created or updated
+- Which packages were installed
+- How to run type checking: `make typecheck` (all languages) or `make typecheck-<lang>` (per language)
+- How to start fixing errors interactively: run `/typecheck`
+
+**Type-checking is now set up and ready to use.**

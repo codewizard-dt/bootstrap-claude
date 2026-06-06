@@ -325,7 +325,7 @@ Once all outline steps are complete, ask the user: **"Generate UAT tests for thi
 
 **Wait** for the user's answer (and for `/uat-generate` to finish, if invoked) before proceeding to Step 6b.
 
-### Step 6b: Type-Check Gate
+### Step 6b: Type Check Gate -- `/typecheck`
 
 Before declaring completion, try each of the following in order and stop at the first one that succeeds (exit 0) or fails with type errors. Skip to the next only if a command is not found / the target does not exist.
 

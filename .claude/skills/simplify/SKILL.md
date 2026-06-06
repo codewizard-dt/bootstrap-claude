@@ -78,7 +78,7 @@ With user approval:
 
 After changes:
 - For code files:
-  - Run appropriate quality gates (mypy, type-check) from `.docs/agent/quality-gates.md`
+  - Run appropriate quality gates (mypy, typecheck) from `.docs/agent/quality-gates.md`
   - Ensure no functionality broken
 - For documentation:
   - Verify all critical information retained
