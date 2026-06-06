@@ -57,6 +57,9 @@ Follow `basic-project-setup.md` to configure a new project, or use the npm packa
 | `/bug-file <description>` | File a new bug in `.docs/bugs/` with required-on-report fields and update the bug index |
 | `/bug-triage <BUG-NNNN>` | Triage an open bug (priority, assignee, tags, impact) and decide its next destination: stay triaged, start work (→ `in-progress/`), or trash (wontfix / duplicate / cannot-reproduce) |
 | `/bug-close <BUG-NNNN>` | Close an in-progress bug — requires root-cause analysis, fix commit, and a regression test before moving to `.docs/bugs/closed/` |
+| `/eval-create [stage] [description]` | Assess eval coverage against the 5-stage framework and create new evals with mandatory user approval. Bootstrap mode (no golden sets yet) enforces strictly 1 eval at a time. Pass a description to jump directly to creating that eval. |
+| `/eval-run [stage]` | Execute the eval suite (golden sets, scenarios, replays), report pass/fail per case, diff against baseline, and surface regressions |
+| `/eval-gap [stage]` | Read-only audit of eval coverage — gap report, coverage matrix, anti-pattern check, and prioritised next actions. Never writes files. |
 | `/security-audit [category\|full\|internal\|external]` | Audit LLM/AI integration across 11 categories (5 internal: observability, rate-limiting, access-controls, hitl-policy, benchmarking; 6 external: prompt-injection, data-leakage, output-sanitization, excessive-agency, supply-chain, token-dos). Run a single category, a group, or the full audit. |
 | `/lint` | Get IDE diagnostics, fix issues one-by-one in verify cycles |
 | `/type-check` | Detect type-checking tools (typecheck/tsc/mypy/pyright/go vet/cargo check/etc.), run each one, and only invoke `/git-commit` if all pass |

@@ -56,17 +56,24 @@ Print the summary, then **proceed immediately** with the suggested bump — no u
 
 Find and update version numbers in project files.
 
-### Detection (run in parallel)
+### Detection
 
-Check for these files (use `find . -maxdepth 2` or Read directly):
+Run this command to find all manifest files anywhere in the repo (excluding `node_modules` and hidden dirs):
 
-- `package.json` — look for `"version"` field
-- `pyproject.toml` — look for `version = ` under `[project]` or `[tool.poetry]`
-- `Cargo.toml` — look for `version = ` under `[package]`
-- `setup.cfg` — look for `version = `
-- `VERSION` or `version.txt` — plain version string
+```bash
+find . \( -name node_modules -o -name .git \) -prune -o \
+  \( -name "package.json" -o -name "pyproject.toml" -o -name "Cargo.toml" \
+     -o -name "setup.cfg" -o -name "VERSION" -o -name "version.txt" \) \
+  -print
+```
 
-If **none** of these exist, skip this step entirely and proceed to Step 5.
+Filter results:
+- For `package.json`: only include files that contain a `"version"` field (skip `node_modules` entries even if the prune missed them)
+- For `pyproject.toml` / `Cargo.toml` / `setup.cfg`: only include files with an actual `version =` line under a recognized section
+
+**There is no "root only" rule.** A manifest anywhere in the tree counts. Monorepo layouts with no root-level manifest are normal — update every package found.
+
+If **no files with a version field** are found anywhere in the repo, skip this step entirely and proceed to Step 5.
 
 ### Bumping rules
 
@@ -80,7 +87,7 @@ Given the current version string (e.g. `1.2.3`):
 
 Pre-release tags (e.g. `1.0.0-beta.1`) — strip the pre-release suffix and apply the bump normally.
 
-Edit each file that contains a version using the Edit tool. Then include these version-bump edits in the commit automatically (no separate commit needed).
+Edit **every file** that contains a version using the Edit tool — do not stop at one. Then include all version-bump edits in the commit automatically (no separate commit needed).
 
 ## Step 5: Commit
 

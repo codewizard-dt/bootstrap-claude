@@ -22,17 +22,60 @@ Research what the strict flags actually enable, what the known gotchas are (e.g.
 mypy needing ignore_missing_imports for third-party stubs), and what companion tools are idiomatic (e.g. ESLint for TypeScript,
 mypy/pyright for Python).
 
-## Phase 3 — Implement
+## Phase 3 — Install toolchain packages
+
+Before touching any config file, ensure every required tool is actually installed in the project root. Do not just add entries to a
+dependency file and stop — run the install command so the binaries are present and `make typecheck` can execute.
+
+**TypeScript projects**
+- Detect package manager: look for `pnpm-lock.yaml` → pnpm, `yarn.lock` → yarn, otherwise npm.
+- Install (example for pnpm; adjust for the detected manager):
+  ```
+  pnpm add -D typescript eslint @eslint/js typescript-eslint
+  ```
+  If the project uses a framework-specific ESLint plugin (e.g. `eslint-plugin-react`, `@next/eslint-plugin-next`,
+  `eslint-plugin-vue`) install that too.
+- Create `eslint.config.mjs` (flat config) at the project root if it does not exist. Use `typescript-eslint`'s
+  `strictTypeChecked` + `stylisticTypeChecked` presets and set `parserOptions.projectService: true` so type-aware rules work.
+- Create or update `tsconfig.json` at the project root with `"strict": true` and a `"include"` that covers all source directories.
+  If a framework tsconfig already exists, extend it and layer strict on top rather than replacing it.
+
+**Python projects**
+- Detect toolchain: look for `pyproject.toml` → use `uv` (preferred) or `pip`; look for `requirements*.txt` → use pip.
+- Install:
+  ```
+  uv add --dev ruff mypy   # or: pip install ruff mypy
+  ```
+- Create `ruff.toml` (or `[tool.ruff]` in `pyproject.toml`) at the project root with `line-length`, `select = ["ALL"]`, and a
+  reasonable `ignore` list (at minimum: `D`, `ANN`, `S101` unless tests are excluded by path).
+- Create `[tool.mypy]` in `pyproject.toml` (or `mypy.ini`) with `strict = true` and `ignore_missing_imports = true` for any
+  third-party packages that lack stubs.
+
+**Go projects**
+- Install staticcheck: `go install honnef.co/go/tools/cmd/staticcheck@latest`
+- No config file needed; use `go vet ./...` + `staticcheck ./...` in the Makefile target.
+
+**Rust projects**
+- No install needed; Clippy ships with rustup.
+- Add a `clippy.toml` at the project root only if project-wide lint levels need tuning.
+
+**Other languages**: follow the same pattern — install first, then write config.
+
+After installing, verify the binaries resolve from the project root before proceeding:
+- TypeScript: `npx tsc --version` and `npx eslint --version`
+- Python: `ruff --version` and `mypy --version`
+- Go: `staticcheck --version`
+
+## Phase 4 — Configure and fix errors
 
 For each language:
-1. Create or update the type-checker / linter config to enable strict mode
+1. Finalize the config files written in Phase 3 to enable strict mode (flags, rules, paths).
 2. Fix any errors that strict mode surfaces in existing code (one error at a time, using Serena symbolic tools for code edits; do not
-just add // eslint-disable blanket suppressions — fix root causes; use targeted disables only for intentional framework patterns like
-TanStack Router's throw redirect(...))
-3. If a language's toolchain is not yet installed, add it to the appropriate dependency file (e.g. @tanstack/router-cli to
-devDependencies, mypy to dev extras)
+just add blanket suppressions — fix root causes; use targeted disables only for intentional framework patterns like
+TanStack Router's `throw redirect(...)`).
+3. Repeat until the tool exits 0.
 
-## Phase 4 — Makefile
+## Phase 5 — Makefile
 
 Create (or update) a root-level Makefile with:
 make typecheck        # runs all language checks in sequence
@@ -46,7 +89,7 @@ Each per-language target must:
 
 If a language directory is empty (no source files yet), the target must skip gracefully rather than fail.
 
-## Phase 5 — Skill
+## Phase 6 — Skill
 
 Write .claude/skills/typecheck/SKILL.md with this exact content (do not alter the structure):
 
