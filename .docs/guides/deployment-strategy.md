@@ -357,6 +357,7 @@ down:
 ## dev — build from source with hot-reload bind mounts (Dockerfile.dev)
 dev:
 	docker compose -f docker-compose.yml -f docker-compose.build.yml up --wait
+	@$(MAKE) --no-print-directory ports
 
 # --- Production / CI bypass ---
 
@@ -428,6 +429,12 @@ ssh-alias:
 |---|---|
 | Runner shows **Offline** | `systemctl restart "actions.runner.*"` |
 | `docker compose pull` — 401 / permission denied | Re-run Step 3 (GHCR auth) |
+| `docker compose pull` — 403 Forbidden (after successful login) | GHCR packages are **private** by default. Go to GitHub → your profile → Packages → each image → Package settings → Change visibility → Public. Or re-login as the **runner** OS user (not root): `su - runner && echo PAT \| docker login ghcr.io -u <user> --password-stdin`. Credentials in root's `~/.docker/config.json` are not visible to the runner service user. |
 | Deploy job stays **Queued** indefinitely | Runner is offline or label mismatch — verify runner is **Idle** in GitHub UI and `runs-on` labels match |
 | `docker compose up --wait` times out | A healthcheck is failing — `docker compose ps` and `docker compose logs <service>` |
 | Images build but wrong version deployed | Confirm `:latest` tag is being pushed and `docker compose pull` is pulling `:latest`, not a pinned digest |
+| `config.sh` — `Permission denied` on `.env` / `_diag` | Runner was configured as root, but `/opt/actions-runner` is owned by root. Create a non-root user first: `useradd -m -G docker runner && chown -R runner:runner /opt/actions-runner`, then `su - runner` before running `config.sh`. Install the service with `./svc.sh install runner` (pass the username). |
+| Caddy container up but site shows `ERR_CONNECTION_REFUSED` — no ports in `docker ps` | Containers were started with a stale compose file that had no port bindings. Run `docker compose up -d --force-recreate` to restart all containers with the current compose config. |
+| `cp: cannot create regular file '/opt/<PROJECT>/...': Permission denied` in deploy job | The runner OS user doesn't own `/opt/<PROJECT>`. Fix: `chown -R runner:runner /opt/<PROJECT>` (run as root on the VPS). |
+| Gitleaks flags fake tokens in test/UAT docs | Add the file path glob and/or token regex to `.gitleaks.toml` under `[allowlist]`. Example: `paths = ['(?i)\.docs/uat/']` |
+| Host-mounted config file causes `not a directory` error on container start | If the config file is baked into the image (e.g. via `COPY` in the Dockerfile), remove the bind-mount volume from `docker-compose.yml`. Docker creates a directory at the mount path when the host file doesn't exist, causing the error on the next start. |

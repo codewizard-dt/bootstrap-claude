@@ -1,8 +1,8 @@
 name: Build & Push
 
 on:
-  push:
-    branches: [main]
+  # push:
+  #   branches: [main]  # uncomment to enable automatic deploys on push
   workflow_dispatch:
 
 env:

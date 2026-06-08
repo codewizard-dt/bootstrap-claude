@@ -36,7 +36,15 @@ To install or refresh MCPs and skills globally without a project path:
 npx bootstrap-claude install
 ```
 
-## Step 3: Initialize
+## Step 3: Wire Global Hooks (One-Time)
+
+`install-global.sh` copies hook *scripts* to `~/.claude/hooks/` but does **not**
+register them in `~/.claude/settings.json` — hook wiring is a global-settings
+concern done once by hand. See `.claude/hooks/README.md` for the required
+`PreToolUse` snippets (e.g. the `git stash`/`restore`/`checkout` block, which is
+enforced even under bypassed permissions where `deny` rules don't apply).
+
+## Step 4: Initialize
 
 - Run `/init`
 - Run `/primer`
