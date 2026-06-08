@@ -377,14 +377,22 @@ push:
 		-t $(GHCR_REPO)-caddy:latest --push \
 		-f Dockerfile.caddy .
 
-## deploy — sync compose file, Makefile, and .env.production to VPS then restart
-deploy:
+## deploy — sync compose file + Makefile to VPS then restart
+deploy: deploy-sync
+	ssh $(PROJECT) "cd /opt/$(PROJECT) && make deploy-pull"
+
+deploy-sync:
 	ssh $(PROJECT) "mkdir -p /opt/$(PROJECT)"
 	scp docker-compose.yml Makefile $(PROJECT):/opt/$(PROJECT)/
 	scp .env.production $(PROJECT):/opt/$(PROJECT)/.env
-	ssh $(PROJECT) "cd /opt/$(PROJECT) && make deploy-pull"
+	scp .scripts/setup-runner.sh $(PROJECT):~/setup-runner.sh
 
-## deploy-pull — alias for `up`; run directly on the VPS after syncing files
+## setup-runner — upload and run the runner installer on the VPS
+## Usage: make setup-runner RUNNER_TOKEN=<token>
+setup-runner: deploy-sync
+	ssh $(PROJECT) "RUNNER_TOKEN=$(RUNNER_TOKEN) REPO_URL=$(REPO_URL) bash ~/setup-runner.sh"
+
+## deploy-pull — pull new images and restart (run directly on the VPS)
 deploy-pull: up
 
 ## ssh-alias — upsert ~/.ssh/config Host entry for the prod server (idempotent)

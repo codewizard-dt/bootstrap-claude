@@ -40,8 +40,8 @@ for arg in "$@"; do
 done
 set -- "${POSITIONAL[@]}"
 
-if [ $# -ne 1 ]; then
-  echo "Usage: $0 [--dry-run] <path-to-project>" >&2
+if [ $# -lt 1 ]; then
+  echo "Usage: $0 [--dry-run] <path-to-project> [additional context...]" >&2
   exit 1
 fi
 
@@ -49,6 +49,8 @@ PROJECT_DIR="$(cd "$1" 2>/dev/null && pwd)" || {
   echo "Error: Cannot resolve path: $1" >&2
   exit 1
 }
+shift
+EXTRA_CONTEXT="${*}"
 
 if [ ! -d "$PROJECT_DIR" ]; then
   echo "Error: Directory does not exist: $PROJECT_DIR" >&2
@@ -81,5 +83,14 @@ PROMPT="$(cat "$GUIDE")
 
 $TASK"
 
+if [ -n "$EXTRA_CONTEXT" ]; then
+  PROMPT="$PROMPT
+
+---
+
+Additional context from the user:
+$EXTRA_CONTEXT"
+fi
+
 cd "$PROJECT_DIR"
-claude --dangerously-skip-permissions "$PROMPT"
+claude -p --dangerously-skip-permissions "$PROMPT"

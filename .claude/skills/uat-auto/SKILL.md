@@ -158,7 +158,7 @@ UI tests (`UAT-UI-*` prefix, or tests with `Page:` / `Components:` metadata) are
 [FAIL: auto-judge: UI test requires human verification — use /uat-walk]
 ```
 
-Do not navigate, screenshot, or attempt any browser interaction. `/uat-auto` does not use Playwright. Use `/uat-auto-plus` for Playwright-assisted UI runs, or `/uat-walk` for interactive human verification.
+Do not navigate, screenshot, or attempt any browser interaction. Use `/uat-walk` for interactive human verification.
 
 ### 4C — Manual Tests
 
@@ -273,9 +273,9 @@ On all-pass, replace `Next action` with `Moved to completed/` and the new paths.
 - No `&&`, `;`, `echo` banners, output redirection, temp files, defensive flags, or multi-line line-continuations.
 - Rewrite any generated command that violates these rules before executing.
 
-### Playwright Browser Lifecycle
+### No Browser Automation
 
-**`/uat-auto` does not use Playwright.** UI tests are always recorded as requiring human verification (see Section 4B). Use `/uat-auto-plus` for Playwright-assisted autonomous UI runs, or `/uat-walk` for interactive human walkthroughs.
+**`/uat-auto` does not use any browser automation.** UI tests are always recorded as requiring human verification (see Section 4B). Use `/uat-walk` for interactive human walkthroughs.
 
 ### MCP Tool Compliance
 - Use Serena for every directory listing and file search (e.g. screenshots cleanup).

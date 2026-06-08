@@ -67,6 +67,7 @@ Follow `basic-project-setup.md` to configure a new project, or use the npm packa
 | `/port-feature <source-path> <functionality>` | Assess a feature in an external project and produce a concrete porting plan (technology mapping, complexity breakdown, ordered steps) targeting the current project's conventions |
 | `/simplify <path>` | Analyze files/directories to remove redundancy and simplify complexity |
 | `/demo [path] [custom instructions]` | Audit all project functionality and produce a 2-3 minute demo run book (`.docs/demo/runbook.md`) plus a Marp slideshow (`.docs/MARP/demo.slides.md`) |
+| `/gap-assess <expected functionality>` | Runs in plan mode — audit the app's actual functionality (Serena, subagents) against expected functionality (inline text or a spec/requirements file) and deliver a Covered/Partial/Gap/Undocumented coverage report plus a remediation plan for approval |
 | `/marp-slideshow <input> [output]` | Summarize a source file into a Marp/Marpit slide deck following best practices |
 | `/mermaid-flowchart <input> [output]` | Summarize an architecture file (markdown, YAML, Docker Compose) into a Mermaid flowchart in a new markdown file |
 | `/git-commit` | Stage all changes and commit with auto-generated message |

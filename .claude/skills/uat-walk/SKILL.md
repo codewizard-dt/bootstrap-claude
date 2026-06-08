@@ -158,7 +158,7 @@ Tests are presented based on their type:
 ### Completion Check
 - If no more tests match the current mode:
   - **A UAT file is complete when no tests have a blocking status.** Blocking statuses are `[FAIL: ...]` and `[FIXING: ...]`. Non-blocking statuses are `[x] Pass` (passed) and `[SKIP: ...]` (user decided the test is not necessary). Only `- [ ] Pass` (untested) is ambiguous — it is non-blocking only if the current mode excluded it (e.g., "Failed only" mode skips pending tests).
-  - Proceed to the **Completion** section at the bottom of this skill and execute **Post-Walkthrough Actions** in full. Do not STOP here — all file moves, index updates, roadmap auto-checkoff, screenshot cleanup, and ADR linkage checks happen there.
+  - Proceed to the **Completion** section at the bottom of this skill and execute **Post-Walkthrough Actions** in full. Do not STOP here — all file moves, index updates, roadmap auto-checkoff, and ADR linkage checks happen there.
 
 ---
 
@@ -328,39 +328,6 @@ After presenting, proceed to Step 4C for a single verdict.
 
 ---
 
-### Playwright Assist for UI Tests
-
-Playwright is used **only for troubleshooting** — do NOT take screenshots when initially presenting a test. The user performs their own manual testing and reports the result.
-
-Playwright MCP is launched when a **UI/layout test** (identified by `UAT-UI-*` prefix, or having `Page:` / `Components:` metadata) receives a **Fail** or **Fix now** verdict. It is used to:
-- Capture the broken state for diagnosis
-- Inspect DOM/styles to identify root causes
-- Capture before/after states during the fix workflow
-
-**Viewport**: Always launch with a **desktop viewport** (1600×950) unless the user explicitly requests a different size.
-
-**Lifecycle**:
-1. **Browser starts automatically** on the first Fail or Fix now for a UI test (Playwright MCP starts the browser on first tool call — no explicit launch step needed)
-2. **Keep the browser open** for the duration of the walkthrough — reuse it across UI tests
-3. Skip Playwright entirely for non-UI tests (API, edge case, integration tests without a `Page:` field)
-
-### Screenshot Naming Convention
-
-All screenshots are saved to `.docs/uat/screenshots/` and **prefixed with the task number** derived from the UAT filename. Assume this directory already exists.
-
-**Format**: `<task-number>-<UAT-ID>-<context>.png`
-
-| UAT File | Test ID | Context | Screenshot Path |
-|----------|---------|---------|-----------------|
-| `5-positions.uat.md` | `UAT-UI-002` | fail | `.docs/uat/screenshots/5-UAT-UI-002-fail.png` |
-| `5-positions.uat.md` | `UAT-UI-002` | before-fix | `.docs/uat/screenshots/5-UAT-UI-002-before-fix.png` |
-| `5-positions.uat.md` | `UAT-UI-002` | after-fix | `.docs/uat/screenshots/5-UAT-UI-002-after-fix.png` |
-| `12-api-refactor.uat.md` | `UAT-UI-001` | fail | `.docs/uat/screenshots/12-UAT-UI-001-fail.png` |
-
-Extract the task number from the UAT filename: `<number>-<slug>.uat.md` → prefix is `<number>`.
-
----
-
 ## Step 4: Record the User's Verdict
 
 Prompt the user inline — do NOT use `AskUserQuestion` for verdicts. The approach varies by batch type.
@@ -436,7 +403,6 @@ The user will type their choice. Accept any unambiguous prefix (e.g., "p", "pass
 #### If Fail
 - Ask a follow-up inline: **"What went wrong? (optional, press Enter to skip)"**
   - For batched fails: ask once per failed test, or accept a single note for all failures
-- For **UI tests**: use Playwright (browser starts automatically on first tool call, desktop viewport), navigate to the page, and take a screenshot saved as `.docs/uat/screenshots/<task-number>-<UAT-ID>-fail.png` to capture the broken state
 - Mark the test: `- [FAIL: <user's note or "No details provided">] <!-- YYYY-MM-DD -->`
 
 #### If Fix Now
@@ -506,33 +472,6 @@ Instructions:
 5. Report what was changed and why
 ```
 
-### UI/Layout Fix Workflow (Playwright-Assisted)
-
-For **UI/layout tests** (`UAT-UI-*` or tests with `Page:` / `Components:` metadata), the fix subagent should use Playwright MCP to diagnose and verify visually:
-
-**Before fixing** — Capture the current broken state:
-1. `browser_navigate` to the test's page URL
-2. `browser_take_screenshot` — save as `.docs/uat/screenshots/<task-number>-<UAT-ID>-before-fix.png`
-3. `browser_evaluate` or `browser_snapshot` to inspect DOM state, computed styles, or element visibility
-4. Use findings to inform the root cause analysis
-
-**After fixing** — Capture the new state (do NOT judge pass/fail):
-1. Reload the page: `browser_navigate` to the same URL
-2. `browser_take_screenshot` — save as `.docs/uat/screenshots/<task-number>-<UAT-ID>-after-fix.png`
-3. Include the before and after screenshots in the subagent's report
-4. **Do NOT determine if the fix is correct** — that is the user's job
-
-**Subagent prompt addition for UI tests**:
-```
-This is a UI/layout test. Use Playwright MCP tools to diagnose:
-- Navigate to the page and screenshot the current (broken) state
-- Inspect the DOM with browser_snapshot to get the accessibility tree, or browser_evaluate for style issues
-- After implementing the fix, screenshot the new state
-- Report what you changed and include before/after screenshots
-- IMPORTANT: Do NOT mark the test as passing. Do NOT judge whether the fix is correct.
-  The user will verify the fix manually after you report back.
-```
-
 ### Fix Rules
 
 **⚠️ NEVER AUTO-PASS AFTER A FIX — this is the most important rule in the fix workflow.**
@@ -596,10 +535,7 @@ Failed Tests:
   3. **Update references** in both moved files: update any remaining stale paths in the task file, update `pending/` → `completed/` in the UAT file's source task link
   3a. **Update `.docs/tasks/README.md`** — remove this task's row from the Active Tasks table entirely. The index lists active tasks only; completed tasks are tracked by their presence in `.docs/tasks/completed/` and do **not** belong in the index. Use a single `Edit` call — never `sed`. **Also check the header**: if the **Last task:** line at the top of the README references this task's `NNN-slug.md`, `Edit` it to point at `completed/NNN-slug.md` instead. Do **not** decrement **Next task number** — it only ever goes up. The index is `/tackle`'s no-args survey source.
   3b. **Roadmap Auto-Checkoff** — scan `.docs/roadmaps/` and `.docs/roadmaps/completed/` for any roadmap referencing this task and flip its matching checkbox. Follow the canonical algorithm in [`.docs/roadmaps/README.md#auto-checkoff-contract`](../../../.docs/roadmaps/README.md). Short form: (i) `mcp__serena__list_dir` on `.docs/roadmaps/` (skip `README.md`) and on `.docs/roadmaps/completed/`; (ii) `Read` each roadmap and look for lines matching `- [ ] [TASK-<NNN>:` whose link path ends in `<NNN>-<slug>.md` (either at `.docs/tasks/` or `completed/`); (iii) `Edit` each matching line in **one** call that **both** flips `- [ ]` → `- [x]` **and** rewrites the link path to the task's new location (e.g. `../tasks/NNN-slug.md` → `../tasks/completed/NNN-slug.md`) — use the full line text as `old_string` for uniqueness. Stale paths are **not** tolerated: if a reference exists, the path is updated. Then `Edit` the roadmap's `**Last updated**:` to today; (iv) bump the matching row's `Progress` numerator in `.docs/roadmaps/README.md`; (v) **Phase sweep** — for each roadmap where a match was found, identify the `## Phase N:` block containing that matched item and scan all other `- [ ] [TASK-NNN:` lines in that same phase; for each, use `mcp__serena__find_file` to check if `NNN-slug.md` exists under `.docs/tasks/completed/`; if it does, `Edit` that line in one call to flip `- [ ]` → `- [x]` and rewrite the link path to `../tasks/completed/NNN-slug.md`, then bump `Progress` in the index for each additional item; (vi) **Inline item sweep** — across the entire roadmap (not limited to the phase block that contains the task reference), collect every remaining `- [ ]` line whose body is free-form text (not a `[TASK-NNN:` link); `Read` the completing task file; use judgment to decide whether each inline item was accomplished by the completing task's work; if yes, `Edit` `- [ ]` → `- [x]` and bump `Progress` in the index; if uncertain, leave the item unchecked — err on the side of leaving items unchecked rather than over-checking. Silent no-op if no roadmap references the task. **Do NOT** auto-flip `Status: active` → `Status: done` even on the last box — that flip is manual. Use `Edit` only — never `sed`, `bash`, or `Write`.
-  4. **Delete all screenshots** for this task (they are no longer needed once all tests pass):
-     - Use `mcp__serena__list_dir` on `.docs/uat/screenshots/` to find files matching `<task-number>-*` — **never use `ls`**
-     - Run `git rm` on each matched file (or `rm` if not tracked)
-  5. **Check for ADR linkage**: Read the moved task file (now in `completed/`) for a line matching `**Implements**: ADR-NNNN#DM`:
+  4. **Check for ADR linkage**: Read the moved task file (now in `completed/`) for a line matching `**Implements**: ADR-NNNN#DM`:
      - If found:
        1. Parse the `ADR-NNNN#DM` reference (e.g. `ADR-0007#D2`).
        2. Locate the ADR file using Serena `mcp__serena__find_file` for `NNNN-*.md` in `.docs/adr/`.
@@ -611,13 +547,13 @@ Failed Tests:
        6. **ADR inline checkbox sweep** — `Read` the full `## DM.` decision block in the ADR file (the H2 block whose identifier matches the `DM` from the `**Implements**:` reference); collect every remaining `- [ ]` line in that block; `Read` the completing task file; for each `- [ ]` item, use judgment to decide whether the completing task accomplished it; if yes, `Edit` `- [ ]` → `- [x]`; if uncertain, leave the item unchecked — err on the side of leaving items unchecked rather than over-checking. This sweep runs regardless of whether steps 4 or 5 applied. Use `Edit` only — never `sed`, `bash`, or `Write`.
        - Use `Read` then `Edit` on the ADR file — never `sed`, `echo >>`, or shell redirection
      - If no `**Implements**:` line is found: skip silently
-  6. Report the new file paths for both UAT and task files
-- **Some failed** (any `[FAIL]` or `[FIXING]` markers remain): Keep file in `.docs/uat/`. Keep screenshots (useful for debugging). Suggest next steps:
+  5. Report the new file paths for both UAT and task files
+- **Some failed** (any `[FAIL]` or `[FIXING]` markers remain): Keep file in `.docs/uat/`. Suggest next steps:
   ```
   To fix failures and re-test:  /uat-walk .docs/uat/<file>.uat.md
   To create fix tasks:          /task-add "Fix UAT failures in <feature>"
   ```
-- **Aborted**: Keep file in `.docs/uat/`, keep screenshots, note progress was saved
+- **Aborted**: Keep file in `.docs/uat/`, note progress was saved
 
 ---
 
@@ -645,16 +581,6 @@ Failed Tests:
 - Only ask the user to confirm the ones that couldn't be auto-verified or that failed
 - If all prerequisites pass auto-verification, proceed without asking — note it in one line
 - If a prerequisite fails, warn the user that subsequent tests may be affected but let them decide whether to continue
-
-### Playwright Browser Lifecycle
-- **Do NOT use on test presentation** — only use when a UI test receives a Fail or Fix now verdict
-- Browser starts automatically on first Playwright tool call — no explicit launch step needed; Playwright MCP handles headless mode and viewport automatically (default: desktop viewport 1600×950)
-- Once started, keep the browser open and reuse for all subsequent UI troubleshooting
-- Close the browser (`browser_close`) when the walkthrough ends (completion or abort)
-- If no UI tests fail, never use the browser
-- All screenshots go to `.docs/uat/screenshots/` with `<task-number>-` prefix
-- On **all passed**: use `mcp__serena__list_dir` on `.docs/uat/screenshots/` to find `<task-number>-*` files — **never use `ls`** — then `git rm` each one (or `rm` if not tracked)
-- On **failed/aborted**: keep screenshots for debugging reference
 
 ### Progress Persistence
 - Every verdict is written to the file immediately — if the user aborts or the session ends, progress is preserved

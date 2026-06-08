@@ -36,7 +36,7 @@ Agent({
   description: "Create task for <item>",
   prompt: "Run /task-add for this roadmap item: '<item description>'. Link the resulting task back into the roadmap file at .docs/roadmaps/<file>.
 
-You are running autonomously — make all scope, naming, and structuring decisions yourself without asking questions. Infer reasonable defaults from the roadmap context and existing task files in .docs/tasks/.
+/research your task. You are running autonomously — make all scope, naming, and structuring decisions yourself without asking questions. Infer reasonable defaults from the roadmap context and existing task files in .docs/tasks/.
 
 IMPORTANT: Follow .docs/guides/mcp-tools.md for all file and code operations. Use Serena (mcp__serena__*) for ALL file/directory exploration and ALL code editing. Never use ls, cat, find, grep, sed, awk, or any shell command to inspect or modify files.",
   mode: "bypassPermissions"
@@ -49,7 +49,7 @@ Wait for all task-creation agents to complete before proceeding.
 
 Run the full tackle → UAT-generate → UAT-auto pipeline (see below) for all tasks in the current wave.
 
-> **Note on `/uat-auto` behavior:** `/uat-auto` does not run UI tests — they are always recorded as `[FAIL: auto-judge: UI test requires human verification]` and require a subsequent `/uat-walk`. If stub indicators are detected in the implementation, those tests remain pending (`- [ ] Pass`) and the task stays in `.docs/tasks/` until the feature is implemented and re-tested.
+> **Note on `/uat-auto` behavior:** `/uat-auto` does not run UI tests — they are always recorded as `[FAIL: auto-judge: UI test requires human verification]` and require a subsequent `/uat-walk`. If stub indicators are detected in the implementation, those tests remain pending (`FAIL: auto-judge: Stub detected - implementation required`) and the task stays in `.docs/tasks/` until the feature is implemented and re-tested.
 
 **Step 4 — Repeat**
 
@@ -270,3 +270,5 @@ Tracked upstream: GitHub issues #40241, #37442, #58663.
 - [ ] Any named agent `.md` files include `permissionMode: bypassPermissions` in frontmatter
 - [ ] Every team member prompt includes the MCP-tools / Serena instruction (no `ls`, `grep`, `cat`, etc.)
 - [ ] Every team member prompt includes the `/research`-before-guessing instruction
+- [ ] Always parallelize tasks that do not collide, including during /tackle and /uat-auto phases
+- [ ] Proceed with maximum efficiency and groundedness

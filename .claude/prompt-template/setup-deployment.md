@@ -37,7 +37,37 @@ Fill in real image names, Dockerfile paths, and runner label. Do not touch if th
 Add only the targets from the guide that are not already present. Never remove or reformat existing targets.
 Set `GITHUB_USER ?= $(shell gh api user --jq .login 2>/dev/null)` so auth resolves at runtime rather than being hardcoded.
 
-#### 5. `docker-compose.build.yml` — create only if absent
+The deploy targets **must** use this exact shape (copy verbatim, substituting the real `$(PROJECT)` variable name):
+
+```makefile
+## deploy — sync compose file + Makefile to VPS then restart
+deploy: deploy-sync
+	ssh $(PROJECT) "cd /opt/$(PROJECT) && make deploy-pull"
+
+deploy-sync:
+	ssh $(PROJECT) "mkdir -p /opt/$(PROJECT)"
+	scp docker-compose.yml Makefile $(PROJECT):/opt/$(PROJECT)/
+	scp .env.production $(PROJECT):/opt/$(PROJECT)/.env
+	scp .scripts/setup-runner.sh $(PROJECT):~/setup-runner.sh
+
+## setup-runner — upload and run the runner installer on the VPS
+## Usage: make setup-runner RUNNER_TOKEN=<token>
+setup-runner: deploy-sync
+	ssh $(PROJECT) "RUNNER_TOKEN=$(RUNNER_TOKEN) REPO_URL=$(REPO_URL) bash ~/setup-runner.sh"
+
+## deploy-pull — pull new images and restart (run directly on the VPS)
+deploy-pull: up
+```
+
+#### 5. `docker-compose.yml` — create only if absent
+
+Production-style compose file. **Hard rules:**
+- Every service **must** use a pre-built GHCR image (`image: ghcr.io/<org>/<project>-<service>:latest`).
+- **No `build:` blocks** — image building belongs exclusively in `docker-compose.build.yml` and the CI workflow.
+- Set realistic `healthcheck`, `restart: unless-stopped`, and environment variables with sane defaults.
+- Declare named volumes for any stateful services (databases, caches).
+
+#### 6. `docker-compose.build.yml` — create only if absent
 Local dev overlay. Layered on top of `docker-compose.yml` via:
 ```
 docker compose -f docker-compose.yml -f docker-compose.build.yml up --build --wait
@@ -57,7 +87,7 @@ For each service:
 - **Vite `--host` flag**: the Vite dev server binds to `127.0.0.1` by default and is unreachable via Docker port mapping. Override the container command: `command: npx vite --host` (do not bake `--host` into the Dockerfile so the image stays usable outside Docker)
 - Wire `depends_on` with `condition: service_healthy` for any service that requires the database to be ready before starting
 
-#### 6. `Dockerfile.dev` + `docker-entrypoint.sh` per service — create only if absent
+#### 7. `Dockerfile.dev` + `docker-entrypoint.sh` per service — create only if absent
 Minimal, fast-to-build dev image. The guiding principle: **install dependencies in the image; let source arrive via the bind mount at runtime**.
 
 **Use a `docker-entrypoint.sh` watcher script** for Node.js and Python services so that adding or removing a dependency inside the container is not needed — the entrypoint watches the manifest file for changes and automatically reinstalls + restarts the dev server. This makes the developer workflow seamless: edit `package.json` or `pyproject.toml` on the host, save, and the container self-heals.
@@ -144,6 +174,92 @@ The `Dockerfile.dev` copies and `chmod +x`s the entrypoint, then sets it as `CMD
 - **Python (FastAPI/uvicorn)**: `FROM python:3.11-slim`, copy the manifest (`pyproject.toml` or `requirements.txt`), install deps, copy and `chmod +x` the entrypoint, set `CMD` to run it. Adjust the uvicorn module path (`app.main:app`) and install command to match the project. Do not `COPY` source.
 - **Go**: `FROM golang:1.22-alpine`, copy `go.mod` + `go.sum`, `RUN go mod download`, `CMD ["go", "run", "./cmd/server"]` (adjust path). Use `air` for hot-reload if the project already depends on it. No entrypoint watcher needed — Go has no install-time manifest changes that require a restart.
 - **Other runtimes**: apply the same principle — install deps in the image; source arrives via bind mount; dev server runs with hot-reload; add an entrypoint watcher if the runtime has a lockfile-driven install step.
+
+---
+
+### Step 3 — Provision the DigitalOcean droplet and GitHub Actions runner
+
+#### 3a. Check for an existing droplet
+
+Look for `DROPLET_IP` in the Makefile (search for the literal string `DROPLET_IP`).
+
+- **If `DROPLET_IP` is already set** — a droplet exists. Skip to **3c** (runner setup).
+- **If `DROPLET_IP` is absent** — proceed to **3b**.
+
+#### 3b. Size and create the droplet
+
+**Assess the appropriate droplet size** by examining what the project runs:
+
+| Signal | Minimum slug |
+|--------|-------------|
+| Single static site or tiny API | `s-1vcpu-1gb` |
+| One or two lightweight services (Node/Python) | `s-1vcpu-2gb` |
+| Two or more services with a database | `s-2vcpu-4gb` |
+| ML inference, heavy background workers, or 3+ services | `s-4vcpu-8gb` |
+
+Then ask the user to confirm the size before creating anything.
+
+Once confirmed, create the droplet with `doctl`:
+
+```bash
+doctl compute droplet create <project>-runner \
+  --region nyc3 \
+  --image ubuntu-24-04-x64 \
+  --size <confirmed-slug> \
+  --ssh-keys $(doctl compute ssh-key list --format ID --no-header | paste -sd,) \
+  --wait \
+  --format PublicIPv4 \
+  --no-header
+```
+
+Record the returned IP as `DROPLET_IP`.
+
+**Apply the general-web firewall** (the firewall named `general-web`):
+
+```bash
+FIREWALL_ID=$(doctl compute firewall list --format ID,Name --no-header | awk '/general-web/{print $1}')
+DROPLET_ID=$(doctl compute droplet list --format ID,Name --no-header | awk '/<project>-runner/{print $1}')
+doctl compute firewall add-droplets "$FIREWALL_ID" --droplet-ids "$DROPLET_ID"
+```
+
+**Write `DROPLET_IP` into the Makefile** immediately after the `GITHUB_USER` line:
+
+```makefile
+DROPLET_IP ?= <ip>
+```
+
+**Register the SSH alias** so subsequent `make ssh` and `make deploy` targets resolve the host:
+
+```bash
+make ssh-alias DROPLET_IP=<ip>
+```
+
+#### 3c. Walk the user through runner setup
+
+Provide the following steps as a numbered checklist. Substitute real values — never leave placeholders.
+
+1. **SSH into the droplet and install Docker + `gh` CLI** (if not already present):
+   ```bash
+   ssh root@<DROPLET_IP>
+   curl -fsSL https://get.docker.com | sh && systemctl enable --now docker
+   curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+     | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+   echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] \
+     https://cli.github.com/packages stable main" \
+     | tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+   apt update && apt install gh -y
+   ```
+
+2. **Get a runner registration token** — GitHub → repo → **Settings → Actions → Runners → New self-hosted runner** (Linux x64) and copy the `--token` value.
+
+3. **From the local project root**, run:
+   ```bash
+   make setup-runner RUNNER_TOKEN=<TOKEN>
+   ```
+   This uploads `setup-runner.sh` to the VPS and runs it — creating the `runner` user, registering the runner, and starting it as a systemd service.
+
+4. **Verify** the runner appears as **Idle** at:
+   `<REPO_URL>/settings/actions/runners`
 
 ---
 

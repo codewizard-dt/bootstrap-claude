@@ -10,7 +10,7 @@ const SCRIPTS = {
   setup: { script: 'setup-project.sh', args: ['.'] },
   update: { script: 'update-project.sh', args: ['.'] },
   install: { script: 'install-global.sh', args: [] },
-  deployment: { script: 'setup-deployment.sh', args: ['.'] },
+  deployment: { script: 'setup-deployment.sh', args: ['.', ...extraArgs] },
   typechecks: { script: 'setup-strict-typechecks.sh', args: extraArgs },
 };
 
@@ -22,6 +22,8 @@ if (!command || !SCRIPTS[command]) {
   console.error('  update        Sync .docs/ scaffold and install skills globally');
   console.error('  install       Install skills globally into ~/.claude/skills/');
   console.error('  deployment    Scaffold CI/CD (.github/ workflows + .gitleaks.toml) into the project');
+  console.error('                Optional: pass extra context for the Claude agent as a quoted string');
+  console.error('                e.g. bootstrap deployment "backend is on port 8080, use s-2vcpu-4gb droplet"');
   console.error('  typechecks    Run strict typecheck setup via Claude (optional: language list)');
   console.error('                e.g. bootstrap typechecks typescript python');
   process.exit(1);

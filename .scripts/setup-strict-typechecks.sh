@@ -26,4 +26,4 @@ if [ $# -gt 0 ]; then
 **Language constraint**: Configure ONLY the following language(s): ${LANGS}. Skip all other languages entirely."
 fi
 
-claude --dangerously-skip-permissions "$PROMPT"
+claude -p --dangerously-skip-permissions "$PROMPT"
