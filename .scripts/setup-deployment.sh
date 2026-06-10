@@ -92,5 +92,7 @@ Additional context from the user:
 $EXTRA_CONTEXT"
 fi
 
+echo "Scaffolding CI/CD for: $PROJECT_DIR"
+echo "  Checking for existing services and Docker configuration..."
 cd "$PROJECT_DIR"
 claude -p --dangerously-skip-permissions "$PROMPT"

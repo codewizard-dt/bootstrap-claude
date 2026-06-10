@@ -28,10 +28,11 @@ Generic; no project-specific content. Include:
 - **CodeQL** — matrix over the detected languages (use `python`, `javascript-typescript`, `go`, etc. as appropriate)
 - **Gitleaks** secret detection with `fetch-depth: 0`
 
-#### 2. `.github/workflows/build.yml` — create only if absent
-Fill in real image names, Dockerfile paths, and runner label. Do not touch if the file already exists.
+#### 2. `.github/workflows/build.yml` — create or overwrite with confirmation
+Fill in real image names, Dockerfile paths, and runner label. If the file already exists, show the user what you plan to write and ask for confirmation before overwriting.
 
-#### 3. `.gitleaks.toml` — create only if absent
+#### 3. `.gitleaks.toml` — create or overwrite with confirmation
+If the file already exists, show the user what you plan to write and ask for confirmation before overwriting.
 
 #### 4. `Makefile` — merge Docker targets if a Makefile already exists; create from scratch if not
 Add only the targets from the guide that are not already present. Never remove or reformat existing targets.
@@ -59,15 +60,17 @@ setup-runner: deploy-sync
 deploy-pull: up
 ```
 
-#### 5. `docker-compose.yml` — create only if absent
+#### 5. `docker-compose.yml` — create or overwrite with confirmation
 
-Production-style compose file. **Hard rules:**
+If the file already exists, show the user what you plan to write and ask for confirmation before overwriting. Production-style compose file. **Hard rules:**
 - Every service **must** use a pre-built GHCR image (`image: ghcr.io/<org>/<project>-<service>:latest`).
 - **No `build:` blocks** — image building belongs exclusively in `docker-compose.build.yml` and the CI workflow.
 - Set realistic `healthcheck`, `restart: unless-stopped`, and environment variables with sane defaults.
 - Declare named volumes for any stateful services (databases, caches).
 
-#### 6. `docker-compose.build.yml` — create only if absent
+#### 6. `docker-compose.build.yml` — create or overwrite with confirmation
+
+If the file already exists, show the user what you plan to write and ask for confirmation before overwriting.
 Local dev overlay. Layered on top of `docker-compose.yml` via:
 ```
 docker compose -f docker-compose.yml -f docker-compose.build.yml up --build --wait
@@ -87,7 +90,9 @@ For each service:
 - **Vite `--host` flag**: the Vite dev server binds to `127.0.0.1` by default and is unreachable via Docker port mapping. Override the container command: `command: npx vite --host` (do not bake `--host` into the Dockerfile so the image stays usable outside Docker)
 - Wire `depends_on` with `condition: service_healthy` for any service that requires the database to be ready before starting
 
-#### 7. `Dockerfile.dev` + `docker-entrypoint.sh` per service — create only if absent
+#### 7. `Dockerfile.dev` + `docker-entrypoint.sh` per service — create or overwrite with confirmation
+
+If any of these files already exist, show the user what you plan to write and ask for confirmation before overwriting.
 Minimal, fast-to-build dev image. The guiding principle: **install dependencies in the image; let source arrive via the bind mount at runtime**.
 
 **Use a `docker-entrypoint.sh` watcher script** for Node.js and Python services so that adding or removing a dependency inside the container is not needed — the entrypoint watches the manifest file for changes and automatically reinstalls + restarts the dev server. This makes the developer workflow seamless: edit `package.json` or `pyproject.toml` on the host, save, and the container self-heals.
@@ -174,6 +179,49 @@ The `Dockerfile.dev` copies and `chmod +x`s the entrypoint, then sets it as `CMD
 - **Python (FastAPI/uvicorn)**: `FROM python:3.11-slim`, copy the manifest (`pyproject.toml` or `requirements.txt`), install deps, copy and `chmod +x` the entrypoint, set `CMD` to run it. Adjust the uvicorn module path (`app.main:app`) and install command to match the project. Do not `COPY` source.
 - **Go**: `FROM golang:1.22-alpine`, copy `go.mod` + `go.sum`, `RUN go mod download`, `CMD ["go", "run", "./cmd/server"]` (adjust path). Use `air` for hot-reload if the project already depends on it. No entrypoint watcher needed — Go has no install-time manifest changes that require a restart.
 - **Other runtimes**: apply the same principle — install deps in the image; source arrives via bind mount; dev server runs with hot-reload; add an entrypoint watcher if the runtime has a lockfile-driven install step.
+
+#### 8. Caddy reverse proxy — create or overwrite with confirmation
+
+If any Caddy files already exist, show the user what you plan to write and ask for confirmation before overwriting. Add Caddy when the project has **both a frontend and a backend service** (i.e. two separate containers that need to be served under a single domain). Skip this section for single-service projects or projects that already have a reverse proxy configured.
+
+**`Dockerfile.caddy`**
+```dockerfile
+FROM caddy:2-alpine
+COPY Caddyfile /etc/caddy/Caddyfile
+```
+
+**`Caddyfile`** (production — uses real domain, TLS handled automatically by Caddy):
+```
+<domain> {
+    handle /api/* {
+        reverse_proxy backend:<backend-port>
+    }
+    handle {
+        reverse_proxy frontend:<frontend-port>
+    }
+}
+```
+- Replace `<domain>` with the project's real domain (e.g. `myapp.example.com`)
+- Replace `backend:<backend-port>` with the compose service name and port (e.g. `backend:8000`)
+- Replace `frontend:<frontend-port>` with the compose service name and port (e.g. `frontend:80`)
+- Add additional `handle` blocks if the project has more routing rules
+
+**`Caddyfile.local`** (local dev — plain HTTP on port 80, same routing, no TLS):
+```
+:80 {
+    handle /api/* {
+        reverse_proxy backend:<backend-port>
+    }
+    handle {
+        reverse_proxy frontend:<frontend-port>
+    }
+}
+```
+
+**Integrate Caddy into compose files** — for each file, if a `caddy` entry already exists show the user the planned change and ask for confirmation before overwriting:
+- In `docker-compose.yml`: add a `caddy` service using the GHCR image (`ghcr.io/<org>/<project>-caddy:latest`), ports `80:80` and `443:443`, and named volumes `caddy_data` and `caddy_config`.
+- In `docker-compose.build.yml`: add a `caddy` override with `build: { context: ., dockerfile: Dockerfile.caddy }` and bind-mount `./Caddyfile.local:/etc/caddy/Caddyfile`.
+- In `.github/workflows/build.yml`: add `caddy` to the build matrix.
 
 ---
 

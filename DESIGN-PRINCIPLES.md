@@ -1,5 +1,47 @@
 # Design Principles
 
+## Frontend Taste — House Style
+
+Calm, technical, light-mode editorial — a *tool*, not a consumer app. Clarity over decoration.
+
+The canonical source is `~/code/house-style`; a snapshot lives in `house-style/` here. Wire it into any new frontend project:
+
+1. **Tailwind preset** — `presets: [houseStyle]` in `tailwind.config`, importing `house-style/tokens/tailwind.preset.ts`.
+2. **Base layer** — apply `house-style/preview/src/index.css`: `bg-canvas text-ink antialiased`, body `letter-spacing:-0.011em`, `font-feature-settings:"ss01","cv11","cv02"`, plus the `dot-grid` / `text-balance` / `scrollbar-none` utilities and `::selection` tint.
+3. **Font** — load **Inter Tight** (fallback: Inter, then system-ui).
+4. **Components** — copy `house-style/components/*.tsx` as starting patterns; each is props-driven and content-agnostic with all hover/press/focus/selected states preserved.
+5. **Visual reference** — `~/code/house-style/preview/` (`cd preview && npm i && npm run dev`).
+
+### Aesthetic rules
+
+- **Neutral ground, ink on off-white.** Canvas `#f6f7f9`, white cards, near-black ink (`#0b0b0d`). Color is reserved for meaning (interactive affordances, semantic state), never decoration.
+- **Soft depth, no gloss.** 14 px radii, 1 px hairline borders (`#e7e8ea`), whisper-soft shadows. Gradients and dark surfaces appear only where a feature demands them.
+- **Technical type.** Inter Tight, globally tight tracking (`-0.011em`), stylistic sets on. Uppercase micro-labels get *expanded* tracking (`~0.08em`); monospace for codes and IDs. Type scale: display ~15 px/600; uppercase labels 10–12 px/600; body 13–13.5 px leading-relaxed; button 13 px/500; caption/mono 11 px.
+- **Motion that clarifies, not entertains.** Snappy entrances (`popIn` 220 ms), gentle rises (`riseIn` 500 ms), all on `cubic-bezier(.22,1,.36,1)`. Press-scale on interactive elements (`active:scale-[.985]`). No long delays.
+- **Restraint.** The default accent is muted blue-gray (`#4f5a78`) — focus rings and subtle affordances, not loud primaries.
+
+### Token quick-reference
+
+| Group | Values |
+|---|---|
+| Surfaces | `canvas #f6f7f9` · `surface #f1f2f4` · `paper/card #fff` |
+| Ink | `ink #0b0b0d` · `ink-2 #33353b` · `muted #6b6e76` · `muted-2 #9a9da5` |
+| Lines | `line #e7e8ea` · `line-2 #f0f1f3` |
+| Accent | `#4f5a78` (neutral) · `red #e5484d` · `green #30a46c` · `blue #3b6ef6` |
+| Radius | `card 14 px` · `pill 999 px` |
+| Motion | `fadeIn` `riseIn` `popIn` `revealIn` `travel` `shimmer` `breathe` `spinSlow` `drawIn` `bounceSoft` |
+
+### Component inventory
+
+- **`Button`** — primary dark CTA; optional leading icon gets a hover tilt-and-grow.
+- **`IconButton`** — icon + label, `variant` (primary/secondary), `iconMotion` (tilt | spin3d), `loading` spinner swap.
+- **`Chip`** — pill that lifts on hover; `tone` (neutral/highlight) + optional status dot.
+- **`Stepper`** — horizontal progress indicator with orbiting spinner, self-drawing checkmark, and a travelling dot on the in-flight connector rail.
+- **`Card` · `Badge` · `Modal`** — surfaces, pill labels, blurred pop-in overlay.
+- **`icons.tsx`** — inline-SVG icon set (no icon dependency): spark, image, cube, bolt, diamond, expand, chevron, draw-in check, spinner, x.
+
+---
+
 ## DRY — Don't Repeat Yourself
 
 Every piece of knowledge should have a single, authoritative representation in the system. When logic, data, or behavior appears in more than one place, changes require updates everywhere — and they rarely stay in sync.

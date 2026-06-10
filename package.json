@@ -1,6 +1,6 @@
 {
   "name": "@codewizard-dt/bootstrap",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "description": "Bootstrap Claude Code projects with reusable configurations and commands",
   "homepage": "https://github.com/codewizard-dt/basic-project-setup#readme",
   "bugs": {
@@ -33,7 +33,8 @@
     ".docs/uat/pending/.gitkeep",
     ".docs/uat/skipped/.gitkeep",
     ".docs/uat/screenshots/.gitkeep",
-    ".docs/uat/trashed/.gitkeep"
+    ".docs/uat/trashed/.gitkeep",
+    "house-style/"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
