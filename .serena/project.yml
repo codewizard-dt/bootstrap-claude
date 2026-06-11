@@ -1,6 +1,5 @@
 # the name by which the project can be referenced within Serena
-project_name: "basic-project-setup"
-
+project_name: "bootstrap-wiki2"
 
 # list of languages for which language servers are started; choose from:
 #   al                  ansible             bash                clojure             cpp
@@ -29,9 +28,9 @@ project_name: "basic-project-setup"
 # The first language is the default language and the respective language server will be used as a fallback.
 # Note that when using the JetBrains backend, language servers are not used and this list is correspondingly ignored.
 languages:
-- bash
-- markdown
-- yaml
+  - bash
+  - markdown
+  - yaml
 
 # the encoding used by text files in the project
 # For a list of possible encodings, see https://docs.python.org/3.11/library/codecs.html#standard-encodings
@@ -66,17 +65,17 @@ excluded_tools: []
 # This extends the existing inclusions (e.g. from the global configuration).
 # Find the list of tools here: https://oraios.github.io/serena/01-about/035_tools.html
 included_optional_tools:
-- list_dir
-- find_file
-- find_symbol
-- find_referencing_symbols
-- search_for_pattern
-- replace_content
-- replace_lines
-- insert_at_line
-- insert_after_symbol
-- insert_before_symbol
-- delete_lines
+  - list_dir
+  - find_file
+  - find_symbol
+  - find_referencing_symbols
+  - search_for_pattern
+  - replace_content
+  - replace_lines
+  - insert_at_line
+  - insert_after_symbol
+  - insert_before_symbol
+  - delete_lines
 
 # fixed set of tools to use as the base tool set (if non-empty), replacing Serena's default set of tools.
 # This cannot be combined with non-empty excluded_tools or included_optional_tools.
