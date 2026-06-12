@@ -60,7 +60,7 @@ jobs:
   deploy:
     needs: build
     # TODO: Configure your runner. Choose one:
-    #   Option A — Self-hosted runner on deploy server (see .scripts/setup-runner.sh):
+    #   Option A — Self-hosted runner on deploy server (see lib/scripts/setup-runner.sh):
     #     runs-on: [self-hosted, <your-label>]
     #   Option B — GitHub-hosted runner + SSH (add SSH_HOST, SSH_USER, SSH_KEY,
     #              DEPLOY_PATH as repository secrets, then replace the deploy step below)

@@ -1,14 +1,14 @@
 {
   "name": "@codewizard-dt/bootstrap",
-  "version": "1.12.0",
-  "description": "Bootstrap Claude Code projects with reusable configurations and commands",
-  "homepage": "https://github.com/codewizard-dt/basic-project-setup#readme",
+  "version": "2.0.0",
+  "description": "Bootstrap Claude Code projects with an LLM Wiki, reusable skills, hooks, and MCP setup",
+  "homepage": "https://github.com/codewizard-dt/bootstrap-wiki#readme",
   "bugs": {
-    "url": "https://github.com/codewizard-dt/basic-project-setup/issues"
+    "url": "https://github.com/codewizard-dt/bootstrap-wiki/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/codewizard-dt/basic-project-setup.git"
+    "url": "git+https://github.com/codewizard-dt/bootstrap-wiki.git"
   },
   "license": "ISC",
   "author": "",
@@ -18,23 +18,10 @@
   },
   "files": [
     "bin/",
-    ".scripts/",
+    "lib/",
+    "raw/",
     ".github/",
-    ".gitleaks.toml",
-    ".claude/skills/",
-    ".claude/prompt-template/",
-    ".docs/guides/mcp-tools.md",
-    ".docs/tasks/README.md",
-    ".docs/tasks/active/.gitkeep",
-    ".docs/tasks/active/README.md",
-    ".docs/tasks/completed/.gitkeep",
-    ".docs/tasks/trashed/.gitkeep",
-    ".docs/uat/completed/.gitkeep",
-    ".docs/uat/pending/.gitkeep",
-    ".docs/uat/skipped/.gitkeep",
-    ".docs/uat/screenshots/.gitkeep",
-    ".docs/uat/trashed/.gitkeep",
-    "house-style/"
+    ".gitleaks.toml"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
