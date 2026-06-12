@@ -9,7 +9,7 @@ user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**
-**Check `wiki/index.md` Requirements section for the REQ template, status lifecycle, required-non-empty fields, index format, and anti-patterns this skill must enforce.**
+**Check `wiki/work/requirements/lifecycle.md` for the REQ template, status lifecycle, required-non-empty fields, and anti-patterns this skill must enforce; `wiki/work/requirements/index.md` for the index row format.**
 
 
 # Create Requirement
@@ -49,7 +49,7 @@ If the topic is a bug fix, a refactor, a one-line config change, or a question p
 3. **Read project context**:
    - `CLAUDE.md` (project conventions)
    - `PROJECT_STATUS.md` (if it exists)
-   - `wiki/index.md` Requirements section (template, lifecycle, and anti-patterns — authoritative)
+   - `wiki/work/requirements/lifecycle.md` (template, lifecycle, and anti-patterns — authoritative)
    - A sample of recent requirements in `wiki/work/requirements/` to learn local conventions
 
 ### Step 2: Locate the requirements directory and assign a number
@@ -180,7 +180,7 @@ tags: [<tag1>, <tag2>]
    - If the placeholder row `_No requirements yet — use /req-create to draft the first one._` exists, **replace** it with the new row. Otherwise **append** the new row in numerical order (sort by REQ number ascending).
    - Row format: `- [REQ-NNN — Title](REQ-NNN-slug.md) — one-line summary · draft`
 
-2. **Update `wiki/index.md`**: Add a new row in the Requirements section table.
+2. **Update `wiki/work/requirements/index.md`**: add the new requirement's row (active index).
    - If the placeholder row exists, replace it. Otherwise append in numerical order.
    - Column format:
 
@@ -241,7 +241,7 @@ Print a tabular summary:
 | Non-Goals count | N |
 | Constraints / Assumptions / Open Questions | populated / empty (per section) |
 | Family index updated | yes (1 row added to wiki/work/requirements/index.md) |
-| Wiki index updated | yes (1 row added to wiki/index.md) |
+
 | Log entry | appended to wiki/log.md |
 | Cross-links | list of artifacts updated, or *none* |
 | Memory written | name (or *skipped*) |
