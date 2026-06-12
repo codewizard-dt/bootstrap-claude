@@ -65,6 +65,7 @@ Follow the root `README.md` to configure a new project, or use the npm package:
 - `npx @codewizard-dt/bootstrap update` — runs `lib/scripts/update-project.sh` (installs hooks and skills globally, syncs wiki scaffold + `.docs/guides/` scaffold; does NOT touch `.github/` workflows)
 - `npx @codewizard-dt/bootstrap install` — runs `lib/scripts/install-global.sh` (installs/updates MCPs, hooks, and skills globally without a project path)
 - `npx @codewizard-dt/bootstrap deploy` — runs `lib/scripts/setup-deployment.sh` (scaffolds `.github/` workflows + `.gitleaks.toml` into the project; copy-once so existing workflows are preserved)
+- `npx @codewizard-dt/bootstrap migrate [--dry-run]` — runs `lib/scripts/migrate-project.sh` (Claude-driven migration of a legacy `.docs/` project to the wiki structure; requires a clean git tree, runs on a fresh `wiki-migration` branch, `git mv` preserves history)
 - `npx @codewizard-dt/bootstrap typechecks [languages]` — runs `lib/scripts/setup-strict-typechecks.sh` (strict type-checking setup via Claude)
 
 **Manual setup steps:**
@@ -160,7 +161,10 @@ Standard Read/Edit/Write tools are permitted for markdown and config files (JSON
 - `lib/scripts/install-global.sh` — Installs/updates MCPs, hooks, and skills globally so they are available across all projects; called by both setup and update scripts
 - `lib/scripts/setup-project.sh` — Set up a new project: installs MCPs and skills globally, syncs wiki scaffold + `.docs/guides/` scaffold, scaffolds CI/CD, bootstraps Serena `project.yml`
 - `lib/scripts/update-project.sh` — Install MCPs and skills globally and sync the wiki scaffold + `.docs/guides/` scaffold into a target project (re-runs `bootstrap-serena.sh` idempotently)
-- `lib/scripts/sync-wiki-scaffold.sh` — Scaffolds an EMPTY wiki into target projects: creates `raw/` + `wiki/` with all family directories, lifecycle docs, per-family active-item `index.md`, and stub index/log from `lib/scripts/templates/wiki/`. Copy-once for project-owned files; always-refreshes `conventions.md` and `lifecycle.md` files. Called by both setup and update scripts.
+- `lib/scripts/sync-wiki-scaffold.sh` — Scaffolds an EMPTY wiki into target projects: creates `raw/` + `wiki/` with all family directories, lifecycle docs, per-family active-item `index.md`, and stub index/log from `lib/scripts/templates/wiki/`. Copy-once for project-owned files; always-refreshes `conventions.md` and `lifecycle.md` files. Also delivers the wiki-schema section to the target's `CLAUDE.md` (copy-once, sentinel `## LLM Wiki`, template at `lib/scripts/templates/CLAUDE-wiki.md`). Called by both setup and update scripts.
+- `lib/scripts/migrate-project.sh` — Claude-driven migration of legacy `.docs/` projects to the wiki structure. Preflight: legacy content present, git repo, clean tree, fresh `wiki-migration` branch. `--dry-run` prints the inventory only. Scaffolds first, then runs Claude with `lib/prompts/migrate-wiki.md` (mapping table, `git mv`-before-edit, frontmatter synthesis, link rewrites, family indexes, log entry, cleanup). Keeps `.docs/guides/` + `.docs/company-context/`.
+- `lib/prompts/migrate-wiki.md` — The migration prompt: old-path → new-path mapping, per-file procedure, UAT↔task cross-links, ID-collision policy, final report format
+- `lib/scripts/templates/CLAUDE-wiki.md` — The wiki-schema section delivered to target projects' CLAUDE.md (copy-once)
 - `lib/scripts/setup-deployment.sh` — Deployment/CI scaffolding. Copies `.github/` workflows + `.gitleaks.toml` into a project. Called once by `setup-project.sh`; **never** by `update-project.sh`. Copy-once: `security.yml` always overwritten (generic), `build.yml` + `.gitleaks.toml` skipped if present.
 - `lib/scripts/bootstrap-serena.sh` — Headlessly triggers `.serena/project.yml` creation via `claude --print` and enables 11 optional Serena tools; called by both setup and update scripts
 - `bin/cli.js` — CLI entry point for the npm package

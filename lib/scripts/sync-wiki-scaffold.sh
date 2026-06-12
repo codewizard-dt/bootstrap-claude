@@ -60,4 +60,31 @@ rsync -av "$TEMPLATE_DIR/raw/guides/" "$PROJECT_DIR/.docs/guides/"
 # 5. Ensure raw/ has a .gitkeep so git tracks the empty dir
 touch -a "$PROJECT_DIR/raw/.gitkeep" 2>/dev/null || true
 
+# 6. Deliver the wiki schema section to the target's CLAUDE.md (copy-once).
+#    Sentinel: a line starting with "## LLM Wiki". Never re-appended once present.
+CLAUDE_TEMPLATE="$SCRIPT_DIR/templates/CLAUDE-wiki.md"
+TARGET_CLAUDE="$PROJECT_DIR/CLAUDE.md"
+if [ -f "$CLAUDE_TEMPLATE" ]; then
+  if [ ! -f "$TARGET_CLAUDE" ]; then
+    {
+      echo "# CLAUDE.md"
+      echo ""
+      echo "This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository."
+      echo ""
+      cat "$CLAUDE_TEMPLATE"
+    } > "$TARGET_CLAUDE"
+    echo "CLAUDE.md created with the LLM Wiki schema section."
+  elif ! grep -q '^## LLM Wiki' "$TARGET_CLAUDE"; then
+    {
+      echo ""
+      echo "---"
+      echo ""
+      cat "$CLAUDE_TEMPLATE"
+    } >> "$TARGET_CLAUDE"
+    echo "LLM Wiki schema section appended to CLAUDE.md."
+  else
+    echo "CLAUDE.md already has the LLM Wiki schema section, skipping."
+  fi
+fi
+
 echo "Wiki scaffold synced."

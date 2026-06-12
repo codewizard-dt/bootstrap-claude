@@ -16,6 +16,7 @@ npx @codewizard-dt/bootstrap setup
 | `npx @codewizard-dt/bootstrap update` | Sync wiki scaffold + guides, reinstall skills globally |
 | `npx @codewizard-dt/bootstrap install` | Install/update MCPs, hooks, and skills globally only (no project path needed) |
 | `npx @codewizard-dt/bootstrap deploy` | Scaffold `.github/` CI/CD workflows + `.gitleaks.toml` into the project |
+| `npx @codewizard-dt/bootstrap migrate [--dry-run]` | Migrate a legacy `.docs/` project to the wiki structure (Claude-driven) |
 | `npx @codewizard-dt/bootstrap typechecks [ts py ...]` | Strict type-checking setup via Claude |
 
 **Prerequisites:** `node ≥ 18`, [`claude` CLI](https://docs.anthropic.com/en/docs/claude-code), [`uv`](https://github.com/astral-sh/uv) (for Serena), Claude API key.
@@ -129,13 +130,18 @@ The `files` field in `package.json` ships `bin/`, `lib/`, `raw/`, `.github/`, `.
 
 ## Migrating an existing `.docs/` project
 
-If your project has the old `.docs/`-based layout (tasks in `.docs/tasks/`, ADRs in `.docs/adr/`, etc.), migration to the wiki layout is manual:
+If your project has the old `.docs/`-based layout (tasks in `.docs/tasks/`, ADRs in `.docs/adr/`, etc.):
 
-1. Run `npx @codewizard-dt/bootstrap update` to scaffold the `wiki/` structure.
-2. For each `.docs/tasks/*.md` file: create a `wiki/work/tasks/TASK-NNN-slug.md` with the correct frontmatter, and add it to `wiki/work/tasks/index.md`.
-3. Repeat for bugs, roadmaps, requirements (ADRs → decisions), UAT files.
-4. Run `/wiki-lint` to surface any gaps.
-5. Delete `.docs/` once satisfied.
+```bash
+npx @codewizard-dt/bootstrap migrate --dry-run   # preview what would migrate
+npx @codewizard-dt/bootstrap migrate             # run the migration
+```
+
+The migration is Claude-driven and requires a **clean git tree**. It creates a fresh `wiki-migration` branch, scaffolds the wiki, then `git mv`s every artifact to its new home (history preserved), synthesizes frontmatter (`id`/`status`/dates), renames files to ID-prefixed form (`NNN-slug.md` → `TASK-NNN-slug.md`, ADRs → `DEC-NNNN-slug.md`), rewrites cross-references (`**Implements**: ADR-…` → `implements::[[DEC-…]]`), builds the per-family active indexes, and removes the emptied `.docs/` family dirs. `.docs/guides/` and `.docs/company-context/` are kept.
+
+Afterwards: review the diff, run `/wiki-lint` in Claude Code, commit, and merge the branch.
+
+Status mapping: `completed/` → `done`/`passed`, `skipped/` → `skipped`, `trashed/` → `trashed`, `archived/` → `retired`, `in-progress/`/`closed/` → same-named statuses. Nothing is deleted — terminal items just don't appear in the active indexes.
 
 ---
 

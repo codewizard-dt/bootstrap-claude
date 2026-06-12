@@ -12,6 +12,7 @@ const SCRIPTS = {
   install: { script: 'install-global.sh', args: [] },
   deploy: { script: 'setup-deployment.sh', args: ['.', ...extraArgs] },
   deployment: { script: 'setup-deployment.sh', args: ['.', ...extraArgs] },
+  migrate: { script: 'migrate-project.sh', args: ['.', ...extraArgs] },
   typechecks: { script: 'setup-strict-typechecks.sh', args: extraArgs },
 };
 
@@ -25,6 +26,8 @@ if (!command || !SCRIPTS[command]) {
   console.error('  deploy        Scaffold CI/CD (.github/ workflows + .gitleaks.toml) into the project');
   console.error('                Optional: pass extra context for the Claude agent as a quoted string');
   console.error('                e.g. bootstrap deploy "backend is on port 8080, use s-2vcpu-4gb droplet"');
+  console.error('  migrate       Migrate a legacy .docs/ project to the wiki structure (Claude-driven)');
+  console.error('                Pass --dry-run to preview; runs on a fresh wiki-migration branch');
   console.error('  typechecks    Run strict typecheck setup via Claude (optional: language list)');
   console.error('                e.g. bootstrap typechecks typescript python');
   process.exit(1);
