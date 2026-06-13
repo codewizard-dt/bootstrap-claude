@@ -2,7 +2,7 @@
 name: extract-feature
 description: Analyze a feature in the current project and produce a SOLID-compliant standalone module extraction plan with interfaces for all dependencies; output is compatible with /port-feature
 category: planning
-model: claude-opus-4
+model: claude-opus-4-8
 effort: high
 argument-hint: <feature name or description>
 disable-model-invocation: false

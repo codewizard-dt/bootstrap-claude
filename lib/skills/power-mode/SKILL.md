@@ -2,7 +2,7 @@
 name: power-mode
 description: Reference guide for running agent teams with bypassed permissions in a dev container — covers CLI flags, Agent tool mode param, and per-agent frontmatter. When invoked with a single roadmap file path and no other instructions, acts as a goal-driven orchestrator that drives the roadmap to 100% completion.
 category: executing
-model: claude-opus-4
+model: claude-opus-4-8
 argument-hint: "[roadmap-file-path]"
 disable-model-invocation: false
 user-invocable: true

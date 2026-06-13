@@ -26,11 +26,11 @@ Every skill carries a `category:` denoting what kind of work it does:
 
 ## Model Selection
 
-Model is chosen by reasoning depth, not category — each category spans all three tiers. `claude-opus-4-8` is retired from the lineup (replaced by Fable 5 at the top).
+Model is chosen by reasoning depth, not category — each category spans all three tiers. `claude-opus-4-8-8` is retired from the lineup (replaced by Fable 5 at the top).
 
 | Tier | Model | Commands |
 |---|---|---|
-| **Deep reasoning / autonomous** (open-ended research, architecture, headless autonomy) | `claude-opus-4` | `research`, `research-company`, `company-align`, `gap-assess`, `security-audit`, `port-feature`, `extract-feature`, `decision-create`, `req-extract-decisions`, `req-compile`, `power-mode`, `uat-auto-plus` |
+| **Deep reasoning / autonomous** (open-ended research, architecture, headless autonomy) | `claude-opus-4-8` | `research`, `research-company`, `company-align`, `gap-assess`, `security-audit`, `port-feature`, `extract-feature`, `decision-create`, `req-extract-decisions`, `req-compile`, `power-mode`, `uat-auto-plus` |
 | **Default** (well-specified work needing judgment) | `claude-sonnet-4-6` | everything not listed in the other two tiers |
 | **Mechanical / bookkeeping** (status flips, appends, simple commits, context refresh) | `claude-haiku-4-5-20251001` | `primer`, `git-commit`, `task-trash`, `req-retire`, `decision-next`, `roadmap-next`, `roadmap-add`, `uat-skip`, `serena-config` |
 

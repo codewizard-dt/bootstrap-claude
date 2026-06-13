@@ -2,7 +2,7 @@
 name: decision-create
 description: Create a Decision Group file in wiki/work/decisions/ with one or more proposed decisions, table-only comparisons, and mermaid flowcharts
 category: planning
-model: claude-opus-4
+model: claude-opus-4-8
 effort: high
 argument-hint: <decision topic, group title, or "group: <title>" for an explicit multi-decision file>
 disable-model-invocation: false
