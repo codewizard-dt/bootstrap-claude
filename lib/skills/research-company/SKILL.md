@@ -2,7 +2,7 @@
 name: research-company
 description: Comprehensive company research — mission, operations, leadership, products/services deep-dive, and ~5 years of recent news
 category: researching
-model: claude-opus-4-8
+model: claude-sonnet-4-6
 effort: high
 argument-hint: <company name> [URL]
 disable-model-invocation: false

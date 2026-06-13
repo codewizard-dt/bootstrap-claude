@@ -131,9 +131,49 @@ Additional context from the user:
 $EXTRA_CONTEXT"
 fi
 
-echo "Migrating .docs/ content to wiki/ (this runs Claude and may take a few minutes)..."
+TOTAL_FILES=0
+for fam in "${LEGACY_FAMILIES[@]}"; do
+  dir="$PROJECT_DIR/.docs/$fam"
+  [ -d "$dir" ] || continue
+  count=$(find "$dir" -name '*.md' -type f | wc -l | tr -d ' ')
+  TOTAL_FILES=$((TOTAL_FILES + count))
+done
+
+echo "Migrating .docs/ content to wiki/ ($TOTAL_FILES files — Claude is running, this may take a few minutes)..."
+
+# Background heartbeat so the terminal doesn't look frozen
+(
+  START=$SECONDS
+  while true; do
+    sleep 15
+    ELAPSED=$((SECONDS - START))
+    printf "  [%dm%02ds] Still migrating...\n" $((ELAPSED / 60)) $((ELAPSED % 60))
+  done
+) &
+HEARTBEAT_PID=$!
+
 cd "$PROJECT_DIR"
-claude -p --dangerously-skip-permissions "$PROMPT"
+
+# Run Claude in the background so we can enforce a timeout and kill the
+# heartbeat cleanly regardless of how Claude exits.
+CLAUDE_EXIT=0
+claude -p --dangerously-skip-permissions "$PROMPT" &
+CLAUDE_PID=$!
+
+# Watchdog: kill Claude if it exceeds 30 minutes (hangs / idle loop)
+TIMEOUT_SECS=1800
+(sleep "$TIMEOUT_SECS"; echo "" >&2; echo "  [timeout] Migration exceeded ${TIMEOUT_SECS}s — killing Claude." >&2; kill "$CLAUDE_PID" 2>/dev/null) &
+WATCHDOG_PID=$!
+
+trap 'kill "$HEARTBEAT_PID" "$WATCHDOG_PID" "$CLAUDE_PID" 2>/dev/null; wait "$HEARTBEAT_PID" "$WATCHDOG_PID" 2>/dev/null' EXIT
+
+wait "$CLAUDE_PID" || CLAUDE_EXIT=$?
+kill "$WATCHDOG_PID" 2>/dev/null
+wait "$WATCHDOG_PID" 2>/dev/null
+kill "$HEARTBEAT_PID" 2>/dev/null
+wait "$HEARTBEAT_PID" 2>/dev/null
+
+[ "$CLAUDE_EXIT" -ne 0 ] && { echo "Error: Claude exited with code $CLAUDE_EXIT" >&2; exit "$CLAUDE_EXIT"; }
 
 echo ""
 echo "============================="

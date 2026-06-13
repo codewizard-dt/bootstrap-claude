@@ -2,7 +2,7 @@
 name: research
 description: Deep research on a topic using codebase analysis, library docs, and web search
 category: researching
-model: claude-opus-4-8
+model: claude-sonnet-4-6
 effort: high
 argument-hint: <topic or question to research>
 disable-model-invocation: false

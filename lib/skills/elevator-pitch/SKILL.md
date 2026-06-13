@@ -122,4 +122,4 @@ experience.
 
 ### 5. Output
 
-Write the final rewritten pitch to `ELEVATOR_PITCH.md` in the target project's root directory, overwriting any existing file. Then print the content to the conversation so the user can review it.
+Write the final rewritten pitch to `ELEVATOR-PITCH.md` in the target project's root directory, overwriting any existing file. Then print the content to the conversation so the user can review it.
