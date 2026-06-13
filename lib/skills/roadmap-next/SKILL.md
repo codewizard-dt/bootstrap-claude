@@ -1,6 +1,7 @@
 ---
 name: roadmap-next
 description: Point at the first unchecked item(s) in a roadmap; create task files for inline placeholders; group items into parallelizable waves; auto-move fully-checked roadmaps to completed/
+category: researching
 model: claude-haiku-4-5-20251001
 argument-hint: "[path to roadmap file, NNN-slug, or number] (optional)"
 disable-model-invocation: false

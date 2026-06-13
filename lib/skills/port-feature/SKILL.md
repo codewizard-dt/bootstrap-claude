@@ -1,7 +1,8 @@
 ---
 name: port-feature
 description: Assess a feature or set of functionality in an external project and produce a concrete porting plan for adapting it into the current project
-model: claude-opus-4-8
+category: planning
+model: claude-opus-4
 effort: high
 argument-hint: <absolute-path-to-source-project> <functionality description>
 disable-model-invocation: false

@@ -1,6 +1,7 @@
 ---
 name: bug-triage
 description: Triage an open bug — set priority/assignee/tags/impact, then keep it in wiki/work/bugs/, advance it to in-progress, or reject it (wontfix/duplicate/cannot-reproduce)
+category: planning
 model: claude-sonnet-4-6
 argument-hint: <BUG-NNNN, path, or number-slug>
 disable-model-invocation: false

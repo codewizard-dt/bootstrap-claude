@@ -50,7 +50,7 @@ See `raw/llm-wiki.md` for the underlying pattern spec.
 ```
 bin/          cli.js — entry point for npx commands
 lib/
-  skills/     52 custom skill definitions — installed to ~/.claude/skills/
+  skills/     55 custom skill definitions — installed to ~/.claude/skills/
   hooks/      PreToolUse hook scripts — installed to ~/.claude/hooks/
   prompts/    Claude prompt templates read by the setup scripts
   scripts/

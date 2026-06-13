@@ -1,7 +1,8 @@
 ---
 name: gap-assess
 description: Audit the current app's functionality against expected functionality and produce a gap assessment as an approvable plan (runs in plan mode, delegates to subagents)
-model: claude-opus-4-8
+category: researching
+model: claude-opus-4
 effort: high
 argument-hint: <expected functionality — inline description or path to a requirements/spec file>
 disable-model-invocation: false

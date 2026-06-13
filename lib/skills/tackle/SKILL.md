@@ -1,6 +1,7 @@
 ---
 name: tackle
 description: Execute an outlined task file step-by-step with subagent delegation
+category: executing
 model: claude-sonnet-4-6
 argument-hint: <path/to/task.md, number-slug, or description>
 disable-model-invocation: false

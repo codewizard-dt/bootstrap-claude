@@ -1,7 +1,8 @@
 ---
 name: uat-skip
 description: Skip UAT for a task — sets UAT and task status to skipped/done, removes index rows, auto-checkoffs roadmap
-model: claude-sonnet-4-6
+category: planning
+model: claude-haiku-4-5-20251001
 argument-hint: <TASK-NNN or path/to/task-file.md>
 disable-model-invocation: false
 user-invocable: true

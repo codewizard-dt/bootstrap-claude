@@ -1,6 +1,7 @@
 ---
 name: decision-next
 description: Find the first accepted decision missing a task reference; surface suggested /task-add command
+category: researching
 model: claude-haiku-4-5-20251001
 argument-hint: "[optional: path to a specific decision file or NNNN prefix to scope the search]"
 disable-model-invocation: false

@@ -1,6 +1,8 @@
 ---
 name: anti-slop
 description: Detect and remove AI writing patterns from any copy — blogs, social posts, emails, landing pages, ad copy, pitch decks, or internal documents — so the writing sounds like a real person thinking out loud instead of a language model producing persuasive text. Use this skill whenever someone needs to write or edit copy that should not read as AI-generated, whenever previous AI output has come back generic or hollow, or whenever a piece of writing feels technically correct but somehow off. Triggers include: "this sounds like AI," "make this sound more human," "edit this copy," "write a LinkedIn post," "write a blog," "rewrite this," "clean up this draft," or any request to produce or improve written marketing copy. Always apply the master prompt at the end of any copy prompt, never at the beginning.
+category: executing
+model: claude-sonnet-4-6
 ---
 
 # Anti-Slop

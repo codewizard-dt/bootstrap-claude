@@ -1,6 +1,7 @@
 ---
 name: simplify
 description: Analyze files or directories to remove redundancy and simplify complexity
+category: executing
 model: claude-sonnet-4-6
 argument-hint: "[relative_path]"
 disable-model-invocation: false

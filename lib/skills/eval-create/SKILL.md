@@ -1,6 +1,7 @@
 ---
 name: eval-create
 description: Assess the project's eval coverage against the 5-stage framework, identify gaps, and create new evals one at a time with user understanding and approval at each step
+category: executing
 model: claude-sonnet-4-6
 effort: high
 argument-hint: "[stage: golden|scenarios|replay|rubric] [description of the eval to create — e.g. 'golden case for the refund policy query using vector_search']"

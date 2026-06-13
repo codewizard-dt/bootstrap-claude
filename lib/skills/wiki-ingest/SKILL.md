@@ -1,6 +1,8 @@
 ---
 name: wiki-ingest
 description: Process a source from raw/ into the wiki — write a summary page, update affected entity and concept pages, and record the ingest in the index and log
+category: researching
+model: claude-sonnet-4-6
 argument-hint: <raw-file-path>
 disable-model-invocation: false
 user-invocable: true

@@ -1,7 +1,8 @@
 ---
 name: req-extract-decisions
 description: Extract Architecturally Significant Requirements from an approved requirement, cross-check existing decisions, and propose Decision Group candidates for /decision-create
-model: claude-sonnet-4-6
+category: planning
+model: claude-opus-4
 effort: high
 argument-hint: <path/to/req.md, NNN-slug, or NNN>
 disable-model-invocation: false

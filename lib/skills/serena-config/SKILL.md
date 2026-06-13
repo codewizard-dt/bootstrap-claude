@@ -1,7 +1,8 @@
 ---
 name: serena-config
 description: Interactively configure Serena language servers in .serena/project.yml
-model: claude-sonnet-4-6
+category: executing
+model: claude-haiku-4-5-20251001
 argument-hint: (no arguments)
 disable-model-invocation: false
 user-invocable: true

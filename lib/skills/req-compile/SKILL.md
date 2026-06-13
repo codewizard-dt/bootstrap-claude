@@ -8,6 +8,9 @@ description: >-
   system"), when scaffolding or resuming a greenfield build from a requirements document, or in
   a build's closing phase to harvest corrections back into the method. Pairs with
   frontend-design, run/verify, and claude-api.
+category: executing
+model: claude-opus-4
+effort: high
 ---
 
 # req-compile

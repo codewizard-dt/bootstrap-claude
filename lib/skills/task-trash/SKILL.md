@@ -1,6 +1,7 @@
 ---
 name: task-trash
 description: Delete a task and its related UAT files, then remove all references
+category: planning
 model: claude-haiku-4-5-20251001
 argument-hint: <path/to/task-file.md>
 disable-model-invocation: false

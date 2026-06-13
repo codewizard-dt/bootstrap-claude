@@ -1,6 +1,7 @@
 ---
 name: project-readme
 description: Generate or update a portfolio-ready project README
+category: executing
 model: claude-sonnet-4-6
 argument-hint: "[path to project directory (defaults to cwd)] [custom instructions to alter the output]"
 disable-model-invocation: false

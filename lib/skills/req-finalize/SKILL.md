@@ -1,6 +1,7 @@
 ---
 name: req-finalize
 description: Run completeness audit on a draft requirement, resolve gaps via Q&A, and flip status to approved
+category: planning
 model: claude-sonnet-4-6
 effort: high
 argument-hint: <path/to/req.md, NNN-slug, or NNN>

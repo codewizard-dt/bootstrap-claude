@@ -1,6 +1,7 @@
 ---
 name: demo
 description: Audit all project functionality at a high level and produce a 2-3 minute demo run book plus a Marp slideshow
+category: executing
 model: claude-sonnet-4-6
 argument-hint: "[path to project directory (defaults to cwd)] [custom instructions]"
 disable-model-invocation: false

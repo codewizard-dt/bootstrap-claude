@@ -1,6 +1,7 @@
 ---
 name: uat-auto
 description: Non-interactively run every test in a pending UAT file and auto-judge verdicts (headless, fail-closed)
+category: executing
 model: claude-sonnet-4-6
 argument-hint: <path/to/uat-file.md, number-slug, or description>
 disable-model-invocation: false

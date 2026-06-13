@@ -1,6 +1,7 @@
 ---
 name: task-update
 description: Assess and modify an existing task's scope or steps
+category: planning
 model: claude-sonnet-4-6
 argument-hint: <path/to/task.md, number-slug, or number> [optional instructions]
 disable-model-invocation: false

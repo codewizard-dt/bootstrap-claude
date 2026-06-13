@@ -1,6 +1,7 @@
 ---
 name: req-update
 description: Amend an approved requirement with a tracked Amendment block (append-only); apply direct edits to drafts; set retired/superseded status; surface downstream decision/task impact
+category: planning
 model: claude-sonnet-4-6
 argument-hint: <path/to/req.md, NNN-slug, or NNN> [optional change description]
 disable-model-invocation: false

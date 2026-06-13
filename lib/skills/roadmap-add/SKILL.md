@@ -1,7 +1,8 @@
 ---
 name: roadmap-add
 description: Append a new item (task link or inline) to an existing roadmap in wiki/work/roadmaps/, optionally under a named phase
-model: claude-sonnet-4-6
+category: planning
+model: claude-haiku-4-5-20251001
 argument-hint: <ROADMAP-NNN> [--phase "<name>"] [--task NNN | <task path> | <inline text>]
 disable-model-invocation: false
 user-invocable: true

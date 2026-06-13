@@ -1,6 +1,7 @@
 ---
 name: primer
 description: Refresh codebase context via Serena memories
+category: researching
 model: claude-haiku-4-5-20251001
 disable-model-invocation: false
 user-invocable: true

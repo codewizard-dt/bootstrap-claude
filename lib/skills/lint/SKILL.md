@@ -1,7 +1,8 @@
 ---
 name: lint
 description: Get IDE diagnostics then fix issues one-by-one in verify cycles
-model: claude-haiku-4-5-20251001
+category: executing
+model: claude-sonnet-4-6
 disable-model-invocation: false
 user-invocable: true
 ---

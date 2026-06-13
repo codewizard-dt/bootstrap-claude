@@ -1,6 +1,7 @@
 ---
 name: git-commit
 description: Stage all changed files and create a commit with an auto-generated message, including semver version bump
+category: executing
 model: claude-haiku-4-5-20251001
 disable-model-invocation: true
 user-invocable: true

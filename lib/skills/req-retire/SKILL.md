@@ -1,6 +1,7 @@
 ---
 name: req-retire
 description: Retire a requirement — set status to retired in frontmatter, document the reason, append a log entry. No file deletion; stable path is preserved forever.
+category: planning
 model: claude-haiku-4-5-20251001
 argument-hint: <wiki/work/requirements/REQ-NNN-slug.md, NNN-slug, or NNN> [reason]
 disable-model-invocation: false

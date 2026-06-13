@@ -1,7 +1,8 @@
 ---
 name: uat-auto-plus
 description: Autonomous-fix variant of /uat-auto — runs every test, diagnoses failures, applies fixes itself, and re-runs until green or attempts are exhausted. Intended for headless agents launched with --dangerously-skip-permissions.
-model: claude-sonnet-4-6
+category: executing
+model: claude-opus-4
 argument-hint: <path/to/uat-file.md, number-slug, or description>
 disable-model-invocation: false
 user-invocable: true

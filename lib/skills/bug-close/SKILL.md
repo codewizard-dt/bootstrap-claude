@@ -1,7 +1,8 @@
 ---
 name: bug-close
 description: Close an in-progress bug — record root cause and resolution, require a regression test, then move it to closed/ (or delete it for late wontfix decisions)
-model: claude-haiku-4-5-20251001
+category: executing
+model: claude-sonnet-4-6
 argument-hint: <BUG-NNNN, path, or number-slug>
 disable-model-invocation: false
 user-invocable: true

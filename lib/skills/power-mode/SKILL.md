@@ -1,7 +1,8 @@
 ---
 name: power-mode
 description: Reference guide for running agent teams with bypassed permissions in a dev container — covers CLI flags, Agent tool mode param, and per-agent frontmatter. When invoked with a single roadmap file path and no other instructions, acts as a goal-driven orchestrator that drives the roadmap to 100% completion.
-model: claude-sonnet-4-6
+category: executing
+model: claude-opus-4
 argument-hint: "[roadmap-file-path]"
 disable-model-invocation: false
 user-invocable: true
@@ -17,11 +18,21 @@ Use this skill whenever you need to run an agent team (orchestrator + team membe
 
 **Trigger:** `/power-mode <path/to/ROADMAP-NNN.md>` with no additional instructions.
 
-**Goal:** Drive the roadmap to 100% completion — all checklist items checked — by looping through waves of parallelizable work until nothing remains.
+**Goal:** Drive the roadmap to completion — every item through the full tackle → UAT-generate → UAT-auto pipeline — by looping through waves of parallelizable work until no implementation work remains.
+
+**AUTONOMOUS EXECUTION MANDATE:** Once triggered, drive the roadmap to completion without stopping. Do NOT pause between waves to report progress. Do NOT ask the user for permission to start the next phase or wave. Do NOT summarize and wait for approval. The only valid stopping point is when `/roadmap-next` reports no items remaining in the implementation pipeline. A roadmap item is considered complete once it has been through the full tackle → uat-generate → uat-auto pipeline — UAT tests that require human verification do NOT block loop progression. Any pause that requires user input before this point is a failure mode.
+
+### Forbidden actions in orchestrator mode
+
+- ❌ Stopping after a wave or phase completes to ask "shall I continue?"
+- ❌ Reporting phase summary and awaiting user approval before the next wave
+- ❌ Asking clarifying questions about scope, naming, or strategy mid-run
+- ❌ Treating a roadmap "Phase" boundary as a natural stopping point
+- ❌ Blocking loop progression because some UAT tests require human verification
 
 ### Orchestrator loop
 
-Run this loop until `/roadmap-next <file>` reports no unchecked items:
+Run this loop until `/roadmap-next <file>` reports no items remaining in the implementation pipeline:
 
 **Step 1 — Get the next wave**
 
@@ -49,11 +60,11 @@ Wait for all task-creation agents to complete before proceeding.
 
 Run the full tackle → UAT-generate → UAT-auto pipeline (see below) for all tasks in the current wave.
 
-> **Note on `/uat-auto` behavior:** `/uat-auto` does not run UI tests — they are always recorded as `[FAIL: auto-judge: UI test requires human verification]` and require a subsequent `/uat-walk`. If stub indicators are detected in the implementation, those tests remain pending (`FAIL: auto-judge: Stub detected - implementation required`) and the task stays in `wiki/work/tasks/` until the feature is implemented and re-tested.
+> **Note on `/uat-auto` behavior:** `/uat-auto` does not run UI tests — they are always recorded as `[FAIL: auto-judge: UI test requires human verification]` and require a subsequent `/uat-walk`. These pending tests do **not** block loop progression — a task is considered implemented once the automated UAT run completes, regardless of pending human-verification tests. If stub indicators are detected in the implementation, those tests remain pending (`FAIL: auto-judge: Stub detected - implementation required`) and the task stays in `wiki/work/tasks/` until the feature is implemented and re-tested.
 
 **Step 4 — Repeat**
 
-Return to Step 1. Continue until `/roadmap-next` confirms the roadmap is fully checked off.
+**Immediately** return to Step 1 without pausing, reporting to the user, or requesting confirmation. The loop is mandatory — do not stop between iterations. The only exit condition is `/roadmap-next` reporting no items remaining in the implementation pipeline (every item has been through tackle → uat-generate → uat-auto, even if some UAT tests still await human verification).
 
 ### Minimal orchestrator prompt (for nested orchestrators)
 
@@ -62,21 +73,19 @@ When you need to hand this off to a sub-orchestrator agent, use this compact bri
 ```
 Agent({
   description: "Drive <ROADMAP-NNN> to completion",
-  prompt: "Your goal is to drive the roadmap at <path> to 100% completion.
+  prompt: "Your goal is to drive the roadmap at <path> to completion — every item through the full tackle → uat-generate → uat-auto pipeline.
 
-Loop until all items are checked:
+Loop until no items remain in the implementation pipeline:
 1. Run /roadmap-next <path> to get the next parallelizable wave.
 2. For inline placeholders, run /task-add and link the task into the roadmap. Make all scope, naming, and structuring decisions autonomously — infer reasonable defaults from the roadmap context and existing task files; never ask clarifying questions.
-3. Run the three-phase pipeline: /tackle each task (parallel per wave) → /uat-generate each completed task (parallel) → /uat-auto each UAT file (sequential per file). After each all-pass UAT run, verify that both the UAT file and task file were moved to their completed/ directories and the task row was removed from wiki/work/tasks/README.md — if not, do it now before proceeding.
+3. Run the three-phase pipeline: /tackle each task (parallel per wave) → /uat-generate each completed task (parallel) → /uat-auto each UAT file (sequential per file). After each /uat-auto run, verify that both the UAT file and task file were moved to their completed/ directories and the task row was removed from wiki/work/tasks/README.md — if not, do it now before proceeding. UAT tests that require human verification do NOT block this step.
 4. Repeat from step 1.
 
-Stop only when /roadmap-next reports no unchecked items.
+Stop ONLY when /roadmap-next reports no items remaining in the implementation pipeline. UAT tests marked as requiring human verification are expected and do not block loop completion. Never pause between waves to ask the user for permission to continue.
 
 IMPORTANT: Follow .docs/guides/mcp-tools.md for all file and code operations. Use Serena (mcp__serena__*) for ALL file/directory exploration and ALL code editing. Never use ls, cat, find, grep, sed, awk, or any shell command to inspect or modify files.
 
-IMPORTANT: If at any point you are not 100% sure how to fix an issue or which implementation strategy to use, invoke /research first and act on its recommendation before proceeding.
-
-IMPORTANT: /uat-auto does not run UI tests — they always record as [FAIL: auto-judge: UI test requires human verification] and require a manual /uat-walk after the automated run. Do not treat these failures as blocking task completion. If stub-detected tests remain pending after /uat-auto, the task is not complete — the feature must be implemented first.",
+IMPORTANT: If at any point you are not 100% sure how to fix an issue or which implementation strategy to use, invoke /research first and act on its recommendation before proceeding.",
   mode: "bypassPermissions"
 })
 ```
@@ -223,14 +232,14 @@ Agent({
   description: "UAT auto TASK-NNN",
   prompt: "/uat-auto wiki/work/uat/NNN-slug.md
 
-CRITICAL: After all tests pass you MUST complete Step 7 in full before stopping:
+CRITICAL: After the automated UAT run completes you MUST complete Step 7 in full before stopping:
 1. git mv the UAT file to wiki/work/uat/completed/
 2. git mv the task file to wiki/work/tasks/completed/
 3. Remove the task row from wiki/work/tasks/README.md
 4. Flip the matching roadmap checkbox and update the task path in the roadmap
 Do not stop after emitting the summary — the file moves are mandatory.
 
-IMPORTANT: If any tests remain as [FAIL: auto-judge: UI test requires human verification] after the run, that is expected behavior — /uat-auto does not run UI tests. Those tests require a human walkthrough via /uat-walk.
+IMPORTANT: UAT tests recorded as [FAIL: auto-judge: UI test requires human verification] are expected — /uat-auto does not run UI tests. These do NOT block task completion. Proceed with Step 7 even if human-verification tests remain pending.
 
 IMPORTANT: If any tests remain as - [ ] Pass because stub indicators were detected in the implementation, do NOT mark the task as complete. Leave the UAT file in wiki/work/uat/ and report the stub-detected tests in your summary. The task cannot be considered done until the stubs are implemented and the tests pass.",
   mode: "bypassPermissions"

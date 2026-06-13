@@ -1,7 +1,8 @@
 ---
 name: security-audit
 description: Audit an LLM/AI application for security vulnerabilities across 11 categories — internal posture (observability, rate limiting, access controls, HITL policy, benchmarking) and external threats (prompt injection, data leakage, output XSS, excessive agency, supply chain, token DoS). Run a full audit or a single named category.
-model: claude-sonnet-4-6
+category: researching
+model: claude-opus-4
 argument-hint: "[category-name | full]"
 disable-model-invocation: false
 user-invocable: true

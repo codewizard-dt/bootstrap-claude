@@ -1,6 +1,7 @@
 ---
 name: debug-logs
 description: Diagnose points of failure by inspecting session context, running processes, and conventional log stores; produce a ranked list of likely causes and next actions without applying fixes
+category: researching
 model: claude-sonnet-4-6
 argument-hint: "[optional symptom or error message]"
 disable-model-invocation: false
