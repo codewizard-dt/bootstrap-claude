@@ -125,6 +125,8 @@ Based on the system description from Step 2, propose the single highest-value go
 - id: "gs-001"
   description: "<one sentence — what scenario this tests>"
   query: "<realistic query the system would receive>"
+  tested_files:
+    - <path/to/file_under_test.ext>
   expected_tools:
     - <tool_name>
   expected_sources:
@@ -138,6 +140,7 @@ Based on the system description from Step 2, propose the single highest-value go
 
 - Explain **why** each field was chosen:
   - Why this query? (It's the golden path / most common scenario)
+  - Why these `tested_files`? (Name the specific implementation file(s) whose logic this eval exercises — e.g. the retrieval module, the prompt template, the tool handler)
   - Why these tools? (This query type always needs X)
   - Why these must_contain terms? (These are the facts the response must include)
   - Why these must_not_contain terms? (These indicate failure modes)
@@ -255,6 +258,8 @@ Present the proposed YAML derived from the description — no preamble, no multi
 - id: "gs-NNN"
   description: "<one sentence — what this tests>"
   query: "<query derived from the description>"
+  tested_files:
+    - <path/to/file_under_test.ext>
   expected_tools:
     - <inferred or explicit>
   expected_sources:
@@ -266,7 +271,7 @@ Present the proposed YAML derived from the description — no preamble, no multi
 ```
 
 Then briefly note:
-- Any fields you had to infer (so the user can correct them)
+- Any fields you had to infer (so the user can correct them), including `tested_files` if you guessed at the path
 - What regression this catches
 
 Use `AskUserQuestion`:
@@ -336,3 +341,4 @@ Print a summary:
 5. **No vague must_not_contain terms** like "bad" or "wrong". Specific failure-mode strings only (e.g. `"I don't know"`, `"no information available"`, `"hallucinated_term"`).
 6. **Every eval needs a regression story.** If you cannot articulate "this eval fails when X breaks", the eval is not ready.
 7. **Never skip Step 1** (reading the framework). The quality of evals degrades without it.
+8. **Every eval must include at least one `tested_files` entry.** Use Serena (`find_file`, `get_symbols_overview`) to locate the actual implementation file(s) the eval exercises before proposing. A path you cannot verify in the repo is not a valid entry — ask the user rather than guessing.

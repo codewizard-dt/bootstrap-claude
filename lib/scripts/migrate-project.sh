@@ -140,24 +140,57 @@ for fam in "${LEGACY_FAMILIES[@]}"; do
 done
 
 echo "Migrating .docs/ content to wiki/ ($TOTAL_FILES files — Claude is running, this may take a few minutes)..."
+echo ""
 
-# Background heartbeat so the terminal doesn't look frozen
+# Heartbeat to stderr — fallback for when Claude is silent between tool calls
 (
   START=$SECONDS
   while true; do
     sleep 15
     ELAPSED=$((SECONDS - START))
-    printf "  [%dm%02ds] Still migrating...\n" $((ELAPSED / 60)) $((ELAPSED % 60))
+    printf "  [%dm%02ds] still running...\n" $((ELAPSED / 60)) $((ELAPSED % 60)) >&2
   done
 ) &
 HEARTBEAT_PID=$!
 
+# FIFO lets us pipe Claude's stream-json through a display filter while
+# still capturing Claude's PID for the watchdog.
+CLAUDE_FIFO=$(mktemp -u /tmp/claude-migrate.XXXXXX)
+mkfifo "$CLAUDE_FIFO"
+
+# Write display filter to a temp file to avoid heredoc/redirect ambiguity
+DISPLAY_SCRIPT=$(mktemp /tmp/claude-display.XXXXXX.py)
+cat > "$DISPLAY_SCRIPT" << 'PYEOF'
+import sys, json
+for line in sys.stdin:
+    line = line.strip()
+    if not line:
+        continue
+    try:
+        ev = json.loads(line)
+        if ev.get('type') == 'assistant':
+            for b in ev.get('message', {}).get('content', []):
+                if b.get('type') == 'text' and b.get('text'):
+                    print(b['text'], end='', flush=True)
+                elif b.get('type') == 'tool_use':
+                    name = b.get('name', '?')
+                    inp = b.get('input', {})
+                    detail = inp.get('command', inp.get('file_path', inp.get('path', '')))
+                    label = name + (': ' + detail if detail else '')
+                    print('  [' + label + ']', flush=True)
+    except Exception:
+        pass
+PYEOF
+
+# Start display filter — opens FIFO for reading (blocks until Claude connects)
+python3 -u "$DISPLAY_SCRIPT" < "$CLAUDE_FIFO" &
+DISPLAY_PID=$!
+
 cd "$PROJECT_DIR"
 
-# Run Claude in the background so we can enforce a timeout and kill the
-# heartbeat cleanly regardless of how Claude exits.
 CLAUDE_EXIT=0
-claude -p --dangerously-skip-permissions "$PROMPT" &
+claude -p --dangerously-skip-permissions --strict-mcp-config \
+  --output-format stream-json < /dev/null "$PROMPT" > "$CLAUDE_FIFO" &
 CLAUDE_PID=$!
 
 # Watchdog: kill Claude if it exceeds 30 minutes (hangs / idle loop)
@@ -165,13 +198,13 @@ TIMEOUT_SECS=1800
 (sleep "$TIMEOUT_SECS"; echo "" >&2; echo "  [timeout] Migration exceeded ${TIMEOUT_SECS}s — killing Claude." >&2; kill "$CLAUDE_PID" 2>/dev/null) &
 WATCHDOG_PID=$!
 
-trap 'kill "$HEARTBEAT_PID" "$WATCHDOG_PID" "$CLAUDE_PID" 2>/dev/null; wait "$HEARTBEAT_PID" "$WATCHDOG_PID" 2>/dev/null' EXIT
+trap 'kill "$HEARTBEAT_PID" "$WATCHDOG_PID" "$CLAUDE_PID" "$DISPLAY_PID" 2>/dev/null; wait "$HEARTBEAT_PID" "$WATCHDOG_PID" "$DISPLAY_PID" 2>/dev/null; rm -f "$CLAUDE_FIFO" "$DISPLAY_SCRIPT"' EXIT
 
 wait "$CLAUDE_PID" || CLAUDE_EXIT=$?
-kill "$WATCHDOG_PID" 2>/dev/null
-wait "$WATCHDOG_PID" 2>/dev/null
-kill "$HEARTBEAT_PID" 2>/dev/null
-wait "$HEARTBEAT_PID" 2>/dev/null
+kill "$WATCHDOG_PID" 2>/dev/null; wait "$WATCHDOG_PID" 2>/dev/null
+kill "$HEARTBEAT_PID" 2>/dev/null; wait "$HEARTBEAT_PID" 2>/dev/null
+wait "$DISPLAY_PID" 2>/dev/null  # let the filter flush remaining output
+rm -f "$CLAUDE_FIFO" "$DISPLAY_SCRIPT"
 
 [ "$CLAUDE_EXIT" -ne 0 ] && { echo "Error: Claude exited with code $CLAUDE_EXIT" >&2; exit "$CLAUDE_EXIT"; }
 

@@ -31,7 +31,7 @@ Build a complete file list.
 For each work family (`requirements`, `decisions`, `roadmaps`, `tasks`, `uat`, `bugs`):
 1. Read the family's `index.md`.
 2. For each row in the index: verify the linked file exists in the family directory; verify the file's `status:` frontmatter matches an **active** status for that family (read each family's `lifecycle.md` for the valid active statuses — do NOT hardcode them).
-3. For each file in the family directory (excluding `lifecycle.md`, `index.md`, `.gitkeep`): read its `status:` frontmatter; if the status is **not** in the active set, verify its row is absent from the index.
+3. For each file in the family directory (excluding `lifecycle.md`, `index.md`, `.gitkeep`, and anything under `archive/`): read its `status:` frontmatter; if the status is **not** in the active set, verify its row is absent from the active index. Files in `archive/` are terminal by definition — they should not appear in the active `index.md` but their presence in `archive/` is correct.
 
 Report:
 - Active item missing from index

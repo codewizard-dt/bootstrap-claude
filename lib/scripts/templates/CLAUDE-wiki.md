@@ -16,7 +16,7 @@ CLAUDE.md     This schema section.
 - `wiki/knowledge/concepts/` — patterns, ideas, conventions, recurring themes
 - `wiki/knowledge/entities/{people,organisations,tools,components}/` — one page per entity, filed by sub-type
 
-**`wiki/work/`** — stateful lifecycle artifacts, organized by status. Files are **never moved** after creation; state lives in the `status:` frontmatter field. Each family has a `lifecycle.md` (schema + valid transitions) and an `index.md` listing **only active items** — when an item leaves the active set, delete its line from the family index; the file itself stays put forever.
+**`wiki/work/`** — stateful lifecycle artifacts, organized by status. Active files are **never moved** after creation; state lives in the `status:` frontmatter field. Each family has a `lifecycle.md` (schema + valid transitions), an `index.md` listing **only active items**, and an `archive/` subdirectory for terminal items. When an item leaves the active set, delete its line from the family index; terminal items may be moved to `archive/` by `/wiki-archive`.
 
 - `wiki/work/requirements/` — REQ-NNN
 - `wiki/work/decisions/` — DEC-NNNN (per-decision `#DM`)
@@ -34,6 +34,9 @@ CLAUDE.md     This schema section.
 | `/wiki-ingest <raw-file>` | Process a source from `raw/` into the wiki — summary page, entity/concept updates, index + log entries |
 | `/wiki-query <question>` | Answer from the wiki with citations; offer to file valuable synthesis back as a new page |
 | `/wiki-lint` | Health-check — contradictions, orphan pages, stale claims, index drift, never-ingested raw sources |
+| `/wiki-archive [family]` | Batch-move terminal work items into `<family>/archive/`; update `archive/index.md` and log the operation |
+| `/wiki-rotate-log` | Rotate `wiki/log.md` to a dated archive file when it exceeds ~400 entries; create a fresh `log.md` with an archive pointer |
+| `/wiki-tidy` | One-shot cleanup — lint, archive terminal items across all families, then rotate log if overgrown; phases run in sequence with user confirmation |
 
 ### CRITICAL wiki rules
 

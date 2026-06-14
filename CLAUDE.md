@@ -24,7 +24,7 @@ This repo follows the three-layer LLM Wiki pattern described in `raw/llm-wiki.md
 - `wiki/knowledge/concepts/` — patterns, ideas, conventions, recurring themes
 - `wiki/knowledge/entities/{people,organisations,tools,components}/` — one page per entity, filed by sub-type (`components/` holds this repo's own skills, hooks, scripts)
 
-**`wiki/work/`** — stateful lifecycle artifacts, organized by status. Files are **never moved** after creation; state lives in the `status:` frontmatter field; each family has a `lifecycle.md` defining its schema and valid transitions, and an `index.md` listing **only active items** (completed/terminal items are removed from the index, not the file system).
+**`wiki/work/`** — stateful lifecycle artifacts, organized by status. Active files are **never moved** after creation; state lives in the `status:` frontmatter field; each family has a `lifecycle.md` defining its schema and valid transitions, an `index.md` listing **only active items**, and an `archive/` subdirectory for terminal items. Terminal items may be moved to `archive/` by `/wiki-archive` — safe because links use stable IDs, not paths.
 
 - `wiki/work/requirements/` — requirements / PRDs (REQ-NNN)
 - `wiki/work/decisions/` — architecture decision records (DEC-NNNN, per-decision `#DM`)
@@ -46,6 +46,9 @@ Every page obeys [`wiki/conventions.md`](wiki/conventions.md). The load-bearing 
 | `/wiki-ingest <raw-file>` | Process a source from `raw/` into the wiki — summary page, entity/concept page updates, index + log entry; one source per invocation |
 | `/wiki-query <question>` | Answer from the wiki with citations; offer to file valuable synthesis back as a new page |
 | `/wiki-lint` | Health-check — contradictions, orphan pages, stale claims, missing cross-references, never-ingested raw sources |
+| `/wiki-archive [family]` | Batch-move terminal work items into `<family>/archive/`; update `archive/index.md` and log the operation. Omit family to see a summary count across all families |
+| `/wiki-rotate-log` | Rotate `wiki/log.md` to a dated archive file (`log-YYYY.md`) when it exceeds ~400 entries; create a fresh `log.md` with an archive-pointer header |
+| `/wiki-tidy` | One-shot cleanup — lint, archive terminal items across all families, then rotate log if overgrown; phases run in sequence with user confirmation |
 
 ### CRITICAL wiki rules
 
@@ -82,6 +85,9 @@ Follow the root `README.md` to configure a new project, or use the npm package:
 | `/wiki-ingest <raw-file>` | Process a source from `raw/` into the wiki — summary page, entity/concept updates, index + log entries |
 | `/wiki-query <question>` | Answer a question from the wiki with citations; optionally file the answer back as a new wiki page |
 | `/wiki-lint` | Health-check the wiki — contradictions, orphans, stale claims, missing cross-references, never-ingested sources |
+| `/wiki-archive [family]` | Batch-move terminal work items into `<family>/archive/`; update `archive/index.md` and log the operation. Omit family to see a count summary across all families |
+| `/wiki-rotate-log` | Rotate `wiki/log.md` to a dated archive file (`log-YYYY.md`) when it exceeds ~400 entries; create a fresh `log.md` with an archive-pointer header |
+| `/wiki-tidy` | One-shot cleanup — lint, archive terminal items across all families, then rotate log if overgrown; phases run in sequence with user confirmation |
 | `/primer` | Refresh codebase context via Serena memories |
 | `/serena-config` | Interactively configure Serena language servers in `.serena/project.yml` |
 | `/research <topic>` | Deep research using codebase analysis, library docs, and web search |
@@ -191,7 +197,7 @@ CLAUDE.md     This schema section.
 - `wiki/knowledge/concepts/` — patterns, ideas, conventions, recurring themes
 - `wiki/knowledge/entities/{people,organisations,tools,components}/` — one page per entity, filed by sub-type
 
-**`wiki/work/`** — stateful lifecycle artifacts, organized by status. Files are **never moved** after creation; state lives in the `status:` frontmatter field. Each family has a `lifecycle.md` (schema + valid transitions) and an `index.md` listing **only active items** — when an item leaves the active set, delete its line from the family index; the file itself stays put forever.
+**`wiki/work/`** — stateful lifecycle artifacts, organized by status. Active files are **never moved** after creation; state lives in the `status:` frontmatter field. Each family has a `lifecycle.md` (schema + valid transitions), an `index.md` listing **only active items**, and an `archive/` subdirectory for terminal items. When an item leaves the active set, delete its line from the family index; terminal items may be moved to `archive/` by `/wiki-archive`.
 
 - `wiki/work/requirements/` — REQ-NNN
 - `wiki/work/decisions/` — DEC-NNNN (per-decision `#DM`)
@@ -209,6 +215,9 @@ CLAUDE.md     This schema section.
 | `/wiki-ingest <raw-file>` | Process a source from `raw/` into the wiki — summary page, entity/concept updates, index + log entries |
 | `/wiki-query <question>` | Answer from the wiki with citations; offer to file valuable synthesis back as a new page |
 | `/wiki-lint` | Health-check — contradictions, orphan pages, stale claims, index drift, never-ingested raw sources |
+| `/wiki-archive [family]` | Batch-move terminal work items into `<family>/archive/`; update `archive/index.md` and log the operation |
+| `/wiki-rotate-log` | Rotate `wiki/log.md` to a dated archive file when it exceeds ~400 entries; create a fresh `log.md` with an archive pointer |
+| `/wiki-tidy` | One-shot cleanup — lint, archive terminal items across all families, then rotate log if overgrown; phases run in sequence with user confirmation |
 
 ### CRITICAL wiki rules
 
