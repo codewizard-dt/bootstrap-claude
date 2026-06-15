@@ -1,6 +1,6 @@
 ---
 name: task-trash
-description: Delete a task and its related UAT files, then remove all references
+description: Trash a task and its related UAT files — moves them to archive/ and removes all active-index references
 category: planning
 model: claude-haiku-4-5-20251001
 argument-hint: <path/to/task-file.md>
@@ -13,7 +13,7 @@ user-invocable: true
 
 # Trash Task
 
-Delete a task file (and any related UAT files), then remove all references to them.
+Move a task file (and any related UAT files) to `archive/`, then remove all active-index references. No files are ever deleted — archiving is the terminal action.
 
 ---
 
@@ -58,39 +58,60 @@ Before moving anything, use `AskUserQuestion` to confirm. Show:
 
 - **Task file** to be trashed: `$ARGUMENTS`
 - **UAT file(s)** to be trashed (list each, or "None found")
-- Ask: **"Delete these files? (Yes/No)"**
+- Ask: **"Archive these files as trashed? (Yes/No)"**
 
 If the user says **No**, STOP.
 
-### Step 4: Delete Files
+### Step 4: Set status and archive files
 
-1. **Delete the task file**:
-   - Use `git rm <source>` (fall back to `rm` if `git rm` fails)
+1. **Update `status: <current>` → `status: trashed`** in the task file frontmatter using `Edit`.
 
-2. **Delete related UAT files** (if any):
-   - Use `git rm <source>` for each (fall back to `rm` if `git rm` fails)
+2. **Archive the task file** (Bash — `git mv` only):
+   ```
+   git mv wiki/work/tasks/<file>.md wiki/work/tasks/archive/<file>.md
+   ```
+   Then append to `wiki/work/tasks/archive/index.md`:
+   ```
+   | [[TASK-NNN]] | <Title> | trashed | YYYY-MM-DD |
+   ```
 
-### Step 5: Update References
+3. **For each related UAT file** (if any):
+   - Update `status: <current>` → `status: trashed` in UAT frontmatter using `Edit`.
+   - Archive it (Bash — `git mv` only):
+     ```
+     git mv wiki/work/uat/<UAT-file>.md wiki/work/uat/archive/<UAT-file>.md
+     ```
+   - Append to `wiki/work/uat/archive/index.md`:
+     ```
+     | [[UAT-NNN]] | <Title> | trashed | YYYY-MM-DD |
+     ```
 
-Search for and update any references to the moved files across the project:
+### Step 5: Update Active Indexes
 
-1. Use Serena's `search_for_pattern` to find all references to the trashed task filename and UAT filename(s) across:
-   - `wiki/work/tasks/README.md` (task index)
-   - `PROJECT_STATUS.md`
-   - Other task files that may cross-reference this task
-   - Any UAT files that reference the task
+Remove the task's row from `wiki/work/tasks/index.md`. If there is a matching UAT row in `wiki/work/uat/index.md`, remove it too.
 
-2. For each reference found:
-   - If in `wiki/work/tasks/README.md`: **delete the task's row** from the Active Tasks table entirely (the index has no Completed table — completed tasks live in `wiki/work/tasks/  `). If the task was already completed and so has no row in the index, the row-removal is a silent no-op. **Then check the header**: if the **Last task:** line at the top of the README references this task, `Edit` it to remove the reference (set it to `—` or the previous task). Do **not** decrement **Next task number** — it only ever goes up.
-   - If in another status/index file: **remove the line entirely** — the file no longer exists.
-   - If in another task/UAT file's `Source task` or `UAT` link: **remove the link line entirely** — the referenced file is gone.
+Use `Read` then `Edit` — never `echo >>` or `sed`. If a row is already absent, note it and continue.
 
-3. Use the **`Edit`** tool to make the updates — one `Edit` call per replacement. **Never** use `sed`, `awk`, or `perl -i` to bulk-rewrite paths across files, even when many references need updating. See `.docs/guides/mcp-tools.md` "Common anti-patterns".
+**Do NOT remove references from roadmaps, decisions, or other files** — `[[TASK-NNN]]` and `[[UAT-NNN]]` IDs remain valid regardless of file location.
 
-### Step 6: Report Completion
+### Step 6: Append to wiki/log.md
+
+Append one entry to `wiki/log.md`:
+
+```
+## [YYYY-MM-DD] task-trashed | TASK-NNN <title> — archived to wiki/work/tasks/archive/
+```
+
+Use `Read` then `Edit` — never `echo >>`.
+
+### Step 7: Report Completion
 
 Report what was done:
 
-- Task file deleted: `<old path>`
-- UAT file(s) deleted: `<old path>` (or "None")
-- References updated: list each file that was modified
+| Field | Value |
+|-------|-------|
+| Task file | `wiki/work/tasks/<file>.md` → `wiki/work/tasks/archive/<file>.md` |
+| UAT file(s) | `wiki/work/uat/<file>.md` → `wiki/work/uat/archive/<file>.md` (or "None") |
+| Active index rows removed | task index, UAT index (as applicable) |
+| Archive index rows added | task archive index, UAT archive index (as applicable) |
+| wiki/log.md entry | yes |

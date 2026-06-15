@@ -1,6 +1,6 @@
 ---
 name: req-retire
-description: Retire a requirement — set status to retired in frontmatter, document the reason, append a log entry. No file deletion; stable path is preserved forever.
+description: Retire a requirement — set status to retired in frontmatter, document the reason, move to archive/, append a log entry.
 category: planning
 model: claude-haiku-4-5-20251001
 argument-hint: <wiki/work/requirements/REQ-NNN-slug.md, NNN-slug, or NNN> [reason]
@@ -9,13 +9,15 @@ user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
 **Run `/primer` first if you have not already this session.**
-**Read `wiki/work/requirements/lifecycle.md` first** — it defines the requirement lifecycle, terminal states, and the "files never move" rule.
+**Read `wiki/work/requirements/lifecycle.md` first** — it defines the requirement lifecycle, terminal states, and the archive rule.
 
 # Retire Requirement
 
-Set a requirement's `status` to `retired` and document why. **The file stays at its stable path forever** — there is no deletion, no `trashed/` folder, no `archived/` folder. State is frontmatter; history is git.
+Set a requirement's `status` to `retired`, document why, then move the file to `wiki/work/requirements/archive/`. After archiving, cross-references using `[[REQ-NNN]]` remain valid — the ID is stable regardless of file location.
 
 This skill is a focused shortcut for the retirement flow. For amendments that don't touch status, use `/req-update`. For supersession (a new requirement replaces this one), use `/req-update` with supersession intent or pass `status: superseded` instructions here.
+
+
 
 ---
 
@@ -97,9 +99,25 @@ Apply in this order:
 
 ### Step 5: Remove from the family index
 
-`retired` is a terminal status — **delete the requirement's row** from `wiki/work/requirements/index.md` (the family index lists active items only; the file itself never moves).
+`retired` is a terminal status — **delete the requirement's row** from `wiki/work/requirements/index.md` (the family index lists active items only).
 
 Use `Read` then `Edit` — never `echo >>` or `sed`. If the row is already absent, note it and continue.
+
+### Step 5.5: Archive the file
+
+Move the file to `archive/` (Bash — `git mv` only):
+
+```
+git mv wiki/work/requirements/<file>.md wiki/work/requirements/archive/<file>.md
+```
+
+Then append to `wiki/work/requirements/archive/index.md`:
+
+```
+| [[REQ-NNN]] | <Title> | retired | YYYY-MM-DD |
+```
+
+Use `Read` then `Edit` for the archive index append — never `echo >>`.
 
 ### Step 6: Append to wiki/log.md
 
@@ -134,11 +152,12 @@ Print a tabular summary:
 | Field | Value |
 |-------|-------|
 | Requirement | `REQ-NNN <title>` |
-| File path | `wiki/work/requirements/REQ-NNN-slug.md` (unchanged — file stays at stable path) |
+| File path | `wiki/work/requirements/REQ-NNN-slug.md` → `wiki/work/requirements/archive/REQ-NNN-slug.md` |
 | Old status | `draft` or `approved` |
 | New status | `retired` |
 | Reason | <one-line summary> |
-| family index updated | yes (row removed — terminal status) |
+| Family index updated | yes (row removed — terminal status) |
+| Archive index updated | yes (row appended) |
 | wiki/log.md entry | yes |
 | Linked decisions surfaced | count |
 | Linked tasks surfaced | count |
@@ -149,7 +168,7 @@ Print a tabular summary:
 
 1. Use tables for the downstream artifacts list and the completion report — never paragraph prose.
 2. **One `Edit` call per change** — never bulk rewrites.
-3. **The file stays at its stable path.** No `git rm`, no `mv`, no subfolder. `status: retired` in frontmatter IS the terminal state.
+3. **After archiving, cross-references using `[[REQ-NNN]]` remain valid** — the ID is stable regardless of file location.
 4. **The skill never auto-retires or auto-deprecates downstream artifacts** — it surfaces them with suggested commands.
 5. **The retirement reason in `## Notes` is permanent** — it is the audit trail for why this requirement was retired.
 
@@ -157,11 +176,11 @@ Print a tabular summary:
 
 ## CRITICAL Rules
 
-1. **Files never move.** Setting `status: retired` is the ONLY action that signals terminal state. No deletion, no subfolders.
+1. **Archiving (not deletion) is the terminal action.** Set `status: retired` in frontmatter AND move the file to `wiki/work/requirements/archive/` via `git mv`.
 2. **Never auto-cascade** to linked decisions or tasks. Surface them as suggestions only.
 3. **Confirm with the user before any edits** — `AskUserQuestion` is mandatory in Step 3.
 4. **Retirement reason is required** — refuse to retire without a documented reason.
-5. **Never use `sed` / `awk` / `echo >>` / `cat <<EOF`** — always `Edit`. See `.docs/guides/mcp-tools.md`.
+5. **Never use `sed` / `awk` / `echo >>` / `cat <<EOF`** — always `Edit`. `Bash` is permitted only for `git mv`. See `.docs/guides/mcp-tools.md`.
 6. **Refuse if already retired or superseded** — these are terminal states; running again is a no-op, not an error.
 7. Maximum 3 sub-processes at a time if delegating any step.
 8. Always terminate background processes when done.

@@ -8,7 +8,6 @@ disable-model-invocation: false
 user-invocable: true
 ---
 **Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
-**Read `wiki/work/roadmaps/README.md` first — it is authoritative for item format rules and index format this skill must respect.**
 **Run `/primer` first if you have not already this session.**
 
 
@@ -18,14 +17,14 @@ $ARGUMENTS
 
 # Add to Roadmap
 
-Append a new `- [ ]` checklist item to an existing roadmap file in `wiki/work/roadmaps/`. The item is either a **task-link item** (when a task file is resolvable) or an **inline item** (free-form text). The new item is placed under a named phase, or — by default — at the end of the last existing phase. The roadmap's `Last updated` field and the index `Progress` denominator in `wiki/work/roadmaps/README.md` are kept in sync.
+Append a new `- [ ]` checklist item to an existing roadmap file in `wiki/work/roadmaps/`. The item is either a **task-link item** (when a task file is resolvable) or an **inline item** (free-form text). The new item is placed under a named phase, or — by default — at the end of the last existing phase. The roadmap's `Last updated` field and the index `Progress` denominator in `wiki/work/roadmaps/index.md` are kept in sync.
 
 ---
 
 ## Inline Placeholders
 
 Roadmap items fall into two categories:
-- **Task-link items** — `- [ ] [TASK-NNN: <title>](../tasks/NNN-slug.md)` — backed by a real task file; can be worked on immediately with `/tackle`.
+- **Task-link items** — `- [ ] [[TASK-NNN: <title>]]` — backed by a real task file; can be worked on immediately with `/tackle`.
 - **Inline placeholder items** — `- [ ] <free-form description>` — no task file exists yet; valid to add, but **cannot be tackled** until `/roadmap-next` automatically creates a task file for them.
 
 When adding an inline item, include a note in the Step 8 report reminding the user that this placeholder will be upgraded to a task-link automatically when `/roadmap-next` runs.
@@ -93,13 +92,11 @@ Otherwise skip to Step 4 with the remaining text as the inline-item body.
 
 Strip the leading `# NNN: ` prefix; the remainder is the **task title** (e.g. `User Table Schema`).
 
-Build the item line. The link path **must** be repo-relative from the roadmap file's location — typically:
+Build the item line using the stable wiki-link format:
 
 ```markdown
-- [ ] [TASK-NNN: <task title>](../tasks/NNN-slug.md)
+- [ ] [[TASK-NNN: <task title>]]
 ```
-
-If the task file currently lives in `completed/`, still write `../tasks/  NNN-slug.md`. (Per `wiki/work/roadmaps/README.md`, the auto-checkoff machinery tolerates stale paths — but write the *current* path on insertion.)
 
 ### 3c. Task file not found
 
@@ -133,10 +130,8 @@ Phase-name matching is case-sensitive and exact on the text after `## Phase N: `
 The new item line is exactly one of:
 
 ```markdown
-- [ ] [TASK-NNN: <title>](../tasks/NNN-slug.md)
+- [ ] [[TASK-NNN: <title>]]
 ```
-
-(use `../tasks/  NNN-slug.md` when the task is in `completed/`)
 
 or
 
@@ -187,9 +182,9 @@ Use `Edit` to change the `**Last updated**: YYYY-MM-DD` line to today's date. Us
 
 ---
 
-## Step 7: Update the Index in `wiki/work/roadmaps/README.md`
+## Step 7: Update the Index in `wiki/work/roadmaps/index.md`
 
-`Read` `wiki/work/roadmaps/README.md`. Locate the Index table row whose `File` cell matches `[ROADMAP-NNN](NNN-slug.md)` for the just-edited roadmap.
+`Read` `wiki/work/roadmaps/index.md`. Locate the Index table row whose `File` cell matches `[ROADMAP-NNN](NNN-slug.md)` for the just-edited roadmap.
 
 The `Progress` cell is formatted `M/N`. Use `Edit` to bump the **denominator only**: `M/N` → `M/N+1`.
 
@@ -242,4 +237,4 @@ If the added item is an inline placeholder, append this note after the table:
 4. **The skill never changes `Status:`** — that flip is intentionally manual.
 5. **Index numerator stays untouched** — only the denominator increments here.
 6. **Idempotency before edits** — duplicate items abort the run with a friendly message; no edits, no index bump.
-7. **Repo-relative paths** — task-link items use paths relative to the roadmap file's location (`../tasks/NNN-slug.md`), not absolute or repo-root paths.
+7. **Stable IDs only** — task-link items use `[[TASK-NNN: title]]` wiki-link format, not file-path markdown links. Path-based links break on archive; ID-based links never do.

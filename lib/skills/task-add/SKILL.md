@@ -160,7 +160,7 @@ If the file does not exist, create it with a `# Tasks` heading and the list entr
 In the decision's `### Links` section, add or append a `Source task(s):` line:
 
 ```
-- Source task(s): `wiki/work/tasks/TASK-NNN-slug.md` — **WIP** (added YYYY-MM-DD)
+- Source task(s): [[TASK-NNN]] — **WIP** (added YYYY-MM-DD)
 ```
 
 If no `### Links` section exists, create one before the closing `---` separator of that decision block. Use `Read` then `Edit` — never shell redirection.
@@ -170,7 +170,7 @@ If no `### Links` section exists, create one before the closing `---` separator 
 Read the roadmap file. Identify the last `## Phase N:` section (or any checklist section). Append a new `- [ ]` line:
 
 ```
-- [ ] [TASK-NNN — <task title>](../tasks/TASK-NNN-slug.md)
+- [ ] [[TASK-NNN: <task title>]]
 ```
 
 Update the roadmap's `updated:` frontmatter field to today's date. Use `Read` then `Edit`.

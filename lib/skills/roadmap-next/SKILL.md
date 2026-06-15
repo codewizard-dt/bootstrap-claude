@@ -1,6 +1,6 @@
 ---
 name: roadmap-next
-description: Point at the first unchecked item(s) in a roadmap; create task files for inline placeholders; group items into parallelizable waves; auto-move fully-checked roadmaps to completed/
+description: Point at the first unchecked item(s) in a roadmap; create task files for inline placeholders; group items into parallelizable waves; auto-archive fully-checked roadmaps
 category: researching
 model: claude-haiku-4-5-20251001
 argument-hint: "[path to roadmap file, NNN-slug, or number] (optional)"
@@ -12,7 +12,7 @@ user-invocable: true
 
 # Next Step
 
-Surface unchecked roadmap items grouped into parallelizable waves, and tell the user how to act on them. When a roadmap has all items checked, automatically move it to `completed/` and update the README reference.
+Surface unchecked roadmap items grouped into parallelizable waves, and tell the user how to act on them. When a roadmap has all items checked, flip its status to `done` and automatically move it to `archive/`.
 
 ---
 
@@ -66,8 +66,9 @@ For each item capture:
 | `phase` | Nearest preceding `## Phase N: <name>` |
 | `checked` | `true` if `- [x]`, `false` if `- [ ]` |
 | `text` | Bullet body after the checkbox |
-| `kind` | `task-link` if body matches `[TASK-NNN: ...](<path>)`, else `inline` |
-| `task_path` | For task-links: the URL portion of the markdown link |
+| `kind` | `task-link` if body starts with `[[TASK-` (i.e. matches `[[TASK-NNN` prefix), else `inline` |
+| `task_id` | For task-links: the `TASK-NNN` identifier extracted from `[[TASK-NNN: title]]` |
+| `task_path` | For task-links: resolved by `mcp__serena__find_file` with pattern `TASK-NNN-*` in `wiki/work/tasks/` — finds the file whether active or archived |
 
 Walk items in document order. Collect up to **9** unchecked items (`checked == false`) in order — these are the `candidate_items` list.
 
@@ -92,8 +93,8 @@ For each item in `candidate_items` where `kind == 'inline'`:
 4. After `task-add` completes, extract the new task's file path and identifier from the task-add completion output (the `File path` row of its summary table). If parsing fails, use `mcp__serena__list_dir` on `wiki/work/tasks/` to identify the newest `.md` file that was not present before the invocation. `Read` the new task file to confirm the `TASK-NNN` number and title (from the `# NNN: <title>` H1 heading).
 5. Use `Edit` on the roadmap file to replace the inline item line:
    - `old_string`: `- [ ] <item_text>` (exact text, including leading `- [ ] `)
-   - `new_string`: `- [ ] [TASK-NNN: <title>](../tasks/NNN-slug.md)`
-6. Update the item record in `candidate_items`: set `kind = 'task-link'` and `task_path` to the relative path `../tasks/NNN-slug.md`.
+   - `new_string`: `- [ ] [[TASK-NNN: <title>]]`
+6. Update the item record in `candidate_items`: set `kind = 'task-link'`, `task_id = 'TASK-NNN'`, and `task_path` to the resolved file path from `mcp__serena__find_file`.
 
 If `task-add` fails or is cancelled by the user, **stop** and report:
 ```
@@ -134,18 +135,25 @@ Emit one concise block. Choose the matching shape:
 
 Execute the following automatically (do not ask the user first):
 
-1. If `Status: active`, use `Edit` to flip `Status: active` → `Status: done` in the roadmap file.
-2. Use `Bash` to move the file:
+1. If `status: active`, use `Edit` to flip `status: active` → `status: done` in the roadmap file.
+2. Remove the roadmap's row from `wiki/work/roadmaps/index.md` (active items only — done items must not appear there).
+3. Bash: move the file to archive:
    ```bash
-   mkdir -p wiki/work/roadmaps/completed && git mv <roadmap_path> wiki/work/roadmaps/  <filename>
+   git mv <roadmap_path> wiki/work/roadmaps/archive/<filename>
    ```
-3. If `wiki/work/roadmaps/README.md` exists, use `Read` + `Edit` to update the entry:
-   - `(<filename>)` → `(completed/<filename>)`
-4. Report:
+4. Append a row to `wiki/work/roadmaps/archive/index.md`:
+   ```
+   | [[ROADMAP-NNN]] | <title> | done | YYYY-MM-DD |
+   ```
+5. Append to `wiki/log.md`:
+   ```
+   ## [YYYY-MM-DD] archive | <ROADMAP-NNN> — completed, moved to archive
+   All items checked. Moved to wiki/work/roadmaps/archive/<filename>.
+   ```
+6. Report:
    ```
    Progress: <total>/<total> — all done!
-   Moved → wiki/work/roadmaps/  <filename>
-   README.md updated.
+   Status → done. Archived → wiki/work/roadmaps/archive/<filename>.
    ```
 
 #### B/C. One or more unchecked items
@@ -190,7 +198,7 @@ Roadmap has no checklist items yet. Add some with /roadmap-add <ROADMAP-NNN> <it
 
 ### Step 1M: Discover Roadmaps
 
-Use `mcp__serena__list_dir` on `wiki/work/roadmaps/` to get all `.md` files **directly in that directory** (not in `completed/` or other subdirectories). Sort them by filename (ascending — `001-` before `002-`, etc.). Skip `README.md`.
+Use `mcp__serena__list_dir` on `wiki/work/roadmaps/` to get all `.md` files **directly in that directory** (not in `archive/` or other subdirectories). Sort them by filename (ascending — `001-` before `002-`, etc.). Skip `lifecycle.md`, `index.md`, and `README.md`.
 
 If no roadmap files are found, STOP and report:
 ```
@@ -205,7 +213,14 @@ For each roadmap file in sorted order:
 
 1. Use `Read` to load the file.
 2. Parse items exactly as in Step 2S (phase, checked, text, kind, task_path). Compute `total` and `done`.
-3. **If `total > 0` and `done == total`** — the roadmap is fully complete. Execute the move automatically (same procedure as Shape A in Single-Roadmap Mode: flip Status if needed, `git mv` to `completed/`, update README). Record in `moved_files`. **Do not add any unchecked items** — continue to the next file.
+3. **If `total > 0` and `done == total`** — the roadmap is fully complete. Execute the full archive-move sequence automatically (same as Shape A in Single-Roadmap Mode):
+   - Flip `status: active → done` if needed.
+   - Remove its row from `wiki/work/roadmaps/index.md`.
+   - `git mv <roadmap_path> wiki/work/roadmaps/archive/<filename>`
+   - Append a row to `wiki/work/roadmaps/archive/index.md`: `| [[ROADMAP-NNN]] | <title> | done | YYYY-MM-DD |`
+   - Append to `wiki/log.md`: `## [YYYY-MM-DD] archive | <ROADMAP-NNN> — completed, moved to archive`
+   
+   Record the filename in `archived_files`. **Do not add any unchecked items** — continue to the next file.
 4. Otherwise, for each unchecked item (`checked == false`), record:
    - `roadmap_file` — the file path
    - `roadmap_title` — the `# <Title>` heading or filename if heading not found
@@ -226,8 +241,8 @@ For each item in `candidate_items` where `kind == 'inline'`:
 2. **Check for an existing task**: `Read` `wiki/work/tasks/README.md` and scan the **Active Tasks** table for any row whose `Objective` or `Slug` plausibly covers the inline item's intent. If a candidate looks likely, `Read` that task file to confirm. If a matching task is found, use its `TASK-NNN` identifier and file path and skip to step 5 — do **not** invoke `task-add`.
 3. If no existing task covers the inline item, invoke `Skill` `task-add` with the item text as `args` (no `--roadmap` flag).
 4. Extract the new task path from task-add's output (or via `mcp__serena__list_dir` fallback as in Step 2.5S). `Read` the new task file to confirm `TASK-NNN` and title.
-5. `Edit` the roadmap file (`roadmap_file` stored on the item record) to replace `- [ ] <item_text>` with `- [ ] [TASK-NNN: <title>](../tasks/NNN-slug.md)`.
-6. Update the item record: `kind = 'task-link'`, `task_path = '../tasks/NNN-slug.md'`.
+5. `Edit` the roadmap file (`roadmap_file` stored on the item record) to replace `- [ ] <item_text>` with `- [ ] [[TASK-NNN: <title>]]`.
+6. Update the item record: `kind = 'task-link'`, `task_id = 'TASK-NNN'`, and `task_path` to the resolved file path from `mcp__serena__find_file`.
 
 If `task-add` fails or is cancelled, apply the same stop-and-report behavior as Step 2.5S but name the roadmap: `(in <roadmap_title>)`.
 
@@ -246,11 +261,11 @@ Apply the same parallelism analysis as Step 2.7S to the full `candidate_items` l
 
 ### Step 3M: Report (Multi-Roadmap)
 
-If `moved_files` is non-empty, prepend a move summary before any other output:
+If `archived_files` is non-empty, prepend an archive summary before any other output:
 ```
-Moved to completed/:
+Archived to wiki/work/roadmaps/archive/:
   • <filename> — all items checked
-  [repeat for each moved file]
+  [repeat for each archived file]
 ```
 
 If `candidate_items` is empty after scanning all roadmaps (and no moves occurred or only moves occurred):
@@ -304,11 +319,11 @@ Showing 3 of 5 unchecked item(s) across 2 roadmap(s).
 ## Constraints
 
 - **Never flip checkboxes** — the skill does not check off items. Only permitted content writes are:
-  1. `Status: active → done` flip before moving a fully-completed roadmap.
-  2. README path update when moving to `completed/`.
-  3. Replacing inline placeholder lines with task-link lines (Steps 2.5S / 2.5M).
+  1. `Status: active → done` flip before archiving a fully-completed roadmap.
+  2. Replacing inline placeholder lines with task-link lines (Steps 2.5S / 2.5M).
+  3. Appending rows to `wiki/work/roadmaps/archive/index.md` and entries to `wiki/log.md` when archiving.
 - Permitted tools: `mcp__serena__list_dir`, `mcp__serena__find_file`, `Read`, `Edit`, `Bash`, `AskUserQuestion`, and `Skill` (for invoking `task-add` on inline items).
-- `Bash` is permitted only for `mkdir -p` and `git mv` when moving a fully-completed roadmap. Never use `bash` for reads (`cat`, `find`, `grep`, `sed`, `ls`).
-- `Edit` is permitted only for: the `Status` flip, the README path update, and the inline→task-link replacement in Steps 2.5S/2.5M.
+- `Bash` is permitted **only** for `git mv` when archiving a fully-completed roadmap. Never use `bash` for reads (`cat`, `find`, `grep`, `sed`, `ls`).
+- `Edit` is permitted only for: the `Status` flip, the inline→task-link replacement in Steps 2.5S/2.5M, and the archive/log appends when archiving.
 - `Skill` is permitted only for invoking `task-add` when upgrading inline items.
 - Keep the final report terse — one block per wave, no preamble, no closing summary.

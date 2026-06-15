@@ -41,7 +41,7 @@ Pick `/uat-auto-plus` only when:
 
 ```
 /task-add → /tackle → /uat-generate → /uat-auto-plus (autonomous)   ─┐
-                                     → /uat-auto    (headless)       ├→ completed/ (or stay pending)
+                                     → /uat-auto    (headless)       ├→ archive/ (or stay pending)
                                      → /uat-walk   (human)           ─┘
 ```
 
@@ -253,26 +253,42 @@ After every eligible test has a terminal status (`[x] Pass`, pre-existing `[SKIP
 
 ### All Pass (no `[FAIL]` or `[FIXING]` markers remain)
 
-1. `git mv wiki/work/uat/<slug>.uat.md wiki/work/uat/  <slug>.uat.md` (fall back to `mv`).
-2. Move the associated task: `git mv wiki/work/tasks/<number>-<slug>.md wiki/work/tasks/  <number>-<slug>.md`.
-3. Update internal path references in both moved files (update any stale paths in the task; `pending/` → `completed/` in the UAT's source-task link).
-3a-pre. **Update `wiki/work/tasks/README.md`** — remove this task's row from the Active Tasks table entirely. The index lists active tasks only; completed tasks are tracked by their presence in `wiki/work/tasks/  ` and do **not** belong in the index. Use a single `Edit` call — never `sed`. **Also check the header**: if the **Last task:** line at the top of the README references this task's `NNN-slug.md`, `Edit` it to point at `completed/NNN-slug.md` instead. Do **not** decrement **Next task number** — it only ever goes up. The index is `/tackle`'s no-args survey source.
-3a. **Roadmap Auto-Checkoff** — scan `wiki/work/roadmaps/` and `wiki/work/roadmaps/  ` for any roadmap referencing this task and flip its matching checkbox. Follow the canonical algorithm in [`wiki/work/roadmaps/README.md#auto-checkoff-contract`](../../../wiki/work/roadmaps/README.md). Short form: (i) `mcp__serena__list_dir` on `wiki/work/roadmaps/` (skip `README.md`) and on `wiki/work/roadmaps/  `; (ii) `Read` each roadmap and look for lines matching `- [ ] [TASK-<NNN>:` whose link path ends in `<NNN>-<slug>.md` (either at `wiki/work/tasks/` or `completed/`); (iii) `Edit` each matching line in **one** call that **both** flips `- [ ]` → `- [x]` **and** rewrites the link path to the task's new location (e.g. `../tasks/NNN-slug.md` → `../tasks/  NNN-slug.md`) — use the full line text as `old_string` for uniqueness. Stale paths are **not** tolerated: if a reference exists, the path is updated. Then `Edit` the roadmap's `**Last updated**:` to today; (iv) bump the matching row's `Progress` numerator in `wiki/work/roadmaps/README.md`; (v) **Phase sweep** — for each roadmap where a match was found, identify the `## Phase N:` block containing that matched item and scan all other `- [ ] [TASK-NNN:` lines in that same phase; for each, use `mcp__serena__find_file` to check if `NNN-slug.md` exists under `wiki/work/tasks/  `; if it does, `Edit` that line in one call to flip `- [ ]` → `- [x]` and rewrite the link path to `../tasks/  NNN-slug.md`, then bump `Progress` in the index for each additional item; (vi) **Inline item sweep** — across the entire roadmap (not limited to the phase block that contains the task reference), collect every remaining `- [ ]` line whose body is free-form text (not a `[TASK-NNN:` link); `Read` the completing task file; use judgment to decide whether each inline item was accomplished by the completing task's work; if yes, `Edit` `- [ ]` → `- [x]` and bump `Progress` in the index; if uncertain, leave the item unchecked — err on the side of leaving items unchecked rather than over-checking. Silent no-op if no roadmap references the task. **Do NOT** auto-flip `Status: active` → `Status: done` even on the last box — that flip is manual. Use `Edit` only — never `sed`, `bash`, or `Write`.
-4. Delete screenshots for this task: `mcp__serena__list_dir` on `wiki/work/uat/screenshots/` to find `<task-number>-*` matches, then `git rm` each (or `rm` if untracked).
-5. **Terminate every background process** the agent started for prerequisites or fix attempts. Use the `Bash` tool's KillShell as needed. Verify nothing is left running.
-6. **Check for ADR linkage**: read the moved task file for a line matching `**Implements**: DEC-NNNN#DM`:
+1. **Flip UAT status** — Edit `status:` → `passed`; bump `updated:` in the UAT file frontmatter.
+2. **Flip task status** — Read `task:` frontmatter from the UAT file to get the task ID. Open the task file, edit `status:` → `done`; bump `updated:`.
+3. **Remove rows from family indexes:**
+   - Remove the UAT's row from `wiki/work/uat/index.md`
+   - Remove the task's row from `wiki/work/tasks/index.md`
+   Use a single `Edit` call per file.
+4. **Archive both files:**
+   - `git mv wiki/work/uat/<UAT-file>.md wiki/work/uat/archive/<UAT-file>.md`
+   - Append UAT row to `wiki/work/uat/archive/index.md`: `| [[UAT-NNN]] | Title | passed | YYYY-MM-DD |`
+   - `git mv wiki/work/tasks/<TASK-file>.md wiki/work/tasks/archive/<TASK-file>.md`
+   - Append task row to `wiki/work/tasks/archive/index.md`: `| [[TASK-NNN]] | Title | done | YYYY-MM-DD |`
+   Use `Bash` for `git mv` only. Use `Edit` for all index appends.
+5. **Roadmap Auto-Checkoff** — scan `wiki/work/roadmaps/` for files with `status: active` frontmatter. For each: find checklist lines matching `[[TASK-NNN` and `Edit` `- [ ] [[TASK-NNN` → `- [x] [[TASK-NNN`, then perform inline item sweep. If all items `[x]`: flip roadmap `status: done`, remove from roadmaps index, then archive the roadmap file:
+   - `git mv wiki/work/roadmaps/<file>.md wiki/work/roadmaps/archive/<file>.md`
+   - Append to `wiki/work/roadmaps/archive/index.md`: `| [[ROADMAP-NNN]] | Title | done | YYYY-MM-DD |`
+   Silent no-op if no roadmap references the task. Use `Edit` only (except `git mv` via `Bash`).
+6. Delete screenshots for this task: `mcp__serena__list_dir` on `wiki/work/uat/screenshots/` to find `<task-number>-*` matches, then `git rm` each (or `rm` if untracked).
+7. **Terminate every background process** the agent started for prerequisites or fix attempts. Use the `Bash` tool's KillShell as needed. Verify nothing is left running.
+8. **Check for ADR linkage**: read the archived task file for a line matching `implements::[[DEC-NNNN#DM]]`:
    - If found:
      1. Parse the `DEC-NNNN#DM` reference.
      2. `mcp__serena__find_file` for `NNNN-*.md` in `wiki/work/decisions/`.
-     3. `mcp__serena__search_for_pattern` on `wiki/work/tasks/` for the same `**Implements**: DEC-NNNN#DM` to check for remaining WIP tasks.
+     3. `mcp__serena__search_for_pattern` on `wiki/work/tasks/` and `wiki/work/tasks/archive/` for the same `implements::[[DEC-NNNN#DM]]` to check for remaining WIP tasks.
      4. **If no other WIP tasks remain**:
-        - Single-task: replace `Source task(s): wiki/work/tasks/...` with `Source task(s): wiki/work/tasks/  NNN-slug.md — **implemented** YYYY-MM-DD`.
+        - Single-task: append `— implemented YYYY-MM-DD` to the `Source task(s):` line.
         - Multi-task: update this task's sub-line from `**WIP**` to `**done** YYYY-MM-DD`; append `- **Decision fully implemented** YYYY-MM-DD`.
      5. **If other WIP tasks remain**: update only this task's sub-line to `**done** YYYY-MM-DD`.
-     6. **ADR inline checkbox sweep** — `Read` the full `## DM.` decision block in the ADR file (the H2 block whose identifier matches the `DM` from the `**Implements**:` reference); collect every remaining `- [ ]` line in that block; `Read` the completing task file; for each `- [ ]` item, use judgment to decide whether the completing task accomplished it; if yes, `Edit` `- [ ]` → `- [x]`; if uncertain, leave the item unchecked — err on the side of leaving items unchecked rather than over-checking. This sweep runs regardless of whether steps 4 or 5 applied. Use `Edit` only — never `sed`, `bash`, or `Write`.
+     6. **ADR inline checkbox sweep** — `Read` the full `## DM.` decision block; for each remaining `- [ ]` item, use judgment to decide whether the completing task accomplished it; if yes, `Edit` `- [ ]` → `- [x]`; if uncertain, leave unchecked. Use `Edit` only — never `sed`, `bash`, or `Write`.
      - Use `Read` then `Edit`. Never `sed`, `echo >>`, or shell redirection.
    - If not found: skip silently.
-7. Emit the completion summary.
+9. **Append log entry** to `wiki/log.md`:
+   ```
+   ## [YYYY-MM-DD] uat | UAT-NNN passed (auto-plus) · TASK-NNN done
+   Archived UAT-NNN → uat/archive/ and TASK-NNN → tasks/archive/.
+   ```
+10. Emit the completion summary.
 
 ### Any Fail (`[FAIL: ...]` markers remain)
 
@@ -318,7 +334,7 @@ Next action:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-On all-pass, replace `Next action` with `Moved to completed/` and the new paths.
+On all-pass, replace `Next action` with `Archived to archive/` and the new paths.
 
 ---
 
@@ -375,13 +391,13 @@ Now start:
    c. If the test failed, enter the fix loop (Step 6) — diagnose, fix, re-run, up to 3 attempts. After each attempt, **immediately** update the file with the current status (`[FIXING: ...]` or final verdict). Sweep regressions after each successful fix.
 5. On completion, execute Step 7 in full — **do not skip**:
    - **If all tests passed** (zero `[FAIL: ...]` or `[FIXING: ...]` remain):
-     1. `git mv` the UAT file → `wiki/work/uat/  <slug>.uat.md`
-     2. `git mv` the task file → `wiki/work/tasks/  <NNN>-<slug>.md`
-     3. Update internal path references in both moved files
-     4. Remove this task's row from `wiki/work/tasks/README.md`
-     5. Perform roadmap auto-checkoff (scan `wiki/work/roadmaps/` for matching lines, flip `- [ ]` → `- [x]`, update paths)
+     1. Flip UAT status → `passed`, flip task status → `done`
+     2. Remove both rows from their family indexes
+     3. `git mv` the UAT file → `wiki/work/uat/archive/<UAT-file>.md`; append to `wiki/work/uat/archive/index.md`
+     4. `git mv` the task file → `wiki/work/tasks/archive/<TASK-file>.md`; append to `wiki/work/tasks/archive/index.md`
+     5. Perform roadmap auto-checkoff (scan `wiki/work/roadmaps/` for `[[TASK-NNN` patterns, flip `- [ ]` → `- [x]`; archive completed roadmaps)
      6. Check for ADR linkage and update if found
-     7. Emit the completion summary with `Moved to completed/` and new paths
+     7. Emit the completion summary with `Archived to archive/` and the new paths
    - **If any test failed**: leave files in place, emit the summary with `Next action: /uat-walk <path>`.
 
 **Start now — resolve the UAT file and begin.**

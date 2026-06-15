@@ -26,6 +26,19 @@ Build a complete file list.
 
 ## Step 2: Run all checks
 
+### 2.0 Stranded terminal files (HIGH)
+
+For each work family, scan the active directory (excluding `lifecycle.md`, `index.md`, `.gitkeep`, and anything under `archive/`). For each file, read its `status:` frontmatter. If the status is in the terminal set for that family (read each family's `lifecycle.md` — do NOT hardcode), report it as a stranded file.
+
+Report format:
+```
+[HIGH] stranded terminal file — wiki/work/tasks/TASK-014-some-slug.md has status: done but is not in archive/
+```
+
+Proposed fix for each: `git mv wiki/work/<family>/<file>.md wiki/work/<family>/archive/<file>.md`
+
+These should have been auto-archived by the skill that set the terminal status.
+
 ### 2.1 Family-index drift (HIGH)
 
 For each work family (`requirements`, `decisions`, `roadmaps`, `tasks`, `uat`, `bugs`):

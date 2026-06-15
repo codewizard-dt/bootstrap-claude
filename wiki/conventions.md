@@ -89,12 +89,12 @@ Archiving is a periodic **maintenance operation**, not part of the close/done wo
 
 ## 6. Log rotation
 
-`wiki/log.md` is append-only. When it grows past **~400 entries**, rotate it with `/wiki-rotate-log`:
+`wiki/log.md` is append-only. When it grows past **~500 lines**, rotate it with `/wiki-rotate-log`:
 
-1. Rename `wiki/log.md` → `wiki/log-YYYY.md` (or `log-YYYY-hN.md` for sub-year granularity)
-2. Create a fresh `wiki/log.md` with an archive-pointer header: `> Archives: [2026](log-2026.md) · [2025](log-2025.md)`
+1. Rename `wiki/log.md` → `wiki/log-<timestamp>.md`, where `<timestamp>` is `YYYY_MM_DD_HHMMSS` (to the second, so filenames never collide across rotations)
+2. Create a fresh `wiki/log.md` with an archive-pointer header: `> Archives: [2026_06_14_153012](log-2026_06_14_153012.md) · [2025_12_31_092455](log-2025_12_31_092455.md)`
 3. Continue appending to the new `log.md`
 
-**Never truncate** — content always moves to a dated file, never deleted.
+**Never truncate** — content always moves to a timestamped file, never deleted.
 
 **Index growth:** `wiki/index.md` stays lean because work items are **never listed individually** in the home index — they appear only in their family `index.md`. The home index links to `wiki/work/<family>/index.md` per family, not to individual items.

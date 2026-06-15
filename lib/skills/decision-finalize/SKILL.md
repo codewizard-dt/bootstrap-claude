@@ -229,14 +229,23 @@ If the lifecycle doc does not exist, create it from the template structure docum
 
 **Verify all three sections agree** before saving — index says `superseded by DEC-7#D1` while the graph still shows the old node as `accepted` is a broken commit.
 
-### Step 6.5: Update the family index
+### Step 6.5: Update the family index and archive if fully terminal
 
 A Decision Group stays listed in `wiki/work/decisions/index.md` only while **at least one of its blocks is `proposed`**. After this finalization:
 
-- If proposed blocks remain in the group: update the row's per-decision status note (e.g. `D1 accepted, D2 proposed`).
-- If **no** proposed blocks remain: **delete the group's row** from the index — the file itself never moves.
+- If proposed blocks remain in the group: update the row's per-decision status note (e.g. `D1 accepted, D2 proposed`). Do NOT move the file.
+- If **no** proposed blocks remain (all are `accepted` or `superseded`):
+  1. **Delete the group's row** from `wiki/work/decisions/index.md`.
+  2. **Archive the file** (Bash — `git mv` only):
+     ```
+     git mv wiki/work/decisions/<file>.md wiki/work/decisions/archive/<file>.md
+     ```
+  3. **Append to `wiki/work/decisions/archive/index.md`** (use the dominant final status — `accepted` unless all are `superseded`):
+     ```
+     | [[DEC-NNNN]] | <Title> | accepted | YYYY-MM-DD |
+     ```
 
-Use `Read` then `Edit` — never `sed`.
+Use `Read` then `Edit` for all index edits — never `sed`.
 
 ### Step 7: Append accepted/superseded log entry
 
@@ -287,7 +296,7 @@ Print:
 
 If other proposed siblings remain in the same file, mention them so the user can finalize them next when ready.
 
-The decision file stays at its stable `wiki/work/decisions/` path. There is no `completed/` move — the per-decision `Status:` in the body is the single source of truth.
+If all decisions in the group are now terminal, the file is moved to `wiki/work/decisions/archive/` as part of Step 6.5 — mention this in the report. Cross-references using `[[DEC-NNNN]]` remain valid regardless of file location.
 
 ---
 

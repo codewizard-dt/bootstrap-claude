@@ -1,6 +1,6 @@
 ---
 name: bug-triage
-description: Triage an open bug — set priority/assignee/tags/impact, then keep it in wiki/work/bugs/, advance it to in-progress, or reject it (wontfix/duplicate/cannot-reproduce)
+description: Triage an open bug — set priority/assignee/tags/impact, then keep it in wiki/work/bugs/, advance it to in-progress, or reject it (wontfix/duplicate/cannot-reproduce) and archive it
 category: planning
 model: claude-sonnet-4-6
 argument-hint: <BUG-NNNN, path, or number-slug>
@@ -12,7 +12,7 @@ user-invocable: true
 
 # Triage Bug
 
-Walk an existing bug through triage: confirm reproducibility, assign priority/assignee/tags, document impact, then decide the outcome. Files are **never moved or deleted** — state lives entirely in the `status:` frontmatter field.
+Walk an existing bug through triage: confirm reproducibility, assign priority/assignee/tags, document impact, then decide the outcome. For active outcomes (triaged, in-progress) the file stays in `wiki/work/bugs/`. For terminal reject outcomes (wontfix, duplicate, cannot-reproduce) the file is moved to `wiki/work/bugs/archive/`.
 
 ---
 
@@ -95,14 +95,23 @@ Edit the bug file using `Edit` (never `sed`/`echo`/`awk`):
 3. For reject outcomes, fill the required field(s) in `## Resolution` or `## Related`.
 4. Bump `updated:` to today's date (`YYYY-MM-DD`).
 
-**Do NOT move or delete the file.** The file lives at `wiki/work/bugs/BUG-NNNN-slug.md` permanently, regardless of outcome.
-
 ### Step 7: Update the Bug Index
 
 Read `wiki/work/bugs/index.md`. Apply changes with `Edit`:
 
-- **Start work / Defer**: find the row for this bug and update the `Status` column text.
-- **Reject**: remove the entire row from the index. The file is preserved on disk — only the index row is removed.
+- **Start work / Defer**: find the row for this bug and update the `Status` column text. Do not move the file.
+- **Reject**: remove the entire row from the active index. Then run the archive-move sequence (Step 7a below).
+
+#### Step 7a: Archive-Move for Reject Outcomes
+
+For `wontfix`, `duplicate`, and `cannot-reproduce` outcomes only (`Bash` only for `git mv`):
+
+1. `Bash`: `git mv wiki/work/bugs/NNNN-slug.md wiki/work/bugs/archive/NNNN-slug.md`
+2. `Edit`: (active index row already removed in Step 7 above)
+3. `Edit`: append to `wiki/work/bugs/archive/index.md`: `| [[BUG-NNNN]] | <title> | <status> | YYYY-MM-DD |`
+4. `Edit`: append to `wiki/log.md`
+
+For active outcomes (Start work / Defer), skip this step entirely — the file stays at `wiki/work/bugs/NNNN-slug.md`.
 
 ### Step 8: Cross-Linking
 
@@ -126,6 +135,7 @@ Print:
 - Bug ID and title
 - Old status → new status
 - Index row action (updated / removed)
+- File location (unchanged for active outcomes; moved to `archive/` for reject outcomes)
 - Suggested next step:
   - Start work / Defer → `/bug-close BUG-NNNN` when the fix is merged and verified
-  - Reject outcomes → terminal; file preserved forever at `wiki/work/bugs/BUG-NNNN-slug.md` (recoverable via `Read` or git history)
+  - Reject outcomes → terminal; file archived at `wiki/work/bugs/archive/BUG-NNNN-slug.md` (recoverable via git history)

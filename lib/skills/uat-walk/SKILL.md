@@ -536,23 +536,31 @@ Failed Tests:
      - Remove the UAT's row from `wiki/work/uat/index.md`
      - Remove the task's row from `wiki/work/tasks/index.md`
      Use a single `Edit` call per file — never `sed`.
-  4. **Roadmap Auto-Checkoff** — find all roadmaps with `status: active` in `wiki/work/roadmaps/` (files never move; scan by frontmatter). For each:
-     - `Read` the roadmap and look for checklist lines linking to this task by TASK-NNN
-     - `Edit` matching lines: `- [ ] [TASK-NNN` → `- [x] [TASK-NNN` (path stays the same — task file never moved)
+  4. **Archive both files:**
+     - `git mv wiki/work/uat/<UAT-file>.md wiki/work/uat/archive/<UAT-file>.md`
+     - Append UAT row to `wiki/work/uat/archive/index.md`: `| [[UAT-NNN]] | Title | passed | YYYY-MM-DD |`
+     - `git mv wiki/work/tasks/<TASK-file>.md wiki/work/tasks/archive/<TASK-file>.md`
+     - Append task row to `wiki/work/tasks/archive/index.md`: `| [[TASK-NNN]] | Title | done | YYYY-MM-DD |`
+     Use `Bash` for `git mv` only. Use `Edit` for all index appends.
+  5. **Roadmap Auto-Checkoff** — find all roadmaps with `status: active` in `wiki/work/roadmaps/` (scan by frontmatter). For each:
+     - `Read` the roadmap and look for checklist lines matching `[[TASK-NNN`
+     - `Edit` matching lines: `- [ ] [[TASK-NNN` → `- [x] [[TASK-NNN`
      - **Inline item sweep:** collect remaining `- [ ]` free-text lines; use judgment to determine if the completing task accomplished them; `Edit` `- [ ]` → `- [x]` for those it clearly did; leave uncertain items unchecked
-     - If ALL checklist items in the roadmap are now `[x]`: flip roadmap `status: active` → `status: done`; bump roadmap `updated:`; remove the roadmap's row from `wiki/work/roadmaps/index.md`
-     - Silent no-op if no roadmap references this task. Use `Edit` only.
-  5. **Decision annotation** — check the task body for a typed link `implements::[[DEC-NNNN#DM]]`:
+     - If ALL checklist items in the roadmap are now `[x]`: flip roadmap `status: active` → `status: done`; bump roadmap `updated:`; remove the roadmap's row from `wiki/work/roadmaps/index.md`; then archive the roadmap file:
+       - `git mv wiki/work/roadmaps/<file>.md wiki/work/roadmaps/archive/<file>.md`
+       - Append to `wiki/work/roadmaps/archive/index.md`: `| [[ROADMAP-NNN]] | Title | done | YYYY-MM-DD |`
+     - Silent no-op if no roadmap references this task. Use `Edit` only (except `git mv` via `Bash`).
+  6. **Decision annotation** — check the task body for a typed link `implements::[[DEC-NNNN#DM]]`:
      - If found: open `wiki/work/decisions/DEC-NNNN-slug.md`, find the "Source task(s):" line for this task, append `— implemented YYYY-MM-DD` to that line
-     - Check `wiki/work/tasks/` for other tasks with `status: todo|in-progress` that also `implements::[[DEC-NNNN#DM]]`; if none remain, also append `— decision fully implemented YYYY-MM-DD` on a new line in the decision block
+     - Check `wiki/work/tasks/` and `wiki/work/tasks/archive/` for other tasks with `status: todo|in-progress` that also `implements::[[DEC-NNNN#DM]]`; if none remain, also append `— decision fully implemented YYYY-MM-DD` on a new line in the decision block
      - **Decision inline checkbox sweep:** collect remaining `- [ ]` lines in the `## D<N>.` block; use judgment to decide which were accomplished; `Edit` accordingly
      - Use `Read` then `Edit` only — never `sed`
-  6. **Append log entry** to `wiki/log.md`:
+  7. **Append log entry** to `wiki/log.md`:
      ```
-     ## [YYYY-MM-DD] uat | UAT-NNN passed
-     Task TASK-NNN marked done. [one sentence on what was verified]
+     ## [YYYY-MM-DD] uat | UAT-NNN passed · TASK-NNN done
+     Archived UAT-NNN → uat/archive/ and TASK-NNN → tasks/archive/. [one sentence on what was verified]
      ```
-  7. Report the task and UAT IDs and their new `done`/`passed` status.
+  8. Report the task and UAT IDs and their new `done`/`passed` status, and the archive paths.
 
 - **Some failed** (any `[FAIL]` or `[FIXING]` markers remain): Leave UAT file in `wiki/work/uat/` with `status: in-progress`. Suggest next steps:
   ```

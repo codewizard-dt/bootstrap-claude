@@ -191,17 +191,26 @@ After every eligible test has a non-blocking status (`[x] Pass`, `[SKIP: ...]` a
 ### All Pass (no `[FAIL]` or `[FIXING]` markers remain)
 
 1. **Flip UAT status** — Edit `status:` → `passed`; bump `updated:` in the UAT file frontmatter.
-2. **Flip task status** — Read `task:` frontmatter from the UAT file to get the task ID. Open `wiki/work/tasks/TASK-NNN-slug.md`, edit `status:` → `done`; bump `updated:`. Files never move.
+2. **Flip task status** — Read `task:` frontmatter from the UAT file to get the task ID. Open `wiki/work/tasks/TASK-NNN-slug.md`, edit `status:` → `done`; bump `updated:`.
 3. **Remove rows from family indexes:**
    - Remove the UAT's row from `wiki/work/uat/index.md`
    - Remove the task's row from `wiki/work/tasks/index.md`
    Use a single `Edit` call per file.
-4. **Roadmap Auto-Checkoff** — scan `wiki/work/roadmaps/` for files with `status: active` frontmatter. For each: find checklist lines linking to this TASK-NNN, `Edit` `- [ ]` → `- [x]` (path stays — file never moved), perform inline item sweep. If all items `[x]`: flip roadmap `status: done`, remove from roadmaps index. Use `Edit` only.
-5. **Decision annotation** — check task body for `implements::[[DEC-NNNN#DM]]`. If found: open the decision file, append `— implemented YYYY-MM-DD` to the task's "Source task(s):" line. Run inline checkbox sweep on the decision block.
+4. **Archive both files:**
+   - `git mv wiki/work/uat/<UAT-file>.md wiki/work/uat/archive/<UAT-file>.md`
+   - Append UAT row to `wiki/work/uat/archive/index.md`: `| [[UAT-NNN]] | Title | passed | YYYY-MM-DD |`
+   - `git mv wiki/work/tasks/<TASK-file>.md wiki/work/tasks/archive/<TASK-file>.md`
+   - Append task row to `wiki/work/tasks/archive/index.md`: `| [[TASK-NNN]] | Title | done | YYYY-MM-DD |`
+   Use `Bash` for `git mv` only. Use `Edit` for all index appends.
+5. **Roadmap Auto-Checkoff** — scan `wiki/work/roadmaps/` for files with `status: active` frontmatter. For each: find checklist lines matching `[[TASK-NNN` and `Edit` `- [ ] [[TASK-NNN` → `- [x] [[TASK-NNN`, then perform inline item sweep. If all items `[x]`: flip roadmap `status: done`, remove from roadmaps index, then archive the roadmap file:
+   - `git mv wiki/work/roadmaps/<file>.md wiki/work/roadmaps/archive/<file>.md`
+   - Append to `wiki/work/roadmaps/archive/index.md`: `| [[ROADMAP-NNN]] | Title | done | YYYY-MM-DD |`
+   Use `Edit` only (except `git mv` via `Bash`).
+6. **Decision annotation** — check task body for `implements::[[DEC-NNNN#DM]]`. If found: open the decision file, append `— implemented YYYY-MM-DD` to the task's "Source task(s):" line. Run inline checkbox sweep on the decision block.
 7. **Append log entry** to `wiki/log.md`:
    ```
-   ## [YYYY-MM-DD] uat | UAT-NNN passed (auto)
-   Task TASK-NNN marked done.
+   ## [YYYY-MM-DD] uat | UAT-NNN passed (auto) · TASK-NNN done
+   Archived UAT-NNN → uat/archive/ and TASK-NNN → tasks/archive/.
    ```
 8. Emit the completion summary (see below).
 
@@ -291,6 +300,6 @@ Now start:
 4. For **each** eligible test in document order:
    a. Execute the test (Step 4).
    b. **Immediately** write the verdict to the file via `Edit` (Step 5) — do not buffer verdicts or batch updates.
-5. On completion, move files if all pass, keep in pending if any fail, emit summary (Step 6).
+5. On completion, archive files if all pass (Step 6), keep in place if any fail, emit summary (Step 6).
 
 **Start now — resolve the UAT file and begin.**

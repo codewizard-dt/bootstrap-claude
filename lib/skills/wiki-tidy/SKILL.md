@@ -17,7 +17,7 @@ Three-phase cleanup for a neglected wiki. Runs in order: **lint → archive → 
 Run the full wiki-lint audit by following every step in `/wiki-lint` exactly as written:
 
 1. Inventory the wiki tree.
-2. Run all 9 checks (family-index drift, two-domain violations, ID/filename mismatch, UAT↔task cross-links, typed-link vocabulary, orphan pages, never-ingested raw sources, contradictions, stale frontmatter).
+2. Run all 10 checks (stranded terminal files, family-index drift, two-domain violations, ID/filename mismatch, UAT↔task cross-links, typed-link vocabulary, orphan pages, never-ingested raw sources, contradictions, stale frontmatter).
 3. Report findings grouped by severity (HIGH / MEDIUM / LOW).
 4. For each HIGH finding, propose the exact fix.
 5. Ask: **"Which findings should I fix? Reply with 'all', specific IDs, or 'none' to skip. Type 'stop' to end wiki-tidy here."**
@@ -29,7 +29,9 @@ If the user types `stop`, end the skill here. Otherwise continue to Phase 2.
 
 ## Phase 2: Archive
 
-Run `/wiki-archive` across all 6 families in sequence: `tasks`, `uat`, `bugs`, `requirements`, `decisions`, `roadmaps`.
+Run `/wiki-archive` as a cleanup sweep — it scans for any work items with terminal status that were not automatically moved to `archive/` by their originating skill (`uat-auto`, `bug-close`, `task-trash`, etc.). In a healthy wiki this phase finds nothing; it exists as a safety net.
+
+Scan all 6 families in sequence: `tasks`, `uat`, `bugs`, `requirements`, `decisions`, `roadmaps`.
 
 For each family:
 1. Read its `lifecycle.md` to confirm the terminal statuses (do NOT hardcode).
@@ -75,12 +77,12 @@ If the user types `stop`, end the skill here. Otherwise continue to Phase 3.
 
 Run `/wiki-rotate-log`:
 
-1. Read `wiki/log.md` and count entries (lines matching `^## \[`).
-2. If under 400: report the count and ask **"Log has N entries (threshold: 400). Rotate anyway? (yes / no / stop)"**. If `no`, skip this phase; if `stop`, end the skill.
-3. If 400 or more: proceed directly.
-4. Determine the archive filename from the date range of entries (`log-YYYY.md`, with collision handling).
+1. Read `wiki/log.md` and count the total number of lines.
+2. If under 500: report the count and ask **"Log has N lines (threshold: 500). Rotate anyway? (yes / no / stop)"**. If `no`, skip this phase; if `stop`, end the skill.
+3. If 500 or more: proceed directly.
+4. Determine the archive filename: generate a timestamp with `date +%Y_%m_%d_%H%M%S` and use `log-<timestamp>.md` (unique to the second — no collision handling needed).
 5. Show the rotation plan and ask **"Proceed with rotation? (yes / no)"**.
-6. On confirmation: rename `wiki/log.md` → `wiki/log-YYYY.md`, create a fresh `wiki/log.md` with an archive-pointer header and a `rotate` entry as its first log line.
+6. On confirmation: rename `wiki/log.md` → `wiki/log-<timestamp>.md`, create a fresh `wiki/log.md` with an archive-pointer header and a `rotate` entry as its first log line.
 
 ---
 
@@ -91,7 +93,7 @@ After all three phases, print a one-paragraph summary:
 ```
 Wiki tidy complete.
   Lint:    N issues found, M fixed.
-  Archive: N items moved to archive/ across K families.
+  Archive sweep: N stranded items moved (0 is healthy).
   Log:     rotated / not rotated (N entries).
 ```
 

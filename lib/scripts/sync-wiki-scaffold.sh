@@ -87,4 +87,23 @@ if [ -f "$CLAUDE_TEMPLATE" ]; then
   fi
 fi
 
+# 7. Ensure the .env safety policy sits at the TOP of the target's CLAUDE.md (copy-once).
+#    Sentinel: the distinctive policy line. Prepended only when absent — never duplicated.
+ENV_TEMPLATE="$SCRIPT_DIR/templates/CLAUDE-env-safety.md"
+ENV_SENTINEL='never allowed to read or write to any'
+if [ -f "$ENV_TEMPLATE" ] && [ -f "$TARGET_CLAUDE" ]; then
+  if ! grep -qF "$ENV_SENTINEL" "$TARGET_CLAUDE"; then
+    TMP_CLAUDE="$(mktemp)"
+    {
+      cat "$ENV_TEMPLATE"
+      echo ""
+      cat "$TARGET_CLAUDE"
+    } > "$TMP_CLAUDE"
+    mv "$TMP_CLAUDE" "$TARGET_CLAUDE"
+    echo ".env safety policy prepended to top of CLAUDE.md."
+  else
+    echo "CLAUDE.md already has the .env safety policy, skipping."
+  fi
+fi
+
 echo "Wiki scaffold synced."

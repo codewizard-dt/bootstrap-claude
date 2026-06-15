@@ -102,7 +102,7 @@ updated: YYYY-MM-DD
 
 implements::[[TASK-NNN]]
 
-> **Source task**: [`wiki/work/tasks/TASK-NNN-slug.md`](../tasks/TASK-NNN-slug.md)
+> **Source task**: [[TASK-NNN]]
 > **Generated**: YYYY-MM-DD
 
 ---
@@ -173,7 +173,7 @@ Auth-Role: user
 
 1. Write `wiki/work/uat/UAT-NNN-slug.md` using the `Write` tool.
 
-2. Update the source task file's frontmatter: set `uat: "../uat/UAT-NNN-slug.md"`. Use `Read` then `Edit` — never shell redirection.
+2. Update the source task file's frontmatter: set `uat: "[[UAT-NNN]]"`. Use `Read` then `Edit` — never shell redirection.
 
 ### Step 5: Update the family index
 

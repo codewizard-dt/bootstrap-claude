@@ -75,11 +75,66 @@ PY
 
 if [ "$REPLACED" = "0" ]; then
   echo "Serena optional tools already configured, skipping."
-  exit 0
 elif [ "$REPLACED" = "1" ]; then
-  echo "added 11 optional tools"
-  exit 0
+  echo "Added 11 optional tools."
 else
   echo "Warning: replaced $REPLACED occurrences of the marker (expected 1)"
-  exit 0
+fi
+
+# Ensure markdown is listed as a language
+LANG_RESULT=$(python3 - "$PROJECT_YML" <<'PY'
+import sys, re, pathlib
+
+p = pathlib.Path(sys.argv[1])
+text = p.read_text()
+
+# Already present?
+if re.search(r'^\s+-\s+markdown\s*$', text, re.MULTILINE):
+    print('present')
+    sys.exit(0)
+
+# languages: key with existing entries
+lang_section = re.search(r'^languages:\s*\n((?:[ \t]+-[^\n]+\n)*)', text, re.MULTILINE)
+if lang_section:
+    indent = '  '
+    first = re.search(r'^([ \t]+)-', lang_section.group(1), re.MULTILINE)
+    if first:
+        indent = first.group(1)
+    new_text = text[:lang_section.end()] + f'{indent}- markdown\n' + text[lang_section.end():]
+    p.write_text(new_text)
+    print('added')
+    sys.exit(0)
+
+# languages: [] (empty list)
+m = re.search(r'^languages:\s*\[\]\s*$', text, re.MULTILINE)
+if m:
+    new_text = text[:m.start()] + 'languages:\n  - markdown\n' + text[m.end() + 1:]
+    p.write_text(new_text)
+    print('added')
+    sys.exit(0)
+
+# languages: with nothing (bare key)
+m = re.search(r'^languages:\s*$', text, re.MULTILINE)
+if m:
+    new_text = text[:m.end()] + '\n  - markdown' + text[m.end():]
+    p.write_text(new_text)
+    print('added')
+    sys.exit(0)
+
+print('no_key')
+PY
+)
+
+if [ "$LANG_RESULT" = "present" ]; then
+  echo "Serena markdown language already configured, skipping."
+elif [ "$LANG_RESULT" = "added" ]; then
+  echo "Added markdown to Serena languages."
+  # Restart any running Serena process so it picks up the change
+  if pkill -f "serena start-mcp-server" 2>/dev/null; then
+    echo "Restarted Serena (language config changed)."
+  else
+    echo "Serena not running — updated config will apply on next start."
+  fi
+else
+  echo "Warning: could not find 'languages:' key in .serena/project.yml — add 'markdown' manually."
 fi

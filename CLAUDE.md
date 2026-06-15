@@ -1,3 +1,7 @@
+**IMPORTANT**
+- You are never allowed to read or write to any `.env` file. The only exception is `.env.example`.
+- You are, however, allowed to source an `.env` file to use the variables in the command line.
+
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
@@ -47,7 +51,7 @@ Every page obeys [`wiki/conventions.md`](wiki/conventions.md). The load-bearing 
 | `/wiki-query <question>` | Answer from the wiki with citations; offer to file valuable synthesis back as a new page |
 | `/wiki-lint` | Health-check — contradictions, orphan pages, stale claims, missing cross-references, never-ingested raw sources |
 | `/wiki-archive [family]` | Batch-move terminal work items into `<family>/archive/`; update `archive/index.md` and log the operation. Omit family to see a summary count across all families |
-| `/wiki-rotate-log` | Rotate `wiki/log.md` to a dated archive file (`log-YYYY.md`) when it exceeds ~400 entries; create a fresh `log.md` with an archive-pointer header |
+| `/wiki-rotate-log` | Rotate `wiki/log.md` to a timestamped archive file (`log-YYYY_MM_DD_HHMMSS.md`) when it exceeds ~500 lines; create a fresh `log.md` with an archive-pointer header |
 | `/wiki-tidy` | One-shot cleanup — lint, archive terminal items across all families, then rotate log if overgrown; phases run in sequence with user confirmation |
 
 ### CRITICAL wiki rules
@@ -86,7 +90,7 @@ Follow the root `README.md` to configure a new project, or use the npm package:
 | `/wiki-query <question>` | Answer a question from the wiki with citations; optionally file the answer back as a new wiki page |
 | `/wiki-lint` | Health-check the wiki — contradictions, orphans, stale claims, missing cross-references, never-ingested sources |
 | `/wiki-archive [family]` | Batch-move terminal work items into `<family>/archive/`; update `archive/index.md` and log the operation. Omit family to see a count summary across all families |
-| `/wiki-rotate-log` | Rotate `wiki/log.md` to a dated archive file (`log-YYYY.md`) when it exceeds ~400 entries; create a fresh `log.md` with an archive-pointer header |
+| `/wiki-rotate-log` | Rotate `wiki/log.md` to a timestamped archive file (`log-YYYY_MM_DD_HHMMSS.md`) when it exceeds ~500 lines; create a fresh `log.md` with an archive-pointer header |
 | `/wiki-tidy` | One-shot cleanup — lint, archive terminal items across all families, then rotate log if overgrown; phases run in sequence with user confirmation |
 | `/primer` | Refresh codebase context via Serena memories |
 | `/serena-config` | Interactively configure Serena language servers in `.serena/project.yml` |
@@ -98,7 +102,7 @@ Follow the root `README.md` to configure a new project, or use the npm package:
 | `/task-add <desc>` | Create structured task in `wiki/work/tasks/`. Optional flags: `--decision DEC-NNNN#DM` (auto-link to an accepted decision); `--roadmap ROADMAP-NNN` (auto-append the new task to a roadmap) |
 | `/roadmap-create <topic>` | Create an execution-plan roadmap in `wiki/work/roadmaps/` via short Socratic Q&A — captures goal, phases, and a hybrid (task-link OR inline) checklist |
 | `/roadmap-add <ROADMAP-NNN> <item>` | Append a new item (task link or inline) to an existing roadmap, optionally under a named phase |
-| `/roadmap-next [file]` | Read-only — point at the first unchecked item in a specific roadmap, or surface the next 3 unchecked items across all roadmaps when no file is given |
+| `/roadmap-next [file]` | Point at the first unchecked item(s) in a roadmap grouped into parallelizable waves; flips completed roadmaps to `status: done` and prompts `/wiki-archive` |
 | `/req-create <idea>` | Create a lean requirement in `wiki/work/requirements/` via Socratic Q&A capturing problem, personas, user stories, success metrics, and non-goals |
 | `/req-finalize <file>` | Run completeness audit on a draft requirement, resolve gaps via Q&A, and flip `status` from `draft` to `approved` |
 | `/req-extract-decisions <file>` | Extract Architecturally Significant Requirements from an approved requirement, cross-check existing decisions, and propose Decision Group candidates for `/decision-create` |
@@ -168,10 +172,11 @@ Standard Read/Edit/Write tools are permitted for markdown and config files (JSON
 - `lib/scripts/install-global.sh` — Installs/updates MCPs, hooks, and skills globally so they are available across all projects; called by both setup and update scripts
 - `lib/scripts/setup-project.sh` — Set up a new project: installs MCPs and skills globally, syncs wiki scaffold + `.docs/guides/` scaffold, scaffolds CI/CD, bootstraps Serena `project.yml`
 - `lib/scripts/update-project.sh` — Install MCPs and skills globally and sync the wiki scaffold + `.docs/guides/` scaffold into a target project (re-runs `bootstrap-serena.sh` idempotently)
-- `lib/scripts/sync-wiki-scaffold.sh` — Scaffolds an EMPTY wiki into target projects: creates `raw/` + `wiki/` with all family directories, lifecycle docs, per-family active-item `index.md`, and stub index/log from `lib/scripts/templates/wiki/`. Copy-once for project-owned files; always-refreshes `conventions.md` and `lifecycle.md` files. Also delivers the wiki-schema section to the target's `CLAUDE.md` (copy-once, sentinel `## LLM Wiki`, template at `lib/scripts/templates/CLAUDE-wiki.md`). Called by both setup and update scripts.
+- `lib/scripts/sync-wiki-scaffold.sh` — Scaffolds an EMPTY wiki into target projects: creates `raw/` + `wiki/` with all family directories, lifecycle docs, per-family active-item `index.md`, and stub index/log from `lib/scripts/templates/wiki/`. Copy-once for project-owned files; always-refreshes `conventions.md` and `lifecycle.md` files. Delivers the wiki-schema section to the target's `CLAUDE.md` (copy-once, sentinel `## LLM Wiki`, template at `lib/scripts/templates/CLAUDE-wiki.md`) and prepends the `.env` safety policy (copy-once, sentinel line, template at `lib/scripts/templates/CLAUDE-env-safety.md`). Called by both setup and update scripts.
 - `lib/scripts/migrate-project.sh` — Claude-driven migration of legacy `.docs/` projects to the wiki structure. Preflight: legacy content present, git repo, clean tree, fresh `wiki-migration` branch. `--dry-run` prints the inventory only. Scaffolds first, then runs Claude with `lib/prompts/migrate-wiki.md` (mapping table, `git mv`-before-edit, frontmatter synthesis, link rewrites, family indexes, log entry, cleanup). Keeps `.docs/guides/` + `.docs/company-context/`.
 - `lib/prompts/migrate-wiki.md` — The migration prompt: old-path → new-path mapping, per-file procedure, UAT↔task cross-links, ID-collision policy, final report format
 - `lib/scripts/templates/CLAUDE-wiki.md` — The wiki-schema section delivered to target projects' CLAUDE.md (copy-once)
+- `lib/scripts/templates/CLAUDE-env-safety.md` — The `.env` safety policy prepended to target projects' CLAUDE.md by `sync-wiki-scaffold.sh` (copy-once, never duplicated)
 - `lib/scripts/setup-deployment.sh` — Deployment/CI scaffolding. Copies `.github/` workflows + `.gitleaks.toml` into a project. Called once by `setup-project.sh`; **never** by `update-project.sh`. Copy-once: `security.yml` always overwritten (generic), `build.yml` + `.gitleaks.toml` skipped if present.
 - `lib/scripts/bootstrap-serena.sh` — Headlessly triggers `.serena/project.yml` creation via `claude --print` and enables 11 optional Serena tools; called by both setup and update scripts
 - `bin/cli.js` — CLI entry point for the npm package
@@ -216,7 +221,7 @@ CLAUDE.md     This schema section.
 | `/wiki-query <question>` | Answer from the wiki with citations; offer to file valuable synthesis back as a new page |
 | `/wiki-lint` | Health-check — contradictions, orphan pages, stale claims, index drift, never-ingested raw sources |
 | `/wiki-archive [family]` | Batch-move terminal work items into `<family>/archive/`; update `archive/index.md` and log the operation |
-| `/wiki-rotate-log` | Rotate `wiki/log.md` to a dated archive file when it exceeds ~400 entries; create a fresh `log.md` with an archive pointer |
+| `/wiki-rotate-log` | Rotate `wiki/log.md` to a timestamped archive file when it exceeds ~500 lines; create a fresh `log.md` with an archive pointer |
 | `/wiki-tidy` | One-shot cleanup — lint, archive terminal items across all families, then rotate log if overgrown; phases run in sequence with user confirmation |
 
 ### CRITICAL wiki rules

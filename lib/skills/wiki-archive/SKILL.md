@@ -1,11 +1,13 @@
 ---
 name: wiki-archive
-description: Batch-move terminal work items into their family's archive/ subdirectory and update archive/index.md
+description: Cleanup tool — sweep for work items with terminal status that were not auto-archived by their originating skill, and move them to archive/
 category: wiki
 model: claude-sonnet-4-6
 ---
 
 # Wiki Archive
+
+> **Recovery sweep.** Skills that set terminal statuses (`uat-auto`, `uat-skip`, `bug-close`, etc.) now automatically move files to `archive/` at the time of completion. This skill finds any items that were missed — for example, items from before the auto-archive update, or edge cases where the originating skill didn't complete the move. In a healthy wiki, this skill finds nothing to do.
 
 Move terminal work items from a family directory into `archive/` to reduce directory clutter. **Terminal items only** — items with active statuses are never moved. Safe because links use stable IDs, not paths.
 

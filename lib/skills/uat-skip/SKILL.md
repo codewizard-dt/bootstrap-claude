@@ -99,15 +99,30 @@ Use the `Edit` tool for all frontmatter changes. Never use `sed`, `awk`, or shel
 
 ---
 
+## Step 3a: Archive Both Files
+
+After the status flips and index row removals in Step 3, archive both artifacts:
+
+1. `git mv wiki/work/uat/<UAT-file>.md wiki/work/uat/archive/<UAT-file>.md`
+2. Append UAT row to `wiki/work/uat/archive/index.md`: `| [[UAT-NNN]] | Title | skipped | YYYY-MM-DD |`
+3. `git mv wiki/work/tasks/<TASK-file>.md wiki/work/tasks/archive/<TASK-file>.md`
+4. Append task row to `wiki/work/tasks/archive/index.md`: `| [[TASK-NNN]] | Title | done | YYYY-MM-DD |`
+
+Use `Bash` for `git mv` only. Use `Edit` for all index appends.
+
+---
+
 ## Step 4: Roadmap Auto-Checkoff
 
 Scan every active roadmap (files in `wiki/work/roadmaps/` whose `status: active` frontmatter):
 
 1. Use Serena `list_dir` on `wiki/work/roadmaps/` (exclude `lifecycle.md` and `index.md`).
-2. Read each file. Look for lines matching `- [ ] ...TASK-NNN...` (task link or inline reference).
-3. For each match, `Edit` `- [ ]` → `- [x]` **and** update `updated:` in that roadmap's frontmatter to today.
-4. **Phase sweep**: after flipping this task's line, scan other `- [ ] [TASK-NNN` lines in the same `## Phase` block. For each, check if that task's `status:` is `done`. If yes, flip `- [ ]` → `- [x]`.
-5. **Roadmap completion check**: if ALL checkboxes in the roadmap are now `[x]`, flip the roadmap's `status: active` → `status: done` and `updated:` → today, then remove the roadmap's row from `wiki/work/roadmaps/index.md`.
+2. Read each file. Look for lines matching `- [ ] [[TASK-NNN` (wiki-style task link).
+3. For each match, `Edit` `- [ ] [[TASK-NNN` → `- [x] [[TASK-NNN` **and** update `updated:` in that roadmap's frontmatter to today.
+4. **Phase sweep**: after flipping this task's line, scan other `- [ ] [[TASK-NNN` lines in the same `## Phase` block. For each, check if that task's `status:` is `done`. If yes, flip `- [ ]` → `- [x]`.
+5. **Roadmap completion check**: if ALL checkboxes in the roadmap are now `[x]`, flip the roadmap's `status: active` → `status: done` and `updated:` → today, remove the roadmap's row from `wiki/work/roadmaps/index.md`, then archive the roadmap file:
+   - `git mv wiki/work/roadmaps/<file>.md wiki/work/roadmaps/archive/<file>.md`
+   - Append to `wiki/work/roadmaps/archive/index.md`: `| [[ROADMAP-NNN]] | Title | done | YYYY-MM-DD |`
 6. Silent no-op if no roadmap references this task.
 
 ---
@@ -129,9 +144,9 @@ Check the task body for a typed link `implements::[[DEC-NNNN#DM]]` or similar de
 Append to `wiki/log.md`:
 
 ```markdown
-## [YYYY-MM-DD] uat | UAT-NNN skipped → TASK-NNN done
+## [YYYY-MM-DD] uat | UAT-NNN skipped → TASK-NNN done · both archived
 
-UAT skipped for <task title>. Task marked done. <Optional: reason if user provided one.>
+UAT skipped for <task title>. Task marked done. Archived UAT-NNN → uat/archive/ and TASK-NNN → tasks/archive/. <Optional: reason if user provided one.>
 ```
 
 Use the `Edit` tool (append at end of file).
@@ -144,9 +159,9 @@ Use the `Edit` tool (append at end of file).
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 UAT SKIP COMPLETE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Task:   TASK-NNN → status: done (removed from tasks/index.md)
-UAT:    UAT-NNN → status: skipped (removed from uat/index.md)
-        (or: Skeleton UAT-NNN created in wiki/work/uat/)
+Task:   TASK-NNN → status: done → archived to tasks/archive/
+UAT:    UAT-NNN → status: skipped → archived to uat/archive/
+        (or: Skeleton UAT-NNN created and immediately archived)
 
 Roadmaps updated: [list or "None"]
 Decisions updated: [list or "None"]

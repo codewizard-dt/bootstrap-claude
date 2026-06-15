@@ -52,7 +52,9 @@ For each missing required-on-report field, use `AskUserQuestion`. Batch related 
 | Actual Behavior | Observed output only — error messages, stack traces, console output. No speculation. Offer to capture a screenshot path in `wiki/work/uat/screenshots/` if relevant |
 | Reproducibility | Single-select: `always` / `sometimes` / `rarely` / `once`; plus `First seen` and `Last seen` dates |
 
-**Do not** ask for `Priority`, `Assignee`, `Impact`, `Workaround`, `Tags`, `Root Cause`, or `Resolution` — those belong to `/bug-triage` or `/bug-close`. Leaving them blank (or with the templated placeholder line) on initial filing is correct.
+**Do not** ask for `Priority`, `Assignee`, `Impact`, `Workaround`, `Tags`, `Linked task`, `Root Cause`, or `Resolution` — those belong to `/bug-triage` or `/bug-close`. Leaving them blank (or with the templated placeholder line) on initial filing is correct.
+
+**Exception**: if the user mentions a task in `$ARGUMENTS`, accept it in either `TASK-NNN` or `[[TASK-NNN]]` form and normalize to `"[[TASK-NNN]]"` for the `linked_task:` frontmatter field. If no task is mentioned, set `linked_task: "—"`.
 
 If the user cannot supply reliable Steps to Reproduce, STOP and tell them:
 
@@ -60,8 +62,8 @@ If the user cannot supply reliable Steps to Reproduce, STOP and tell them:
 
 ### Step 4: Determine the Next Bug Number
 
-Scan **all four** bug folders to find the next available 4-digit ID:
-- `mcp__serena__list_dir` on `wiki/work/bugs/`, `wiki/work/bugs/  `, `wiki/work/bugs/  `, `wiki/work/bugs/trashed/` (skip any that don't exist)
+Scan **all** bug folders to find the next available 4-digit ID:
+- `mcp__serena__list_dir` on `wiki/work/bugs/`, `wiki/work/bugs/archive/`, `wiki/work/bugs/trashed/` (skip any that don't exist)
 - Collect every `NNNN-` prefix; take `max + 1`; zero-pad to 4 digits.
 - Also scan `wiki/work/bugs/README.md`'s Index table for any reserved IDs not yet on disk.
 - Never re-use a number — IDs are immutable references.
@@ -85,6 +87,7 @@ Use `Write` to create `wiki/work/bugs/NNNN-<slug>.md` following the **File Templ
 - `Priority: —` (filled in triage)
 - `Assignee: —` (filled in triage)
 - `Tags: —` (filled in triage)
+- `linked_task:` — `"[[TASK-NNN]]"` if a task was mentioned (normalized from either `TASK-NNN` or `[[TASK-NNN]]` input); `"—"` otherwise
 - `Reported`: today's date (`YYYY-MM-DD`)
 - `Last updated`: today's date
 - Leave `Root Cause Analysis`, `Resolution`, and `Related` sections present but empty (the templated placeholder line under each `>` quote is fine)
