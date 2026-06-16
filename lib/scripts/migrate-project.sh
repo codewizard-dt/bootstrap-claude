@@ -153,13 +153,22 @@ echo ""
 ) &
 HEARTBEAT_PID=$!
 
+# Scratch dir for the FIFO + display filter, under the project being migrated.
+# Absolute path so it survives the `cd "$PROJECT_DIR"` below; created if absent.
+TMP_DIR="$PROJECT_DIR/tmp"
+mkdir -p "$TMP_DIR"
+# Keep the scratch files out of the migration diff (Claude runs `git add -A`).
+printf '*\n' > "$TMP_DIR/.gitignore"
+
 # FIFO lets us pipe Claude's stream-json through a display filter while
 # still capturing Claude's PID for the watchdog.
-CLAUDE_FIFO=$(mktemp -u /tmp/claude-migrate.XXXXXX)
+CLAUDE_FIFO=$(mktemp -u "$TMP_DIR/claude-migrate.XXXXXX")
 mkfifo "$CLAUDE_FIFO"
 
-# Write display filter to a temp file to avoid heredoc/redirect ambiguity
-DISPLAY_SCRIPT=$(mktemp /tmp/claude-display.XXXXXX.py)
+# Write display filter to a temp file to avoid heredoc/redirect ambiguity.
+# No `.py` suffix: macOS mktemp only randomizes trailing X's, so a suffix after
+# them is treated literally and collides on the second run.
+DISPLAY_SCRIPT=$(mktemp "$TMP_DIR/claude-display.XXXXXX")
 cat > "$DISPLAY_SCRIPT" << 'PYEOF'
 import sys, json
 for line in sys.stdin:

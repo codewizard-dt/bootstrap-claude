@@ -11,9 +11,9 @@ user-invocable: true
 
 # Company Align
 
-Analyse how well this project aligns with a researched company. Read all company context files from `.docs/company-context/`, perform a deep read of the project, then produce a structured alignment report covering mission fit, technical fit, functional gaps, and style alignment.
+Analyse how well this project aligns with a researched company. Read all company context files from `raw/companies/`, perform a deep read of the project, then produce a structured alignment report covering mission fit, technical fit, functional gaps, and style alignment.
 
-Output is written to `.docs/company-context/<slug>/alignment.md`.
+Output is written to `raw/companies/<slug>/alignment.md`.
 
 ---
 
@@ -23,11 +23,11 @@ Output is written to `.docs/company-context/<slug>/alignment.md`.
 
 ## Phase 1: Resolve Target Company
 
-1. Use `mcp__serena__list_dir` on `.docs/company-context/` to discover available company slugs
+1. Use `mcp__serena__list_dir` on `raw/companies/` to discover available company slugs
 2. **If `$ARGUMENTS` is non-empty**: use it as the slug directly
 3. **If `$ARGUMENTS` is empty and exactly one company exists**: use that company
 4. **If `$ARGUMENTS` is empty and multiple companies exist**: list the available slugs and ask the user which one to align against, then stop and wait
-5. Confirm the slug, then read **every file** in `.docs/company-context/<slug>/` using `mcp__serena__list_dir` + Read:
+5. Confirm the slug, then read **every file** in `raw/companies/<slug>/` using `mcp__serena__list_dir` + Read:
    - `index.md`, `overview.md`, `leadership.md`, `news.md`, `competitive.md`, `culture.md` (if present)
    - Any other `.md` files present (e.g. a prior `alignment.md` — note it exists but proceed to overwrite)
 
@@ -120,7 +120,9 @@ What are the highest-value improvements that would most increase alignment with 
 
 ## Phase 4: Write Output
 
-Write `.docs/company-context/<slug>/alignment.md` with the following structure:
+**Never overwrite an existing `raw/` file.** Writing new files into `raw/` is allowed, but if the target path already exists, write to the next free numeric sibling instead — `alignment-2.md`, then `alignment-3.md`, and so on. The existing file is immutable ground truth; leave it untouched. **The new `-N` file must not repeat data already present in the prior file(s)** — read the existing file(s) first and capture only what is new, changed, or contradicts the prior analysis, cross-referencing the existing file for everything unchanged (e.g. `> Unchanged since [alignment.md](alignment.md); this delta covers …`).
+
+Write `raw/companies/<slug>/alignment.md` (or the next free `alignment-N.md`) with the following structure:
 
 ```
 ---
@@ -185,10 +187,10 @@ If time permits before engaging with <Company Name>, these changes would meaning
 ## Phase 5: Report to User
 
 After writing the file, tell the user:
-- The path written: `.docs/company-context/<slug>/alignment.md`
+- The path written: `raw/companies/<slug>/alignment.md`
 - Overall alignment verdict and one-sentence rationale
 - Top 3 strengths and top 3 gaps (brief, scannable)
-- Suggest: "Run `/company-align <other-slug>` to compare against another company" if multiple companies exist in `.docs/company-context/`
+- Suggest: "Run `/company-align <other-slug>` to compare against another company" if multiple companies exist in `raw/companies/`
 
 ---
 

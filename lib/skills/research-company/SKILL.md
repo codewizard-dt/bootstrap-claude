@@ -11,7 +11,7 @@ user-invocable: true
 
 # Research Company
 
-Perform comprehensive research on a company using web search and news sources. Write findings as structured markdown files under `.docs/company-context/<slug>/`.
+Perform comprehensive research on a company using web search and news sources. Write findings as structured markdown files under `raw/companies/<slug>/`.
 
 ---
 
@@ -28,7 +28,7 @@ Extract from `$ARGUMENTS`:
 
 Derive a **slug** from the company name: lowercase, spaces → hyphens, no special characters (e.g. "Acme Corp" → `acme-corp`).
 
-The output directory is: `.docs/company-context/<slug>/`
+The output directory is: `raw/companies/<slug>/`
 
 If a URL was provided, fetch it first via WebFetch to extract mission, products, and leadership directly from the source.
 
@@ -126,7 +126,9 @@ Include this phase if the research context suggests hiring, partnering, or techn
 
 ## Phase 5: Write Output Files
 
-Create the directory `.docs/company-context/<slug>/` and write the following files. Omit any file whose section has no reliable data — never fabricate content.
+Create the directory `raw/companies/<slug>/` and write the following files. Omit any file whose section has no reliable data — never fabricate content.
+
+**Never overwrite an existing `raw/` file.** Writing new files into `raw/` is allowed, but if a target file (e.g. `overview.md`) already exists from a prior run, write the next free numeric sibling instead — `overview-2.md`, then `overview-3.md`, and so on. The existing file is immutable ground truth; leave it untouched. **The new `-N` file must not repeat data already present in the prior file(s)** — read the existing file first and capture only what is new, changed, or newly contradicted, cross-referencing the prior file for everything unchanged (e.g. `> Unchanged since [overview.md](overview.md); this update covers …`). In `index.md`, list both the original and any `-N` files so the profile stays navigable.
 
 ### `index.md` — master summary & navigation
 ```
@@ -322,9 +324,10 @@ section: culture
 ## Phase 6: Confirm & Suggest Next Steps
 
 After writing the files, tell the user:
-- Which files were written (list paths)
+- Which files were written (list paths under `raw/companies/<slug>/`)
 - Any sections skipped due to insufficient data
 - Suggested follow-on actions based on context:
+  - **Ingest into the wiki**: "Run `/wiki-ingest raw/companies/<slug>/index.md` to synthesize this profile into the knowledge base" — the profile is now a `raw/` ground-truth source
   - **Hiring prep**: "Run `/research-company <name> focus on engineering culture` to deepen culture.md"
   - **Partnership/sales**: flag key decision-makers and recent strategic priorities from `leadership.md` and `news.md`
   - **Competitive analysis**: offer to run research on the top competitors surfaced in `competitive.md`
@@ -339,3 +342,4 @@ After writing the files, tell the user:
 4. **No hallucination**: omit entire sections/files rather than inventing plausible-sounding details
 5. **Recency over quantity**: prefer sources from the last 3 years; flag anything older than 2022 as potentially outdated
 6. **Use Write tool** for all output files — do not print the file contents inline to the conversation
+7. **Never overwrite `raw/` files**: if a target already exists, write `<name>-2.md` / `-3.md` instead, and include only non-redundant new/changed data with a cross-reference to the prior file

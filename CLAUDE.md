@@ -56,7 +56,7 @@ Every page obeys [`wiki/conventions.md`](wiki/conventions.md). The load-bearing 
 
 ### CRITICAL wiki rules
 
-1. `raw/` is immutable — never create, modify, move, or delete files under `raw/`
+1. `raw/` is immutable — never create, modify, move, or delete files under `raw/`. **Exceptions (write-only landing zones):** `raw/companies/` is owned by `/research-company` and `/company-align`, and `raw/research/` is owned by `/research`. These skills may *write* new files into their own landing zone, but **must never overwrite or edit an existing `raw/` file** — if a write would clobber a file that already exists, they create the next free numeric sibling instead (`<name>-2.md`, `-3.md`, …), and that `-N` file carries only non-redundant new/changed data with a cross-reference to the prior file. Everything else under `raw/` stays read-only
 2. Cross-link aggressively — related pages link to each other with relative markdown links; the link network is as valuable as the pages
 3. Index and log updates are mandatory — every ingest and every filed answer must update both `wiki/index.md` and `wiki/log.md`
 4. Flag contradictions explicitly — when a new source conflicts with an existing page, add a `> **Contradiction:**` callout citing both; never silently overwrite
@@ -226,7 +226,7 @@ CLAUDE.md     This schema section.
 
 ### CRITICAL wiki rules
 
-1. `raw/` is immutable — never create, modify, move, or delete files under `raw/`
+1. `raw/` is immutable — never create, modify, move, or delete files under `raw/`. **Exceptions (write-only landing zones):** `raw/companies/` is owned by `/research-company` and `/company-align`, and `raw/research/` is owned by `/research`. These skills may *write* new files into their own landing zone, but **must never overwrite or edit an existing `raw/` file** — if a write would clobber a file that already exists, they create the next free numeric sibling instead (`<name>-2.md`, `-3.md`, …), and that `-N` file carries only non-redundant new/changed data with a cross-reference to the prior file. Everything else under `raw/` stays read-only
 2. Cross-link aggressively — related pages link to each other with relative markdown links; the link network is as valuable as the pages
 3. Index and log updates are mandatory — every ingest and filed answer updates `wiki/index.md` + `wiki/log.md`; every work-item create or status flip updates the family `index.md` + `wiki/log.md`
 4. Flag contradictions explicitly — when a new source conflicts with an existing page, add a `> **Contradiction:**` callout citing both; never silently overwrite
