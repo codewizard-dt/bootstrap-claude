@@ -136,6 +136,7 @@ Follow the root `README.md` to configure a new project, or use the npm package:
 | `/gap-assess <expected functionality>` | Runs in plan mode — audit the app's actual functionality against expected functionality and deliver a Covered/Partial/Gap/Undocumented coverage report plus a remediation plan for approval |
 | `/marp-slideshow <input> [output]` | Summarize a source file into a Marp/Marpit slide deck following best practices |
 | `/mermaid-flowchart <input> [output]` | Summarize an architecture file (markdown, YAML, Docker Compose) into a Mermaid flowchart in a new markdown file |
+| `/flashcard <file1> [file2 ...] [-- <what's important>]` | Extract key information from markdown/research files and generate a self-contained interactive flashcard HTML page styled with the house-style design system |
 | `/git-commit` | Stage all changes and commit with auto-generated message |
 | `/update-docs` | Update all project documentation after implementation work |
 | `/frontend-taste` | Wire the house-style design system (`~/code/house-style`) into the current project — copies tokens, Tailwind preset, component patterns, and base CSS layer; loads Inter Tight |
@@ -146,7 +147,7 @@ When these MCPs are configured in a target project, they are **mandatory** for t
 
 - **Serena**: All code exploration (`find_symbol`, `get_symbols_overview`), code editing (`replace_symbol_body`, `replace_content`), file search (`find_file`, `list_dir`), and project memory
 - **Context7**: All library/framework documentation lookups (replaces WebSearch for docs)
-- **Brave Search**: General web research (must be sequential, 1 request/second)
+- **Brave Search**: General web research (up to 50 requests/second, parallel searches allowed)
 
 Standard Read/Edit/Write tools are permitted for markdown and config files (JSON, YAML, `.env`, etc.). Code files must use Serena. **All file/directory exploration must use Serena tools** (`list_dir`, `find_file`, `search_for_pattern`) — never use `bash` commands like `ls`, `cat`, `find`, `grep`, or `sed`, regardless of file type. See `raw/guides/mcp-tools.md` (source) or `.docs/guides/mcp-tools.md` (synced copy in target projects).
 

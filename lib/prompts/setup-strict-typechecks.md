@@ -10,7 +10,7 @@ one, note:
 
 ## Phase 2 — Research best practices (per language)
 
-For each language found, use Context7 (for library docs) or Brave Search (for general practices, sequential, 1 req/sec) to look up the
+For each language found, use Context7 (for library docs) or Brave Search (for general practices, up to 50 req/sec, parallel OK) to look up the
 current strict-mode recommendations:
 - TypeScript: tsconfig strict, tseslint strictTypeChecked, stylisticTypeChecked, parserOptions.project
 - Python: mypy --strict, pyproject.toml [tool.mypy]

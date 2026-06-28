@@ -36,7 +36,7 @@ If a URL was provided, fetch it first via WebFetch to extract mission, products,
 
 ## Phase 2: Core Company Profile
 
-**CRITICAL**: Brave Search has a hard rate limit of **1 request per second**. All searches MUST be sequential, never parallel.
+**NOTE**: Brave Search supports up to **50 requests per second** — parallel searches are allowed.
 
 Search sequentially for each of the following. Use the company name (and domain if known) in queries.
 
@@ -64,7 +64,7 @@ Search sequentially for each of the following. Use the company name (and domain 
 
 ## Phase 2f: Products & Services Deep Dive
 
-Dig into the product/service portfolio in detail. Sequential, 1 req/sec.
+Dig into the product/service portfolio in detail. Up to 50 req/sec, parallel OK.
 
 ### 2f-i. Product Catalogue
 - Query: `"<company name>" products features pricing tiers plans`
@@ -91,7 +91,7 @@ Dig into the product/service portfolio in detail. Sequential, 1 req/sec.
 
 ## Phase 3: Recent News (last ~5 years, 2021–2026)
 
-Search year-band by year-band to avoid recency bias. Sequential, 1 req/sec.
+Search year-band by year-band to avoid recency bias. Up to 50 req/sec, parallel OK.
 
 ### 3a. Major Announcements & Milestones
 - Query: `"<company name>" announcement milestone launch 2023 2024 2026`
@@ -336,7 +336,7 @@ After writing the files, tell the user:
 
 ## CRITICAL Rules
 
-1. **Brave Search rate limit**: 1 request/second, sequential only — never fire parallel searches
+1. **Brave Search rate limit**: 50 requests/second — parallel searches are allowed
 2. **Cite every claim**: include source URL inline where possible
 3. **Flag uncertainty**: if a figure (headcount, valuation) is estimated or unverified, mark it *(estimated)* or *(unverified)*
 4. **No hallucination**: omit entire sections/files rather than inventing plausible-sounding details

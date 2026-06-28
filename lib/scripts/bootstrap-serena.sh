@@ -81,44 +81,57 @@ else
   echo "Warning: replaced $REPLACED occurrences of the marker (expected 1)"
 fi
 
-# Ensure markdown is listed as a language
+# Ensure required languages are listed (markdown, python, typescript, yaml)
 LANG_RESULT=$(python3 - "$PROJECT_YML" <<'PY'
 import sys, re, pathlib
+
+REQUIRED = ['markdown', 'python', 'typescript', 'yaml']
 
 p = pathlib.Path(sys.argv[1])
 text = p.read_text()
 
-# Already present?
-if re.search(r'^\s+-\s+markdown\s*$', text, re.MULTILINE):
-    print('present')
+# Match the languages: block including list items at ANY indentation (0-indent is valid YAML).
+# The trailing alternative allows a final item with no trailing newline.
+LANG_BLOCK = re.compile(
+    r'^(languages:[ \t]*\n)'
+    r'((?:[ \t]*-[ \t]+[^\n]+\n)*(?:[ \t]*-[ \t]+[^\n]+)?)',
+    re.MULTILINE
+)
+
+bm = LANG_BLOCK.search(text)
+if bm:
+    existing   = re.findall(r'^[ \t]*-[ \t]+(\S+)', bm.group(2), re.MULTILINE)
+    missing    = [lang for lang in REQUIRED if lang not in existing]
+    # Detect items without leading whitespace (Serena occasionally generates these)
+    bad_indent = bool(re.search(r'^-', bm.group(2), re.MULTILINE))
+
+    if not missing and not bad_indent:
+        print('present')
+        sys.exit(0)
+
+    # Rewrite entire block: deduplicate, sort, enforce 2-space indent
+    all_langs = sorted(set(existing + missing))
+    new_block = bm.group(1) + ''.join(f'  - {lang}\n' for lang in all_langs)
+    p.write_text(text[:bm.start()] + new_block + text[bm.end():])
+    print('added:' + ','.join(missing) if missing else 'present')
     sys.exit(0)
 
-# languages: key with existing entries
-lang_section = re.search(r'^languages:\s*\n((?:[ \t]+-[^\n]+\n)*)', text, re.MULTILINE)
-if lang_section:
-    indent = '  '
-    first = re.search(r'^([ \t]+)-', lang_section.group(1), re.MULTILINE)
-    if first:
-        indent = first.group(1)
-    new_text = text[:lang_section.end()] + f'{indent}- markdown\n' + text[lang_section.end():]
-    p.write_text(new_text)
-    print('added')
-    sys.exit(0)
-
-# languages: [] (empty list)
-m = re.search(r'^languages:\s*\[\]\s*$', text, re.MULTILINE)
+# languages: [] inline form
+m = re.search(r'^languages:[ \t]*\[\][ \t]*\n?', text, re.MULTILINE)
 if m:
-    new_text = text[:m.start()] + 'languages:\n  - markdown\n' + text[m.end() + 1:]
-    p.write_text(new_text)
-    print('added')
+    block = 'languages:\n' + ''.join(f'  - {lang}\n' for lang in REQUIRED)
+    p.write_text(text[:m.start()] + block + text[m.end():])
+    print('added:' + ','.join(REQUIRED))
     sys.exit(0)
 
-# languages: with nothing (bare key)
-m = re.search(r'^languages:\s*$', text, re.MULTILINE)
+# singular language: <value> — convert to list form and add required
+m = re.search(r'^language:[ \t]*(\S+)[ \t]*\n?', text, re.MULTILINE)
 if m:
-    new_text = text[:m.end()] + '\n  - markdown' + text[m.end():]
-    p.write_text(new_text)
-    print('added')
+    all_langs = sorted(set([m.group(1)] + REQUIRED))
+    block = 'languages:\n' + ''.join(f'  - {lang}\n' for lang in all_langs)
+    p.write_text(text[:m.start()] + block + text[m.end():])
+    added = [lang for lang in REQUIRED if lang != m.group(1)]
+    print('added:' + ','.join(added) if added else 'present')
     sys.exit(0)
 
 print('no_key')
@@ -126,9 +139,9 @@ PY
 )
 
 if [ "$LANG_RESULT" = "present" ]; then
-  echo "Serena markdown language already configured, skipping."
-elif [ "$LANG_RESULT" = "added" ]; then
-  echo "Added markdown to Serena languages."
+  echo "Serena required languages already configured (markdown, python, typescript, yaml), skipping."
+elif [[ "$LANG_RESULT" == added:* ]]; then
+  echo "Added languages to Serena config: ${LANG_RESULT#added:}"
   # Restart any running Serena process so it picks up the change
   if pkill -f "serena start-mcp-server" 2>/dev/null; then
     echo "Restarted Serena (language config changed)."
@@ -136,5 +149,5 @@ elif [ "$LANG_RESULT" = "added" ]; then
     echo "Serena not running — updated config will apply on next start."
   fi
 else
-  echo "Warning: could not find 'languages:' key in .serena/project.yml — add 'markdown' manually."
+  echo "Warning: could not find 'languages:' key in .serena/project.yml — add markdown, python, typescript, yaml manually."
 fi

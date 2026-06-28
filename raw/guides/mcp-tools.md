@@ -202,11 +202,10 @@ If results are insufficient, refine the query with more specific terms.
 
 ## Brave Search (Web Research)
 
-### Rate Limit: 1 request per second
+### Rate Limit: 50 requests per second
 
-- Searches MUST be sequential, never parallel
-- Wait 1 second between consecutive searches
-- On 429 errors, wait 1 second and retry (max 3 times)
+- Up to 50 requests per second are supported — parallel searches are allowed
+- On 429 errors, back off briefly and retry (max 3 times)
 
 ### Usage
 
@@ -332,5 +331,5 @@ Write memories to persist **non-obvious project knowledge** useful for future ta
 | Edit markdown content | Standard `Edit` / `Write` | `sed`, `awk`, `echo >>` |
 | Edit config files (JSON, YAML, .env) | Standard `Read`/`Edit`/`Write` | `sed`, Serena symbolic tools |
 | Library docs | Context7 | `WebSearch` / `WebFetch` |
-| General research | Brave Search (sequential, 1/sec) | Parallel searches |
+| General research | Brave Search (up to 50 req/sec, parallel OK) | WebSearch |
 | Browser interaction | Playwright | `WebFetch` for rendered content |

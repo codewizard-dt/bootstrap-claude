@@ -55,26 +55,33 @@ Offer at least these options:
 - `Add / remove custom` — user will supply a free-text list in the next prompt.
 - `No changes` — abort without writing.
 
+**Required languages**: `markdown`, `python`, `typescript`, and `yaml` are always required. They must always be present in `FINAL` regardless of what the user requests. After computing `FINAL`, silently union it with `{markdown, python, typescript, yaml}` before writing. If the user tried to remove one of these four, note it: `Note: markdown, python, typescript, yaml are required and cannot be removed.`
+
 If the user picks `Add suggested`, set `FINAL = CURRENT_LANGUAGES ∪ SUGGESTED`.
 
 If the user picks `Add / remove custom`, ask ONE follow-up `AskUserQuestion` with `multiSelect: false` and an `Other` free-text affordance, phrased:
-> List languages to add and/or remove. Prefix removals with `-` (e.g. `python, markdown, -bash`).
+> List languages to add and/or remove. Prefix removals with `-` (e.g. `go, rust, -bash`).
 
-Parse the reply: tokens without `-` are additions, tokens with `-` are removals. Compute `FINAL = (CURRENT_LANGUAGES ∪ ADDITIONS) − REMOVALS`.
+Parse the reply: tokens without `-` are additions, tokens with `-` are removals. Compute `FINAL = (CURRENT_LANGUAGES ∪ ADDITIONS) − REMOVALS`, then union with the required set.
 
 If the user picks `No changes`, stop without writing.
 
-If `FINAL` is empty, abort with:
-> Refusing to write an empty language list. Re-run and keep at least one language.
+If `FINAL` is empty after enforcing required languages (which cannot happen since required set is non-empty), abort.
 
 If any token in `FINAL` is not a valid Serena identifier (per the linked reference), warn the user and abort rather than writing an unsupported value.
 
 ## Step D — Confirm and write
 
-1. Show the proposed `FINAL` list (sorted alphabetically) and confirm via one final `AskUserQuestion` (`Yes, write the file` / `No, abort without writing`).
-2. If confirmed, `Edit` `.serena/project.yml`:
-   - If the file has a singular `language: <value>` line, replace it with a `languages:` block containing `FINAL` sorted alphabetically, one entry per line, indented `  - <lang>`.
-   - If the file has an existing `languages:` block, replace the entire block (key + all list items) with the new sorted list. Preserve everything else in the file byte-for-byte.
+1. Show the proposed `FINAL` list (sorted alphabetically, with required languages clearly marked) and confirm via one final `AskUserQuestion` (`Yes, write the file` / `No, abort without writing`).
+2. If confirmed, `Edit` `.serena/project.yml`. Use **only** this exact YAML format for the languages block — no flow-style, no quotes unless the value requires them:
+   ```yaml
+   languages:
+     - lang1
+     - lang2
+   ```
+   - If the file has a singular `language: <value>` line, replace it with the above block containing `FINAL` sorted alphabetically.
+   - If the file has an existing `languages:` block (list or `[]`), replace the entire block (key + all list items) with the new sorted list.
+   - Preserve everything else in the file byte-for-byte. Validate mentally that the result is valid YAML before writing: each list item on its own line, indented with exactly two spaces, starting with `- `.
 3. Print:
    ```
    Updated .serena/project.yml — languages: [a, b, c]

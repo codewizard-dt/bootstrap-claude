@@ -95,4 +95,17 @@ fi
 echo "Scaffolding CI/CD for: $PROJECT_DIR"
 echo "  Checking for existing services and Docker configuration..."
 cd "$PROJECT_DIR"
-claude -p --dangerously-skip-permissions "$PROMPT"
+
+# --strict-mcp-config: skip global MCPs (Playwright, Brave, etc.) — prevents MCP startup hangs.
+# < /dev/null: close stdin so no interactive prompt can block.
+# Watchdog: kill Claude if it exceeds 5 minutes (e.g. doctl --wait or runaway tool loop).
+TIMEOUT_SECS=300
+claude -p --dangerously-skip-permissions --strict-mcp-config < /dev/null "$PROMPT" &
+DEPLOY_PID=$!
+( sleep $TIMEOUT_SECS \
+    && echo "" >&2 \
+    && echo "  [timeout] Deployment scaffolding exceeded ${TIMEOUT_SECS}s — run 'npx bootstrap deploy' to retry." >&2 \
+    && kill "$DEPLOY_PID" 2>/dev/null ) &
+WATCHDOG_PID=$!
+wait "$DEPLOY_PID" || true
+kill "$WATCHDOG_PID" 2>/dev/null; wait "$WATCHDOG_PID" 2>/dev/null || true

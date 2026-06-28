@@ -80,7 +80,7 @@ Use Context7 for:
 
 ### 3b. Web Research (Brave Search MCP)
 
-**CRITICAL**: Brave Search has a rate limit of 1 request per second. All searches MUST be sequential, never parallel.
+**NOTE**: Brave Search supports up to 50 requests per second — parallel searches are allowed.
 
 Use Brave Search for:
 - Best practices and recommended approaches (e.g., `"<topic> best practices 2025"`)
@@ -240,7 +240,7 @@ After writing the files, tell the user:
 
 ## CRITICAL Rules
 
-1) **Brave Search rate limit**: 1 request/second, sequential only — never parallel
+1) **Brave Search rate limit**: 50 requests/second — parallel searches are allowed
 2) **Use Context7 for library docs**: Do NOT use Brave Search for library API documentation
 3) **Use Serena for code**: Do NOT use Read, Grep, or Glob on code files
 4) **Maximum 3 sub-processes at a time** if delegating research steps

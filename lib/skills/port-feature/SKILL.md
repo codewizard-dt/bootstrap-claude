@@ -313,4 +313,4 @@ After writing the plan file:
 3. **No speculation** — every claim in the port plan must be grounded in what you actually read from either codebase
 4. **Prefer existing dependencies** — do not recommend adding a new dependency if the target project already has something that covers the need
 5. **Respect target conventions** — the port plan must describe porting the feature in the style and patterns of the target project, not a direct copy of the source
-6. **Brave Search only if needed** — use Brave Search (sequential, 1 req/sec) only to compare alternative dependency options; do not use it to look up library docs (use Context7 instead)
+6. **Brave Search only if needed** — use Brave Search (up to 50 req/sec, parallel OK) only to compare alternative dependency options; do not use it to look up library docs (use Context7 instead)

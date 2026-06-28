@@ -4,6 +4,17 @@ You are migrating the project at `__PROJECT_DIR__` from the legacy `.docs/`-base
 
 Work from the project root (`__PROJECT_DIR__`). You are on a dedicated `wiki-migration` branch with a previously-clean tree.
 
+
+## Tool constraints — read before doing anything else
+
+This prompt runs headlessly. **Only these tools are available:**
+
+- **Bash** — use for file moves (`mv` or `git mv`), `find`, `mkdir`, `rm`/`git rm`
+- **Read** — use to read any file before editing it
+- **Edit** / **Write** — use for all content changes
+
+**Do NOT attempt to use Serena MCP tools.** They are not available in this headless context. Do **not** call `ToolSearch` to look for them — it will return empty and waste turns. Do not look for deferred tools. Start work immediately using Bash and Read.
+
 ## Hard rules
 
 1. **`git mv` every file BEFORE editing its content** — this preserves git history. Move first, edit second. Never copy-and-delete.

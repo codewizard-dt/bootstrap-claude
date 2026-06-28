@@ -75,6 +75,13 @@ for entry in "${LEGACY_FOUND[@]}"; do
 done
 echo ""
 
+# --- Detect git repo (used by both dry-run and live paths) -----------------
+if git -C "$PROJECT_DIR" rev-parse --git-dir &>/dev/null; then
+  IS_GIT=true
+else
+  IS_GIT=false
+fi
+
 # --- Dry run: inventory only, no changes, no branch ------------------------
 if [ "$DRY_RUN" = true ]; then
   echo "DRY RUN — files that would migrate:"
@@ -88,32 +95,36 @@ if [ "$DRY_RUN" = true ]; then
   done
   echo ""
   echo "Target layout: wiki/work/{tasks,uat,decisions,requirements,bugs,roadmaps}/"
-  echo "Run without --dry-run to migrate (requires clean git tree)."
+  if [ "$IS_GIT" = true ]; then
+    echo "Run without --dry-run to migrate (requires clean git tree)."
+  else
+    echo "Run without --dry-run to migrate (no git repo — will use plain mv)."
+  fi
   exit 0
 fi
 
-# --- Preflight 2: git repo, clean tree, fresh branch -----------------------
-if ! git -C "$PROJECT_DIR" rev-parse --git-dir &>/dev/null; then
-  echo "Error: $PROJECT_DIR is not a git repository." >&2
-  echo "The migration relies on git mv to preserve file history. Run 'git init' and commit first." >&2
-  exit 1
-fi
+# --- Preflight 2: git-specific checks (skipped when no git repo) -----------
+if [ "$IS_GIT" = true ]; then
+  if [ -n "$(git -C "$PROJECT_DIR" status --porcelain)" ]; then
+    echo "Error: working tree is not clean. Commit or stash your changes first —" >&2
+    echo "the migration must be the only thing in its diff." >&2
+    exit 1
+  fi
 
-if [ -n "$(git -C "$PROJECT_DIR" status --porcelain)" ]; then
-  echo "Error: working tree is not clean. Commit or stash your changes first —" >&2
-  echo "the migration must be the only thing in its diff." >&2
-  exit 1
-fi
+  if git -C "$PROJECT_DIR" show-ref --verify --quiet refs/heads/wiki-migration; then
+    echo "Error: a 'wiki-migration' branch already exists." >&2
+    echo "Delete or rename it first: git branch -D wiki-migration" >&2
+    exit 1
+  fi
 
-if git -C "$PROJECT_DIR" show-ref --verify --quiet refs/heads/wiki-migration; then
-  echo "Error: a 'wiki-migration' branch already exists." >&2
-  echo "Delete or rename it first: git branch -D wiki-migration" >&2
-  exit 1
+  git -C "$PROJECT_DIR" switch -c wiki-migration
+  echo "Created and switched to branch: wiki-migration"
+  echo ""
+else
+  echo "Note: no git repository detected — migration will use plain 'mv' instead of 'git mv'."
+  echo "      File history will not be preserved. Consider 'git init && git add -A && git commit' first."
+  echo ""
 fi
-
-git -C "$PROJECT_DIR" switch -c wiki-migration
-echo "Created and switched to branch: wiki-migration"
-echo ""
 
 # --- Scaffold first: wiki tree + CLAUDE.md schema + guides -----------------
 "$SCRIPT_DIR/sync-wiki-scaffold.sh" "$PROJECT_DIR"
@@ -121,6 +132,22 @@ echo ""
 
 # --- Run the Claude-driven migration ---------------------------------------
 PROMPT="$(sed "s|__PROJECT_DIR__|$PROJECT_DIR|g" "$TEMPLATE")"
+
+# When there is no git repo, prepend an override block so Claude uses plain
+# mv/rm instead of git mv/git rm throughout the migration.
+if [ "$IS_GIT" = false ]; then
+  PROMPT="ENVIRONMENT NOTE (overrides every git-specific instruction below):
+This project has NO git repository. Adapt all git commands:
+- Use the Bash 'mv' command instead of 'git mv' for ALL file moves. The rule still applies: move first, edit second.
+- Use the Bash 'rm -f' command instead of 'git rm' for ALL deletions.
+- Skip 'git log' for dates — use today's date for both created: and updated: frontmatter fields.
+- Skip 'git add -A' — there is no staging area.
+- You are NOT on a wiki-migration branch. Work directly in the project directory.
+
+---
+
+$PROMPT"
+fi
 
 if [ -n "$EXTRA_CONTEXT" ]; then
   PROMPT="$PROMPT
@@ -198,8 +225,9 @@ DISPLAY_PID=$!
 cd "$PROJECT_DIR"
 
 CLAUDE_EXIT=0
-claude -p --dangerously-skip-permissions --strict-mcp-config \
-  --output-format stream-json < /dev/null "$PROMPT" > "$CLAUDE_FIFO" &
+CLAUDE_STDERR=$(mktemp "$TMP_DIR/claude-stderr.XXXXXX")
+CLAUDE_MIGRATION=1 claude -p --verbose --dangerously-skip-permissions --strict-mcp-config \
+  --output-format stream-json < /dev/null "$PROMPT" > "$CLAUDE_FIFO" 2>"$CLAUDE_STDERR" &
 CLAUDE_PID=$!
 
 # Watchdog: kill Claude if it exceeds 30 minutes (hangs / idle loop)
@@ -207,23 +235,46 @@ TIMEOUT_SECS=1800
 (sleep "$TIMEOUT_SECS"; echo "" >&2; echo "  [timeout] Migration exceeded ${TIMEOUT_SECS}s — killing Claude." >&2; kill "$CLAUDE_PID" 2>/dev/null) &
 WATCHDOG_PID=$!
 
-trap 'kill "$HEARTBEAT_PID" "$WATCHDOG_PID" "$CLAUDE_PID" "$DISPLAY_PID" 2>/dev/null; wait "$HEARTBEAT_PID" "$WATCHDOG_PID" "$DISPLAY_PID" 2>/dev/null; rm -f "$CLAUDE_FIFO" "$DISPLAY_SCRIPT"' EXIT
+trap 'kill "$HEARTBEAT_PID" "$WATCHDOG_PID" "$CLAUDE_PID" "$DISPLAY_PID" 2>/dev/null; wait "$HEARTBEAT_PID" "$WATCHDOG_PID" "$DISPLAY_PID" 2>/dev/null || true; rm -f "$CLAUDE_FIFO" "$DISPLAY_SCRIPT" "${CLAUDE_STDERR:-}"' EXIT
 
 wait "$CLAUDE_PID" || CLAUDE_EXIT=$?
 kill "$WATCHDOG_PID" 2>/dev/null; wait "$WATCHDOG_PID" 2>/dev/null
 kill "$HEARTBEAT_PID" 2>/dev/null; wait "$HEARTBEAT_PID" 2>/dev/null
-wait "$DISPLAY_PID" 2>/dev/null  # let the filter flush remaining output
+wait "$DISPLAY_PID" 2>/dev/null || true  # let the filter flush remaining output
 rm -f "$CLAUDE_FIFO" "$DISPLAY_SCRIPT"
 
-[ "$CLAUDE_EXIT" -ne 0 ] && { echo "Error: Claude exited with code $CLAUDE_EXIT" >&2; exit "$CLAUDE_EXIT"; }
+if [ "$CLAUDE_EXIT" -ne 0 ]; then
+  # Filter known telemetry noise (Safe-chain, DataDog) — these cause non-zero
+  # exit codes but don't indicate migration failure.
+  REAL_ERRORS=""
+  if [ -f "$CLAUDE_STDERR" ]; then
+    REAL_ERRORS=$(grep -v "^Safe-chain:" "$CLAUDE_STDERR" 2>/dev/null || true)
+  fi
+  if [ -n "$REAL_ERRORS" ]; then
+    echo "Error: Claude exited with code $CLAUDE_EXIT" >&2
+    echo "--- Claude stderr ---" >&2
+    echo "$REAL_ERRORS" >&2
+    echo "--------------------" >&2
+    rm -f "$CLAUDE_STDERR"
+    exit "$CLAUDE_EXIT"
+  fi
+  # Only telemetry noise — migration succeeded despite non-zero exit code
+fi
+rm -f "$CLAUDE_STDERR"
 
 echo ""
 echo "============================="
 echo "  Migration run complete"
 echo "============================="
 echo ""
-echo "Next steps (changes are staged on branch 'wiki-migration', uncommitted):"
-echo "  1. Review:       git status && git diff --staged"
-echo "  2. Health-check: open Claude Code and run /wiki-lint"
-echo "  3. Commit:       git add -A && git commit -m 'Migrate .docs/ to wiki structure'"
-echo "  4. Merge:        switch back and merge wiki-migration when satisfied"
+if [ "$IS_GIT" = true ]; then
+  echo "Next steps (changes are on branch 'wiki-migration', uncommitted):"
+  echo "  1. Review:       git status && git diff"
+  echo "  2. Health-check: open Claude Code and run /wiki-lint"
+  echo "  3. Commit:       git add -A && git commit -m 'Migrate .docs/ to wiki structure'"
+  echo "  4. Merge:        switch back and merge wiki-migration when satisfied"
+else
+  echo "Next steps:"
+  echo "  1. Review:       check wiki/work/ to verify all files landed correctly"
+  echo "  2. Health-check: open Claude Code and run /wiki-lint"
+fi

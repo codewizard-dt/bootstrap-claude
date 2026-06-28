@@ -37,32 +37,39 @@ fi
 echo "Setting up project: $PROJECT_DIR"
 echo ""
 
-# 1. Install global MCPs and skills
-"$SCRIPT_DIR/install-global.sh"
+# 1. Install MCPs interactively, then skills + hooks globally
+echo "Checking MCP servers..."
+"$SCRIPT_DIR/install-mcps.sh" --interactive --project-dir "$PROJECT_DIR"
+echo ""
+echo "Installing skills and hooks globally..."
+"$SCRIPT_DIR/install-global.sh" --skip-mcps
 echo ""
 
 echo "Syncing wiki scaffold..."
 "$SCRIPT_DIR/sync-wiki-scaffold.sh" "$PROJECT_DIR"
 "$SCRIPT_DIR/merge-gitignore.sh" "$PROJECT_DIR"
-"$SCRIPT_DIR/setup-deployment.sh" "$PROJECT_DIR"
 echo ""
 
-# 2. Register Serena per-project (absolute path — isolated from all other projects)
-echo "Registering Serena MCP for this project..."
+# 2. Assemble mcp-tools.md guide for only the installed MCPs
+echo "Building MCP tools guide..."
+INSTALLED_MCPS=()
 if [ -f "$PROJECT_DIR/.mcp.json" ] && grep -q '"serena"' "$PROJECT_DIR/.mcp.json" 2>/dev/null; then
-  echo "  serena: already registered for this project, skipping."
-else
-  ( cd "$PROJECT_DIR" && \
-    claude mcp add --scope project serena -- \
-      uvx --from git+https://github.com/oraios/serena \
-      serena start-mcp-server --context claude-code --project "$PROJECT_DIR" )
-  echo "  serena MCP registered."
+  INSTALLED_MCPS+=("serena")
 fi
+for mcp in context7 brave-search playwright; do
+  if claude mcp get "$mcp" &>/dev/null; then
+    INSTALLED_MCPS+=("$mcp")
+  fi
+done
+"$SCRIPT_DIR/build-mcp-guide.sh" "$PROJECT_DIR" "${INSTALLED_MCPS[@]+"${INSTALLED_MCPS[@]}"}"
 echo ""
 
 # 3. Bootstrap Serena project.yml
 echo "Bootstrapping Serena project.yml..."
 "$SCRIPT_DIR/bootstrap-serena.sh" "$PROJECT_DIR"
+echo ""
+
+"$SCRIPT_DIR/setup-deployment.sh" "$PROJECT_DIR"
 echo ""
 
 # Done

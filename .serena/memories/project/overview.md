@@ -59,6 +59,6 @@ Requirement/decision layer is optional for small work — jump directly to `/tas
 ## Required MCPs
 
 - Serena — code exploration, editing, memory (per-project scope with absolute path)
-- Brave Search — web research (1 req/sec, sequential)
+- Brave Search — web research (50 req/sec, parallel OK)
 - Context7 — library documentation
 - Playwright — browser automation + screenshots for UI UAT tests

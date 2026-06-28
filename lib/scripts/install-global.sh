@@ -11,52 +11,18 @@ ORPHAN_SKILLS=(
   prd-create prd-finalize prd-extract-decisions prd-update prd-trash prd-compile
 )
 
-# 1. Ensure global MCP servers are installed (user scope)
-echo "Checking global MCP servers (user scope)..."
+SKIP_MCPS=false
+for arg in "$@"; do
+  [ "$arg" = "--skip-mcps" ] && SKIP_MCPS=true
+done
 
-# brave-search
-if claude mcp get "brave-search" &>/dev/null; then
-  echo "  brave-search: already installed, skipping."
-else
-  echo "  Installing brave-search MCP..."
-  if [ -z "${BRAVE_API_KEY:-}" ]; then
-    echo -n "  Enter your Brave Search API key (get one at https://brave.com/search/api/): "
-    read -r BRAVE_API_KEY
-  fi
-  claude mcp add --scope user brave-search \
-    --env "BRAVE_API_KEY=${BRAVE_API_KEY}" \
-    -- npx -y @modelcontextprotocol/server-brave-search
-  echo "  brave-search MCP installed."
+# 1. Ensure global MCP servers are installed (user scope, non-interactive)
+#    Pass --skip-mcps when MCPs were already handled interactively by the caller.
+if [ "$SKIP_MCPS" = false ]; then
+  echo "Checking global MCP servers (user scope)..."
+  "$SCRIPT_DIR/install-mcps.sh"
+  echo ""
 fi
-
-# context7
-if claude mcp get "context7" &>/dev/null; then
-  echo "  context7: already installed, skipping."
-else
-  echo "  Installing context7 MCP..."
-  if [ -z "${CONTEXT7_API_KEY:-}" ]; then
-    echo -n "  Enter your Context7 API key (optional — press Enter to skip, get one at https://context7.com/dashboard): "
-    read -r CONTEXT7_API_KEY
-  fi
-  if [ -n "${CONTEXT7_API_KEY:-}" ]; then
-    claude mcp add --scope user --transport http \
-      --header "CONTEXT7_API_KEY: ${CONTEXT7_API_KEY}" \
-      context7 https://mcp.context7.com/mcp
-  else
-    claude mcp add --scope user --transport http context7 https://mcp.context7.com/mcp
-  fi
-  echo "  context7 MCP installed."
-fi
-
-# playwright
-if claude mcp get "playwright" &>/dev/null; then
-  echo "  playwright: already installed, skipping."
-else
-  echo "  Installing playwright MCP..."
-  claude mcp add --scope user playwright -- npx @playwright/mcp@latest
-  echo "  playwright MCP installed."
-fi
-
 
 # 2. Install hooks globally
 GLOBAL_HOOKS_DIR="$HOME/.claude/hooks"

@@ -340,6 +340,6 @@ After writing the plan file:
 4. **Interfaces for everything** — every `infra`, `direct-external`, `internal-coupling`, and `config` dependency must have a corresponding interface in the plan; none may be left as a concrete import in the extracted module's `core/`
 5. **SOLID enforced** — each SOLID principle (SRP, OCP, LSP, ISP, DIP) must be explicitly addressed in Phase 4a; call out any violations with a mitigation
 6. **port-feature compatibility** — Phase 3 inventory must match exactly the format `/port-feature` Phase 1c expects; the `.docs/extract/` document must be usable as a "source project" spec
-7. **Brave Search rate limit** — 1 request/second, sequential only, never parallel (applies during Phase 1 research)
+7. **Brave Search rate limit** — 50 requests/second, parallel searches allowed (applies during Phase 1 research)
 8. **Maximum 3 concurrent sub-processes** at a time
 9. **Always terminate all processes when done** (dev servers, type checkers, long-running commands)
