@@ -31,6 +31,8 @@ Resolve `$ARGUMENTS` (use Serena `find_file`/`list_dir`):
 
 Use the resolved path as the outline for all later steps.
 
+**Mark work started:** if the resolved task's frontmatter `status` is `todo`, `Edit` it to `in-progress` now (main agent, not delegated) — this is the signal that implementation has begun, distinct from not-yet-started. Sync `wiki/work/tasks/index.md`'s `· status` suffix for this task in the same cycle (one `Edit`, skip if already `in-progress`).
+
 ### Step 0a: Roadmap Auto-Discovery (empty `$ARGUMENTS` only)
 
 Zero-click: find the first actionable roadmap item and tackle it, **no prompts**.
@@ -45,15 +47,15 @@ Zero-click: find the first actionable roadmap item and tackle it, **no prompts**
 ### Task survey (empty OR unresolved)
 
 Recommend from the index; **do not auto-pick**.
-- **Read only `wiki/work/tasks/README.md`** (canonical index: columns `#`, `Slug`, `Progress`, `UAT`, `Flags`, `Objective`). Do NOT read individual task files, `grep`, `bash`, or aggregate across `wiki/work/tasks/` — the index exists to prevent exactly that. The only per-file read is the chosen task in Step 1.
-- Missing README / no `## Active Tasks` table / missing columns → STOP: `Task index at wiki/work/tasks/README.md is not bootstrapped. Run /primer to bootstrap it, or invoke /tackle <path-or-slug> directly.` Do not scan every file.
-- `mcp__serena__list_dir` on `wiki/work/uat/` only to sanity-check the `UAT` column vs disk; on disagreement trust disk, note the drift, don't block. If the index looks stale (`Progress: 0/0`, missing rows, stale UAT), warn in one sentence (`Index may be stale: <observation>. Treating rows as authoritative.`) and continue — don't pre-emptively fix it.
-- Empty Active table → STOP: "No active tasks to tackle".
-- Present Active rows as a compact table (`—` for empty cells). Below it, a **Recommendation** ranking top 1–3 by priority:
-  1. In-progress without a pending UAT (some `[x]`, not all, no pending UAT — finish what's started)
-  2. Unblock-able `[BLOCKED]`/`[FAILED]` whose blocker is plausibly resolvable now
-  3. Lowest-numbered fully-pending task (all `[ ]`, no pending UAT)
-  - Tasks **with a pending UAT** are excluded from recommendations and listed under `**Awaiting UAT**:` suggesting `/uat-walk wiki/work/uat/<NNN>-<slug>.uat.md`.
+- **Read only `wiki/work/tasks/index.md`** (canonical active list: bullet lines `- [TASK-NNN — Title](TASK-NNN-slug.md) — one-line summary · status`). Do NOT read individual task files, `grep`, `bash`, or aggregate across `wiki/work/tasks/` — the index exists to prevent exactly that. The only per-file read is the chosen task in Step 1.
+- Missing `index.md` / no active-item bullets → STOP: `Task index at wiki/work/tasks/index.md is empty or missing. Add tasks with /task-add, or invoke /tackle <path-or-slug> directly.` Do not scan every file.
+- `index.md` carries no progress columns — it lists title + one-line summary + `status` only, and `status` now directly distinguishes `todo` / `in-progress` / `pending-uat` (see [lifecycle](../tasks/lifecycle.md)) — no need to infer UAT-awaiting state from file existence. If a bullet points at a task file that no longer exists (moved/archived), note the drift in one sentence and skip it — don't pre-emptively fix the index.
+- Empty active list → STOP: "No active tasks to tackle".
+- Present the active items as a compact table (`TASK-NNN` · title · status). Below it, a **Recommendation** ranking top 1–3 by priority, using `status` alone:
+  1. `status: in-progress` — finish what's started.
+  2. `status: todo`, lowest-numbered first.
+  - Tasks at `status: pending-uat` are excluded from recommendations and listed under `**Awaiting UAT**:` — `mcp__serena__list_dir` on `wiki/work/uat/` for the matching `UAT-NNN-*` file; if found, suggest `/uat-walk wiki/work/uat/UAT-NNN-<slug>.md`; if none found (implementation finished but `/uat-generate` never ran), suggest `/uat-generate wiki/work/tasks/TASK-NNN-<slug>.md` instead.
+  - Progress counts, `[BLOCKED]`/`[FAILED]` flags, and per-step state are **not** in `index.md` by design — they live in the task files. This no-args survey deliberately ranks on `status` + UAT presence alone rather than re-reading every task file; use `/task-audit` when the full progress/blocker picture is needed. (Design note: the survey was simplified to `index.md`'s real bullet schema rather than expanding `index.md` with Progress/UAT/Flags columns, which would violate the "active items only, flat list" convention in `wiki/conventions.md`.)
 - Use `AskUserQuestion` (top rec first, labelled `(Recommended)`; up to 2 more; `header` = number-slug). If input was unresolved, prefix one line noting it. Do NOT proceed to Step 1 until the user chooses.
 
 ---
@@ -106,7 +108,7 @@ Every sub-agent prompt MUST include:
 1. Use **`Edit`** — one call per checkbox line. **Never** `sed`/`awk`/`perl -i`/`echo` on task files, however many flip (ten `Edit`s right; one `sed` wrong + triggers approval). Markers: `[x]` done · `[WIP]` partial · `[BLOCKED: reason]` · `[FAILED: reason]`.
 2. Add `<!-- Updated: YYYY-MM-DD HH:MM -->`.
 3. Add any subtasks discovered during execution.
-4. **Update `wiki/work/tasks/README.md`** — flip this task's `Progress` to `<done>/<total>` and its `Flags` if a marker was added/cleared (one `Edit` per changed cell; skip if unchanged). Letting the index drift defeats the no-args survey.
+4. **Keep `wiki/work/tasks/index.md` in sync** — `index.md` has no progress or flags columns, so there is nothing to recount there. The one thing to maintain is the `· status` suffix on this task's bullet line: if this cycle flips the task's frontmatter `status` (e.g. `todo` → `in-progress`), update the matching `· status` on its `index.md` line with a single `Edit` (skip if unchanged). Progress and flags live only in the task file.
 
 ## Step 4: Repeat
 
@@ -126,6 +128,12 @@ Step 1 → 2 → 3 → 2 → 3 … **One step per cycle; never run Step 2 twice 
 ---
 
 ## Completion (after all steps done)
+
+### Step 5: Mark implementation pending UAT
+
+Before anything else: `Edit` the task's frontmatter `status` → `pending-uat` (main agent, not delegated) — every `## Steps` checkbox is now checked, so there's nothing left to implement, only to verify. Sync `wiki/work/tasks/index.md`'s `· status` suffix for this task in the same cycle (one `Edit`).
+
+This is a real state, not a formality — `/roadmap-next` uses it to recommend `/uat-walk`/`/uat-auto` instead of `/tackle` for this task going forward. Do this even if you're about to immediately answer "No" to the UAT-generation gate below — a task with no UAT still needs `pending-uat` recorded (an explicit skip is `/uat-skip`'s job, not silence).
 
 ### Step 6: UAT generation gate — ⛔ HARD STOP (never skip or reorder)
 Ask via `AskUserQuestion`: **"Generate UAT tests for this task?"** — **Yes** → run `/uat-generate wiki/work/tasks/<filename>` (creates the matching UAT file); **No** → skip. **Wait** for the answer (and for `/uat-generate` to finish, if invoked) before Step 6b.

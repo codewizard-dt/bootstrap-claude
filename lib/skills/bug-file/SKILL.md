@@ -23,8 +23,7 @@ Create a new bug file in `wiki/work/bugs/` with status `new`. Gather every requi
 
 ### Step 1: Read the Spec
 
-Read both files — they are the authoritative format:
-1. `wiki/work/bugs/README.md` — full file template, severity/priority rubrics, glossary, and required-fields rules
+Read `wiki/work/bugs/lifecycle.md` — the authoritative frontmatter schema (fields, allowed `severity` / `priority` values), status set, and close-gate/required-fields rules. The bug file's body structure and field definitions are specified inline in this skill (Steps 3–6).
 
 ### Step 2: Summarize the Reported Symptom
 
@@ -42,7 +41,7 @@ For each missing required-on-report field, use `AskUserQuestion`. Batch related 
 | Field | What to ask |
 |-------|-------------|
 | Title | Confirm or refine the short symptom title (if `$ARGUMENTS` was vague) |
-| Severity | Single-select: `critical` / `high` / `medium` / `low` — show the rubric from `wiki/work/bugs/README.md` |
+| Severity | Single-select: `critical` / `high` / `medium` / `low` — the allowed values are defined in `wiki/work/bugs/lifecycle.md` |
 | Reporter | Name or role (default: the current user from `git config user.name`) |
 | Environment | OS / Platform, Browser or Runtime, App version or commit SHA, relevant config (feature flags, locale, account type) |
 | Steps to Reproduce | Numbered list — block progress if reproduction is non-deterministic without recording `Reproducibility: rarely` or `once` with notes |
@@ -63,7 +62,7 @@ If the user cannot supply reliable Steps to Reproduce, STOP and tell them:
 Scan **all** bug folders to find the next available 4-digit ID:
 - `mcp__serena__list_dir` on `wiki/work/bugs/` and `wiki/work/bugs/archive/` (skip either that doesn't exist)
 - Collect every `NNNN-` prefix; take `max + 1`; zero-pad to 4 digits.
-- Also scan `wiki/work/bugs/README.md`'s Index table for any reserved IDs not yet on disk.
+- Also scan `wiki/work/bugs/index.md` for any reserved IDs not yet on disk.
 - Never re-use a number — IDs are immutable references.
 
 Derive the slug from the title: lowercase, hyphen-separated, 2–5 words, ≤ 60 chars. Describe the **symptom**, not the suspected cause (e.g., `login-fails-on-safari`, not `safari-cookie-handler-bug`).
@@ -79,7 +78,7 @@ Ask the user to confirm via `AskUserQuestion` ("File this bug? Yes / Edit / Canc
 
 ### Step 6: Write the Bug File
 
-Use `Write` to create `wiki/work/bugs/NNNN-<slug>.md` following the **File Template** in `wiki/work/bugs/README.md` exactly. Set:
+Use `Write` to create `wiki/work/bugs/NNNN-<slug>.md`, following the frontmatter schema in `wiki/work/bugs/lifecycle.md` and the field set gathered in Steps 3–5. Set:
 
 - `Status: new`
 - `Priority: —` (filled in triage)
@@ -92,13 +91,13 @@ Use `Write` to create `wiki/work/bugs/NNNN-<slug>.md` following the **File Templ
 
 ### Step 7: Update the Bug Index
 
-Append a row to the Index table in `wiki/work/bugs/README.md`. Insert in numeric order. Row format:
+Append a bullet line to `wiki/work/bugs/index.md` (active items only — a flat list, no table). Insert in numeric order. Entry format (documented at the top of `index.md`):
 
 ```
-| [BUG-NNNN](NNNN-slug.md) | <title> | <severity> | — | new | <reporter> | — | YYYY-MM-DD | — |
+- [BUG-NNNN — <title>](BUG-NNNN-slug.md) — <one-line summary> · <status> · <priority>
 ```
 
-If the Index still shows the placeholder row (`_No bugs yet — …_`), replace it with the new row.
+`<status>` is the status you set in Step 6; `<priority>` is `—` until triage. If the index still shows the placeholder line (`_(none yet)_`), replace it with the new line.
 
 Use **`Edit`** — one targeted call. Never `sed`, `awk`, `perl -i`, or `echo >>`. See `.docs/guides/mcp-tools.md`.
 

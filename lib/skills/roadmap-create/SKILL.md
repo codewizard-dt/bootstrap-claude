@@ -8,7 +8,7 @@ disable-model-invocation: false
 user-invocable: true
 ---
 **Prereqs:** obey `.docs/guides/mcp-tools.md`; run /primer if not done this session.
-**Read `wiki/work/roadmaps/README.md` first — it is authoritative for the roadmap template, file template, status lifecycle, item format rules, index format, and anti-patterns this skill must enforce.**
+**Read `wiki/work/roadmaps/lifecycle.md` first — it is authoritative for the roadmap frontmatter schema, status lifecycle, and ID/filename rules. The file template, item-format rules, index format, and anti-patterns are specified inline in this skill below.**
 **Run `/research <topic>` on the roadmap topic BEFORE any Q&A or file creation. Do not skip this step.**
 
 # Create Roadmap
@@ -31,7 +31,7 @@ This skill drives a **short** Socratic Q&A session via `AskUserQuestion`. Roadma
 
 ## When to write a Roadmap
 
-See `wiki/work/roadmaps/README.md` for the canonical "When to Write" / "When NOT to Write" tables. In short: write a roadmap when work spans multiple discrete units, ordering matters, and you want at-a-glance visibility of what's next.
+Write a roadmap when work spans multiple discrete units, ordering matters, and you want at-a-glance visibility of what's next.
 
 If the topic is a single task with several steps, **stop and tell the user** — the task file's own `## Steps` checklist already serves that purpose. Suggest `/task-add` instead.
 
@@ -48,16 +48,16 @@ If the topic is a single task with several steps, **stop and tell the user** —
    - `mcp__serena__read_memory` for any topic-relevant memory (sequencing constraints, prior roadmaps, known dependency rules)
 3. **Read project context**:
    - `CLAUDE.md` (project conventions)
-   - `wiki/work/roadmaps/README.md` (template, lifecycle, anti-patterns — authoritative)
+   - `wiki/work/roadmaps/lifecycle.md` (frontmatter schema, status lifecycle — authoritative)
    - A sample of recent roadmaps in `wiki/work/roadmaps/` to learn local conventions
-   - The Tasks table in `wiki/work/tasks/README.md` so you know what task files already exist and can be linked
+   - The active-task bullets in `wiki/work/tasks/index.md` so you know what task files already exist and can be linked
 
 ### Step 2: Locate the roadmap directory and assign a number
 
 Roadmaps live at `wiki/work/roadmaps/NNN-slug.md`. Numbers are 3-digit zero-padded.
 
 1. **Use `mcp__serena__list_dir` on `wiki/work/roadmaps/`** to scan existing files. Collect every `NNN-` prefix.
-2. **Use `mcp__serena__search_for_pattern`** against `wiki/work/roadmaps/README.md` for `ROADMAP-\d{3}` entries in the Index — these may reserve numbers not yet on disk.
+2. **Use `mcp__serena__search_for_pattern`** against `wiki/work/roadmaps/index.md` for `ROADMAP-\d{3}` entries — these may reserve numbers not yet on disk.
 3. Take `max + 1`, zero-pad to 3 digits. The first roadmap is `001`.
 4. **Derive the file slug** — names the **initiative**. Lowercase, dash-separated, ≤ 60 chars:
    - "Ship the billing portal" → `001-ship-billing-portal.md`
@@ -121,14 +121,14 @@ If the user requests edits, loop back to the relevant Step 3 elicitation, re-ask
 The number determined in Step 2 may now be stale (other roadmaps created mid-session, the README Index may list reservations not yet on disk). Do a fresh scan now:
 
 - `mcp__serena__list_dir` on `wiki/work/roadmaps/`
-- `mcp__serena__search_for_pattern` against `wiki/work/roadmaps/README.md` for `ROADMAP-\d{3}` entries
+- `mcp__serena__search_for_pattern` against `wiki/work/roadmaps/index.md` for `ROADMAP-\d{3}` entries
 - Collect every `NNN-` prefix, take `max + 1`, zero-pad to 3 digits
 - If the number you planned to use in Step 4 has been taken, silently bump to the new next-available number and use it. Do not re-prompt the user.
 - **Never call `Write` before completing this re-scan.**
 
 ### Step 6: Write the roadmap file
 
-Use `Write` to create `wiki/work/roadmaps/NNN-slug.md` following the template in `wiki/work/roadmaps/README.md` **exactly**.
+Use `Write` to create `wiki/work/roadmaps/NNN-slug.md` following the field table below and the item-rendering rules **exactly**; the frontmatter must match the schema in `wiki/work/roadmaps/lifecycle.md`.
 
 | Field | Value at creation time |
 |-------|------------------------|
@@ -158,24 +158,23 @@ Loop back to Step 3 instead — do not silently invent content.
 
 ### Step 7: Update the roadmap index
 
-Edit `wiki/work/roadmaps/README.md` to add a new row in the `## Index` table.
+Edit `wiki/work/roadmaps/index.md` to add a new bullet line (active items only — a flat list, no table).
 
-1. `Read` the README to locate the Index table.
-2. If the placeholder row `_No roadmaps yet — use `/roadmap-create <topic>` to draft the first one._` exists, **replace** it with the new row. Otherwise **append** the new row in numerical order.
-3. Use the column format from `wiki/work/roadmaps/README.md`:
+1. `Read` `wiki/work/roadmaps/index.md` to locate the active-items list.
+2. If the placeholder line (`_(none yet)_` or a "no roadmaps yet" note) exists, **replace** it with the new line. Otherwise **append** the new line in numerical order.
+3. Use the entry format documented at the top of `index.md`:
 
-   | Column | Format |
-   |--------|--------|
-   | `File` | `[ROADMAP-NNN](NNN-slug.md)` |
-   | `Title` | The roadmap's H1 sub-title (without the `Roadmap NNN:` prefix) |
-   | `Status` | `active` |
-   | `Progress` | `0/<total>` where `<total>` is the count of `- [ ]` checkboxes you just wrote across all phases |
-   | `Owner` | One name or role |
-   | `Linked PRD` | `PRD-NNN` or `—` |
+   `- [ROADMAP-NNN — <title>](NNN-slug.md) — <one-line summary> · 0/<total> items checked`
+
+   where `<title>` is the roadmap's H1 sub-title (without any `Roadmap NNN:` prefix), `<one-line summary>` is a short description of the goal, and `<total>` is the count of `- [ ]` checkboxes you just wrote across all phases.
 
 Use `Edit` (not `sed`, `awk`, `echo >>`, or any shell redirection). See `.docs/guides/mcp-tools.md`.
 
-### Step 8: Report completion
+### Step 8: Refresh the hot cache
+
+The new roadmap is durable, cross-session-relevant wiki state. Run the **Hot Cache Refresh** procedure — defined in `/wiki-ingest` Step 8 (`lib/skills/wiki-ingest/SKILL.md`) — to regenerate `wiki/hot.md` in full, surfacing this roadmap under Recent Changes and its first wave under Active Threads. Do not restate the procedure here; follow it as written.
+
+### Step 9: Report completion
 
 Print a tabular summary:
 

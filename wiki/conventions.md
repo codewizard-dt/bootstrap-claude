@@ -51,10 +51,19 @@ Every page has YAML frontmatter. **Base keys (used now):**
 | `tags` | all | flat list, discovery only — not primary structure |
 | `aliases` | knowledge | alternative names for durable linking (item 2) |
 | `sources` | knowledge | back-links to the `raw/` source(s) a page derives from |
+| `confidence` | knowledge | provenance of the page's claims: `extracted` (default), `inferred`, or `ambiguous` — see below |
+
+**`confidence` (knowledge pages only).** Tags where a page's claims come from, so a reader can weigh them. It applies only to `knowledge/` pages (`sources/`, `concepts/`, `entities/`); `work/` artifacts track their state with `status` instead. Three values:
+
+- **`extracted`** (default) — the claim is directly supported by source material. Use when the page restates what a `raw/` source says.
+- **`inferred`** — the claim is LLM synthesis or reasoning that goes beyond what any source states directly. Mirrors the `/research` skill's "inference — no primary source" note, formalized as frontmatter.
+- **`ambiguous`** — sources disagree, or the claim is genuinely uncertain.
+
+Omitting `confidence` means `extracted`. Adoption is forward-only: existing pages need no backfill, and adding the key later is a lint pass, never a structural rewrite.
 
 **Reserved keys (declared, optional — populated later by overlays, safe to ignore until then):**
 
-`confidence`, `tier`, `last_verified`, `supersedes`, `superseded_by`, `scope`.
+`tier`, `last_verified`, `supersedes`, `superseded_by`, `scope`.
 
 Adopting the corresponding behavior later is a frontmatter backfill via lint — never a structural rewrite. Keep these names consistent if you use them early.
 

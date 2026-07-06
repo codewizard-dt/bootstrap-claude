@@ -151,7 +151,11 @@ Scan `### Consequences` for `🔁 Follow-up` rows (suggest only, never auto-crea
 
 If the accepted decision creates a non-obvious pattern, integration constraint, or gotcha: `mcp__serena__write_memory` (topic-hierarchical name, e.g. `architecture/data-layer/cache-strategy`), referencing `DEC-NNNN#DM` not just the file; prefer `edit_memory` if a memory already covers the area.
 
-## Step 10: Report
+## Step 10: Refresh the hot cache
+
+Accepting a decision is durable, cross-session-relevant wiki state. Run the **Hot Cache Refresh** procedure — defined in `/wiki-ingest` Step 8 (`lib/skills/wiki-ingest/SKILL.md`) — to regenerate `wiki/hot.md` in full, surfacing this newly accepted decision (and any supersession) under Recent Changes. Do not restate the procedure here; follow it as written.
+
+## Step 11: Report
 
 Table: Decision (`DEC-NNNN#DM`), File, Old→New status (`proposed → accepted`), Gaps resolved (count), Format fixes (count), Supersession (`DEC-MMMM#DK` or `none`), Sibling decisions + status (unchanged), Index updated, Graph updated, Log appended, Suggested next steps (`/task-add …`, `/schedule …`, `/decision-finalize <file>#Dother`, `/decision-next`). Mention remaining proposed siblings. If the group is now fully terminal, note the file moved to `archive/` (Step 6.5) — `[[DEC-NNNN]]` cross-refs stay valid regardless of location.
 

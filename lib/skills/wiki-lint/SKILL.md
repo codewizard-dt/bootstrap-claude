@@ -89,6 +89,24 @@ Scan all pages for `> **Contradiction:**` callouts; list them so the user can re
 
 Pages where `updated:` is more than 90 days old — these may contain outdated claims.
 
+### 2.10 Provenance / confidence (LOW)
+
+**Knowledge pages only.** Scan every page under `wiki/knowledge/sources/`, `wiki/knowledge/concepts/`, and `wiki/knowledge/entities/` (recursive, excluding `index.md` and `.gitkeep`). Skip `wiki/work/` entirely — work artifacts track state with `status`, not `confidence`.
+
+Read each page's `confidence:` frontmatter value (defined in `wiki/conventions.md` §4: `extracted` (default, source-backed), `inferred` (LLM synthesis beyond the source), `ambiguous` (sources disagree / uncertain)) and classify:
+
+- **Weak provenance** — `confidence: inferred` or `confidence: ambiguous`. The page's claims are not source-backed; surface so the user can weigh or re-ground them. This is the primary signal.
+- **Untagged provenance** — no `confidence` key at all. Per the convention this defaults to `extracted`, so it is **not** a defect — report it only as an informational nudge to add an explicit tag on the page's next revision (`/wiki-ingest` populates the field on pages it writes going forward).
+- **`confidence: extracted`** (or the default) — no finding.
+
+Report format:
+```
+[LOW] weak provenance — wiki/knowledge/concepts/foo.md is confidence: inferred (not source-backed)
+[LOW] untagged provenance — wiki/knowledge/entities/tools/bar.md has no confidence key (defaults to extracted; add an explicit tag on next revision)
+```
+
+Report-only — provenance is a human judgment (whether a page is genuinely `inferred`), so these are never auto-fixed (see Step 4).
+
 ## Step 3: Report findings
 
 Group by severity (HIGH / MEDIUM / LOW). For each finding:

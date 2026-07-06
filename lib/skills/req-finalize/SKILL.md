@@ -198,7 +198,11 @@ Append to `wiki/log.md`:
 
 Use `Read` then `Edit` for the index update — never `echo >>` or `sed`.
 
-### Step 9: Report completion and suggest next steps
+### Step 9: Refresh the hot cache
+
+Approving a requirement is durable, cross-session-relevant wiki state. Run the **Hot Cache Refresh** procedure — defined in `/wiki-ingest` Step 8 (`lib/skills/wiki-ingest/SKILL.md`) — to regenerate `wiki/hot.md` in full, surfacing this newly approved requirement under Recent Changes. Do not restate the procedure here; follow it as written.
+
+### Step 10: Report completion and suggest next steps
 
 Print a tabular summary:
 

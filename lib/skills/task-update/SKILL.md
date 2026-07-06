@@ -41,7 +41,7 @@ Parse the first part of `$ARGUMENTS` to locate the task file. Any remaining text
 ## Step 2: Read the Task Spec, Add-Task Command, and Task File
 
 Read all three files:
-1. `wiki/work/tasks/README.md` — the authoritative task file spec (format and naming rules)
+1. `wiki/work/tasks/lifecycle.md` — the authoritative task file spec (frontmatter schema, ID/filename rules, status transitions)
 2. `lib/skills/task-add/SKILL.md` — the full overview of how to structure a task (research process, execution-readiness criteria, agent annotations, level of detail required)
 3. The resolved task file from Step 1
 

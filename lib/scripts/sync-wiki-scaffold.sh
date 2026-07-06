@@ -34,7 +34,7 @@ mkdir -p \
   "$PROJECT_DIR/wiki/work/bugs" \
   "$PROJECT_DIR/.docs/guides"
 
-# 2. COPY-ONCE: index.md, log.md, .gitkeep files — project-owned after creation, never overwrite
+# 2. COPY-ONCE: index.md, log.md, hot.md, .gitkeep files — project-owned after creation, never overwrite
 #    Exclude conventions.md and lifecycle.md (those are always-refresh, handled in step 3).
 rsync -av --ignore-existing \
   --exclude 'conventions.md' \

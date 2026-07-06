@@ -116,7 +116,7 @@ Runs once no test has a blocking status. Two outcomes.
 ### All pass (no `[FAIL]` / `[FIXING]` remain)
 
 1. **UAT status** — Edit `status:` → `passed`; bump `updated:` in the UAT frontmatter.
-2. **Task status** — read `task:` from the UAT frontmatter → open `wiki/work/tasks/TASK-NNN-slug.md`, Edit `status:` → `done`; bump `updated:`.
+2. **Task status** — read `task:` from the UAT frontmatter → open `wiki/work/tasks/TASK-NNN-slug.md`, Edit `status:` → `done`; bump `updated:`. (Expected prior status is `pending-uat`, set by `/tackle` when it finished implementation — but flip to `done` regardless of what's there now.)
 3. **Remove index rows** — delete the UAT row from `wiki/work/uat/index.md` and the task row from `wiki/work/tasks/index.md` (one `Edit` per file).
 4. **Archive both** (`git mv` via Bash; index appends via `Edit`):
    - `git mv wiki/work/uat/<UAT>.md wiki/work/uat/archive/` → append `| [[UAT-NNN]] | Title | passed | YYYY-MM-DD |` to `wiki/work/uat/archive/index.md`

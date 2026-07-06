@@ -27,6 +27,17 @@ CLAUDE.md     This schema section.
 
 **Navigation:** `wiki/index.md` is the home Map of Content — read it first on every wiki query. Knowledge pages are listed there individually; work items live only in their family index. `wiki/log.md` is the append-only operation log. `wiki/conventions.md` holds the page rules (atomic pages, stable IDs/aliases, typed links, frontmatter namespace).
 
+### Auto Memory vs. this wiki
+
+Claude Code has its own native **Auto Memory** feature — typed memory files (`user`, `feedback`, `project`, `reference`) kept under `~/.claude/projects/<hash>/memory/`, indexed by `MEMORY.md`, auto-loaded at session start. It is **cross-project and un-versioned**: it lives outside this git repo and follows the user across every project. This wiki, by contrast, is **per-project and git-versioned**: it lives in `wiki/`, is reviewable in diffs, and is shared with anyone who clones the repo.
+
+Rule of thumb for where a new fact belongs:
+
+- **Auto Memory** — facts about the *user* and their cross-project working style: how they like to collaborate, standing preferences, feedback that applies regardless of which repo is open. If a fact is true only because "the user told me once" and holds everywhere → Auto Memory.
+- **This wiki** — facts about *this project*: its architecture, decisions, requirements, tasks, and synthesized knowledge that should be versioned, reviewable, and survive in git history. If a fact is true because "this project decided X" → wiki.
+
+Keep the two from duplicating or contradicting each other: project-specific state does not go in Auto Memory, and cross-project user preferences do not go in the wiki.
+
 ### Wiki operations
 
 | Command | Purpose |

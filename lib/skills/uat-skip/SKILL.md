@@ -90,7 +90,7 @@ Apply the STATUS-FLIP PROCEDURE to both artifacts:
 3. Remove the UAT's row from `wiki/work/uat/index.md` (skipped UATs are not active)
 
 **Task file** (`wiki/work/tasks/TASK-NNN-slug.md`):
-1. Edit `status: todo` or `status: in-progress` → `status: done`
+1. Edit `status:` (whatever it currently is — `todo`, `in-progress`, or `pending-uat`) → `status: done`
 2. Edit `updated:` → today's date
 3. Remove the task's row from `wiki/work/tasks/index.md` (done tasks are not active)
 

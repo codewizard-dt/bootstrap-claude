@@ -26,14 +26,16 @@ Surface unchecked roadmap items grouped into parallelizable waves and tell the u
 ### Parse a roadmap
 `Read` the file (markdown). Extract: **phases** (`## Phase N: <name>` in order), **items** (`- [ ]` unchecked / `- [x]` checked), **status** (`- **Status**: active | done`), and the `roadmap_id` (`- **ID**: ROADMAP-NNN` front matter or filename prefix, e.g. `003-billing.md` → `ROADMAP-003`). Per item capture: `phase` (nearest preceding heading, or `(no phase)`), `checked`, `text`, `kind` (`task-link` if body starts `[[TASK-NNN`, else `inline`), `task_id` (from `[[TASK-NNN: title]]`), `task_path` (`find_file` `TASK-NNN-*` in `wiki/work/tasks/` — matches active or archived). Compute `total`, `done`. Collect unchecked items into `candidate_items`, **capped at 9 total**.
 
+For each `candidate_items` item that is already `kind == 'task-link'` (skip this for `inline` items until after they're upgraded below): `Read` `task_path`'s frontmatter and store `task_status` (`todo | in-progress | pending-uat | done | trashed`, per [tasks lifecycle](../tasks/lifecycle.md)). If `task_status == 'pending-uat'`, also resolve `uat_path` — read the task's `uat:` frontmatter field if present and `find_file` it; if empty or not found, leave `uat_path` unset (implementation finished but `/uat-generate` hasn't run yet).
+
 ### Upgrade inline items to task files
 **All roadmap items must eventually be task files** — inline items are placeholders. For each `candidate_items` item with `kind == 'inline'`:
 1. Announce: `Inline item found: "<text>"[ (in <roadmap_title>)] — checking for an existing task before creating one.`
-2. **Check for an existing task:** `Read` `wiki/work/tasks/README.md`, scan Active Tasks for a row whose `Objective`/`Slug` plausibly covers the intent; if likely, `Read` that task to confirm. Found → use its `TASK-NNN` + path, skip to step 5 (do **not** call `task-add`).
+2. **Check for an existing task:** `Read` `wiki/work/tasks/index.md`, scan its active-item bullets for one whose title/summary plausibly covers the intent; if likely, `Read` that task to confirm. Found → use its `TASK-NNN` + path, skip to step 5 (do **not** call `task-add`).
 3. Else invoke `Skill` `task-add` with the item text as `args` (**no** `--roadmap` flag — the link is managed here to avoid a duplicate item).
 4. Extract the new task path + ID from task-add's summary (`File path` row); if parsing fails, `list_dir` `wiki/work/tasks/` for the newest `.md` not present before, and `Read` it to confirm `TASK-NNN` + title (from `# NNN: <title>`).
 5. `Edit` the roadmap: `- [ ] <item_text>` → `- [ ] [[TASK-NNN: <title>]]`.
-6. Update the record: `kind='task-link'`, `task_id`, `task_path` (from `find_file`).
+6. Update the record: `kind='task-link'`, `task_id`, `task_path` (from `find_file`). A freshly created task is always `status: todo` — set `task_status = 'todo'` directly, no need to re-read the file.
 
 If `task-add` fails/cancels, **stop and report**: `Task creation cancelled for: "<text>"[ (in <roadmap_title>)]. Inline items cannot be worked on without a task file. Re-run /roadmap-next after /task-add <description>.`
 
@@ -79,7 +81,13 @@ Run the three shared procedures on the resolved file.
   **Wave 2** — start after Wave 1 completes: …
   **Wave 3** — start after Wave 2 completes: …
   ```
-  Only emit non-empty wave tables. Wave 1 > 3 items → show 3 + `(+N more ready — showing first 3)`. Action cell `` `/tackle <task_path>` ``, append ` (file not found)` if absent. No `Manual` case — every item is a task-link.
+  Only emit non-empty wave tables. Wave 1 > 3 items → show 3 + `(+N more ready — showing first 3)`. No `Manual` case — every item is a task-link.
+
+  **Action cell by `task_status`** (this is the fix for the tackle→UAT visibility gap — a `pending-uat` task needs testing, not more implementation):
+  - `todo` / `in-progress` (default) → `` `/tackle <task_path>` ``
+  - `pending-uat` with `uat_path` resolved → `` `/uat-walk <uat_path>` `` — annotate the Item cell with a trailing `⏳ awaiting UAT`
+  - `pending-uat` with no `uat_path` → `` `/uat-generate <task_path>` `` — annotate the Item cell with a trailing `⏳ awaiting UAT (no tests yet)`
+  - `task_path` not found → `` `/tackle <task_path>` `` with ` (file not found)` appended, regardless of status (can't read a status that isn't there)
 - **Zero items** → `Roadmap has no checklist items yet. Add some with /roadmap-add <ROADMAP-NNN> <item>.`
 
 ---
@@ -113,7 +121,7 @@ Run the shared upgrade + parallelism procedures over the full `candidate_items` 
 
   Showing <shown_count> of <total_unchecked_scanned> unchecked item(s) across <files_scanned> roadmap(s).
   ```
-  `total_unchecked_scanned` = all unchecked found before the 9-cap; `files_scanned` = files actually read. Same wave rules as Single mode (non-empty only, `(file not found)`, no `Manual` case).
+  `total_unchecked_scanned` = all unchecked found before the 9-cap; `files_scanned` = files actually read. Same wave rules as Single mode (non-empty only, `(file not found)`, no `Manual` case), including the same **Action cell by `task_status`** rule (`pending-uat` → `/uat-walk`/`/uat-generate` with the `⏳ awaiting UAT` annotation instead of `/tackle`).
 
 ---
 

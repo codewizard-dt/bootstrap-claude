@@ -1,6 +1,6 @@
 ---
 name: wiki-ingest
-description: Process a source from raw/ into the wiki — write a summary page, update affected entity and concept pages, and record the ingest in the index and log
+description: Process a source from raw/ into the wiki — write a summary page, update affected entity and concept pages, record the ingest in the index and log, and refresh the hot cache
 category: researching
 model: claude-sonnet-4-6
 argument-hint: <raw-file-path>
@@ -47,9 +47,18 @@ Keep this short — it is a checkpoint, not a report. Incorporate any emphasis o
    updated: YYYY-MM-DD
    sources:
      - ../../raw/some-article.md
+   confidence: extracted
    tags: []
    ---
    ```
+   Set `confidence` per the confidence decision rule (see CRITICAL RULES) — choose `extracted`, `inferred`, or `ambiguous` based on how the page's claims relate to the source; do not leave it hard-coded at `extracted`.
+
+   **Choosing `confidence`:** this field applies to `knowledge/` pages only (`sources/`, `concepts/`, `entities/`) — `work/` artifacts track state with `status` instead. Pick one value per page based on the page's dominant claims (aligned with `wiki/conventions.md` §4):
+   - **`extracted`** (default) — the page restates what a `raw/` source directly says.
+   - **`inferred`** — the page's claims are LLM synthesis or reasoning that goes beyond what any source states directly.
+   - **`ambiguous`** — sources disagree, or the claim is genuinely uncertain.
+
+   Omitting `confidence` means `extracted`; set it explicitly only for `inferred` or `ambiguous` pages. Steps 4 and 5 use this same note.
 4. Body: 2–4 paragraph distillation. Bold key claims. Add typed links to entities and concepts mentioned: `rel::[[Entity Name]]` (e.g. `derived_from::`, `uses::`, `relates_to::`).
 
 ## Step 4: Update or Create Entity Pages
@@ -68,6 +77,7 @@ For each person, organisation, tool, or component mentioned significantly in the
    updated: YYYY-MM-DD
    sources:
      - ../../../raw/some-article.md
+   confidence: extracted
    tags: []
    ---
    ```
@@ -79,7 +89,7 @@ For each pattern, idea, convention, or recurring theme the source illuminates:
 
 1. Check `wiki/knowledge/concepts/` for an existing page.
 2. **Existing**: extend or cross-link; add contradiction callout if needed.
-3. **New**: create `wiki/knowledge/concepts/<concept-slug>.md` with frontmatter (`id`, `title`, `updated`, `sources`, `tags`) and a focused distillation.
+3. **New**: create `wiki/knowledge/concepts/<concept-slug>.md` with frontmatter (`id`, `title`, `updated`, `sources`, `confidence`, `tags`) and a focused distillation.
 
 ## Step 6: Update the Home Index
 
@@ -98,6 +108,23 @@ Append to `wiki/log.md`:
 Ingested from raw/<filename>. Key claims: [2–3 bullet summary]. [N] entity pages touched, [M] concept pages touched.
 ```
 
+## Step 8: Refresh the Hot Cache
+
+This is the canonical **Hot Cache Refresh** procedure — other wiki-writing skills reference it by name rather than restating it.
+
+`wiki/hot.md` is a small, always-read-first session-handoff summary of "what changed most recently" (see `wiki/knowledge/concepts/llm-wiki-hot-cache.md`). It is a **regenerated summary, never an append log** — you rewrite it in full each time. Overwrite the whole file with `Write`; do not `Edit` in new lines.
+
+1. **Read for continuity** — if `wiki/hot.md` exists, `Read` it (chiefly for its `## Active Threads` section, which carries forward in-flight work the current operation may not touch). If it does not exist, start from the template at `lib/scripts/templates/wiki/hot.md`.
+2. **Read recent context** — read the last ~5–10 entries of `wiki/log.md` (the tail) plus the pages this operation just created or updated. These are the raw material for "what changed."
+3. **Regenerate all four sections**, keeping the whole file **under ~500 words**:
+   - Frontmatter: `title: Hot Cache`, `updated: <today>`.
+   - `# Hot Cache` heading, the intro sentence, and `_Last updated: <today>_`.
+   - `## Key Recent Facts` — the handful of things a fresh session most needs to know right now (include what this operation just did).
+   - `## Recent Changes` — `Created:` / `Updated:` / `Flagged:` sub-bullets naming the pages/files this operation (and other very recent ones still worth surfacing) touched.
+   - `## Active Threads` — in-flight work (roadmaps mid-execution, tasks in progress, waves pending), carried forward from the prior `hot.md` and adjusted for what just changed.
+4. **Drop stale items** — if a fact is no longer "recent," remove it; its durable form already lives in a knowledge or work page.
+5. **Overwrite** `wiki/hot.md` with `Write`.
+
 ---
 
 ## CRITICAL RULES
@@ -109,3 +136,4 @@ Ingested from raw/<filename>. Key claims: [2–3 bullet summary]. [N] entity pag
 5. Add `id:` and `aliases:` frontmatter to every page you create or touch.
 6. Use typed links (`derived_from::`, `uses::`, `relates_to::`, `contradicts::`) wherever a link has a meaning — see `wiki/conventions.md` for the full vocabulary.
 7. **Work artifacts** (requirements, decisions, tasks, bugs) are never modified by this skill — only knowledge pages and the home index.
+8. **Set `confidence` on every knowledge page** you create or update, chosen per the "Choosing `confidence`" note in Step 3 (omission defaults to `extracted`, but set it explicitly for `inferred`/`ambiguous` pages). When rule 3 makes you flag a `> **Contradiction:**` callout, the affected page carries `confidence: ambiguous` (or otherwise lower confidence) — a flagged contradiction and an `ambiguous` value travel together.

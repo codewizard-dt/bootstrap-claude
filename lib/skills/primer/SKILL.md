@@ -31,6 +31,13 @@ user-invocable: true
 
 Quick workflow to refresh understanding of the codebase via Serena memories.
 
+## Step 0: Read the Hot Cache
+
+Before diving into Serena memories, read the wiki's hot cache — the cheapest, most targeted "what happened last session" signal.
+
+1. `mcp__serena__find_file` for `hot.md` under `wiki/`. If not found, **skip this step silently** — the hot cache is optional session continuity (a project may not have adopted it yet), not a hard requirement. No warning.
+2. If present, `Read` `wiki/hot.md` and treat its **Key Recent Facts** and **Active Threads** sections as a first-pass context primer. This does not replace Serena memory reading below — it's a cheap first pass that orients the deeper memory discovery.
+
 ## Step 1: Discover & Read Memories
 
 1. `mcp__serena__list_memories` → list all available memories (use `topic` parameter to filter by area, e.g. `topic="api"`)
@@ -66,14 +73,12 @@ See `.docs/guides/mcp-tools.md` for the complete Serena memory reference.
 
 ---
 
-## Step 4: Verify Task Index Bootstrap
+## Step 4: Check the Task Index
 
-`/tackle` no-args mode reads only `wiki/work/tasks/README.md` to survey active tasks — it relies on a structured index table rather than reading every task file. Older projects using this template predate that contract; check and bootstrap if needed.
+`/tackle` no-args mode surveys active tasks by reading `wiki/work/tasks/index.md` — a flat bullet list of active items (`- [TASK-NNN — Title](TASK-NNN-slug.md) — one-line summary · status`), one line per `todo`/`in-progress` task. There is no table to "bootstrap"; do a lightweight consistency check so that survey stays trustworthy.
 
 1. Use `mcp__serena__list_dir` on `wiki/work/tasks/` to list task files (top-level only, not `archive/`). If the directory is empty or has no task files, skip this step.
-2. Read `wiki/work/tasks/README.md` (use `Read` — markdown). Decide whether it is **bootstrapped**: it must contain an `## Active Tasks` section followed by a markdown table whose header row includes the columns `#`, `Slug`, `Progress`, `UAT`, `Flags`, `Objective` (in any order, case-insensitive).
-3. **If bootstrapped**: do a quick consistency check — every active task file should appear as a row, and every row should point to a real file. If you spot drift (missing rows, rows pointing at moved/trashed files, `Progress: 0/0`), report a one-line warning to the user listing what's off, but do NOT auto-fix; the skill that mutated state without updating the index is the bug.
-4. **If NOT bootstrapped** (file missing, no Active Tasks table, or wrong columns):
-   - Tell the user: `Task index at wiki/work/tasks/README.md is not in the structured-table format /tackle expects. Bootstrap it now? (Y/n)` via `AskUserQuestion`.
-   - On **yes**: for each task file directly in `wiki/work/tasks/` **only** (do not iterate `archive/` for the table itself — the index lists active tasks only), read the file and compute: `#` (filename prefix), `Slug` (filename slug, linked to the file), `Progress` (count of `- [x]` vs all `- [ ]`/`- [x]` checkboxes — read each task file once with `Read`; this is a one-time bootstrap so a parallel batch of `Read` calls is acceptable), `UAT` (`pending` if a matching file exists in `wiki/work/uat/`, else `none` — `done`/`skipped` tasks are not represented here because those have moved to `archive/`), `Flags` (presence of `[WIP]`, `[BLOCKED: ...]`, `[FAILED: ...]`, `[DEFERRED-TO-UAT]`), `Objective` (first sentence under `## Objective`). **Also compute the two header values**: list filename prefixes across `wiki/work/tasks/` and `wiki/work/tasks/archive/` (skip either that doesn't exist); take the max `NNN-slug` — that's **Last task** (link path = whichever directory it lives in); set **Next task number** = `max + 1`, zero-padded to 3 digits. If no task files exist anywhere, omit **Last task** and set **Next task number** to `001`. Write the result as `wiki/work/tasks/README.md` with the two header lines followed by a single **Active Tasks** table, using the format documented in that file's column reference. Reference: this template's own `wiki/work/tasks/README.md` shows the canonical layout.
-   - On **no**: leave the file alone and continue. Warn the user that `/tackle` with no args will not be able to survey active tasks until the index is bootstrapped — they'll need to invoke `/tackle <path-or-slug>` explicitly.
+2. Read `wiki/work/tasks/index.md` (use `Read` — markdown).
+3. Consistency check: every active task file (frontmatter `status: todo` or `in-progress`) should have exactly one bullet line in `index.md`, and every bullet in `index.md` should point to a real active task file. If you spot drift (an active task file with no line, a line pointing at a moved/trashed/archived file, or a `done`/`trashed` task still listed), report a one-line warning to the user listing what's off, but do NOT auto-fix — the skill that mutated state without updating the index is the bug.
+
+See `wiki/work/tasks/lifecycle.md` for the active status set and frontmatter schema.

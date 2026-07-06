@@ -40,7 +40,7 @@ Read the bug file in full.
 
 ### Step 2: Read the Spec
 
-Read `wiki/work/bugs/README.md` and `wiki/work/bugs/lifecycle.md` for the close-gate requirements (Root Cause Analysis, Resolution block with commit + regression test).
+Read `wiki/work/bugs/lifecycle.md` for the close-gate requirements (Root Cause Analysis, fix commit, and regression test) and the valid terminal statuses.
 
 ### Step 3: Audit Pre-Close Fields
 

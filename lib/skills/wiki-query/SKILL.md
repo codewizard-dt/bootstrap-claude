@@ -59,6 +59,7 @@ If the user says yes:
 2. Add a typed link `derived_from::[[source-slug]]` if the answer came from an ingested source.
 3. Add the new page to the **Concepts** section of `wiki/index.md`.
 4. Append to `wiki/log.md`: `## [YYYY-MM-DD] query | <question summary>\nFiled answer as wiki/knowledge/concepts/<slug>.md.`
+5. **Only on this filing path** (never on the read-only answer path): run the **Hot Cache Refresh** procedure — defined in `/wiki-ingest` Step 8 (`lib/skills/wiki-ingest/SKILL.md`) — to regenerate `wiki/hot.md` in full, surfacing the newly filed page under Recent Changes. Do not restate the procedure here; follow it as written.
 
 ---
 

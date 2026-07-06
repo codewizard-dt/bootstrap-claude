@@ -214,6 +214,17 @@ CLAUDE.md     This schema section.
 
 **Navigation:** `wiki/index.md` is the home Map of Content — read it first on every wiki query. Knowledge pages are listed there individually; work items live only in their family index. `wiki/log.md` is the append-only operation log. `wiki/conventions.md` holds the page rules (atomic pages, stable IDs/aliases, typed links, frontmatter namespace).
 
+### Auto Memory vs. this wiki
+
+Claude Code has its own native **Auto Memory** feature — typed memory files (`user`, `feedback`, `project`, `reference`) kept under `~/.claude/projects/<hash>/memory/`, indexed by `MEMORY.md`, auto-loaded at session start. It is **cross-project and un-versioned**: it lives outside this git repo and follows the user across every project. This wiki, by contrast, is **per-project and git-versioned**: it lives in `wiki/`, is reviewable in diffs, and is shared with anyone who clones the repo.
+
+Rule of thumb for where a new fact belongs:
+
+- **Auto Memory** — facts about the *user* and their cross-project working style: how they like to collaborate, standing preferences, feedback that applies regardless of which repo is open. If a fact is true only because "the user told me once" and holds everywhere → Auto Memory.
+- **This wiki** — facts about *this project*: its architecture, decisions, requirements, tasks, and synthesized knowledge that should be versioned, reviewable, and survive in git history. If a fact is true because "this project decided X" → wiki.
+
+Keep the two from duplicating or contradicting each other: project-specific state does not go in Auto Memory, and cross-project user preferences do not go in the wiki.
+
 ### Wiki operations
 
 | Command | Purpose |
@@ -224,6 +235,13 @@ CLAUDE.md     This schema section.
 | `/wiki-archive [family]` | Batch-move terminal work items into `<family>/archive/`; update `archive/index.md` and log the operation |
 | `/wiki-rotate-log` | Rotate `wiki/log.md` to a timestamped archive file when it exceeds ~500 lines; create a fresh `log.md` with an archive pointer |
 | `/wiki-tidy` | One-shot cleanup — lint, archive terminal items across all families, then rotate log if overgrown; phases run in sequence with user confirmation |
+
+### Optional tooling
+
+Two external tools are worth knowing about but are **not adopted by default** in this repo. See their entity pages for detail:
+
+- [qmd](wiki/knowledge/entities/tools/qmd.md) — local CLI search engine for markdown knowledge bases (BM25 + vector + local-LLM re-ranking). Named in Karpathy's original gist as the recommended search layer once a wiki grows past a few hundred pages. **Status for this repo:** correctly deferred — the wiki is still small; revisit if `/wiki-query` reading the full index becomes slow or imprecise at scale.
+- [Hindsight](wiki/knowledge/entities/tools/hindsight.md) — shared cross-subagent memory framework, relevant because this repo runs heavy concurrent subagent orchestration (`power-mode`, `tackle`, `now`). **Status for this repo:** hold off adopting as default — only adopt if observed (not hypothetical) cross-subagent memory-sharing pain shows up.
 
 ### CRITICAL wiki rules
 

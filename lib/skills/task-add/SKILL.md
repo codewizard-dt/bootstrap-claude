@@ -183,7 +183,11 @@ Append:
 Created task TASK-NNN: <one sentence summarising the objective>.
 ```
 
-### Step 13: Confirm completion
+### Step 13: Refresh the hot cache
+
+The new task is durable, cross-session-relevant wiki state. Run the **Hot Cache Refresh** procedure — defined in `/wiki-ingest` Step 8 (`lib/skills/wiki-ingest/SKILL.md`) — to regenerate `wiki/hot.md` in full, surfacing this task under Recent Changes (and Active Threads if it belongs to an in-flight roadmap). Do not restate the procedure here; follow it as written.
+
+### Step 14: Confirm completion
 
 Report:
 - Created file: `wiki/work/tasks/TASK-NNN-slug.md`

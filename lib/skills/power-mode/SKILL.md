@@ -94,15 +94,11 @@ Agent({
   description: "UAT auto <TASK-NNN>",
   prompt: "Run /uat-auto <uat-path> (infer the UAT file path from the task path — same NNN slug, under wiki/work/uat/).
 
-CRITICAL: After the automated UAT run completes you MUST complete Step 7 in full before stopping:
-1. git mv the UAT file to wiki/work/uat/archive/
-2. git mv the task file to wiki/work/tasks/archive/
-3. Remove the task row from wiki/work/tasks/README.md
-4. Flip the matching roadmap checkbox if any, and update the task path in the roadmap
+Note: on all-pass, /uat-auto's own UAT-CORE Closure procedure already flips the task to done, archives both files, removes index rows, and auto-checks the matching roadmap checkbox (if any) — you do not need to instruct any of that here; it happens natively. Just wait for it to complete and report its summary.
 
-UAT tests recorded as [FAIL: auto-judge: UI test requires human verification] do NOT block task completion — /uat-auto does not run UI tests. Proceed with Step 7 even if they remain pending.
+UAT tests recorded as [FAIL: auto-judge: UI test requires human verification] do NOT block task completion — /uat-auto does not run UI tests. Treat these as an acceptable resting state, not a blocker.
 
-If any tests remain as - [ ] Pass because stub indicators were detected, do NOT mark the task as complete. Leave the UAT file in wiki/work/uat/ and report the stub-detected tests in your summary. [append team member footer]",
+If any tests remain as - [ ] Pass because stub indicators were detected, that's expected — /uat-auto leaves the task in place rather than closing it. Report the stub-detected tests in your summary. [append team member footer]",
   mode: "bypassPermissions"
 })
 ```
@@ -175,13 +171,9 @@ Agent({
   description: "UAT auto TASK-NNN",
   prompt: "Run /uat-auto <uat-path>.
 
-CRITICAL: After the run completes, complete Step 7 before stopping:
-1. git mv the UAT file to wiki/work/uat/archive/
-2. git mv the task file to wiki/work/tasks/archive/
-3. Remove the task row from wiki/work/tasks/README.md
-4. Flip the matching roadmap checkbox and update the task path in the roadmap
+Note: on all-pass, /uat-auto's own UAT-CORE Closure procedure already flips the task to done, archives both files, removes index rows, and auto-checks the matching roadmap checkbox — no need to instruct any of that here.
 
-UAT tests recorded as [FAIL: auto-judge: UI test requires human verification] do NOT block this step. If stub-detected tests remain, do NOT mark the task complete — leave the UAT file in place and report the stubs. [append team member footer]",
+UAT tests recorded as [FAIL: auto-judge: UI test requires human verification] do NOT block this step. If stub-detected tests remain, that's /uat-auto's own expected behavior — it leaves the file in place; report the stubs. [append team member footer]",
   mode: "bypassPermissions"
 })
 ```
