@@ -66,8 +66,8 @@ After applying all updates, recount `checked` and `total`. Track which tasks had
 
 If `checked == total` (all steps are now checked) after 2c:
 
-1. Move the task file from `wiki/work/tasks/` to `wiki/work/tasks/  ` using `Bash` (`mv`).
-2. Update `wiki/work/tasks/README.md`: remove the row from the **Active Tasks** table and add it to the **Completed Tasks** table (or create that section if absent).
+1. Set `status: done` in the task file's frontmatter using `Edit`, then move it from `wiki/work/tasks/` to `wiki/work/tasks/archive/` using `Bash` (`git mv` only).
+2. Remove the row from `wiki/work/tasks/README.md`'s **Active Tasks** table and append it to `wiki/work/tasks/archive/index.md`.
 3. Scan all other active task files for references to this task's ID (e.g. in their dependency blocks). For each reference found, note it in the Step 4 report as a **now-resolved dependency** — do not auto-edit those files, but suggest `/task-update <NNN>` to clean them up.
 4. Mark the task as `completed: true` in its node record so Step 3 treats it as resolved.
 
@@ -195,7 +195,7 @@ Report what Step 2 discovered and changed:
 ### Fully-Completed Tasks Moved
 | Task | Action |
 |------|--------|
-| 005-command-anti-patterns | Moved to wiki/work/tasks/   — update references: /task-update 007 |
+| 005-command-anti-patterns | Moved to wiki/work/tasks/archive/ — update references: /task-update 007 |
 
 ### Unverified Steps (implementation unclear)
 | Task | Step |

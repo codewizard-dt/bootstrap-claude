@@ -1,107 +1,114 @@
 # @codewizard-dt/bootstrap
 
-Bootstrap Claude Code projects with an **LLM Wiki**, reusable skills, hooks, and 4 MCP servers — in a single command.
+Bootstrap Claude Code projects with an LLM Wiki, reusable skills, enforcement hooks, MCP setup, and project scaffolding from one npm CLI.
 
-**Repository:** https://github.com/codewizard-dt/bootstrap-wiki
+**Repository:** https://github.com/codewizard-dt/bootstrap-claude
 
 ## Description
 
-`@codewizard-dt/bootstrap` eliminates the repetitive scaffolding required to configure Claude Code for a new project. A single `npx @codewizard-dt/bootstrap setup` installs four MCP servers (Brave Search, Context7, Playwright, and Serena), copies 60+ custom slash command skills and PreToolUse/PostToolUse hook scripts globally, scaffolds a structured LLM Wiki into the target project, assembles a project-specific MCP tools guide from per-server stubs, and wires up CI/CD workflows — all idempotently, so re-running it is always safe.
+`@codewizard-dt/bootstrap` is an npm-distributed setup toolkit for Claude Code users who repeatedly configure the same agent workflow in new repositories. It installs Model Context Protocol servers, syncs a global skill library, copies hook scripts, scaffolds an LLM Wiki, assembles a project-specific MCP tools guide, and provides explicit commands for CI/CD and strict type-checking setup.
 
-The core innovation is the **LLM Wiki**: a three-layer knowledge architecture (immutable `raw/` sources, LLM-owned `wiki/`, and schema in `CLAUDE.md`) that gives Claude unambiguous, structured context across every session. All project state lives in markdown files with defined schemas — task files, architecture decision records, UAT specs, roadmaps — so any agent in any context window can pick up work mid-flight without needing to be re-briefed.
+The project exists to move AI-agent state out of chat history and into structured, versioned markdown. Requirements, decisions, tasks, UAT specs, bug reports, roadmaps, source summaries, and operating logs all live in a predictable wiki layout, so future Claude Code sessions and subagents can resume work from file-system state instead of relying on prior conversation context.
 
-The package dogfoods its own scaffold: the `wiki/` in this repo was instantiated by running `sync-wiki-scaffold.sh`, and the 60+ skills in `lib/skills/` span the full development lifecycle from requirements through deployment — shipped globally via rsync and invocable from any Claude Code session as `/slash-commands`.
+The package is aimed at developers and teams using Claude Code as a daily engineering assistant. It provides a reusable operating system for AI-assisted software work: durable knowledge, lifecycle-managed work artifacts, slash-command skills, LSP-first code navigation rules, and safety hooks that keep agent behavior consistent across projects.
 
 ## Architecture
 
 ### Overview
 
-`@codewizard-dt/bootstrap` is a **CLI tool and configuration template package** — there is no running server. The CLI (`bin/cli.js`) routes `npx` commands to bash scripts; the bash scripts orchestrate interactive MCP installs, rsync operations, per-project guide assembly, and Claude-driven scaffolding. At runtime in target projects, the installed hooks and skills become part of the Claude Code agent session, enforcing LSP-first navigation and providing the full slash command vocabulary.
+`@codewizard-dt/bootstrap` is a CLI-plus-template package, not a long-running service. The Node.js CLI in `bin/cli.js` dispatches commands to Bash orchestration scripts, and those scripts install global assets, scaffold project-local files, register MCP servers, and invoke the Claude Code CLI for context-sensitive setup. Most state is written into the target project as markdown, JSON, YAML, and shell-generated scaffolding; the package itself remains stateless between invocations.
+
+At a glance, the package entry point selects a script, scripts copy or generate assets, assets become global Claude Code skills/hooks or project-local wiki files, and Claude Code plus MCP servers provide the runtime behavior in the consumer project.
 
 ### Components
 
 #### CLI Entry Point
 
-- **Responsibility:** Routes `npx @codewizard-dt/bootstrap <command>` invocations to the correct bash script in `lib/scripts/`.
-- **Tech:** Node.js (`child_process.execFileSync`)
-- **Inputs:** CLI command name (`setup`, `update`, `install`, `deploy`, `migrate`, `typechecks`) and optional extra arguments
-- **Outputs:** Delegates to a shell script with inherited stdio and correct exit-code propagation
+- **Responsibility:** Routes `bootstrap <command>` and `npx @codewizard-dt/bootstrap <command>` invocations to the appropriate setup script.
+- **Tech:** Node.js CommonJS, `child_process.execFileSync`
+- **Inputs:** Commands such as `setup`, `update`, `install`, `deploy`, `migrate`, and `typechecks`, plus optional extra arguments for deploy and migration flows.
+- **Outputs:** Executes the selected script with inherited stdio and propagates the script exit status.
 - **Depends on:** Setup Scripts
 
 #### Setup Scripts
 
-- **Responsibility:** Orchestrate the full installation and scaffolding pipeline — interactive MCP configuration, global hooks and skills, wiki scaffold, dynamic MCP guide assembly, Serena registration, and CI/CD.
-- **Tech:** Bash, rsync, `claude` CLI
-- **Inputs:** Target project path; `BRAVE_API_KEY` / `CONTEXT7_API_KEY` env vars; stdin for interactive prompts
-- **Outputs:** MCP server registrations in `~/.claude/`, skills in `~/.claude/skills/`, hooks in `~/.claude/hooks/`, wiki structure and assembled `mcp-tools.md` in target project, `.mcp.json` for Serena, `.github/workflows/` CI/CD
-- **Depends on:** MCP Installer, Skills Library, Hooks Library, Wiki Scaffold Templates, Guide Stubs, Prompt Templates, `claude` CLI
+- **Responsibility:** Coordinate project setup, updates, global installs, explicit deployment scaffolding, Serena bootstrapping, wiki migration, and strict type-checking setup.
+- **Tech:** Bash, `rsync`, `find`, `grep`, `claude` CLI, npm-executed shell scripts
+- **Inputs:** Target project path, interactive prompts, CLI flags such as `--dry-run`, API keys supplied by environment variables or stdin, and optional user context for deploy/typecheck setup.
+- **Outputs:** Global hooks and skills, MCP registrations, project-local `wiki/`, `raw/`, `.docs/guides/`, `.mcp.json`, `.serena/project.yml`, and optional deployment or type-check configuration when those explicit commands are run.
+- **Depends on:** CLI Entry Point, Skills Library, Hooks Library, Wiki Scaffold Templates, Prompt Templates, Guide Stubs, Claude Code CLI, MCP servers
 
-#### MCP Installer (`install-mcps.sh`)
+#### MCP Installer
 
-- **Responsibility:** Install and configure MCP servers (Serena, Brave Search, Context7, Playwright) in either interactive mode (per-server opt-in with scope selection) or non-interactive mode (install all silently).
-- **Tech:** Bash, `claude mcp add`
-- **Inputs:** `--interactive` flag, optional `--project-dir`; API keys from env or interactive prompts
-- **Outputs:** MCP server entries in `~/.claude/` (user scope) or `<project>/.mcp.json` (project scope)
-- **Depends on:** `claude` CLI
-
-#### Guide Builder (`build-mcp-guide.sh`)
-
-- **Responsibility:** Assemble a project-specific `.docs/guides/mcp-tools.md` from per-server stub files, including only the MCP servers actually installed in the target project.
-- **Tech:** Bash, `cat` assembly from markdown stubs
-- **Inputs:** Target project path and list of installed MCP names (`serena`, `brave-search`, `context7`, `playwright`)
-- **Outputs:** `.docs/guides/mcp-tools.md` tailored to the project's installed MCP set
-- **Depends on:** Guide Stubs
+- **Responsibility:** Registers Serena, Brave Search, Context7, and Playwright MCP servers with the correct user or project scope.
+- **Tech:** Bash, `claude mcp add`, `uvx`, `npx`
+- **Inputs:** `--interactive`, `--project-dir`, `BRAVE_API_KEY`, optional `CONTEXT7_API_KEY`, and scope choices from interactive prompts.
+- **Outputs:** User-scope MCP registrations for shared tools and project-scope `.mcp.json` registration for Serena when selected.
+- **Depends on:** Claude Code CLI, uv/uvx, npm package execution
 
 #### Skills Library
 
-- **Responsibility:** Provide 60+ Claude Code slash command definitions covering requirements, decisions, tasks, UAT, bugs, roadmaps, research, flashcards, and utilities — installed globally so they are available in every project.
-- **Tech:** Markdown (`SKILL.md` files read by Claude Code's skills system from `~/.claude/skills/`)
-- **Inputs:** User-typed `/skill-name [args]` in Claude Code
-- **Outputs:** Structured agent behavior — file creation, wiki updates, test execution, code review, research reports, interactive flashcard HTML pages
-- **Depends on:** Serena MCP, Brave Search MCP, Context7 MCP (resolved at runtime in target projects)
+- **Responsibility:** Provides reusable Claude Code skills for requirements, decisions, tasks, UAT, bugs, roadmaps, research, docs, linting, evals, security audits, flashcards, demos, and other agent workflows.
+- **Tech:** Markdown `SKILL.md` files in `lib/skills/`
+- **Inputs:** User-invoked skill names in Claude Code sessions, file paths, task descriptions, requirements, and project context.
+- **Outputs:** Structured agent behavior, wiki work items, generated reports, UAT specs, documentation updates, and guided workflow transitions.
+- **Depends on:** Target project files, MCP guide rules, installed MCP servers where applicable
 
 #### Hooks Library
 
-- **Responsibility:** Enforce Serena-first LSP navigation and safety policies via PreToolUse/PostToolUse/SessionStart hooks that fire in all permission modes, including `bypassPermissions`.
-- **Tech:** Node.js hook scripts; shared library in `lib/hooks/lib/`
-- **Inputs:** Tool calls from Claude (Read, Write, Edit, Bash, Grep, Glob, Agent)
-- **Outputs:** Block messages with Serena-equivalent suggestions, or pass-through; writes nav-state to `~/.claude/state/` for gate decisions
-- **Depends on:** `.serena/project.yml` (for language scoping), `lib/hooks/lib/serena.js`
-
-#### Prompt Templates
-
-- **Responsibility:** Provide structured Claude prompt instructions for AI-driven scaffolding operations — CI/CD workflow generation, strict typecheck setup, and wiki migration — where static templates would be too brittle.
-- **Tech:** Markdown (read by bash scripts and passed to `claude --print`)
-- **Inputs:** Target project context and CLI extra arguments
-- **Outputs:** Claude Code agent actions — file creation, git operations, frontmatter synthesis
-- **Depends on:** `claude` CLI
+- **Responsibility:** Enforces safety and Serena-first code navigation policies across Claude Code sessions, including sessions running with permissive tool modes.
+- **Tech:** Node.js hook scripts in `lib/hooks/`, shared helper modules in `lib/hooks/lib/`
+- **Inputs:** Claude Code PreToolUse, PostToolUse, and SessionStart hook payloads for tools such as Read, Write, Edit, Bash, Grep, Glob, and Agent.
+- **Outputs:** Pass-through decisions, block messages, Serena-equivalent suggestions, and navigation state files under `~/.claude/state/`.
+- **Depends on:** Claude Code hook registration, `.serena/project.yml`, global `~/.claude/hooks/` installation
 
 #### Wiki Scaffold Templates
 
-- **Responsibility:** Define the canonical LLM Wiki directory structure and lifecycle specification files instantiated into every target project.
-- **Tech:** Markdown skeleton files with copy-once vs. always-refresh delivery policies
-- **Inputs:** `sync-wiki-scaffold.sh` rsync invocations
-- **Outputs:** `wiki/knowledge/` and `wiki/work/` family trees, lifecycle specs, `conventions.md`, and index/log stubs in target projects
-- **Depends on:** None
+- **Responsibility:** Defines the LLM Wiki directory structure, conventions, lifecycle specs, indexes, archive folders, and Claude guidance installed into target projects.
+- **Tech:** Markdown templates under `lib/scripts/templates/wiki/`, `CLAUDE.md` snippets, `.gitkeep` files
+- **Inputs:** Target project path and `sync-wiki-scaffold.sh` copy policy.
+- **Outputs:** `raw/`, `wiki/knowledge/`, `wiki/work/`, lifecycle files, family indexes, archive directories, `wiki/conventions.md`, `wiki/log.md`, and target-project `CLAUDE.md` additions.
+- **Depends on:** Setup Scripts
 
 #### Guide Stubs
 
-- **Responsibility:** Per-MCP-server reference guide fragments assembled by `build-mcp-guide.sh` into a project-specific MCP tools guide on every setup/update run.
-- **Tech:** Markdown stub files in `lib/scripts/templates/guides/stubs/`
-- **Inputs:** `build-mcp-guide.sh` cat assembly calls
-- **Outputs:** Sections of `.docs/guides/mcp-tools.md` in target projects
-- **Depends on:** None
+- **Responsibility:** Builds `.docs/guides/mcp-tools.md` from only the MCP sections that apply to the target project.
+- **Tech:** Markdown fragments in `lib/scripts/templates/guides/stubs/`, Bash assembly in `build-mcp-guide.sh`
+- **Inputs:** Target project path and installed MCP server names.
+- **Outputs:** A tailored MCP tools guide in the target project's `.docs/guides/` directory.
+- **Depends on:** MCP Installer, Setup Scripts
+
+#### Prompt Templates
+
+- **Responsibility:** Provide Claude Code with structured instructions for CI/CD setup, wiki migration, Serena configuration, and strict type-checking setup when static templates are too brittle.
+- **Tech:** Markdown prompt files in `lib/prompts/`
+- **Inputs:** Target project context, raw guide content, script interpolation, and optional user-provided deployment/typecheck details.
+- **Outputs:** Claude-generated project configuration, workflow files, migrated wiki artifacts, and type-check tooling.
+- **Depends on:** Claude Code CLI, raw guides, Setup Scripts
+
+#### GitHub Actions Templates
+
+- **Responsibility:** Supplies repository automation for secret scanning and a Docker/GHCR build-push template.
+- **Tech:** GitHub Actions YAML, Gitleaks action, Docker Buildx actions
+- **Inputs:** Pushes and pull requests to `main` for `security.yml`; manual `workflow_dispatch` for `build.yml`; root-level `Dockerfile` for container build execution.
+- **Outputs:** Gitleaks scan results, optional GHCR container images, and a placeholder deploy job that must be customized before production use.
+- **Depends on:** GitHub Actions, `.gitleaks.toml`, GitHub package permissions
 
 ### Component Interaction
 
 ```mermaid
 flowchart LR
-  subgraph CLI ["CLI"]
-    BIN["bootstrap CLI<br/>bin/cli.js"]
+  subgraph User ["Developer"]
+    DEV["Shell<br/>npx @codewizard-dt/bootstrap"]
   end
 
-  subgraph Scripts ["Setup Scripts (lib/scripts/)"]
+  subgraph CLI ["Package CLI"]
+    BIN["bin/cli.js<br/>Node.js"]
+  end
+
+  subgraph Scripts ["lib/scripts/"]
     SETUP["setup-project.sh"]
+    UPDATE["update-project.sh"]
     INSTALL["install-global.sh"]
     MCPS["install-mcps.sh"]
     WIKI["sync-wiki-scaffold.sh"]
@@ -111,40 +118,65 @@ flowchart LR
   end
 
   subgraph Assets ["Package Assets"]
-    SKILLS["Skills Library<br/>lib/skills/"]
-    HOOKS["Hooks Library<br/>lib/hooks/"]
-    PROMPTS["Prompt Templates<br/>lib/prompts/"]
+    SKILLS["Skills<br/>lib/skills/"]
+    HOOKS["Hooks<br/>lib/hooks/"]
     TEMPLATES["Wiki Templates<br/>lib/scripts/templates/wiki/"]
     STUBS["Guide Stubs<br/>lib/scripts/templates/guides/stubs/"]
+    PROMPTS["Prompt Templates<br/>lib/prompts/"]
+    RAW["Raw Guides<br/>raw/guides/"]
   end
 
-  subgraph Global ["Global Claude Config"]
+  subgraph Global ["Global Claude Code State"]
     GSKILLS["~/.claude/skills/"]
     GHOOKS["~/.claude/hooks/"]
-    GMCP["MCP Servers<br/>(brave, context7, playwright)"]
+    GMCP["User MCPs<br/>Brave, Context7, Playwright"]
   end
 
   subgraph Target ["Target Project"]
-    WIKI_DIR["wiki/"]
-    MCP_JSON[".mcp.json (Serena)"]
-    GITHUB[".github/workflows/"]
+    WIKI_DIR["wiki/ + raw/"]
     DOCS[".docs/guides/mcp-tools.md"]
+    MCP_JSON[".mcp.json<br/>Serena"]
+    SERENA_CFG[".serena/project.yml"]
+    WORKFLOWS[".github/workflows/"]
   end
 
+  subgraph External ["External Tools"]
+    CLAUDE["Claude Code CLI"]
+    UVX["uvx<br/>Serena"]
+    NPX["npx<br/>MCP packages"]
+    GHA["GitHub Actions"]
+    NPM["npm Registry"]
+  end
+
+  DEV -->|CLI args| BIN
   BIN -->|execFileSync| SETUP
-  SETUP --> INSTALL
-  SETUP --> MCPS
-  SETUP --> WIKI
-  SETUP --> GUIDE
-  SETUP --> DEPLOY
-  SETUP --> SERENA
-  INSTALL -->|rsync| SKILLS --> GSKILLS
-  INSTALL -->|rsync| HOOKS --> GHOOKS
+  BIN -->|execFileSync| UPDATE
+  BIN -->|execFileSync| INSTALL
+  BIN -->|execFileSync| DEPLOY
+  SETUP -->|runs| MCPS
+  SETUP -->|runs| INSTALL
+  SETUP -->|runs| WIKI
+  SETUP -->|runs| GUIDE
+  SETUP -->|runs| SERENA
+  INSTALL -->|rsync| SKILLS
+  INSTALL -->|rsync| HOOKS
+  SKILLS -->|copy| GSKILLS
+  HOOKS -->|copy| GHOOKS
   MCPS -->|claude mcp add| GMCP
-  WIKI -->|rsync copy-once| TEMPLATES --> WIKI_DIR
-  GUIDE -->|cat stubs| STUBS --> DOCS
-  DEPLOY -->|claude --print| PROMPTS --> GITHUB
-  SERENA -->|claude --print| MCP_JSON
+  MCPS -->|project scope| MCP_JSON
+  MCPS -->|launches| UVX
+  MCPS -->|launches| NPX
+  WIKI -->|copy-once + refresh| TEMPLATES
+  WIKI -->|writes| WIKI_DIR
+  GUIDE -->|assemble selected sections| STUBS
+  GUIDE -->|writes| DOCS
+  DEPLOY -->|claude -p| PROMPTS
+  DEPLOY -->|reads| RAW
+  DEPLOY -->|writes| WORKFLOWS
+  SERENA -->|claude -p| CLAUDE
+  SERENA -->|writes| SERENA_CFG
+  WORKFLOWS -->|runs| GHA
+  DEV -->|npm publish| NPM
 ```
 
 ### Data Flow
@@ -152,178 +184,284 @@ flowchart LR
 ```mermaid
 sequenceDiagram
   participant Dev as Developer
-  participant CLI as CLI (bin/cli.js)
+  participant CLI as bin/cli.js
   participant Setup as setup-project.sh
-  participant MCPs as install-mcps.sh
-  participant Install as install-global.sh
+  participant MCP as install-mcps.sh
+  participant Global as install-global.sh
   participant Wiki as sync-wiki-scaffold.sh
   participant Guide as build-mcp-guide.sh
-  participant Claude as claude CLI
+  participant Claude as Claude Code CLI
+  participant Project as Target Project
 
   Dev->>CLI: npx @codewizard-dt/bootstrap setup
   CLI->>Setup: execFileSync(setup-project.sh ".")
-  Setup->>MCPs: install-mcps.sh --interactive --project-dir
-  MCPs->>MCPs: prompt opt-in + scope per MCP server
-  MCPs->>MCPs: claude mcp add (serena/brave/context7/playwright)
-  MCPs-->>Setup: done
-  Setup->>Install: install-global.sh --skip-mcps
-  Install->>Install: rsync hooks → ~/.claude/hooks/
-  Install->>Install: rsync skills → ~/.claude/skills/
-  Install-->>Setup: done
+  Setup->>MCP: install-mcps.sh --interactive --project-dir <project>
+  MCP->>Claude: claude mcp add selected servers
+  MCP-->>Project: .mcp.json for Serena when selected
+  Setup->>Global: install-global.sh --skip-mcps
+  Global-->>Global: rsync skills to ~/.claude/skills/
+  Global-->>Global: rsync hooks to ~/.claude/hooks/
   Setup->>Wiki: sync-wiki-scaffold.sh <project>
-  Wiki->>Wiki: mkdir wiki/ family dirs
-  Wiki->>Wiki: rsync copy-once files (index, log, .gitkeeps)
-  Wiki->>Wiki: rsync always-refresh (lifecycle, conventions)
-  Wiki-->>Setup: done
-  Setup->>Guide: build-mcp-guide.sh <project> serena brave-search ...
-  Guide->>Guide: cat stubs for installed MCPs → .docs/guides/mcp-tools.md
-  Guide-->>Setup: done
-  Setup->>Claude: claude --print bootstrap-serena prompt → .serena/project.yml
-  Setup->>Claude: claude --print setup-deployment prompt → .github/workflows/
-  Claude-->>Setup: done
-  Setup-->>Dev: Setup complete ✓
+  Wiki-->>Project: raw/, wiki/, CLAUDE.md snippets, .docs/guides/
+  Setup->>Guide: build-mcp-guide.sh <project> <installed-mcps>
+  Guide-->>Project: .docs/guides/mcp-tools.md
+  Setup->>Claude: bootstrap-serena prompt
+  Claude-->>Project: .serena/project.yml
+  Setup-->>Dev: setup complete
+```
+
+```mermaid
+sequenceDiagram
+  participant Dev as Developer
+  participant CLI as bin/cli.js
+  participant Migrate as migrate-project.sh
+  participant Claude as Claude Code CLI
+  participant Git as Git
+  participant Project as Existing Project
+
+  Dev->>CLI: npx @codewizard-dt/bootstrap migrate --dry-run
+  CLI->>Migrate: execFileSync(migrate-project.sh "." "--dry-run")
+  Migrate-->>Dev: legacy .docs inventory
+  Dev->>CLI: npx @codewizard-dt/bootstrap migrate
+  CLI->>Migrate: execFileSync(migrate-project.sh ".")
+  Migrate->>Git: verify clean tree and create wiki-migration branch
+  Migrate->>Claude: migration prompt with mapping rules
+  Claude->>Project: git mv legacy files, synthesize frontmatter, rewrite links
+  Claude-->>Project: wiki/work indexes and log updates
+  Migrate-->>Dev: migration branch ready for review
 ```
 
 ### Design Decisions
 
-- **Global skills, per-project Serena** — Skills are installed globally once and available in all projects; Serena registers with an absolute project path to prevent language-config bleed between projects (documented bug `oraios/serena#895`).
-- **Copy-once vs. always-refresh** — Wiki index/log files are copy-once (projects own them after creation); lifecycle specs and guides are always-refreshed (template-owned) so schema changes propagate on the next `update` run without clobbering project state.
-- **Never-move work artifacts** — Work items (`wiki/work/<family>/`) are permanent file-system entries; status lives in frontmatter, not file location. Links never break as items progress through their lifecycle.
-- **Hooks over deny rules** — PreToolUse hooks fire even in `bypassPermissions` mode (used by power-mode subagents and `--dangerously-skip-permissions` runs), making them the only reliable enforcement point for policies that must hold universally.
-- **Claude-driven scaffolding** — Complex, context-sensitive scaffolding (CI/CD workflows, Serena config, wiki migration) delegates to `claude --print` with structured prompt templates rather than maintaining brittle static templates that can't adapt to project specifics.
-- **Per-project MCP guide assembly** — The `mcp-tools.md` reference guide is assembled from per-server stub files to include only the MCPs actually installed in the target project, avoiding dead instructions for tools that aren't available.
-- **Dogfooding** — This repo's own `wiki/` was bootstrapped by its own `sync-wiki-scaffold.sh`; editing scaffold rules propagates by re-running the script.
+- **CLI dispatch stays thin:** `bin/cli.js` only maps command names to scripts, leaving workflow logic in Bash where filesystem setup and command orchestration are easier to inspect and run directly.
+- **Global skills and hooks, project-local wiki:** Shared agent behavior is installed once under `~/.claude/`, while project knowledge and work state remain versioned inside each repository.
+- **Project-scoped Serena:** Serena is registered against an absolute project path in `.mcp.json`, avoiding cross-project language-server bleed while keeping other MCPs available globally when appropriate.
+- **Copy-once vs. always-refresh templates:** Project-owned files such as indexes and logs are not overwritten, while lifecycle specs, conventions, and guide content can be refreshed from the package.
+- **Hooks enforce behavior where permissions cannot:** PreToolUse and PostToolUse hooks enforce `.env` safety, protected git operations, and Serena-first navigation even when normal allow/deny permissions are bypassed.
+- **Claude-driven scaffolding handles project variance:** Deployment, type-checking, Serena configuration, and wiki migration use prompt templates plus `claude -p` because the right output depends on the consumer project's stack.
 
 ## Technologies
 
-- **Node.js** — CLI entry point (`bin/cli.js`), hook scripts (`lib/hooks/*.js`), shared hook library
-- **Bash** — Setup, install, sync, migration, and guide-assembly scripts (`lib/scripts/*.sh`)
-- **Markdown** — Skill definitions (`SKILL.md`), wiki templates, per-server guide stubs, prompt templates
-- **rsync** — Idempotent file synchronization for skills, hooks, wiki scaffold, and guides
-- **GitHub Actions** — Secret scanning with Gitleaks on every push/PR to main; container build and push to GHCR on manual trigger (skips unless a `Dockerfile` is present)
-- **Gitleaks** — Secret detection scanning (`.gitleaks.toml`)
-- **MCP (Model Context Protocol)** — Integration surface for Brave Search, Context7, Playwright, and Serena
-- **Serena** — LSP-backed code navigation MCP server, installed via `uvx` from `oraios/serena`
-- **Claude Code CLI** — `claude mcp add` and `claude --print` invoked from setup scripts
-- **npm** — Package distribution as `@codewizard-dt/bootstrap` (public, scoped)
-- **YAML** — GitHub Actions workflow files, Serena `project.yml`
-- **JSON** — `package.json`, `.mcp.json`
+- **Languages and runtimes**
+  - Node.js CommonJS for the CLI and hook scripts
+  - Bash for installation, synchronization, migration, and setup orchestration
+  - Markdown for skills, prompts, wiki templates, raw guides, and project documentation
+  - YAML for GitHub Actions workflows and generated Serena/project configuration
+  - JSON for `package.json`, `.mcp.json`, hook payloads, and Claude Code settings snippets
+
+- **CLI and package distribution**
+  - npm package distribution with the scoped package name `@codewizard-dt/bootstrap`
+  - `npx` execution for one-command setup
+  - `package.json` `bin` mapping to expose the `bootstrap` command
+
+- **Automation and scripting**
+  - `rsync` for idempotent global asset installation and scaffold synchronization
+  - Git for migration preflights, branches, and history-preserving moves
+  - Shell utilities used by scripts for path resolution, file detection, and template assembly
+
+- **AI and MCP tooling**
+  - Claude Code CLI for MCP registration and prompt-driven scaffolding
+  - Model Context Protocol (MCP)
+  - Serena MCP for LSP-backed code exploration and editing
+  - Brave Search MCP for web research
+  - Context7 MCP for library documentation lookup
+  - Playwright MCP for browser automation and UI inspection
+  - uv/uvx for launching Serena from its GitHub source
+
+- **Workflow assets**
+  - Claude Code skills system using `SKILL.md`
+  - Claude Code hooks using PreToolUse, PostToolUse, and SessionStart events
+  - LLM Wiki structure with `raw/`, `wiki/knowledge/`, and `wiki/work/`
+  - Mermaid diagrams embedded in documentation
+
+- **CI/CD and security**
+  - GitHub Actions
+  - Gitleaks and `.gitleaks.toml`
+  - Docker Buildx GitHub Actions template
+  - GitHub Container Registry template workflow
 
 ## Use Cases
 
-- **New project bootstrap** — Run one command in any new repo to get MCP servers, 60+ skills, LSP enforcement hooks, and a fully structured LLM Wiki in under two minutes, without touching project code.
-- **Global skill and hook install** — Run `npx @codewizard-dt/bootstrap install` to sync the latest skills and hooks to `~/.claude/` without touching any project files; skills become available in every Claude Code session immediately.
-- **Legacy project migration** — Run `npx @codewizard-dt/bootstrap migrate` to convert an existing `.docs/`-based project to the wiki structure; Claude rewrites frontmatter, renames files to ID-prefixed form, rebuilds active indexes, and rewrites cross-references on a fresh reviewable branch.
-- **Structured AI-native development workflows** — Developers who use Claude Code daily get a consistent vocabulary of slash commands (requirements → decisions → tasks → UAT → done) that any agent in any context window can follow using only file-system state, with no manual re-briefing.
-- **LSP-enforced navigation** — Teams with Serena configured get automatic enforcement that Claude always navigates code semantically via LSP rather than using grep/cat/sed, producing more accurate edits at lower token cost — even in headless and multi-agent modes.
+- **New Claude Code project bootstrap:** Developers can run one command in a repository to install MCP tooling, global skills, global hooks, wiki scaffolding, MCP guides, and Serena configuration, then run deployment scaffolding separately when needed.
+- **Global agent workflow installation:** Users can sync the latest skill and hook library into `~/.claude/` without modifying any project by running the install command.
+- **Legacy documentation migration:** Existing `.docs/`-style projects can be migrated into the current LLM Wiki structure with branch isolation, path mapping, frontmatter synthesis, and link rewrites.
+- **AI-native engineering operations:** Teams can manage requirements, decisions, tasks, UAT, roadmaps, bugs, evals, research, demos, and security audits as durable markdown artifacts that agents can read and update.
+- **Safer code-agent behavior:** Serena-first hooks, `.env` guards, and protected git operation blocks reduce fragile file access patterns and prevent common agent mistakes across normal and permissive sessions.
 
 ## Skills Demonstrated
 
-- **CLI Tool Development (Node.js)** — Designed a clean `npx`-invocable CLI that routes commands to shell scripts with correct exit-code propagation, stdin inheritance, and a self-documenting help screen.
-- **Shell Scripting and Idempotent Automation (Bash, rsync)** — Wrote multi-step setup and sync scripts that are fully re-runnable: check-before-install patterns, rsync `--ignore-existing` for copy-once semantics, and always-overwrite delivery for spec documents.
-- **AI-Native Workflow System Design** — Designed a lifecycle-aware, schema-first workflow system for AI coding agents: structured task, requirement, decision, UAT, and bug artifacts with typed frontmatter, stable ID schemes, and status-navigated active indexes that any agent can consume without re-briefing.
-- **Model Context Protocol (MCP) Integration** — Integrated four MCP servers (Brave Search, Context7, Playwright, Serena) with appropriate scoping strategies — user-scope for shared tooling, project-scope with absolute paths for Serena to prevent cross-project language bleed.
-- **LSP-First Hook Engineering (Node.js PreToolUse/PostToolUse)** — Implemented a suite of session-lifecycle hooks that enforce Serena LSP navigation even in `bypassPermissions` mode, using a gate-based warmup system, shared state tracking in `~/.claude/state/`, and per-language scoping from Serena's `project.yml`.
-- **Knowledge Management System Design (LLM Wiki Architecture)** — Designed a two-domain wiki architecture (timeless `knowledge/` vs. stateful `work/`) with opposite organizing laws, typed cross-links (`rel::[[target]]`), and copy-once/always-refresh template delivery policies that scale across any project size.
-- **AI-Driven Scaffolding (Prompt Engineering)** — Used `claude --print` with structured prompt templates to delegate complex, context-sensitive scaffolding (CI/CD setup, Serena config bootstrapping, wiki migration) to an AI agent rather than maintaining brittle static templates.
-- **CI/CD Pipeline Configuration (GitHub Actions, Gitleaks, GHCR)** — Scaffolds secret detection scanning and Dockerfile-guarded container build/push workflows; the skip-if-no-Dockerfile pattern keeps template repos consistently green.
-- **npm Package Publishing and Distribution** — Published as a scoped public package (`@codewizard-dt/bootstrap`) with correct `bin`, `files`, and `repository` fields; `files` field precisely controls the published surface to exclude dev-only artifacts.
-- **Template System Design** — Implemented a scaffold templating system with two explicit update policies (copy-once for project-owned state, always-refresh for spec documents) and per-server guide stub assembly, allowing the template to evolve without destroying consumer customizations.
+- **CLI Tool Development (Node.js):** Built an npm-executable CLI with command routing, argument forwarding, inherited stdio, clear usage output, and process exit-code propagation.
+- **Shell Scripting and Idempotent Automation (Bash, rsync):** Implemented repeatable setup scripts with preflight checks, copy-once vs. refresh semantics, interactive and non-interactive modes, and safe global installation behavior.
+- **AI-Native Workflow System Design:** Designed a structured markdown workflow for requirements, decisions, tasks, roadmaps, bugs, UAT, research, evals, and documentation that can be resumed by independent agent sessions.
+- **Knowledge Management Architecture (LLM Wiki):** Modeled project memory as immutable raw sources, timeless knowledge synthesis, and lifecycle-managed work artifacts with conventions, indexes, logs, stable IDs, and typed links.
+- **Model Context Protocol Integration:** Integrated Serena, Brave Search, Context7, and Playwright MCP servers with appropriate scope decisions, API-key handling, and generated MCP usage guidance.
+- **Claude Code Hook Engineering (Node.js):** Built hook scripts that enforce file-safety and LSP-first navigation policies using Claude Code hook payloads, shared helper modules, and persistent navigation state.
+- **Prompt Engineering for Developer Tooling:** Created prompt templates that let Claude Code generate context-sensitive deployment, migration, type-checking, and Serena configuration changes in consumer projects.
+- **CI/CD Pipeline Configuration (GitHub Actions):** Provided security scanning and container build/push workflow templates using Gitleaks, Docker Buildx, GHCR, manual dispatch, and skip guards for repositories without Dockerfiles.
+- **Developer Experience Design:** Organized commands, skills, templates, guides, and troubleshooting paths so repeated Claude Code setup work can be performed from a small set of predictable commands.
+- **Documentation Systems Engineering:** Generated machine-parseable project documentation, skill instructions, lifecycle specs, MCP guides, and runbooks that serve both humans and downstream AI tools.
 
 ## Deployment
 
 ### Overview
 
-`@codewizard-dt/bootstrap` is a stateless CLI package published to the public npm registry. There is no server — deployment means publishing a new package version. CI runs on GitHub Actions (secret scanning on every push to main); the publish step is manual.
+This project deploys as a public npm CLI package. There is no hosted runtime, database, or production server; publishing a new npm version is the release process, while GitHub Actions provides repository security scanning and an optional manual container-build template.
 
 ### Prerequisites
 
-- `node >= 18`
-- `npm` account with publish rights to the `@codewizard-dt` scope
-- Authenticated `npm` session (`npm login` or an npm automation token)
-
-For consumers running `npx @codewizard-dt/bootstrap setup`:
-
-- `claude` CLI installed (`npm install -g @anthropic-ai/claude-code`)
-- `uv` installed (required for Serena: `curl -LsSf https://astral.sh/uv/install.sh | sh`)
-- Claude API key
+- `node >= 18` for local CLI execution and npm packaging.
+- `npm` with publish access to the `@codewizard-dt` scope.
+- An authenticated npm session via `npm login` or an npm automation token.
+- Git access to the repository at `git@github.com:codewizard-dt/bootstrap-claude.git`.
+- GitHub Actions enabled for repository CI checks.
+- For local smoke tests of setup commands, install Claude Code with `npm install -g @anthropic-ai/claude-code`.
+- For Serena setup smoke tests, install `uv` so `uvx` is available.
 
 ### Environment Variables
 
-No environment variables are required to publish the package. Consumers need the following during `install` / `setup`:
+No environment variables are required to build or publish this package from a logged-in npm session. The setup scripts and generated workflows reference the following variables and secrets:
 
 | Variable | Required | Example | Description |
 |---|---|---|---|
-| `BRAVE_API_KEY` | yes (for install) | `BSAxxxxxxx` | Brave Search API key; prompted interactively during `install-mcps.sh` |
-| `CONTEXT7_API_KEY` | optional | `ctx_...` | Context7 API key; anonymous HTTP access is used if absent |
+| `BRAVE_API_KEY` | yes for non-interactive Brave MCP install | `BSA...` | Secret passed to the Brave Search MCP server; prompted interactively if absent. |
+| `CONTEXT7_API_KEY` | optional for Context7 MCP install | `ctx_...` | Optional secret sent as a Context7 MCP HTTP header; Context7 can be installed without it. |
+| `GITHUB_TOKEN` | yes in GitHub Actions | `${{ secrets.GITHUB_TOKEN }}` | GitHub-provided token used by Gitleaks and GHCR login in workflows. |
+| `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` | yes in workflows | `true` | Plain workflow config forcing JavaScript actions to run on Node 24. |
+| `REGISTRY` | yes in `build.yml` | `ghcr.io` | Plain workflow config for the container registry in the template workflow. |
+| `OWNER` | yes in `build.yml` | `${{ github.repository_owner }}` | Plain workflow config used to build GHCR image tags. |
+| `IMAGE` | yes in `build.yml` | `${{ github.event.repository.name }}` | Plain workflow config used to build GHCR image tags. |
+| `CLAUDE_MIGRATION` | optional | `1` | Plain flag recognized by some Serena enforcement hooks to bypass during migration flows. |
 
 ### Build
 
-No build step — the package ships source files directly.
+There is no transpilation or bundling step. The package ships source files directly through the `files` list in `package.json`.
 
 ```bash
-# Preview what would be published
+# Inspect the package contents before publishing
 npm pack --dry-run
 ```
+
+The publishable surface is `bin/`, `lib/`, `raw/`, `.github/`, and `.gitleaks.toml`.
 
 ### Run Locally
 
 ```bash
-# Test the CLI without publishing
+# Show CLI usage without making project changes
+node bin/cli.js
+
+# Install global MCPs, hooks, and skills
 node bin/cli.js install
+
+# Run setup against the current repository
 node bin/cli.js setup
+
+# Preview deployment-scaffold detection for the current repository
+node lib/scripts/setup-deployment.sh --dry-run .
 ```
+
+The setup command writes to the current project and to `~/.claude/`, so run it from a disposable test repository when validating a release candidate.
 
 ### Deploy
 
-```bash
-# 1. Bump the version
-npm version patch    # bug fixes
-npm version minor    # new skills or scripts
-npm version major    # breaking changes
+1. Confirm the working tree contains only the intended release changes.
 
-# 2. Publish to npm
+```bash
+git status --short
+```
+
+2. Preview the package contents.
+
+```bash
+npm pack --dry-run
+```
+
+3. Bump the npm version.
+
+```bash
+npm version patch
+# or: npm version minor
+# or: npm version major
+```
+
+4. Publish the package.
+
+```bash
 npm publish --access public
 ```
 
-The `files` field in `package.json` ships `bin/`, `lib/`, `raw/`, `.github/`, and `.gitleaks.toml`.
-
-### Data & Migrations
-
-No database. The package contains no persistent state — all state lives in the consumer project's `wiki/` files after scaffolding.
-
-### Health Checks & Smoke Tests
-
-After publishing, verify with:
+5. Verify the published version.
 
 ```bash
-# Confirm the new version is live
 npm view @codewizard-dt/bootstrap version
-
-# Smoke-test the CLI from a clean directory
 npx @codewizard-dt/bootstrap@latest
 ```
 
-### Rollback
+CI/CD details:
+
+- `.github/workflows/security.yml` runs Gitleaks on pushes and pull requests targeting `main`.
+- `.github/workflows/build.yml` is manual-only via `workflow_dispatch`; its build job skips unless a root-level `Dockerfile` exists, and its deploy job is a placeholder.
+- No workflow currently publishes the npm package automatically; npm release is manual.
+
+### Data & Migrations
+
+This package has no database, schema migrations, object storage, queues, or runtime persistence. Data migration support in this repo refers to consumer-project documentation migration through `npx @codewizard-dt/bootstrap migrate`, which creates a reviewable `wiki-migration` branch and moves legacy `.docs/` artifacts into the LLM Wiki structure.
+
+### Health Checks & Smoke Tests
+
+There is no HTTP health endpoint because this is a CLI package. Use command-level smoke tests:
 
 ```bash
-# Unpublish a bad version (available within 72 hours of publish)
-npm unpublish @codewizard-dt/bootstrap@<version>
+# Local CLI usage should print command help and exit nonzero
+node bin/cli.js
 
-# Deprecate without removing (preferred if the version has been downloaded)
-npm deprecate @codewizard-dt/bootstrap@<version> "Contains a bug — upgrade to @<next-version>"
+# Package metadata should resolve from npm after publish
+npm view @codewizard-dt/bootstrap version
+
+# The latest package should execute and print usage without a command
+npx @codewizard-dt/bootstrap@latest
+
+# Security workflow should pass in GitHub Actions
+gh run list --workflow security.yml --limit 5
 ```
+
+For end-to-end validation, run `npx @codewizard-dt/bootstrap@latest setup` inside a disposable repository and confirm `wiki/`, `raw/`, `.docs/guides/`, and the selected MCP configuration files are created.
+
+### Rollback
+
+If a release is bad, prefer deprecating the broken npm version and publishing a fixed version:
+
+```bash
+npm deprecate @codewizard-dt/bootstrap@<bad-version> "Contains a release issue; upgrade to <fixed-version>."
+npm version patch
+npm publish --access public
+```
+
+If the package version qualifies for npm unpublish rules and removal is necessary:
+
+```bash
+npm unpublish @codewizard-dt/bootstrap@<bad-version>
+```
+
+For source rollback, revert the release commit and publish a new patch version rather than rewriting repository history.
 
 ### Observability
 
-No runtime observability — this is a CLI tool, not a service. GitHub Actions logs capture CI run history at `https://github.com/codewizard-dt/bootstrap-wiki/actions`. npm download statistics are available at `https://www.npmjs.com/package/@codewizard-dt/bootstrap`.
+There is no runtime telemetry, metrics backend, dashboard, or alerting because the project is a CLI package. Operational signals come from GitHub Actions logs, npm package metadata, npm install/publish output, and user-reported command failures.
+
+Useful first places to inspect:
+
+- GitHub Actions security workflow runs in `.github/workflows/security.yml`.
+- Manual build template runs in `.github/workflows/build.yml`.
+- npm package metadata from `npm view @codewizard-dt/bootstrap`.
+- Local command traces from the setup scripts' stdout/stderr.
 
 ### Troubleshooting
 
-- **`command not found: bootstrap`** — The `bin/` entry is not on PATH. Run via `npx @codewizard-dt/bootstrap <command>` or add `node_modules/.bin` to PATH.
-- **`claude: command not found` during setup** — Install Claude Code: `npm install -g @anthropic-ai/claude-code`.
-- **`uv: command not found` during setup** — Install uv (required for Serena): `curl -LsSf https://astral.sh/uv/install.sh | sh`.
-- **Serena not connecting** — Run from the project root: `claude mcp add --scope project serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context claude-code --project "$(pwd)"`.
-- **Stale old-named skills (`adr-*`, `prd-*`) in `~/.claude/skills/`** — Run `npx @codewizard-dt/bootstrap install`; the script detects orphan folders and prompts to remove them.
-- **Hook prompts not suppressed** — The install script copies scripts to `~/.claude/hooks/` but does NOT wire them into `~/.claude/settings.json`. See `lib/hooks/README.md` for the required one-time manual wiring.
-- **`mcp-tools.md` missing a server section** — The guide is assembled from stubs for only the installed MCPs. Re-run `npx @codewizard-dt/bootstrap update` after adding a new MCP to regenerate the guide.
+- **`command not found: bootstrap`:** The package binary is not on PATH; run through `npx @codewizard-dt/bootstrap <command>` or use `node bin/cli.js <command>` locally.
+- **`claude: command not found`:** Claude Code is missing; install it with `npm install -g @anthropic-ai/claude-code` before running setup, deploy scaffolding, migration, or typecheck setup.
+- **`uv: command not found`:** Serena setup cannot launch; install uv so `uvx` is available, then rerun setup.
+- **Brave MCP install prompts for an API key:** Set `BRAVE_API_KEY` before non-interactive installs or enter it when prompted by `install-mcps.sh`.
+- **Context7 installs without authenticated access:** Set `CONTEXT7_API_KEY` if authenticated Context7 access is required; otherwise the script can register Context7 without the header.
+- **Hooks copy but do not run:** `install-global.sh` copies scripts to `~/.claude/hooks/`, but hook registration in `~/.claude/settings.json` is a separate manual step documented in `lib/hooks/README.md`.
+- **Manual build workflow skips:** `.github/workflows/build.yml` intentionally skips the build job unless a root-level `Dockerfile` exists.
+- **npm package points at unexpected repository metadata:** Check `package.json` `repository`, `homepage`, and `bugs` fields before publishing; they are independent of the local git remote.

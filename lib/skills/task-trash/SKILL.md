@@ -33,15 +33,15 @@ Parse `$ARGUMENTS` to locate the task file:
 
 2. **If a number-slug is provided** (e.g., `3-user-auth`):
    - Search `wiki/work/tasks/` for `<number-slug>.md`
-   - If not found, check `wiki/work/tasks/  `
+   - If not found, check `wiki/work/tasks/archive/`
    - If still not found, STOP and report the error
 
 3. **If only a description or number is provided** (e.g., `user auth` or `3`):
-   - Search `wiki/work/tasks/` and `wiki/work/tasks/  ` for a matching task file
+   - Search `wiki/work/tasks/` and `wiki/work/tasks/archive/` for a matching task file
    - If ambiguous, list matches and ask the user to clarify
    - If no match found, STOP and report the error
 
-4. Determine which directory the task currently lives in (`wiki/work/tasks/` or `completed/`)
+4. Determine which directory the task currently lives in (`wiki/work/tasks/` or `wiki/work/tasks/archive/`)
 5. Extract the task's **number-slug identifier** (e.g., `3-user-auth` from `3-user-auth.md`)
 
 ### Step 2: Find Related UAT Files
@@ -49,7 +49,7 @@ Parse `$ARGUMENTS` to locate the task file:
 Using the task's number-slug identifier, search for matching UAT files:
 
 1. Check `wiki/work/uat/` for `<number>-<slug>.uat.md`
-2. Check `wiki/work/uat/  ` for `<number>-<slug>.uat.md`
+2. Check `wiki/work/uat/archive/` for `<number>-<slug>.uat.md`
 3. Collect all matches — there may be zero, one, or multiple related UAT files
 
 ### Step 3: Confirm with the User

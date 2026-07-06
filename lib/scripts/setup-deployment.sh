@@ -5,12 +5,12 @@ set -euo pipefail
 # Reads raw/guides/deployment-strategy.md as a prompt template and runs Claude
 # to scaffold .github/ workflows + Makefile + .gitleaks.toml into a target project.
 #
-# Called once by setup-project.sh (new projects). DELIBERATELY NOT called by
-# update-project.sh: workflows get hand-customized per project (Dockerfile paths,
-# runner labels, deploy steps) and must not be clobbered on every template update.
+# Deliberately not called by setup-project.sh or update-project.sh: workflows get
+# hand-customized per project (Dockerfile paths, runner labels, deploy steps) and
+# must not be created or clobbered unless the user explicitly asks for deployment.
 #
-# Also invokable standalone (`npx bootstrap-claude deploy`) so an existing project
-# can opt into CI on demand. Claude applies copy-once semantics:
+# Invokable standalone (`npx @codewizard-dt/bootstrap deploy`) so a project can
+# opt into CI on demand. Claude applies copy-once semantics:
 #   - security.yml      → always overwritten (generic, no project-specific content)
 #   - build.yml         → created once, skipped if present
 #   - .gitleaks.toml    → created once, skipped if present

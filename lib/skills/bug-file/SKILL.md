@@ -63,7 +63,7 @@ If the user cannot supply reliable Steps to Reproduce, STOP and tell them:
 ### Step 4: Determine the Next Bug Number
 
 Scan **all** bug folders to find the next available 4-digit ID:
-- `mcp__serena__list_dir` on `wiki/work/bugs/`, `wiki/work/bugs/archive/`, `wiki/work/bugs/trashed/` (skip any that don't exist)
+- `mcp__serena__list_dir` on `wiki/work/bugs/` and `wiki/work/bugs/archive/` (skip either that doesn't exist)
 - Collect every `NNNN-` prefix; take `max + 1`; zero-pad to 4 digits.
 - Also scan `wiki/work/bugs/README.md`'s Index table for any reserved IDs not yet on disk.
 - Never re-use a number — IDs are immutable references.

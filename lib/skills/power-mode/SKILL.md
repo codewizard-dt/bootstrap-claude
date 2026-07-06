@@ -95,8 +95,8 @@ Agent({
   prompt: "Run /uat-auto <uat-path> (infer the UAT file path from the task path — same NNN slug, under wiki/work/uat/).
 
 CRITICAL: After the automated UAT run completes you MUST complete Step 7 in full before stopping:
-1. git mv the UAT file to wiki/work/uat/completed/
-2. git mv the task file to wiki/work/tasks/completed/
+1. git mv the UAT file to wiki/work/uat/archive/
+2. git mv the task file to wiki/work/tasks/archive/
 3. Remove the task row from wiki/work/tasks/README.md
 4. Flip the matching roadmap checkbox if any, and update the task path in the roadmap
 
@@ -176,8 +176,8 @@ Agent({
   prompt: "Run /uat-auto <uat-path>.
 
 CRITICAL: After the run completes, complete Step 7 before stopping:
-1. git mv the UAT file to wiki/work/uat/completed/
-2. git mv the task file to wiki/work/tasks/completed/
+1. git mv the UAT file to wiki/work/uat/archive/
+2. git mv the task file to wiki/work/tasks/archive/
 3. Remove the task row from wiki/work/tasks/README.md
 4. Flip the matching roadmap checkbox and update the task path in the roadmap
 

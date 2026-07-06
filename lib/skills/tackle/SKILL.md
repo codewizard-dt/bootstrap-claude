@@ -48,7 +48,7 @@ Parse `$ARGUMENTS` to locate the task file:
 
 **Goal**: find the first actionable item in the active roadmap and tackle it directly — no user prompt needed.
 
-1. **List roadmaps**: `mcp__serena__list_dir("wiki/work/roadmaps/", recursive=false)` — collect all `.md` files at the root level (exclude `completed/` and `README.md`).
+1. **List roadmaps**: `mcp__serena__list_dir("wiki/work/roadmaps/", recursive=false)` — collect all `.md` files at the root level (exclude `archive/` and `README.md`).
 
 2. **If no active roadmaps exist**: skip to the task survey (case 5 below).
 

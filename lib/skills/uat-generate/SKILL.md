@@ -16,6 +16,8 @@ Generate comprehensive User Acceptance Tests (UAT) for a feature, writing them t
 
 UAT owns **runtime and end-to-end verification**. `/tackle` only runs static gates (typecheck, lint, unit tests). Any behavior that requires executing the feature — running a script against real paths, hitting an API, walking a user flow, asserting on produced files — is a UAT test, not a tackle step.
 
+When a UAT case also contains behavior that can easily be preserved as a deterministic repeatable unit test, create that unit test immediately. UAT should not be the only place a cheap, automatable assertion lives.
+
 ---
 
 **Target**: $ARGUMENTS
@@ -82,6 +84,29 @@ Do not proceed to Step 3 until you can answer yes to all:
 - [ ] Every integration test: full step-by-step flow documented
 - [ ] Any test you cannot answer yes for: dropped (not approximated) and added to Step 6 gaps report
 
+#### Step 2.5: Unit-test promotion checkpoint (mandatory)
+
+For every planned UAT case, decide whether any part of it can be captured as a repeatable unit test with low setup cost.
+
+A UAT case is **unit-test promotable** when all are true:
+- The assertion targets deterministic business logic, parsing, validation, formatting, command construction, state transitions, error mapping, or a pure component/service boundary.
+- It can run inside the project's normal unit-test runner without a live server, real browser session, external API, database, network, secrets, wall-clock sleeps, or filesystem state that is hard to isolate.
+- The expected result is known from the task acceptance criteria or source contract.
+- The needed test harness already exists, or can be added in the same local pattern as nearby tests without creating new infrastructure.
+
+A UAT case is **not** unit-test promotable when it primarily verifies:
+- Browser rendering, visual layout, screenshots, accessibility tree output, or user flow timing.
+- Real HTTP service wiring, authentication middleware, deployment behavior, shell environment setup, database migrations, or file permissions.
+- Third-party service behavior or integration between multiple independently deployed systems.
+
+Before writing the UAT file, inspect the existing test layout and runner:
+- Find nearby test files for the changed code.
+- Identify the test framework, naming convention, fixtures, mocks, and command used by the repo.
+- Prefer adding focused assertions to an existing nearby test file when that is the local pattern.
+- Otherwise create the smallest conventional new test file beside the unit under test.
+
+If a case is promotable, you **must** create or update the unit test file. Do not merely list it as a recommendation. If you cannot create it because the test framework is absent or the harness would require new infrastructure, record that as a gap with the concrete blocker.
+
 ### Step 3: Generate UAT test cases
 
 **Only test what the task changed or introduced.** Do not include tests for pre-existing functionality that was not modified.
@@ -143,6 +168,7 @@ implements::[[TASK-NNN]]
 - **Scenario**: [The edge case being tested]
 - **Steps**: [How to trigger this scenario]
 - **Expected Result**: [How the system should handle it]
+- **Repeatable Unit Test**: [Created: `path/to/test-file` | Not applicable: reason | Blocked: reason]
 - [ ] Pass
 ```
 
@@ -161,6 +187,11 @@ implements::[[TASK-NNN]]
 - Auth tokens: use `-H "Authorization: Bearer $UAT_AUTH_TOKEN"` (double quotes so shell expands it)
 - No literal credentials in the file
 
+**Repeatable unit test metadata** (mandatory for every test case):
+- Add `- **Repeatable Unit Test**: Created: \`path/to/test-file\`` when you created or updated a unit test for the behavior.
+- Add `- **Repeatable Unit Test**: Not applicable: <short reason>` when the case cannot reasonably become a unit test.
+- Add `- **Repeatable Unit Test**: Blocked: <short reason>` only when it was promotable in principle but the repo lacks the needed test harness or fixtures.
+
 **Auth metadata** (required for every auth-gated test):
 ```
 Auth-Required: true
@@ -169,11 +200,21 @@ Auth-Role: user
 
 **API test ordering**: Create before Read/Update/Delete; validation/error tests after happy-path for each resource.
 
-### Step 4: Write the UAT file and cross-reference
+### Step 4: Write repeatable unit tests, the UAT file, and cross-reference
 
-1. Write `wiki/work/uat/UAT-NNN-slug.md` using the `Write` tool.
+1. For each promotable case from Step 2.5, create or update the actual unit test file before writing the UAT file:
+   - Use existing test framework conventions and nearby examples.
+   - Keep the test focused on the behavior from the UAT case.
+   - Do not add broad snapshots or duplicate end-to-end checks as unit tests.
+   - Do not introduce a new testing framework unless the source task explicitly requires it.
+   - If editing code test files, use Serena editing tools.
+   - If creating new config/markdown/test files where Serena is unavailable, use the appropriate project-approved edit/write tool; never shell redirection.
 
-2. Update the source task file's frontmatter: set `uat: "[[UAT-NNN]]"`. Use `Read` then `Edit` — never shell redirection.
+2. Include the created test path in the corresponding UAT case's `Repeatable Unit Test` metadata.
+
+3. Write `wiki/work/uat/UAT-NNN-slug.md` using the `Write` tool.
+
+4. Update the source task file's frontmatter: set `uat: "[[UAT-NNN]]"`. Use `Read` then `Edit` — never shell redirection.
 
 ### Step 5: Update the family index
 
@@ -191,7 +232,7 @@ Append:
 
 ```
 ## [YYYY-MM-DD] uat | UAT-NNN UAT: <task title>
-Generated UAT-NNN for TASK-NNN with N test cases covering <brief scope>.
+Generated UAT-NNN for TASK-NNN with N test cases covering <brief scope>. Created M repeatable unit test(s): <paths or "none">.
 ```
 
 ### Step 7: Report completion
@@ -200,6 +241,7 @@ Print:
 - UAT file: `wiki/work/uat/UAT-NNN-slug.md`
 - Source task: `TASK-NNN`
 - Test counts by category
+- Repeatable unit tests created or blocked
 - Any gaps (tests dropped due to insufficient research)
 
 Next steps:

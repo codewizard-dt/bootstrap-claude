@@ -30,7 +30,7 @@ Use `/uat-auto` when there is no human at the keyboard — for example, when a h
 
 ```
 /task-add → /tackle → /uat-generate → /uat-auto (headless)   ─┐
-                                     → /uat-walk (human)─┴→ completed/
+                                     → /uat-walk (human)─┴→ archive/
 ```
 
 Both walkthrough commands produce identical status-flip outcomes — only the decision procedure differs.

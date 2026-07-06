@@ -64,7 +64,7 @@ Closely related: **never delete or `[SKIP: ...]` a test** to avoid having to fix
 Identical to `/uat-auto` Step 1. Parse `$ARGUMENTS` to locate the UAT file:
 
 1. **File path** (e.g. `wiki/work/uat/3-user-auth.uat.md`) — use directly.
-2. **Number-slug** (e.g. `3-user-auth`) — Call Serena `list_dir` or `find_file` in `wiki/work/uat/`, fall back to `wiki/work/uat/  `.
+2. **Number-slug** (e.g. `3-user-auth`) — Call Serena `list_dir` or `find_file` in `wiki/work/uat/`, fall back to `wiki/work/uat/archive/`.
 3. **Number or description** (e.g. `3`, `user auth`) — Call Serena `list_dir` or `find_file` in `wiki/work/uat/`. If ambiguous, **STOP** and report in the completion summary (do not prompt).
 4. **If `$ARGUMENTS` is empty OR did not resolve** — auto-pick from pending:
    - `mcp__serena__list_dir` on `wiki/work/uat/` to enumerate `*.uat.md`.

@@ -42,7 +42,7 @@ Detect, in order:
 | `ROADMAP-NNN`, `NNN`, or `wiki/work/roadmaps/NNN-slug.md` (first token) | Roadmap reference — resolve in Step 2 |
 | `--phase "<name>"` (anywhere after the first token) | Target phase name — strip from remaining args |
 | `--task NNN` (anywhere after the first token) | Task-number lookup — strip from remaining args |
-| `wiki/work/tasks/NNN-slug.md` or `wiki/work/tasks/  NNN-slug.md` | Task-path lookup — entire remaining args **is** the path |
+| `wiki/work/tasks/NNN-slug.md` or `wiki/work/tasks/archive/NNN-slug.md` | Task-path lookup — entire remaining args **is** the path |
 | anything else | Inline item text (free-form) |
 
 Mirror the flag-detection style used by `lib/skills/task-add/SKILL.md` (which detects `--adr` and `--prd` in similar fashion). Treat each flag as a removable token; what remains after stripping flags is either the inline text or fallback text accompanying `--task NNN`.
@@ -70,7 +70,7 @@ If multiple files match a bare `NNN` (should not happen — numbers are unique �
 ## Step 3: If the arg is a task reference, resolve the task title
 
 Only perform this step when the remaining args after flag-stripping are either:
-- A task path (`wiki/work/tasks/NNN-slug.md` or `wiki/work/tasks/  NNN-slug.md`), or
+- A task path (`wiki/work/tasks/NNN-slug.md` or `wiki/work/tasks/archive/NNN-slug.md`), or
 - `--task NNN` (then look up the task file).
 
 Otherwise skip to Step 4 with the remaining text as the inline-item body.
@@ -80,7 +80,7 @@ Otherwise skip to Step 4 with the remaining text as the inline-item body.
 | Input | Action |
 |-------|--------|
 | Task path | Verify with `mcp__serena__find_file`. If missing, see 3c |
-| `--task NNN` | Pad `NNN` to 3 digits. Search `wiki/work/tasks/` first, then `wiki/work/tasks/  `. If neither has a match, see 3c |
+| `--task NNN` | Pad `NNN` to 3 digits. Search `wiki/work/tasks/` first, then `wiki/work/tasks/archive/`. If neither has a match, see 3c |
 
 ### 3b. Extract the H1 title
 

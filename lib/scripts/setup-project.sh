@@ -69,9 +69,6 @@ echo "Bootstrapping Serena project.yml..."
 "$SCRIPT_DIR/bootstrap-serena.sh" "$PROJECT_DIR"
 echo ""
 
-"$SCRIPT_DIR/setup-deployment.sh" "$PROJECT_DIR"
-echo ""
-
 # Done
 echo "============================="
 echo "  Setup complete!"
@@ -83,6 +80,7 @@ echo "  2. Open Claude Code: claude"
 echo "  3. Run /init to initialize the project"
 echo "  4. Run /primer to set up Serena's memory structure"
 echo "  5. Drop source documents into raw/ and run /wiki-ingest <file> to grow the wiki"
+echo "  6. Optional: run 'npx @codewizard-dt/bootstrap deploy' when you explicitly want deployment scaffolding"
 echo ""
 echo "API keys (if you skipped any during setup):"
 echo "  brave-search  BRAVE_API_KEY  https://brave.com/search/api/"
