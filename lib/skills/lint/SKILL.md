@@ -6,7 +6,7 @@ model: claude-sonnet-4-6
 disable-model-invocation: false
 user-invocable: true
 ---
-**Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
+**Prereqs:** obey `.docs/guides/mcp-tools.md`.
 
 # Lint Fix Cycles
 

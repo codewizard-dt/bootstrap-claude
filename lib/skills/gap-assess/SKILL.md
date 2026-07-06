@@ -8,8 +8,7 @@ argument-hint: <expected functionality — inline description or path to a requi
 disable-model-invocation: false
 user-invocable: true
 ---
-**Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
-**Run `/primer` first if you have not already this session.**
+**Prereqs:** obey `.docs/guides/mcp-tools.md`; run /primer if not done this session.
 
 # Gap Assess
 

@@ -1,403 +1,115 @@
 ---
 name: uat-auto-plus
-description: Autonomous-fix variant of /uat-auto — runs every test, diagnoses failures, applies fixes itself, and re-runs until green or attempts are exhausted. Intended for headless agents launched with --dangerously-skip-permissions.
+description: Autonomous-fix variant of /uat-auto — runs tests, diagnoses failures, fixes them itself, re-runs until green or attempts exhausted. For headless agents with --dangerously-skip-permissions.
 category: executing
 model: claude-sonnet-4-6
 argument-hint: <path/to/uat-file.md, number-slug, or description>
 disable-model-invocation: false
 user-invocable: true
 ---
-**Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
-**Always obey `wiki/work/tasks/lifecycle.md`. Read it now if not already in context.**
-**Run `/primer` first if you have not already this session.**
+**Prereqs:** obey `.docs/guides/mcp-tools.md` + `wiki/work/uat/lifecycle.md`; run /primer if not done this session.
 
+Read `~/.claude/skills/uat-walk/UAT-CORE.md` now — it defines Steps 1–5 (resolution, prerequisites, classification, judging, closure). This file defines only what differs for **autonomous-fix** mode.
 
 # UAT Auto Plus
 
-Autonomous variant of `/uat-auto`. Runs every test in a pending UAT file, auto-judges pass/fail from deterministic evidence, **diagnoses and fixes any failures itself**, re-runs the affected tests, and only records `[FAIL: ...]` after fix attempts are exhausted.
-
-**Designed for unattended agents** — for example, a Claude Code instance launched with `--dangerously-skip-permissions` from a tmux orchestrator, a CI job, or a scheduled cron run. There is no human in the loop, so the agent is empowered to make and apply correctness fixes on its own judgment.
-
----
-
 **UAT File**: $ARGUMENTS
 
----
+Autonomous variant of `/uat-auto`: run every eligible test, auto-judge from deterministic evidence, **diagnose and fix any API/CLI failure itself**, re-run the affected test, and only record `[FAIL: ...]` after fix attempts are exhausted. Same file-movement outcomes as the other variants; only failure-handling differs.
 
-## When to Use
+**Designed for unattended agents** — e.g. a Claude Code instance launched with `--dangerously-skip-permissions` from a tmux orchestrator, CI, or cron. No human in the loop, so the agent may apply correctness fixes on its own judgment.
 
 | Command | Audience | On failure |
 |---------|----------|------------|
-| `/uat-walk` | Human at keyboard | Prompt user, optionally delegate fix |
-| `/uat-auto` | Headless, conservative | Record `[FAIL]` and exit; human triages later |
+| `/uat-walk` | Human | Prompt user, optionally delegate fix |
+| `/uat-auto` | Headless, conservative | Record `[FAIL]`, exit; human triages |
 | `/uat-auto-plus` | Headless, autonomous | Diagnose → fix → re-test → repeat (bounded) |
 
-Pick `/uat-auto-plus` only when:
-1. The session was launched with `--dangerously-skip-permissions` (or equivalent), so file edits and shell commands do not require approval.
-2. The orchestrator wants the UAT to attempt to drive itself to green without escalation.
-3. The codebase, tests, and fixes are sufficiently scoped that an autonomous fix is unlikely to cause collateral damage. (If the failure is in shared infrastructure or cross-cutting code, prefer `/uat-auto` and let a human review.)
+**Pick this only when:** (1) the session skips approvals (`--dangerously-skip-permissions` or equivalent); (2) the orchestrator wants the UAT to drive itself to green without escalation; (3) the fix scope is contained — if the likely fix is in shared infrastructure or cross-cutting code, prefer `/uat-auto` and let a human review.
 
-`/uat-auto-plus` slots into the same task lifecycle as the other UAT variants:
+---
 
+## Prime Directive: truthful pass
+
+**Never mark `[x] Pass` unless the test currently passes against unmodified test logic.** Fixes go into application code, build/config, infrastructure, or test-environment setup — **never** into the UAT file's Expected/Steps/Command, and never by weakening assertions. If a failure can't be fixed without changing what is being tested, record `[FAIL: auto-fix-declined: <reason>]` and leave the code unchanged. Related: **never delete or `[SKIP: ...]` a test to avoid fixing it** — skip is a human verdict. A false pass is the worst outcome — it ships a broken feature *and* erodes trust in every later run.
+
+---
+
+## Procedure
+
+Run UAT-CORE headless throughout, adding the fix loop:
+
+1. **Step 1** — resolve/parse (auto/plus resolution: never prompt; auto-pick lowest-numbered pending on empty/unresolved).
+2. **Step 2** — prerequisites with **one autonomous repair attempt** each (start dev server in background + `Monitor` for ready; run migrate; run seed; obtain a documented env var), then re-verify. Still failing after one repair → hard gate (`[FAIL: auto-judge: prerequisite not satisfied — <which>]` on every untested test → Closure). Track every background process started — Closure terminates them.
+3. **Step 3 + 3.5** — classify, then stub-detect (leave stubs `- [ ] Pass`; **do not enter the fix loop** for them — implementing a feature from scratch is out of scope; surface in the summary).
+4. **Step 4** — auto-judge in document order: API/CLI by machine-checkable criteria → on `[FAIL]`, **enter the fix loop (below)**. UI and Manual are always `[FAIL: auto-judge: ... requires human verification]` and **never** enter the fix loop (no machine-checkable signal that a fix worked). Eligibility = pending + previously-failed; also reset `[FIXING: ...]` → `- [ ] Pass` before running.
+5. **Step 5** — write each verdict/`[FIXING: ...]` transition **immediately** via `Edit` (no buffering).
+6. **Closure** — archive on all-pass; on any fail leave in place and **exit 0**. This mode additionally deletes this task's screenshots, **terminates every background process** it started, and supports multi-task WIP tracking in decision annotation (all per UAT-CORE Closure "Mode differences: uat-auto-plus"). Log tag ` (auto-plus)`.
+
+Status markers this mode writes (UAT-CORE Step 5 mechanics):
 ```
-/task-add → /tackle → /uat-generate → /uat-auto-plus (autonomous)   ─┐
-                                     → /uat-auto    (headless)       ├→ archive/ (or stay pending)
-                                     → /uat-walk   (human)           ─┘
-```
-
-Identical file-movement outcomes — only the failure-handling procedure differs.
-
----
-
-## Prime Directive: Truthful Pass
-
-**The agent never marks `[x] Pass` unless the test currently passes against unmodified test logic.** Fixes go into the application code, infrastructure, or test-environment setup — **never** into the UAT file's Expected section, Steps, or Command, and never by weakening assertions to make them pass.
-
-If the agent cannot fix a failure without changing what is being tested, it must record the failure as `[FAIL: auto-fix-declined: <reason>]` and leave the application code unchanged. A false pass is the worst possible outcome — it ships a broken feature *and* erodes trust in every subsequent run.
-
-Closely related: **never delete or `[SKIP: ...]` a test** to avoid having to fix it. Skip is a human verdict.
-
----
-
-## Step 1: Resolve and Parse the UAT File
-
-Identical to `/uat-auto` Step 1. Parse `$ARGUMENTS` to locate the UAT file:
-
-1. **File path** (e.g. `wiki/work/uat/3-user-auth.uat.md`) — use directly.
-2. **Number-slug** (e.g. `3-user-auth`) — Call Serena `list_dir` or `find_file` in `wiki/work/uat/`, fall back to `wiki/work/uat/archive/`.
-3. **Number or description** (e.g. `3`, `user auth`) — Call Serena `list_dir` or `find_file` in `wiki/work/uat/`. If ambiguous, **STOP** and report in the completion summary (do not prompt).
-4. **If `$ARGUMENTS` is empty OR did not resolve** — auto-pick from pending:
-   - `mcp__serena__list_dir` on `wiki/work/uat/` to enumerate `*.uat.md`.
-   - If none, **STOP** with: "No pending UAT files found".
-   - Pick the lowest-numbered file by `<NNN>` prefix.
-   - Announce the auto-pick in one line: `No matching UAT file — running \`<filename>\``.
-   - Proceed without confirmation.
-
-Parse the file:
-- **Test sections**: `### UAT-*` headings.
-- **Prerequisites**: items under `## Prerequisites`.
-- **Existing statuses**: `- [ ] Pass`, `- [x] Pass`, `- [FAIL: ...]`, `- [FIXING: ...]`, `- [SKIP: ...]`.
-
-If every test is already `[x] Pass` or `[SKIP: ...]`, skip to **Step 7** (file-movement).
-
----
-
-## Step 2: Verify and Auto-Repair Prerequisites
-
-For each prerequisite:
-
-1. **Verify it** with one deterministic check (a `curl` to the health endpoint, `pg_isready`, file existence, port probe).
-2. **If verification fails and the prerequisite is a runnable service or environment condition**, attempt to satisfy it autonomously:
-   - "server running at localhost:4321" → start the dev server in a background `Bash` call (`run_in_background: true`), wait via `Monitor` for the ready signal, re-verify.
-   - "database migrated" → run the project's migration command, re-verify.
-   - "test data loaded" → run the project's seed command if one exists; if no scripted path exists, treat as unverifiable.
-   - Missing env var (e.g. `$UAT_AUTH_TOKEN`) → if a `.env.test` or equivalent describes how to obtain it, follow that; otherwise treat as unverifiable.
-3. **If verification still fails after one repair attempt**, abort the entire walkthrough with `[FAIL: auto-judge: prerequisite not satisfied — <which>]` on every untested test and proceed to Step 7.
-
-Background processes started for prerequisites must be tracked. They are terminated in Step 7 regardless of outcome.
-
----
-
-## Step 3: Classify Tests
-
-Identical to `/uat-auto` Step 3:
-
-- **API/CLI test** — has a runnable command in Steps/Expected, or an `Endpoint:` field.
-- **UI test** — has `UAT-UI-*` prefix or `Page:` / `Components:` metadata.
-- **Manual test** — anything else.
-
-### Mode
-
-The default is **"pending + previously-failed"**: every test with `- [ ] Pass` or `[FAIL: ...]` is eligible. Reset `[FAIL: ...]` and `[FIXING: ...]` markers to `- [ ] Pass` before running. Leave `[x] Pass` and `[SKIP: ...]` untouched.
-
----
-
-## Step 3.5: Stub Detection (Pre-Execution Gate)
-
-Before executing any eligible test, check whether the implementation is a stub or placeholder. A stub test **must remain pending** (`- [ ] Pass`) — do not execute it, do not enter the fix loop for it.
-
-For each eligible test:
-
-1. **Identify the implementation target** from the test's metadata:
-   - API/CLI tests: the `Endpoint:` field or URL in `**Command**:`
-   - UI tests: the `Page:` field or component name in `Components:`
-   - Manual tests: the feature name from the test `Description`
-
-2. **Locate the implementation file** using Serena:
-   - `mcp__serena__search_for_pattern` for the route/handler/component name across `src/`, `app/`, `lib/`, or equivalent source directories
-   - If nothing is found, treat as **unlocatable** and proceed with normal execution (cannot confirm stub; run the test)
-
-3. **Check for stub indicators** in the located file(s) using `mcp__serena__find_symbol` or `mcp__serena__search_for_pattern`:
-   - `TODO`, `FIXME`, or `HACK` markers inside function/method bodies
-   - `throw new Error('not implemented')`, `raise NotImplementedError`, `notImplemented()`, `unimplemented!()`
-   - `pass  # TODO`, `pass  # stub`, or a bare `pass` as the only statement in a function
-   - Empty function/method bodies: body is only `{}`, `return`, `return null`, `return undefined`, `return None`
-   - Placeholder comments: `// stub`, `# stub`, `// implement this`, `# TODO: implement`
-
-4. **If stub indicators are found**:
-   - Leave the test status as `- [ ] Pass` — do **not** modify the status line
-   - Record the test in the run's internal tracking as `stub-detected`
-   - **Do not execute the test; do not enter the fix loop** — implementing a feature from scratch is out of scope for autonomous fix. Surface it in the summary.
-
-5. **If no stub indicators are found** (or the file is unlocatable):
-   - Proceed to Step 4 for normal execution
-
-Run this gate for every eligible test **before** executing any of them (classify all tests in Step 3 first, then sweep with stub detection, then execute the non-stub tests).
-
----
-
-## Step 4: Execute and Auto-Judge, Per Type
-
-Work through eligible tests in document order. After each verdict, update the file (Step 5). On failure, enter the fix loop (Step 6) before moving to the next test.
-
-### 4A — API/CLI Tests
-
-Extract the command from the test's `**Command**:` block. **One Bash call per test.** No `&&`, `;`, `echo` banners, output redirection, temp files, or multi-statement shells. A clean `curl -sS`, optionally piped into one `jq` stage. Rewrite generated commands that violate this before running.
-
-**Pass criteria (ALL must be true):**
-
-1. The command exited cleanly (no connection error).
-2. HTTP status matches the Expected section's explicit status. If unspecified, any 2xx is pass-eligible on status alone.
-3. Response body satisfies **every** machine-checkable assertion (literal substring, JSON key presence, JSON value equality, array length, type-of). Use `jq` or substring match.
-4. If the test references `$UAT_AUTH_TOKEN`, the token must be present.
-
-If any criterion fails → `[FAIL: ...]` with actual vs expected, then enter the fix loop (Step 6).
-
-### 4B — UI Tests
-
-UI tests (`UAT-UI-*` prefix, or tests with `Page:` / `Components:` metadata) are **always** recorded as:
-
-```
-[FAIL: auto-judge: UI test requires human verification — use /uat-walk]
+Fixing: - [FIXING: attempt N/3 — <short reason>] <!-- YYYY-MM-DD -->
+Fail:   - [FAIL: auto-fix-exhausted: <last reason>] <!-- YYYY-MM-DD -->
+Fail:   - [FAIL: auto-fix-declined: <why refused>] <!-- YYYY-MM-DD -->
 ```
 
-Do not navigate, screenshot, or attempt any browser interaction. Use `/uat-walk` for interactive human verification. **Do not enter the fix loop** — there is no machine-checkable signal to know whether a fix worked.
+---
 
-### 4C — Manual Tests
+## Step 6: Autonomous fix loop
 
-Always recorded as `[FAIL: auto-judge: manual test requires human verification]`. **Do not enter the fix loop** — there is no machine-checkable signal to know whether a fix worked.
+The defining feature. On an API/CLI `[FAIL]` in Step 4, do not move on — diagnose, fix, re-run.
+
+**Bounds (hard):**
+- **Max 3 fix attempts per test.** After the 3rd unsuccessful attempt → `[FAIL: auto-fix-exhausted: <last reason>]`, next test.
+- **Max 3 concurrent fix sub-agents** across the run (most fixes are sequential; cap parallel batched investigations at 3).
+- **30-minute total wall-clock cap** across all fix attempts. If exceeded → finalize remaining failures as `[FAIL: auto-fix-timeout: budget exhausted]` and go to Closure. The regression sweep shares this cap.
+
+**Loop (per failing test, attempts 1–3):**
+1. Mark `[FIXING: attempt N/3 — <short reason>]` via `Edit`.
+2. **Diagnose** — read the test, the relevant app code, recent logs. Navigate with Serena (`find_symbol`, `find_referencing_symbols`, `get_symbols_overview`) — not Grep/Glob. For runtime failures, consider the `debug-logs` skill for a ranked hypothesis list.
+3. **Decide the smallest correct fix** that makes the test pass without weakening it. Acceptable targets: application code, build/config (missing env default, misrouted path, wrong port), test fixtures/seed data. **Never** the UAT file's Steps/Expected/Command; **never** test assertions in code.
+4. **Delegate to a sub-agent** (`Agent` tool, `subagent_type: general-purpose`, or `Plan` for design-heavy fixes). Prompt must include: the test ID + full body; the actual-vs-expected evidence from Step 4; the constraint "do not modify the UAT file or test assertions; fix only application code, build, config, or fixtures"; a request for a short report of files changed + rationale.
+5. **Re-run** the test with the same Step 4 procedure and the same Bash call — do not relax assertions.
+6. **Evaluate:** Pass → `[x] Pass`, delete this test's fail screenshots, exit loop, next test. Fail & attempt < 3 → next attempt with diagnosis refined by the prior report. Fail & attempt = 3 → `[FAIL: auto-fix-exhausted: <last reason>]`, exit loop.
+
+**Fix-decline cases** — mark `[FAIL: auto-fix-declined: <why>]` immediately (declining is correct judgment, not failure) when:
+- the fix would require changing the test's Expected/Steps/Command (test is wrong/out of date — a human call);
+- the fix is in shared infrastructure outside this task's scope (could break other tests — surface for review);
+- the failure is on a security-sensitive surface (auth, crypto, permissions) where a wrong fix is worse than a recorded failure;
+- the failure is in third-party code or external services beyond the agent's control.
+
+**Regression sweep** — after every successful fix, before moving on, re-run all previously-passing tests in the file with the same criteria. A newly-failing test is a new failure; the cause is most likely the just-applied fix — prefer reverting and re-diagnosing over piling on more changes. Bounded by the same 30-minute cap.
 
 ---
 
-## Step 5: Update the File Per Verdict
-
-Use the **`Edit`** tool — one `Edit` call per status line. Append the current date in the trailing HTML comment (`YYYY-MM-DD`).
-
-**Status line formats:**
-
-```markdown
-Pass:    - [x] Pass <!-- 2026-04-13 -->
-Fixing:  - [FIXING: attempt 1/3 — <short reason>] <!-- 2026-04-13 -->
-Fail:    - [FAIL: auto-fix-exhausted: <last reason>] <!-- 2026-04-13 -->
-Fail:    - [FAIL: auto-fix-declined: <why agent refused to fix>] <!-- 2026-04-13 -->
-```
-
-Only the status line changes. Never rewrite or reformat anything else in the test block. Preserve all metadata, headings, and whitespace exactly.
-
----
-
-## Step 6: Autonomous Fix Loop
-
-This is the defining feature of `/uat-auto-plus`. When a test fails in Step 4, do not move on — diagnose, fix, and re-run.
-
-### Bounds
-
-- **Max 3 fix attempts per test.** After the third unsuccessful attempt, record `[FAIL: auto-fix-exhausted: <last reason>]` and proceed to the next test.
-- **Max 3 concurrent fix sub-agents across the whole run.** Most fixes will be sequential because they target the failing test in front of you, but if you batch independent failures (e.g. three unrelated API tests fail and you want to dispatch parallel investigations), cap at three.
-- **Hard wall-clock cap: 30 minutes total** across all fix attempts. If exceeded, finalize remaining failures as `[FAIL: auto-fix-timeout: budget exhausted]` and proceed to Step 7.
-
-### Loop Structure (per failing test)
-
-For attempts 1 through 3:
-
-1. **Mark the test `[FIXING: attempt N/3 — <short reason>]`** via `Edit` so the file reflects in-progress state.
-2. **Diagnose** the failure. Read the failing test, the relevant application code, and recent logs. Use Serena (`find_symbol`, `find_referencing_symbols`, `get_symbols_overview`) for code navigation — not Grep/Glob. For runtime failures, consider invoking the `debug-logs` skill via `Skill` to triage logs and produce a ranked hypothesis list.
-3. **Decide on the fix.** Apply the smallest correct change that makes the test pass without weakening it. Acceptable fix targets:
-   - Application code (the implementation under test).
-   - Build/config (a missing env var default, a misconfigured route, a wrong port).
-   - Test environment fixtures or seed data.
-   - **Never** the UAT test file's Steps, Expected, or Command. **Never** the test assertions in code.
-4. **Delegate the fix to a sub-agent** via the `Agent` tool with `subagent_type: general-purpose` (or a more specific agent if one fits, e.g. `Plan` for design-heavy fixes). The sub-agent's prompt must include:
-   - The failing test ID and full test body.
-   - The actual vs expected evidence captured in Step 4.
-   - The constraint: "do not modify the UAT file or test assertions; fix only application code, build, config, or fixtures".
-   - A request for a short report listing files changed and the rationale.
-5. **Re-run the test** using the same Step 4 procedure. Use the same Bash call as before — do not relax the assertions.
-6. **Evaluate:**
-   - **Pass** → mark `[x] Pass`, delete any fail screenshots for this test, exit the loop, proceed to next test.
-   - **Fail, attempt < 3** → continue to next attempt with refined diagnosis informed by the previous attempt's report.
-   - **Fail, attempt = 3** → mark `[FAIL: auto-fix-exhausted: <last reason>]`, exit the loop, proceed to next test.
-
-### Fix-Decline Cases
-
-Some failures should not be fixed autonomously. In these cases, mark `[FAIL: auto-fix-declined: <why>]` immediately and proceed:
-
-- The fix would require changing the test's Expected section, Steps, or Command (i.e. the test is wrong or out of date — that is a human call).
-- The fix is in shared infrastructure code outside the scope of the current task (fixing it could break other tests; surface it for human review).
-- The failure is a security-sensitive surface (auth, crypto, permissions) where a wrong fix is materially worse than a recorded failure.
-- The failure is in third-party code or external services beyond the agent's control.
-
-Declining is not failure — it is correct judgment.
-
-### Avoiding Regressions
-
-After every successful fix, before moving on, **re-run all previously-passing tests in the same file** to confirm no regression. Use the same auto-judge criteria. If a previously-passing test now fails, treat it as a new failure entering the fix loop on the cause (which is most likely the just-applied fix — consider reverting and re-diagnosing rather than piling on more changes).
-
-This regression sweep is bounded by the same 30-minute wall-clock cap.
-
----
-
-## Step 7: Completion and File Movement
-
-After every eligible test has a terminal status (`[x] Pass`, pre-existing `[SKIP: ...]`, or `[FAIL: ...]`), decide outcome:
-
-### All Pass (no `[FAIL]` or `[FIXING]` markers remain)
-
-1. **Flip UAT status** — Edit `status:` → `passed`; bump `updated:` in the UAT file frontmatter.
-2. **Flip task status** — Read `task:` frontmatter from the UAT file to get the task ID. Open the task file, edit `status:` → `done`; bump `updated:`.
-3. **Remove rows from family indexes:**
-   - Remove the UAT's row from `wiki/work/uat/index.md`
-   - Remove the task's row from `wiki/work/tasks/index.md`
-   Use a single `Edit` call per file.
-4. **Archive both files:**
-   - `git mv wiki/work/uat/<UAT-file>.md wiki/work/uat/archive/<UAT-file>.md`
-   - Append UAT row to `wiki/work/uat/archive/index.md`: `| [[UAT-NNN]] | Title | passed | YYYY-MM-DD |`
-   - `git mv wiki/work/tasks/<TASK-file>.md wiki/work/tasks/archive/<TASK-file>.md`
-   - Append task row to `wiki/work/tasks/archive/index.md`: `| [[TASK-NNN]] | Title | done | YYYY-MM-DD |`
-   Use `Bash` for `git mv` only. Use `Edit` for all index appends.
-5. **Roadmap Auto-Checkoff** — scan `wiki/work/roadmaps/` for files with `status: active` frontmatter. For each: find checklist lines matching `[[TASK-NNN` and `Edit` `- [ ] [[TASK-NNN` → `- [x] [[TASK-NNN`, then perform inline item sweep. If all items `[x]`: flip roadmap `status: done`, remove from roadmaps index, then archive the roadmap file:
-   - `git mv wiki/work/roadmaps/<file>.md wiki/work/roadmaps/archive/<file>.md`
-   - Append to `wiki/work/roadmaps/archive/index.md`: `| [[ROADMAP-NNN]] | Title | done | YYYY-MM-DD |`
-   Silent no-op if no roadmap references the task. Use `Edit` only (except `git mv` via `Bash`).
-6. Delete screenshots for this task: `mcp__serena__list_dir` on `wiki/work/uat/screenshots/` to find `<task-number>-*` matches, then `git rm` each (or `rm` if untracked).
-7. **Terminate every background process** the agent started for prerequisites or fix attempts. Use the `Bash` tool's KillShell as needed. Verify nothing is left running.
-8. **Check for ADR linkage**: read the archived task file for a line matching `implements::[[DEC-NNNN#DM]]`:
-   - If found:
-     1. Parse the `DEC-NNNN#DM` reference.
-     2. `mcp__serena__find_file` for `NNNN-*.md` in `wiki/work/decisions/`.
-     3. `mcp__serena__search_for_pattern` on `wiki/work/tasks/` and `wiki/work/tasks/archive/` for the same `implements::[[DEC-NNNN#DM]]` to check for remaining WIP tasks.
-     4. **If no other WIP tasks remain**:
-        - Single-task: append `— implemented YYYY-MM-DD` to the `Source task(s):` line.
-        - Multi-task: update this task's sub-line from `**WIP**` to `**done** YYYY-MM-DD`; append `- **Decision fully implemented** YYYY-MM-DD`.
-     5. **If other WIP tasks remain**: update only this task's sub-line to `**done** YYYY-MM-DD`.
-     6. **ADR inline checkbox sweep** — `Read` the full `## DM.` decision block; for each remaining `- [ ]` item, use judgment to decide whether the completing task accomplished it; if yes, `Edit` `- [ ]` → `- [x]`; if uncertain, leave unchecked. Use `Edit` only — never `sed`, `bash`, or `Write`.
-     - Use `Read` then `Edit`. Never `sed`, `echo >>`, or shell redirection.
-   - If not found: skip silently.
-9. **Append log entry** to `wiki/log.md`:
-   ```
-   ## [YYYY-MM-DD] uat | UAT-NNN passed (auto-plus) · TASK-NNN done
-   Archived UAT-NNN → uat/archive/ and TASK-NNN → tasks/archive/.
-   ```
-10. Emit the completion summary.
-
-### Any Fail (`[FAIL: ...]` markers remain)
-
-1. **Leave the UAT file in `wiki/work/uat/`**.
-2. **Keep screenshots** for failing tests — diagnostic evidence for the next walkthrough.
-3. Terminate all background processes.
-4. Emit the completion summary.
-5. Exit 0 — the orchestrator treats `/uat-auto-plus` exiting as the task being done from its perspective.
-
-### Summary Format
+## Summary format
 
 ```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-UAT AUTO-PLUS COMPLETE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-File:    wiki/work/uat/5-positions.uat.md
-Source:  wiki/work/tasks/5-positions.md
-Mode:    autonomous-fix
-Budget:  attempts used 7/N · wall 12m22s/30m
-
-Results:
-  ✅ Passed:                 7   (of which fixed during run: 4)
-  ⚠️ Skipped:                1   (pre-existing, untouched)
-  ❌ Failed:                 1
-    auto-fix-exhausted:     1
-    auto-fix-declined:      0
-    auto-judge-uncertain:   0
-  ❔ Pending:                0
-  🔲 Stub-detected (pending): 0  (left untouched — implement first)
-  Total:                    9
-
+━━━ UAT AUTO-PLUS COMPLETE ━━━
+File: wiki/work/uat/5-positions.uat.md  ·  Source: wiki/work/tasks/5-positions.md  ·  Mode: autonomous-fix
+Budget: attempts 7/N · wall 12m22s/30m
+✅ Passed 7 (fixed during run: 4) · ⚠️ Skipped 1 (pre-existing) · ❌ Failed 1 (auto-fix-exhausted 1 · declined 0 · auto-judge-uncertain 0)
+❔ Pending 0 · 🔲 Stub-detected 0 (left untouched — implement first) · Total 9
 Fixes Applied:
   • UAT-API-001: added missing 422 handler in src/api/positions.ts
   • UAT-API-002: corrected route prefix in src/router.ts
-  • UAT-UI-001: fixed null-coalescing in src/components/PositionList.tsx
-  • UAT-UI-002: seeded fixture row in test/fixtures/positions.json
-
-Failed Tests:
+Failed:
   • UAT-API-003: Delete Position — "auto-fix-exhausted: HTTP 500 expected 204 (last attempt)"
-
-Next action:
-  /uat-walk wiki/work/uat/5-positions.uat.md
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Next action: /uat-walk wiki/work/uat/5-positions.uat.md
 ```
 
 On all-pass, replace `Next action` with `Archived to archive/` and the new paths.
 
 ---
 
-## Important Rules
+## Rules
 
-### Autonomy Boundaries
-- The agent **may** modify application code, build/config, fixtures, and seed data to fix a failing test.
-- The agent **may not** modify any UAT file's Steps, Expected, or Command sections.
-- The agent **may not** modify test assertions in test code (e.g. `expect(...)` statements) to make them match buggy behavior.
-- The agent **may not** disable, comment out, mark `xfail`, or `[SKIP: ...]` a failing test.
-- The agent **may not** weaken type signatures, lower error-throwing branches, or remove validation to make a test pass.
-- When in doubt, decline the fix (`[FAIL: auto-fix-declined: ...]`) and surface it for human review.
+**Autonomy boundaries** — the agent **may** modify application code, build/config, fixtures, and seed data. It **may not**: modify any UAT file's Steps/Expected/Command; modify test assertions in code (`expect(...)`); disable, comment out, `xfail`, or `[SKIP: ...]` a failing test; weaken type signatures, lower error-throwing branches, or remove validation to force a pass. When in doubt, decline and surface for review.
 
-### Verdict Discipline
-- `[x] Pass` only on concrete machine-verified evidence against unmodified test logic.
-- `[FAIL: auto-fix-exhausted: ...]` after 3 attempts.
-- `[FAIL: auto-fix-declined: ...]` when the fix is out of scope or unsafe to make autonomously.
-- `[FAIL: auto-judge: ...]` when the test cannot be machine-verified at all (manual, visual-only).
-- **Never** write `[SKIP: ...]` — skip is a human verdict.
+**Verdict discipline** — `[x] Pass` only on machine-verified evidence against unmodified logic; `[FAIL: auto-fix-exhausted: ...]` after 3 attempts; `[FAIL: auto-fix-declined: ...]` when out of scope/unsafe; `[FAIL: auto-judge: ...]` when unverifiable (UI/manual); **never** `[SKIP]`.
 
-### File Integrity
-- Only modify status lines in the UAT file via `Edit`.
-- Preserve all headings, metadata, whitespace.
-- Application/config/fixture edits go through `Edit` (or Serena `replace_symbol_body` / `replace_content` for code).
+**Process hygiene** — every background process started must be terminated before exit, regardless of outcome (no orphaned dev servers, type checkers, watchers). Cap concurrent sub-agents and background processes at 3 each.
 
-### Process Hygiene
-- Every background process started must be terminated before exit, regardless of outcome. No orphaned dev servers, type checkers, or watchers.
-- Cap concurrent sub-agents at 3.
-- Cap concurrent background processes at 3.
+**File integrity + Bash hygiene + MCP compliance** — per UAT-CORE Step 5 and "Bash hygiene". App/config/fixture edits via `Edit` (or Serena `replace_symbol_body` / `replace_content` for code). Serena for all listing/search/symbol navigation, Grep/Glob only for non-symbol text; no `sed`/`awk`/`ls`/`find`/`grep`/`cat`; never emit literal secrets (only `"$UAT_AUTH_TOKEN"` / `"$UAT_TEST_PASSWORD"`).
 
-### Bash Hygiene (API/CLI Tests)
-- One `curl` per Bash call, optionally with one `jq` pipe stage. Nothing else.
-- No `&&`, `;`, `echo` banners, output redirection, temp files, or defensive flags.
-- Rewrite any generated command that violates these before executing.
-
-### MCP Tool Compliance
-- Use Serena for every directory listing, file search, and code-symbol navigation. Grep/Glob only for non-symbol text.
-- Use the `Edit` tool for every status-line flip and every prose-file edit.
-- No `sed`, `awk`, `ls`, `find`, `grep`, `cat` on any file. See `.docs/guides/mcp-tools.md`.
-- Never emit literal password or token values. Only `"$UAT_AUTH_TOKEN"` and `"$UAT_TEST_PASSWORD"` env-var references are permitted.
-
----
-
-## Begin Autonomous Walkthrough
-
-Now start:
-
-1. Resolve the UAT file from `$ARGUMENTS` (Step 1).
-2. Verify and auto-repair prerequisites (Step 2). Abort on failure after one repair attempt.
-3. Classify all eligible tests (Step 3).
-4. For **each** eligible test in document order:
-   a. Execute the test (Step 4).
-   b. **Immediately** write the verdict to the file via `Edit` (Step 5) — do not buffer verdicts or batch updates.
-   c. If the test failed, enter the fix loop (Step 6) — diagnose, fix, re-run, up to 3 attempts. After each attempt, **immediately** update the file with the current status (`[FIXING: ...]` or final verdict). Sweep regressions after each successful fix.
-5. On completion, execute Step 7 in full — **do not skip**:
-   - **If all tests passed** (zero `[FAIL: ...]` or `[FIXING: ...]` remain):
-     1. Flip UAT status → `passed`, flip task status → `done`
-     2. Remove both rows from their family indexes
-     3. `git mv` the UAT file → `wiki/work/uat/archive/<UAT-file>.md`; append to `wiki/work/uat/archive/index.md`
-     4. `git mv` the task file → `wiki/work/tasks/archive/<TASK-file>.md`; append to `wiki/work/tasks/archive/index.md`
-     5. Perform roadmap auto-checkoff (scan `wiki/work/roadmaps/` for `[[TASK-NNN` patterns, flip `- [ ]` → `- [x]`; archive completed roadmaps)
-     6. Check for ADR linkage and update if found
-     7. Emit the completion summary with `Archived to archive/` and the new paths
-   - **If any test failed**: leave files in place, emit the summary with `Next action: /uat-walk <path>`.
-
-**Start now — resolve the UAT file and begin.**
+**Start now — read UAT-CORE.md, resolve the UAT file, and begin.**

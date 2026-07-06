@@ -7,11 +7,9 @@ argument-hint: <initiative/goal description>
 disable-model-invocation: false
 user-invocable: true
 ---
-**Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
+**Prereqs:** obey `.docs/guides/mcp-tools.md`; run /primer if not done this session.
 **Read `wiki/work/roadmaps/README.md` first — it is authoritative for the roadmap template, file template, status lifecycle, item format rules, index format, and anti-patterns this skill must enforce.**
-**Run `/primer` first if you have not already this session.**
 **Run `/research <topic>` on the roadmap topic BEFORE any Q&A or file creation. Do not skip this step.**
-
 
 # Create Roadmap
 

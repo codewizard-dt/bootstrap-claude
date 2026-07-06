@@ -10,30 +10,19 @@ user-invocable: true
 
 # AI Security Audit
 
-Perform a structured security audit of this project's LLM/AI integration.
+Structured security audit of this project's LLM/AI integration. **Audits and reports only — does not fix.**
 
-**Invocation**: `$ARGUMENTS`
+**Invocation** `$ARGUMENTS`: empty/`full` → all 11 categories · named category (e.g. `prompt-injection`) → that one · `internal` → the 5 posture categories · `external` → the 6 threat categories.
 
-- Empty or `full` → run all 11 categories
-- Named category (e.g. `prompt-injection`, `observability`) → run that category only
-- `internal` → run all 5 internal posture categories
-- `external` → run all 6 external threat categories
+## Setup (before any category)
 
----
+1. **Read project context** — `mcp__serena__list_dir` on root + key dirs (src, app, api, lib, server, agents, tools, utils).
+2. **Find AI/LLM integration points** — API client init (`openai`, `anthropic`, `langchain`, `llama`, `ollama`, model constructors), agent/tool definitions, RAG pipelines, prompt templates, system-prompt strings.
+3. **Note deployment context** — local / server / edge / third-party hosted (drives which threats matter most).
 
-## Setup
+Use Serena `find_symbol` / `search_for_pattern` to locate code — never shell `grep`/`find`.
 
-Before beginning any category:
-
-1. **Read project context** — `mcp__serena__list_dir` on root and key directories (src, app, api, lib, server, agents, tools, utils). Understand the shape of the codebase.
-2. **Identify AI/LLM integration points** — search for patterns: API client initialization (`openai`, `anthropic`, `langchain`, `llama`, `ollama`, model client constructors), agent/tool definitions, RAG pipelines, prompt templates, system prompt strings.
-3. **Note the deployment context** — local only, server, edge, or third-party hosted. This affects which threats are most critical.
-
-Use `mcp__serena__find_symbol` and `mcp__serena__search_for_pattern` to locate code. Never use `grep`/`find` via shell for code exploration.
-
----
-
-## Category Reference
+## Category reference
 
 | ID | Category | Group |
 |----|----------|-------|
@@ -51,13 +40,10 @@ Use `mcp__serena__find_symbol` and `mcp__serena__search_for_pattern` to locate c
 
 ---
 
-## Internal Posture Categories
+## Internal posture categories
 
 ### `observability` — Observability & Audit Logging
-
-Required for enterprise compliance (HIPAA, GDPR, SOC2). Without full traceability, security incidents cannot be investigated.
-
-**Check each item:**
+Enterprise compliance (HIPAA, GDPR, SOC2) needs full traceability; without it, incidents can't be investigated.
 
 | # | Check | How to verify |
 |---|-------|---------------|
@@ -72,13 +58,8 @@ Required for enterprise compliance (HIPAA, GDPR, SOC2). Without full traceabilit
 
 **Severity if missing**: CRITICAL for O1–O4, HIGH for O5–O8.
 
----
-
 ### `rate-limiting` — Rate Limiting & Resource Controls
-
-Token flood attacks (OWASP LLM10) can exhaust budget and degrade availability. Even non-malicious users can cause runaway costs through poor prompt engineering.
-
-**Check each item:**
+Token floods (OWASP LLM10) exhaust budget and degrade availability; even benign users cause runaway costs via poor prompts.
 
 | # | Check | How to verify |
 |---|-------|---------------|
@@ -92,13 +73,8 @@ Token flood attacks (OWASP LLM10) can exhaust budget and degrade availability. E
 
 **Severity if missing**: HIGH for R1–R5, MEDIUM for R6–R7.
 
----
-
 ### `access-controls` — Access Controls & Least Privilege
-
-Agents should only be able to do what a human user would be comfortable with them doing autonomously. Overly permissioned agents are the root cause of most OWASP LLM06 incidents.
-
-**Check each item:**
+Agents should only do what a human would be comfortable with them doing autonomously; over-permissioning is the root of most OWASP LLM06 incidents.
 
 | # | Check | How to verify |
 |---|-------|---------------|
@@ -112,13 +88,8 @@ Agents should only be able to do what a human user would be comfortable with the
 
 **Severity if missing**: CRITICAL for A3, HIGH for A1–A2, A4–A5, MEDIUM for A6–A7.
 
----
-
 ### `hitl-policy` — Human-in-the-Loop Policy
-
-Read-only actions can be autonomous. Reversible actions should usually be confirmed. Destructive or financial actions must have human approval. Without a formal policy, teams default to no gates.
-
-**Check each item:**
+Read-only actions can be autonomous; reversible should usually be confirmed; destructive/financial must have human approval. Without a formal policy, teams default to no gates.
 
 | # | Check | How to verify |
 |---|-------|---------------|
@@ -130,13 +101,8 @@ Read-only actions can be autonomous. Reversible actions should usually be confir
 
 **Severity if missing**: CRITICAL for H2, H5; HIGH for H1, H3–H4.
 
----
-
 ### `benchmarking` — Security Benchmarking
-
-Security posture decays as models are updated or swapped. Without a benchmark baseline, regressions go undetected.
-
-**Check each item:**
+Posture decays as models are updated or swapped; without a baseline, regressions go undetected.
 
 | # | Check | How to verify |
 |---|-------|---------------|
@@ -151,13 +117,10 @@ Security posture decays as models are updated or swapped. Without a benchmark ba
 
 ---
 
-## External Threat Categories
+## External threat categories
 
 ### `prompt-injection` — Prompt Injection (OWASP LLM01)
-
-The #1 LLM vulnerability. Traditional XSS exploits bugs; prompt injection exploits the model's core capability — understanding instructions. Both direct (user input) and indirect (document/RAG) injection must be addressed.
-
-**Check each item:**
+The #1 LLM vulnerability — it exploits the model's core instruction-following. Address both direct (user input) and indirect (document/RAG) injection.
 
 | # | Check | How to verify |
 |---|-------|---------------|
@@ -171,13 +134,8 @@ The #1 LLM vulnerability. Traditional XSS exploits bugs; prompt injection exploi
 
 **Severity if missing**: CRITICAL for P1, P3; HIGH for P2, P4, P7; MEDIUM for P5–P6.
 
----
-
 ### `data-leakage` — Sensitive Data Leakage (OWASP LLM02, LLM07)
-
-LLMs can memorize PII and credentials from training. RAG can surface data outside its intended scope. System prompts can be extracted. Cross-session bleeding can expose one user's data to another.
-
-**Check each item:**
+Models memorize PII/credentials; RAG can surface out-of-scope data; system prompts can be extracted; cross-session bleeding exposes one user's data to another.
 
 | # | Check | How to verify |
 |---|-------|---------------|
@@ -191,13 +149,8 @@ LLMs can memorize PII and credentials from training. RAG can surface data outsid
 
 **Severity if missing**: CRITICAL for D1–D4, HIGH for D5–D7.
 
----
-
 ### `output-sanitization` — Output Sanitization / XSS (OWASP LLM05)
-
-LLMs often agree with users and can be induced to produce malicious HTML, scripts, or structured content that exploits downstream systems. Output sanitization is as critical as input validation.
-
-**Check each item:**
+Models often agree with users and can be induced to produce malicious HTML, scripts, or structured content that exploits downstream systems — output sanitization is as critical as input validation.
 
 | # | Check | How to verify |
 |---|-------|---------------|
@@ -210,13 +163,8 @@ LLMs often agree with users and can be induced to produce malicious HTML, script
 
 **Severity if missing**: CRITICAL for X3–X4, HIGH for X1–X2, MEDIUM for X5–X6.
 
----
-
 ### `excessive-agency` — Excessive Agency & Tool Abuse (OWASP LLM06)
-
-Agents with too many tools or too broad permissions become attack surfaces. An attacker can exploit unguarded APIs, trigger deletes, or use familiar endpoint patterns to extract or corrupt data.
-
-**Check each item:**
+Agents with too many tools or too-broad permissions become attack surfaces — attackers exploit unguarded APIs, trigger deletes, or use familiar endpoint patterns to extract/corrupt data.
 
 | # | Check | How to verify |
 |---|-------|---------------|
@@ -229,13 +177,8 @@ Agents with too many tools or too broad permissions become attack surfaces. An a
 
 **Severity if missing**: CRITICAL for E2, E5; HIGH for E1, E4; MEDIUM for E3, E6.
 
----
-
 ### `supply-chain` — Supply Chain & Data Poisoning (OWASP LLM03, LLM04, LLM08)
-
-Third-party components (models, plugins, datasets, RAG sources) can be compromised before they reach your system. Data poisoning can subtly alter model behavior in ways that are hard to detect.
-
-**Check each item:**
+Third-party components (models, plugins, datasets, RAG sources) can be compromised before they reach your system; data poisoning subtly alters behavior in hard-to-detect ways.
 
 | # | Check | How to verify |
 |---|-------|---------------|
@@ -249,13 +192,8 @@ Third-party components (models, plugins, datasets, RAG sources) can be compromis
 
 **Severity if missing**: HIGH for S1–S4, MEDIUM for S5–S7.
 
----
-
 ### `token-dos` — Token Flood / DoS (OWASP LLM10)
-
-Users — malicious or not — can send huge inputs that exhaust token budgets, trigger rate limit spikes, or cause unexpected cost. Recursive agent loops compound this. Prevention is difficult; detection and circuit-breaking are essential.
-
-**Check each item:**
+Huge inputs (malicious or not) exhaust token budgets, spike rate limits, and inflate cost; recursive agent loops compound it. Prevention is hard — detection and circuit-breaking are essential.
 
 | # | Check | How to verify |
 |---|-------|---------------|
@@ -273,69 +211,36 @@ Users — malicious or not — can send huge inputs that exhaust token budgets, 
 
 ## Reporting
 
-### Finding format
+**Per-check status:** ✅ PASS (control exists & effective) · ⚠️ WARN (partial / has gaps) · ❌ FAIL (no evidence; vulnerable) · ℹ️ N/A (not applicable) · 🔍 NEEDS-REVIEW (can't determine from code — flag for manual review).
 
-For each check, assign one of:
-
-| Status | Meaning |
-|--------|---------|
-| ✅ PASS | Evidence found that the control exists and is effective |
-| ⚠️ WARN | Partial implementation, or control exists but has gaps |
-| ❌ FAIL | No evidence of the control; vulnerability is present |
-| ℹ️ N/A | Not applicable to this project's architecture |
-| 🔍 NEEDS-REVIEW | Could not determine from code alone — flag for manual review |
-
-### Report structure
-
+**Report structure:**
 ```
-## AI Security Audit — [project name] — [date]
+## AI Security Audit — [project] — [date]
 Categories audited: [list]
-
----
 
 ### [Category Name]
 | Check | Status | Notes |
 |-------|--------|-------|
-| O1    | ✅     | Prompt/response logging in src/middleware/llm-logger.ts |
-| O2    | ⚠️     | Logs are structured but token counts are missing |
-| O3    | ❌     | No PII redaction found before log write |
-...
-
+| O1 | ✅ | Prompt/response logging in src/middleware/llm-logger.ts |
+| O3 | ❌ | No PII redaction found before log write |
 **Category verdict**: FAIL (1+ CRITICAL failures)
-**Priority mitigations**:
-- [specific action with file reference]
-- [specific action with file reference]
-
----
+**Priority mitigations**: [specific action + file reference] …
 
 ### Summary
 | Category | Verdict | Critical | High | Medium |
 |----------|---------|----------|------|--------|
-| Observability | FAIL | 1 | 2 | 0 |
-...
-
 **Overall posture**: [CRITICAL / HIGH / MEDIUM / LOW]
-**Top 3 actions to take now**:
-1. ...
-2. ...
-3. ...
+**Top 3 actions to take now**: 1. … 2. … 3. …
 ```
 
-### Verdict rules
+**Verdict rules:** CRITICAL posture = any CRITICAL finding fails · HIGH = all CRITICAL pass but 2+ HIGH fail · MEDIUM = all CRITICAL & HIGH pass or WARN · LOW = only MEDIUM and below.
 
-- **CRITICAL** posture: any CRITICAL-severity finding is a FAIL
-- **HIGH** posture: all CRITICAL pass, but 2+ HIGH findings fail
-- **MEDIUM** posture: all CRITICAL and HIGH pass or WARN
-- **LOW** posture: only MEDIUM findings and below
+## CRITICAL rules
 
----
-
-## CRITICAL Rules
-
-1. **Read code, don't run it** — verify controls by reading implementation, not by attempting actual attacks.
-2. **Cite specific files and line numbers** for every PASS or FAIL finding — "no evidence found" is not enough; say where you looked.
-3. **Use Serena for all code navigation** — `find_symbol`, `search_for_pattern`, `get_symbols_overview`. No shell grep.
-4. **Flag NEEDS-REVIEW honestly** — if a control requires runtime observation (e.g. live traffic rate limiting), mark it and explain what to verify manually.
-5. **Do not fix** — this skill audits and reports only. If fixes are needed, hand off to the user or open tasks via `/task-add`.
-6. **Scope to what's in the repo** — do not speculate about external infra unless config files are present.
-7. **One category at a time** — complete each category fully before moving to the next. Do not interleave findings.
+1. **Read code, don't run it** — verify controls by reading implementation, never by attempting real attacks.
+2. **Cite specific files and line numbers** for every PASS or FAIL — say where you looked; "no evidence found" alone is insufficient.
+3. **Serena for all code navigation** (`find_symbol`, `search_for_pattern`, `get_symbols_overview`) — no shell grep.
+4. **Flag NEEDS-REVIEW honestly** — controls needing runtime observation (e.g. live rate limiting) get flagged with what to verify manually.
+5. **Do not fix** — audit and report only; hand off fixes to the user or `/task-add`.
+6. **Scope to the repo** — don't speculate about external infra unless config files are present.
+7. **One category at a time** — complete each fully before the next; don't interleave findings.

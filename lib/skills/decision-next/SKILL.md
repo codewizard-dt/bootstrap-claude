@@ -7,7 +7,7 @@ argument-hint: "[optional: path to a specific decision file or NNNN prefix to sc
 disable-model-invocation: false
 user-invocable: true
 ---
-**Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
+**Prereqs:** obey `.docs/guides/mcp-tools.md`.
 
 # Decision Next Task
 

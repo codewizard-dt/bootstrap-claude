@@ -7,8 +7,7 @@ argument-hint: [--json]
 disable-model-invocation: false
 user-invocable: true
 ---
-**Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
-**Always obey `wiki/work/tasks/lifecycle.md`. Read it now if not already in context.**
+**Prereqs:** obey `.docs/guides/mcp-tools.md` + `wiki/work/tasks/lifecycle.md`.
 
 # Task Audit
 

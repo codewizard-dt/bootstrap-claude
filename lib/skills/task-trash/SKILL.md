@@ -7,9 +7,7 @@ argument-hint: <path/to/task-file.md>
 disable-model-invocation: false
 user-invocable: true
 ---
-**Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
-**Always obey `wiki/work/tasks/lifecycle.md`. Read it now if not already in context.**
-**Run `/primer` first if you have not already this session.**
+**Prereqs:** obey `.docs/guides/mcp-tools.md` + `wiki/work/tasks/lifecycle.md`; run /primer if not done this session.
 
 # Trash Task
 

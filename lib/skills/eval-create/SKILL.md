@@ -8,7 +8,7 @@ argument-hint: "[stage: golden|scenarios|replay|rubric] [description of the eval
 disable-model-invocation: false
 user-invocable: true
 ---
-**Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
+**Prereqs:** obey `.docs/guides/mcp-tools.md`.
 
 $ARGUMENTS
 

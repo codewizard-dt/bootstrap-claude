@@ -8,136 +8,79 @@ argument-hint: <decision topic, group title, or "group: <title>" for an explicit
 disable-model-invocation: false
 user-invocable: true
 ---
-**Always obey `.docs/guides/mcp-tools.md`. Read it now if not already in context.**
-**Run `/primer` first if you have not already this session.**
-**Run `/research <topic>` on the decision topic BEFORE drafting any decision block. Do not skip this step.**
-
+**Prereqs:** obey `.docs/guides/mcp-tools.md`; run /primer if not done this session.
+**Run `/research <topic>` on the decision topic BEFORE drafting any decision block. Do not skip.**
+**Read `wiki/work/decisions/lifecycle.md` first** — it defines the Decision Group model, supersession rule, relationship graph, and index format this command must respect.
 
 # Create Decision
 
-Create a new **Decision Record** file. A decision file is a **Decision Group** — one or more architecturally significant decisions that share context and are documented together. Each decision tracks its own `Status`, `Date`, `Deciders`, `Tags`, and supersession independently.
+Create a **Decision Record** file — a **Decision Group** of one or more architecturally significant decisions sharing context, documented together. Each decision tracks its own `Status`, `Date`, `Deciders`, `Tags`, and supersession independently.
 
-Decisions follow a hybrid of [Michael Nygard's 2011 template](https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions) and [MADR 4.0 (2024)](https://adr.github.io/madr/), extended with this project's per-decision status model. They are append-only history: when a later decision overrides an earlier one, write a **new** decision (in a new file or as a new `D*` block in an existing related file) that supersedes the old one — never rewrite the past.
-
-**Read `wiki/work/decisions/lifecycle.md` first** — it defines the Decision Group model, the supersession rule, the relationship graph, and the index format this command must respect.
-
----
+Format: a hybrid of [Nygard 2011](https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions) + [MADR 4.0](https://adr.github.io/madr/), extended with this project's per-decision status model. **Append-only history:** when a later decision overrides an earlier one, write a **new** decision (new file, or a new `D*` block in a related file) that supersedes the old — never rewrite the past.
 
 **Topic**: $ARGUMENTS
 
----
+## When to write
 
-## When to write a Decision
-
-See `wiki/work/decisions/lifecycle.md` for the canonical "When to Write" / "When NOT to Write" tables. In short: write a decision when at least one decision in the topic affects structure, NFRs, dependencies, interfaces, or construction techniques — and is hard to reverse. Skip for bug fixes, refactors, naming, or trivially reversible choices.
-
-If the decision does not clear that bar, stop and tell the user — don't pad the log.
+See the lifecycle doc's "When to Write" / "When NOT to Write" tables. In short: write when at least one decision affects structure, NFRs, dependencies, interfaces, or construction techniques **and** is hard to reverse. Skip bug fixes, refactors, naming, trivially reversible choices. If it doesn't clear the bar, stop and tell the user — don't pad the log.
 
 ---
 
-## Instructions
+## Step 1: Parse topic, recall context
+1. Extract the core topic from `$ARGUMENTS`; too vague ("auth") → `AskUserQuestion` to narrow.
+2. Decide single vs group (Step 1.5).
+3. Recall Serena memories that may inform any decision: `list_memories` (filter by topic), `read_memory` for architecture/gotcha/integration memories touching the topic.
+4. Read `CLAUDE.md`, `PROJECT_STATUS.md` (if present), `wiki/work/decisions/lifecycle.md`, and a sample of recent decisions for local conventions.
 
-### Step 1: Parse the topic and recall project context
+## Step 1.5: Single vs Decision Group triage
+Use the lifecycle doc's "When to Group vs Split":
 
-1. **Extract** the core topic from `$ARGUMENTS`. If the topic is too vague (e.g. "auth"), use `AskUserQuestion` to narrow it.
-2. **Decide single-decision vs Decision Group** — see Step 1.5.
-3. **Recall Serena memories** that may inform any decision in the group:
-   - `mcp__serena__list_memories` (filter by topic if applicable)
-   - `mcp__serena__read_memory` for any architecture/gotcha/integration memory that touches the topic
-4. **Read project context**: `CLAUDE.md`, `PROJECT_STATUS.md` (if present), and `wiki/work/decisions/lifecycle.md` (the index) plus a sample of recent decisions to learn local conventions.
+| Signal | Group | Split (write one now, `/decision-create` again later) |
+|--------|-------|-------|
+| Shared context, drivers, deciders | ✅ | — |
+| Tightly coupled (one constrains the next) | ✅ | — |
+| Different areas with little overlap | — | ✅ |
+| Different audiences / timelines | — | ✅ |
+| One much larger than the others | — | ✅ |
 
-### Step 1.5: Single-decision vs Decision Group triage
+Default to **single-decision** unless `$ARGUMENTS` starts with `group:` or the user lists multiple. When in doubt, ask with the table visible. If grouping, request a list (one short title each, 2-6).
 
-Ask the user (or decide from `$ARGUMENTS`) whether the file will hold one decision or several. Use the lifecycle doc's "When to Group vs Split" table:
+## Step 2: Locate directory, assign number
+1. Find/create `wiki/work/decisions/`. If creating, add a `lifecycle.md` index and confirm via `AskUserQuestion` first.
+2. Read `lifecycle.md` for the current chain, area conventions, graph.
+3. Next file number: `list_dir`, highest 4-digit prefix + 1 (first is `0001`).
+4. Derive the file slug — names the **group**, lowercase dash-separated ≤60 chars (single: `DEC-0007-session-storage-strategy.md`; group: `DEC-0007-session-management.md`).
 
-| Signal | Group into one file | Split (this command writes one decision now; user invokes `/decision-create` again later) |
-|--------|--------------------|--------------------------------------------------------------------------------------|
-| Shared context, drivers, deciders | ✅ Group | — |
-| Tightly coupled (one constrains the next) | ✅ Group | — |
-| Different decision areas with little overlap | — | ✅ Split |
-| Different audiences / timelines | — | ✅ Split |
-| One is much larger than the others | — | ✅ Split |
+## Step 2.5: Detect existing decision area (per-decision supersession check, mandatory)
+Prevents two parallel `accepted` decisions in one area (breaks the chain). Per planned decision:
+1. `list_dir` + `Read` every existing decision file (exclude `lifecycle.md`).
+2. For each existing `accepted` block, score: **Tier 1** ≥1 shared tag · **Tier 2** decision-title noun overlap · **Tier 3** file-slug stem overlap (only when both single-decision files).
+3. Build a candidate table per planned decision (Planned Decision, Existing Decision, Overlap Tier, Likely Same Area?).
+4. Any `Yes`/`Maybe` → surface in Step 4 and offer to set `Supersedes`; else the block enters a fresh area.
 
-Default to **single-decision** unless `$ARGUMENTS` starts with `group:` or the user explicitly lists multiple decisions. When in doubt, ask via `AskUserQuestion` with the table above visible. If grouping, request a list of the decisions (one short title each, 2-6 entries).
+## Step 3: Research each decision
+**Invoke `/research <topic>` for each decision** — call the skill directly, not ad-hoc searches. Don't proceed to Step 4 until research for every planned decision is done. Each must produce:
 
-### Step 2: Locate the decisions directory and assign a number
+| Section (per decision) | Research must produce |
+|------------------------|----------------------|
+| Context | code state for *this decision*; constraints from prior decisions; business/compliance forces |
+| Decision Drivers | concrete forces: perf budgets, team skill, security, ecosystem fit, deadline |
+| Considered Options | ≥2 viable options (Context7 for lib/framework docs; Brave 1/sec sequential for ecosystem patterns) |
+| Pros & Cons | symmetric per option |
+| Consequences | real follow-on: new deps, migration cost, what gets harder/easier |
+| Validation | measurable signal + threshold + timeframe (E-C-A-D-R "R") |
 
-1. **Find or create the decisions directory** at `wiki/work/decisions/`.
+Group members may share evidence sources (Shared Context), but each block needs its own drivers/options/consequences. If a block lacks evidence for an option/driver, **drop it** rather than fabricate; note the gap in Step 9.
 
-   If it does not exist, create it with a `lifecycle.md` index. Confirm via `AskUserQuestion` before creating a new directory.
+## Step 4: Clarify with the user (mandatory)
+`AskUserQuestion`, **per decision**, at minimum: (1) **Status** — strongly prefer `proposed` (default); may differ per block. (2) **Recommended option** — present research-backed rec with the comparison table; user confirms/overrides. (3) **Deciders** — owner of *this* decision (may differ per block; default git user). (4) **Tags (mandatory, non-empty)** — 1-3 short tags identifying this block's area (required for supersession detection). (5) **Supersedes** — if Step 2.5 surfaced candidates, ask which (if any): `DEC-NNNN#DM`, `none`, or "decide at finalize time".
 
-2. **Read `wiki/work/decisions/lifecycle.md`** to learn the current chain, decision-area conventions, and relationship graph.
+**Refuse to write the file if any block has empty `Tags`.** For groups, batch all decisions' questions in one `AskUserQuestion` when feasible, but keep questions per-decision.
 
-3. **Determine the next file number**: scan existing files via `mcp__serena__list_dir`, find the highest 4-digit prefix, increment by 1. First decision is `0001`.
+## Step 5: Generate the file
+Write to `wiki/work/decisions/DEC-NNNN-<group-slug>.md` using this template. **Tables only, mermaid for flows** — mandatory in every block.
 
-4. **Derive the file slug** — names the **group**, not a single decision. Lowercase, dash-separated, ≤ 60 chars:
-   - Single decision "session storage strategy" → `DEC-0007-session-storage-strategy.md`
-   - Group covering session lifetime + storage + invalidation → `DEC-0007-session-management.md`
-
-### Step 2.5: Detect existing decision area (per-decision supersession check)
-
-Before drafting, determine whether each planned decision enters a decision area that already has an `accepted` decision somewhere in the log. The supersession rule operates **per decision**: each `D*` block must check independently.
-
-**For each planned decision in the group:**
-
-1. Read every existing decision file in `wiki/work/decisions/` (use `mcp__serena__list_dir`, then `Read` each; exclude `lifecycle.md`)
-2. For each existing decision block (`D1`, `D2`, …) with status `accepted`, compare:
-
-   | Tier | Signal | Detection |
-   |------|--------|-----------|
-   | 1 | Tag overlap | ≥ 1 shared tag with the planned decision |
-   | 2 | Decision-title noun overlap | Substantial overlap |
-   | 3 | File-slug stem overlap | Only relevant when both are single-decision files |
-
-3. Build a candidate-supersession table per planned decision:
-
-   | Planned Decision | Existing Decision | Overlap Tier | Likely Same Area? |
-   |------------------|-------------------|--------------|-------------------|
-   | (group D1) Session storage backend | DEC-0003#D2 | Tag | Yes |
-   | (group D2) Session lifetime | (none) | — | No |
-
-4. If any row is `Yes`/`Maybe`, surface to the user in Step 4 and offer to set `Supersedes` on that block. Otherwise the block enters a fresh area.
-
-This check is mandatory — it prevents accidentally creating two parallel `accepted` decisions in the same area, which breaks the chain.
-
-### Step 3: Research each decision
-
-**Invoke `/research <topic>`** for each decision in the group — call the research skill directly, do not substitute with ad-hoc web searches or Serena lookups alone. Do not proceed to Step 4 until research for every planned decision is complete. Each invocation must produce concrete inputs:
-
-| Decision Section (per decision) | Research must produce |
-|-------------------------------|----------------------|
-| **Context** | Code state relevant to *this decision*; constraints from prior decisions; business/compliance forces |
-| **Decision Drivers** | Concrete forces specific to this decision: performance budgets, team skill, security, ecosystem fit, deadline |
-| **Considered Options** | ≥ 2 viable options. Use Context7 for library/framework docs, Brave Search (1/sec, sequential) for ecosystem patterns |
-| **Pros & Cons** | Symmetric assessment per option |
-| **Consequences** | Real follow-on: new dependencies, migration cost, what becomes harder/easier |
-| **Validation** | Measurable signal + threshold + timeframe (E-C-A-D-R "R") |
-
-Decisions in the same group may share evidence sources (Shared Context handles that), but each block needs its own drivers, options, and consequences.
-
-If any block lacks evidence for an option or driver, **drop the option/driver from that block** rather than fabricating. Note the gap in the Step 9 report.
-
-### Step 4: Clarify with the user (mandatory)
-
-Use `AskUserQuestion` to resolve, **for each decision in the group**, at minimum:
-
-| # | Question | Notes |
-|---|----------|-------|
-| 1 | **Status to assign at draft time** | Strongly prefer `proposed` (default). Each decision can be a different status if needed |
-| 2 | **Recommended option** | Present research-backed recommendation with the comparison table; user confirms or overrides |
-| 3 | **Deciders** | Who owns *this decision* (may differ per block); defaults to current git user |
-| 4 | **Tags (mandatory, non-empty)** | 1-3 short tags identifying the decision area for *this block*. Required for future supersession detection |
-| 5 | **Supersedes** | If Step 2.5 surfaced candidates for this block, ask which (if any) it supersedes. `DEC-NNNN#DM`, `none`, or "decide at finalize time" |
-
-**Refuse to write the file if any decision block has empty `Tags`.**
-
-For Decision Groups, ask all decisions' questions in a single AskUserQuestion batch when feasible to minimize round-trips, but keep questions per-decision (not collapsed into "the group's deciders").
-
-### Step 5: Generate the decision file
-
-Write the decision to `wiki/work/decisions/DEC-NNNN-<group-slug>.md` using **this template**. The two formatting rules — tables only, mermaid for flows — are mandatory in every decision block.
-
-```markdown
+````markdown
 # DEC-NNNN: <Decision-Group Title>
 
 > Decision Group covering <area-1>, <area-2>, <area-3>.
@@ -148,9 +91,7 @@ Write the decision to `wiki/work/decisions/DEC-NNNN-<group-slug>.md` using **thi
 
 ## Shared Context
 
-<Context that applies to every decision in this group. Avoid restating in each block.>
-
-<Link to relevant code areas (repo-relative paths), prior decisions ([[DEC-NNNN-slug|DEC-NNNN#DM: title]]), or external constraints.>
+<Context applying to every decision in the group; don't restate per block. Link code areas (repo-relative), prior decisions ([[DEC-NNNN-slug|DEC-NNNN#DM: title]]), external constraints.>
 
 ---
 
@@ -159,84 +100,55 @@ Write the decision to `wiki/work/decisions/DEC-NNNN-<group-slug>.md` using **thi
 - **Status**: <proposed | accepted | deprecated | superseded by DEC-XX#DY>
 - **Date**: YYYY-MM-DD
 - **Deciders**: <names or roles>
-- **Consulted**: <names or roles, optional>
-- **Informed**: <names or roles, optional>
+- **Consulted**: <optional>
+- **Informed**: <optional>
 - **Supersedes**: <DEC-MMMM#DK | none>
 - **Tags**: <area-1>, <area-2>
 
 ### Context (decision-specific)
-
-<Anything that applies to D1 but not to siblings. Reference Shared Context when possible.>
+<Applies to D1 but not siblings; reference Shared Context when possible.>
 
 ### Decision Drivers
-
 | # | Driver | Why it matters |
 |---|--------|----------------|
 | 1 | <e.g. p99 latency budget < 200ms> | <consequence if violated> |
-| 2 | <...> | <...> |
 
 ### Considered Options
-
-| Option | One-line summary |
+| Option | One-line summary (≤15 words) |
 |--------|------------------|
-| **A. <name>** | <≤ 15 words> |
-| **B. <name>** | <≤ 15 words> |
-| **C. <name>** | <≤ 15 words> |
+| **A. <name>** | <…> |
+| **B. <name>** | <…> |
 
 ### Option Comparison
-
-| Criterion | Option A | Option B | Option C |
-|-----------|----------|----------|----------|
-| Meets driver 1 | ✅ | ⚠️ | ❌ |
-| Meets driver 2 | ✅ | ✅ | ❌ |
-| Implementation cost | Low | Med | High |
-| Operational cost | Low | Low | High |
-| Reversibility | Easy | Hard | Hard |
+| Criterion | Option A | Option B |
+|-----------|----------|----------|
+| Meets driver 1 | ✅ | ⚠️ |
+| Implementation cost | Low | Med |
+| Operational cost | Low | Low |
+| Reversibility | Easy | Hard |
 
 ### Trade-off Detail per Option
-
 #### Option A: <name>
-
 | Aspect | Assessment |
 |--------|------------|
-| Pros | <one cell, comma-separated or short prose> |
-| Cons | <one cell> |
+| Pros | <comma-separated or short prose> |
+| Cons | <…> |
 | Risks | <known unknowns> |
 | Exit cost | <how hard to walk away later> |
 
-#### Option B: <name>
-
-| Aspect | Assessment |
-|--------|------------|
-| Pros | … |
-| Cons | … |
-| Risks | … |
-| Exit cost | … |
-
-#### Option C: <name>
-
-| Aspect | Assessment |
-|--------|------------|
-| Pros | … |
-| Cons | … |
-| Risks | … |
-| Exit cost | … |
+<Repeat the same 4-row Aspect table for each remaining option (B, C, …).>
 
 ### Decision Outcome
-
 **Chosen option**: **<Option X — name>**, because <one-sentence justification anchored to the highest-priority driver>.
 
 ### Decision Flow
-
-<Include a mermaid block when the decision involves a flow, sequence, or state transition. Skip only for purely static choices.>
-
+<Mermaid block when the decision involves a flow/sequence/state transition; skip only for purely static choices.>
 ```mermaid
 flowchart LR
     ...
 ```
 
 ### Consequences
-
 | Type | Consequence |
 |------|-------------|
 | ✅ Positive | <e.g. eliminates current bottleneck> |
@@ -244,127 +156,65 @@ flowchart LR
 | 🔁 Follow-up | <e.g. write task: instrument metric> |
 
 ### Validation
-
 | Signal | Threshold | When measured |
 |--------|-----------|---------------|
 | <e.g. p99 latency> | < 200ms | 30 days post-deploy |
 
 ### Links
-
-- Related decisions: [[DEC-NNNN-slug|DEC-NNNN#DM: title]], [[DEC-NNNN-slug|DEC-NNNN#DM: title]]
+- Related decisions: [[DEC-NNNN-slug|DEC-NNNN#DM: title]]
 - Supersedes: [[DEC-MMMM-slug|DEC-MMMM#DK: title]] (if applicable)
 - Source task(s): `wiki/work/tasks/TASK-NNN-slug.md`
 
 ---
 
 ## D2. <Short Title of Decision 2>
-
 - **Status**: <independent of D1>
-- **Date**: ...
-- **Deciders**: ...
-- **Consulted**: ...
-- **Informed**: ...
-- **Supersedes**: ...
-- **Tags**: ...
-
-### Context (decision-specific)
-...
-
-<repeat full block structure>
-
----
+- **Supersedes**: … · **Tags**: …
+<repeat the full D1 block structure>
 
 ## D3. ...
-```
+````
 
-**Single-decision files** simply have one `D1` block and no `D2`/`D3`. The `Shared Context` may be merged into D1's `### Context` or omitted in that case.
+**Single-decision files** have one `D1` block and no `D2`/`D3`; `Shared Context` may merge into D1's `### Context` or be omitted.
 
-### Step 6: Maintain the Decision Index
+## Step 6: Maintain the Decision Index
+1. Append to `wiki/work/decisions/index.md`: `- [DEC-NNNN — Title](DEC-NNNN-slug.md) — one-line summary · D1 proposed`.
+2. Add **one row per decision** to the Index in `wiki/work/decisions/lifecycle.md` (a 3-decision file adds 3 rows). Columns: `File`, `Decision`, `Title`, `Decision Area`, `Status`, `Date`, `Deciders`, `Supersedes`, `Superseded By` (see lifecycle doc spec).
+3. **If any decision was drafted `accepted` AND supersedes an existing one** (rare), apply the two-block cross-reference rule per pair, atomically:
+   - **Superseded block:** `Status: accepted` → `superseded by DEC-N#DX`; callout `> **Superseded by [[DEC-NNNN-slug\|DEC-N#DX: title]]** on YYYY-MM-DD` directly under that decision's H2.
+   - **Superseded block's siblings:** untouched.
+   - **New block:** `Supersedes` metadata; `### Links` references `[[DEC-MMMM-slug\|DEC-MMMM#DK: title]]`.
+   - **Index:** two rows updated (superseder gets `Supersedes`; superseded gets `Status` + `Superseded By`).
+   - **Graph:** new node; supersession edge; superseded node's class flipped.
+   **Default to `proposed`** — create-time supersession is rare; `/decision-finalize` enforces it atomically.
+4. Don't delete/mutate existing index rows beyond what supersession requires (append-mostly).
 
-After writing the decision file:
+## Step 7: Append to `wiki/log.md` (`Edit`, never `echo >>`)
+`## [YYYY-MM-DD] decision-create | DEC-NNNN <Decision-Group Title>`
 
-1. **Append a row to `wiki/work/decisions/index.md`**: `- [DEC-NNNN — Title](DEC-NNNN-slug.md) — one-line summary · D1 proposed`
+## Step 8: Cross-link from related artifacts
+For any decision prompted by an active task/feature, link both ways (`Read` then `Edit`, never `echo >>`/`sed`): in the source task file append `**Decision**: [[DEC-NNNN-slug|DEC-NNNN#DM: title]]`; in the decision's `### Links` list the source task path.
 
-2. **Add one row to the Index per decision in the new file** in `wiki/work/decisions/lifecycle.md` (a 3-decision file adds 3 rows). Columns: `File`, `Decision`, `Title`, `Decision Area`, `Status`, `Date`, `Deciders`, `Supersedes`, `Superseded By`. See lifecycle doc's index column spec.
+## Step 9: Update memories
+If a decision establishes a non-obvious pattern, integration constraint, or gotcha: `mcp__serena__write_memory` (topic-hierarchical name, e.g. `architecture/data-layer/cache-strategy`), referencing `DEC-NNNN#DM` not just the file. Skip self-documenting decisions.
 
-3. **If any decision was created with status `accepted` AND supersedes an existing decision** (rare — Step 4 #1 was set to `accepted`), apply the lifecycle doc's two-block cross-reference rule per affected pair. The atomic update covers:
-
-   | Site | Edit |
-   |------|------|
-   | Superseded decision block | `Status: accepted` → `Status: superseded by DEC-N#DX`; insert callout `> **Superseded by [[DEC-NNNN-slug\|DEC-N#DX: title]]** on YYYY-MM-DD` directly under that decision's H2 |
-   | Superseded decision's siblings | **Untouched** — sibling decisions retain their own status |
-   | New decision block | `Supersedes` metadata set; `### Links` references the superseded `[[DEC-MMMM-slug\|DEC-MMMM#DK: title]]` |
-   | Index | Two rows updated (the superseder's row gets `Supersedes`, the superseded's row gets `Status` and `Superseded By`) |
-   | Relationship Graph | New node added; supersession edge drawn; superseded node's class flipped |
-
-   **Default to `proposed`.** Supersession at create-time is rare; `/decision-finalize` enforces it atomically when the user is ready.
-
-4. **Do not delete or mutate any existing index row** beyond what supersession requires. The index is append-mostly.
-
-### Step 7: Append to wiki/log.md
-
-Append an entry to `wiki/log.md`:
-
-```
-## [YYYY-MM-DD] decision-create | DEC-NNNN <Decision-Group Title>
-```
-
-Use `Edit` to append — never `echo >>`.
-
-### Step 8: Cross-link from related artifacts
-
-For any decision in the group that was prompted by an active task or feature work, cross-link both directions:
-
-- In the source task file (`wiki/work/tasks/TASK-NNN-slug.md` if it exists), append: `**Decision**: [[DEC-NNNN-slug|DEC-NNNN#DM: title]]`
-- In the decision's `### Links` section, list the source task path
-
-Use `Read` then `Edit` for these updates — **never** `echo >>` or `sed`.
-
-### Step 9: Update memories
-
-If a decision in the group establishes a non-obvious pattern, integration constraint, or known gotcha:
-
-- `mcp__serena__write_memory` with a topic-hierarchical name (e.g. `architecture/data-layer/cache-strategy`)
-- The memory body should reference the specific decision (`DEC-NNNN#DM`), not just the file
-
-Skip for self-documenting decisions.
-
-### Step 10: Report completion
-
-Print a tabular summary:
-
-| Field | Value |
-|-------|-------|
-| File path | `wiki/work/decisions/DEC-NNNN-slug.md` |
-| Decisions in this file | `D1: <title>`, `D2: <title>`, … |
-| Status assigned per decision | per-decision list |
-| Supersession queued for finalize? | yes (per decision) / no |
-| Index updated | yes (N rows added) |
-| Graph updated | yes / no (only if status=accepted at draft) |
-| Log entry appended | yes |
-| Suggested next steps | `/decision-finalize <file>#D1`, `/decision-finalize <file>#D2`, … |
-
-If any decision was dropped due to lack of evidence, note it in a separate "Gaps" section.
+## Step 10: Report
+Tabular summary: File path, Decisions in file (`D1: <title>`, …), Status per decision, Supersession queued for finalize? (per decision), Index updated (N rows), Graph updated (only if any drafted `accepted`), Log appended, Suggested next steps (`/decision-finalize <file>#D1`, …). Note any decision dropped for lack of evidence under a "Gaps" section.
 
 ---
 
-## Output Formatting Rules (mandatory — these override any default style)
+## Output formatting rules (mandatory — override default style)
+1. **All comparisons are tables** — no bullet pros/cons or option summaries. Writing `- Good/Bad, because …` → convert to a table row.
+2. **Mermaid for any flow/sequence/before-after** — static choices may skip; when in doubt, include.
+3. **One decision per `D*` block** — never cover two; split into `D1`/`D2`.
+4. **Stable decision IDs** — `D2` stays `D2` forever, even if `D1` is later deprecated; never renumber siblings.
+5. **Present tense, full sentences** — "We will use Redis as the session cache", not "Redis chosen".
+6. **Immutable per decision once accepted** — never edit an accepted block's content; write a superseding decision instead. Only allowed in-place edits: status change (accepted → superseded) + the supersession callout.
 
-1. **All comparisons are tables.** No bullet-list pros/cons, no bullet-list option summaries. If you find yourself writing `- Good, because ...` / `- Bad, because ...`, stop and convert to a table row.
-2. **Use mermaid for any flow, sequence, or before/after architecture.** Static choices may skip. When in doubt, include — diagrams age well.
-3. **One decision per `D*` block.** A single `D*` block must NOT cover two decisions. Split into `D1` and `D2`.
-4. **Stable decision IDs.** Once a decision is `D2`, it stays `D2` forever — even if `D1` is later marked `deprecated`. Never renumber siblings.
-5. **Present tense, full sentences.** "We will use Redis as the session cache." Not "Redis chosen" or "Going with Redis I think".
-6. **Immutable per decision once accepted.** Never edit an accepted decision block's content — create a new decision (in this file as `Dnext` or in a new file) that supersedes it. Status changes (accepted → superseded) and the supersession callout are the only allowed in-place edits.
-
----
-
-## CRITICAL Rules
-
-1. **Maximum 3 sub-processes at a time** if delegating research steps
-2. **Always terminate processes when done** (dev servers, type checkers)
-3. **Never invent options or consequences** — every option in a block's tables must be backed by Step 3 research; every consequence must be a real implication
-4. **Tables not bullets** for every comparison — hard rule, not a preference
-5. **Mermaid for flows** — include a diagram unless the decision is purely static
-6. **Per-decision metadata is mandatory** — `Status`, `Date`, `Deciders`, `Tags` cannot be empty on any block; `Tags` non-empty is required for supersession detection
-7. **Decisions in a group are independent units** — never assume sibling status, sibling deciders, or sibling supersession on behalf of a block
+## CRITICAL rules
+1. **Max 3 sub-processes at a time** if delegating research; **always terminate processes when done**.
+2. **Never invent options or consequences** — every option backed by Step 3 research; every consequence a real implication.
+3. **Tables not bullets** for every comparison — hard rule.
+4. **Mermaid for flows** — include unless purely static.
+5. **Per-decision metadata mandatory** — `Status`/`Date`/`Deciders`/`Tags` non-empty on every block; `Tags` non-empty required for supersession detection.
+6. **Decisions in a group are independent units** — never assume sibling status, deciders, or supersession on behalf of a block.
