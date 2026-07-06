@@ -1,24 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$SCRIPT_DIR/lib.sh"
 
 if [ $# -ne 1 ]; then
   echo "Usage: $0 <path-to-project>"
   exit 1
 fi
 
-# Resolve relative paths (e.g., ".") to absolute by cd-ing into the dir and printing pwd.
-# If the path doesn't exist or can't be resolved, cd fails and we catch it with ||.
-PROJECT_DIR="$(cd "$1" 2>/dev/null && pwd)" || {
-  echo "Error: Cannot resolve path: $1"
-  exit 1
-}
-
-if [ ! -d "$PROJECT_DIR" ]; then
-  echo "Error: Directory does not exist: $PROJECT_DIR"
-  exit 1
-fi
+PROJECT_DIR="$(resolve_project_dir "$1")" || exit 1
 
 echo "Updating project: $PROJECT_DIR"
 echo ""
@@ -75,38 +66,8 @@ if [ -d "$PROJECT_DIR/.claude/skills" ]; then
   echo ""
 fi
 
-# 1. Install MCPs interactively, then skills + hooks globally
-echo "Checking MCP servers..."
-"$SCRIPT_DIR/install-mcps.sh" --interactive --project-dir "$PROJECT_DIR"
-echo ""
-echo "Installing skills and hooks globally (~/.claude/skills/)..."
-"$SCRIPT_DIR/install-global.sh" --skip-mcps
-echo ""
-
-# 2. Sync the wiki scaffold (copy-once) and guides (always refreshed)
-echo "Syncing wiki scaffold..."
-"$SCRIPT_DIR/sync-wiki-scaffold.sh" "$PROJECT_DIR"
-"$SCRIPT_DIR/merge-gitignore.sh" "$PROJECT_DIR"
-echo ""
-
-# 3. Assemble mcp-tools.md guide for only the installed MCPs
-echo "Building MCP tools guide..."
-INSTALLED_MCPS=()
-if [ -f "$PROJECT_DIR/.mcp.json" ] && grep -q '"serena"' "$PROJECT_DIR/.mcp.json" 2>/dev/null; then
-  INSTALLED_MCPS+=("serena")
-fi
-for mcp in context7 brave-search playwright; do
-  if claude mcp get "$mcp" &>/dev/null; then
-    INSTALLED_MCPS+=("$mcp")
-  fi
-done
-"$SCRIPT_DIR/build-mcp-guide.sh" "$PROJECT_DIR" "${INSTALLED_MCPS[@]+"${INSTALLED_MCPS[@]}"}"
-echo ""
-
-# 4. Bootstrap Serena project.yml (idempotent)
-echo "Re-checking Serena project.yml bootstrap..."
-"$SCRIPT_DIR/bootstrap-serena.sh" "$PROJECT_DIR"
-echo ""
+# Shared setup/update sequence: MCPs, skills+hooks, wiki scaffold, MCP guide, Serena.
+run_project_sync "$PROJECT_DIR" "$SCRIPT_DIR"
 
 # Done
 echo "============================="

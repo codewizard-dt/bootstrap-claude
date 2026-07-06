@@ -10,6 +10,9 @@ set -euo pipefail
 #
 # Serena is only offered when --project-dir is provided (it requires an absolute project path).
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$SCRIPT_DIR/lib.sh"
+
 INTERACTIVE=false
 PROJECT_DIR=""
 
@@ -21,50 +24,86 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Check if an MCP is registered (any scope visible to the current project)
-mcp_installed() {
-  claude mcp get "$1" &>/dev/null
-}
+# mcp_installed, serena_installed, prompt_yn, prompt_scope live in lib.sh.
 
-serena_installed() {
-  [ -n "$PROJECT_DIR" ] && [ -f "$PROJECT_DIR/.mcp.json" ] && \
-    grep -q '"serena"' "$PROJECT_DIR/.mcp.json" 2>/dev/null
-}
-
-prompt_yn() {
-  local prompt="$1"
-  local reply
-  if [ -t 0 ]; then
-    read -r -p "$prompt" reply
+# mcp_add_scoped <scope> <claude-mcp-add-args...>
+# Runs `claude mcp add --scope <scope> <args...>`. For project scope, cd into
+# PROJECT_DIR first (project MCPs are written relative to cwd); if project scope
+# is requested without a PROJECT_DIR, fall back to user scope.
+mcp_add_scoped() {
+  local scope="$1"; shift
+  if [ "$scope" = "project" ] && [ -n "$PROJECT_DIR" ]; then
+    ( cd "$PROJECT_DIR" && claude mcp add --scope project "$@" )
   else
-    echo "  Non-interactive terminal: skipping prompt, answering no."
-    reply="n"
+    claude mcp add --scope user "$@"
   fi
-  case "$reply" in
-    [yY]*) return 0 ;;
-    *) return 1 ;;
-  esac
 }
 
-prompt_scope() {
-  local name="$1"
-  local reply
-  if [ -t 0 ]; then
-    read -r -p "  Scope for $name — [u]ser (default) or [p]roject? " reply
-  else
-    reply="u"
+# register_optional_mcp <name> <interactive-prompt> <adder-fn>
+# Common wrapper for the optional MCPs (brave-search / context7 / playwright):
+# skip if already installed; in interactive mode gate on a y/n prompt and ask
+# for scope; otherwise install non-interactively at user scope. <adder-fn>
+# performs the actual `claude mcp add` (including any API-key prompting) and
+# receives the resolved scope ("user" | "project") as its only argument.
+register_optional_mcp() {
+  local name="$1" prompt="$2" adder="$3" scope
+  if mcp_installed "$name"; then
+    echo "  $name: already installed, skipping."
+    return 0
   fi
-  case "$reply" in
-    [pP]*) echo "project" ;;
-    *) echo "user" ;;
-  esac
+  if [ "$INTERACTIVE" = true ]; then
+    if prompt_yn "$prompt"; then
+      scope="$(prompt_scope "$name")"
+      "$adder" "$scope"
+      echo "  $name MCP installed."
+    fi
+  else
+    echo "  Installing $name MCP..."
+    "$adder" user
+    echo "  $name MCP installed."
+  fi
+}
+
+# Per-MCP adders. Each takes the resolved scope as $1 and preserves the exact
+# interactive vs non-interactive key-prompting behaviour of the original blocks.
+_add_brave() {
+  if [ "$INTERACTIVE" = true ]; then
+    read -r -p "  BRAVE_API_KEY (get one at https://brave.com/search/api/): " BRAVE_API_KEY
+  elif [ -z "${BRAVE_API_KEY:-}" ]; then
+    echo -n "  Enter your Brave Search API key (get one at https://brave.com/search/api/): "
+    read -r BRAVE_API_KEY
+  fi
+  mcp_add_scoped "$1" brave-search \
+    --env "BRAVE_API_KEY=${BRAVE_API_KEY}" \
+    -- npx -y @modelcontextprotocol/server-brave-search
+}
+
+_add_context7() {
+  if [ "$INTERACTIVE" = true ]; then
+    read -r -p "  CONTEXT7_API_KEY (optional — press Enter to skip; get one at https://context7.com/dashboard): " CONTEXT7_API_KEY
+  elif [ -z "${CONTEXT7_API_KEY:-}" ]; then
+    echo -n "  Enter your Context7 API key (optional — press Enter to skip, get one at https://context7.com/dashboard): "
+    read -r CONTEXT7_API_KEY
+  fi
+  if [ -n "${CONTEXT7_API_KEY:-}" ]; then
+    mcp_add_scoped "$1" --transport http \
+      --header "CONTEXT7_API_KEY: ${CONTEXT7_API_KEY}" \
+      context7 https://mcp.context7.com/mcp
+  else
+    mcp_add_scoped "$1" --transport http \
+      context7 https://mcp.context7.com/mcp
+  fi
+}
+
+_add_playwright() {
+  mcp_add_scoped "$1" playwright -- npx @playwright/mcp@latest
 }
 
 # ---------------------------------------------------------------------------
 # Serena (always project scope — only when --project-dir provided)
 # ---------------------------------------------------------------------------
 if [ -n "$PROJECT_DIR" ]; then
-  if serena_installed; then
+  if serena_installed "$PROJECT_DIR"; then
     echo "  serena: already registered for this project, skipping."
   elif [ "$INTERACTIVE" = true ]; then
     if prompt_yn "Install Serena MCP (code exploration & editing, always project scope)? [Y/n]: "; then
@@ -80,111 +119,13 @@ if [ -n "$PROJECT_DIR" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Brave Search
+# Optional MCPs (near-identical wrappers — see register_optional_mcp above)
 # ---------------------------------------------------------------------------
-if mcp_installed "brave-search"; then
-  echo "  brave-search: already installed, skipping."
-else
-  if [ "$INTERACTIVE" = true ]; then
-    if prompt_yn "Install Brave Search MCP (web research, requires API key)? [y/N]: "; then
-      scope=$(prompt_scope "brave-search")
-      read -r -p "  BRAVE_API_KEY (get one at https://brave.com/search/api/): " BRAVE_API_KEY
-      if [ "$scope" = "project" ] && [ -n "$PROJECT_DIR" ]; then
-        ( cd "$PROJECT_DIR" && \
-          claude mcp add --scope project brave-search \
-            --env "BRAVE_API_KEY=${BRAVE_API_KEY}" \
-            -- npx -y @modelcontextprotocol/server-brave-search )
-      else
-        claude mcp add --scope user brave-search \
-          --env "BRAVE_API_KEY=${BRAVE_API_KEY}" \
-          -- npx -y @modelcontextprotocol/server-brave-search
-      fi
-      echo "  brave-search MCP installed."
-    fi
-  else
-    echo "  Installing brave-search MCP..."
-    if [ -z "${BRAVE_API_KEY:-}" ]; then
-      echo -n "  Enter your Brave Search API key (get one at https://brave.com/search/api/): "
-      read -r BRAVE_API_KEY
-    fi
-    claude mcp add --scope user brave-search \
-      --env "BRAVE_API_KEY=${BRAVE_API_KEY}" \
-      -- npx -y @modelcontextprotocol/server-brave-search
-    echo "  brave-search MCP installed."
-  fi
-fi
+register_optional_mcp brave-search \
+  "Install Brave Search MCP (web research, requires API key)? [y/N]: " _add_brave
 
-# ---------------------------------------------------------------------------
-# Context7
-# ---------------------------------------------------------------------------
-if mcp_installed "context7"; then
-  echo "  context7: already installed, skipping."
-else
-  if [ "$INTERACTIVE" = true ]; then
-    if prompt_yn "Install Context7 MCP (library documentation lookups)? [y/N]: "; then
-      scope=$(prompt_scope "context7")
-      read -r -p "  CONTEXT7_API_KEY (optional — press Enter to skip; get one at https://context7.com/dashboard): " CONTEXT7_API_KEY
-      if [ "$scope" = "project" ] && [ -n "$PROJECT_DIR" ]; then
-        if [ -n "${CONTEXT7_API_KEY:-}" ]; then
-          ( cd "$PROJECT_DIR" && \
-            claude mcp add --scope project --transport http \
-              --header "CONTEXT7_API_KEY: ${CONTEXT7_API_KEY}" \
-              context7 https://mcp.context7.com/mcp )
-        else
-          ( cd "$PROJECT_DIR" && \
-            claude mcp add --scope project --transport http \
-              context7 https://mcp.context7.com/mcp )
-        fi
-      else
-        if [ -n "${CONTEXT7_API_KEY:-}" ]; then
-          claude mcp add --scope user --transport http \
-            --header "CONTEXT7_API_KEY: ${CONTEXT7_API_KEY}" \
-            context7 https://mcp.context7.com/mcp
-        else
-          claude mcp add --scope user --transport http \
-            context7 https://mcp.context7.com/mcp
-        fi
-      fi
-      echo "  context7 MCP installed."
-    fi
-  else
-    echo "  Installing context7 MCP..."
-    if [ -z "${CONTEXT7_API_KEY:-}" ]; then
-      echo -n "  Enter your Context7 API key (optional — press Enter to skip, get one at https://context7.com/dashboard): "
-      read -r CONTEXT7_API_KEY
-    fi
-    if [ -n "${CONTEXT7_API_KEY:-}" ]; then
-      claude mcp add --scope user --transport http \
-        --header "CONTEXT7_API_KEY: ${CONTEXT7_API_KEY}" \
-        context7 https://mcp.context7.com/mcp
-    else
-      claude mcp add --scope user --transport http \
-        context7 https://mcp.context7.com/mcp
-    fi
-    echo "  context7 MCP installed."
-  fi
-fi
+register_optional_mcp context7 \
+  "Install Context7 MCP (library documentation lookups)? [y/N]: " _add_context7
 
-# ---------------------------------------------------------------------------
-# Playwright
-# ---------------------------------------------------------------------------
-if mcp_installed "playwright"; then
-  echo "  playwright: already installed, skipping."
-else
-  if [ "$INTERACTIVE" = true ]; then
-    if prompt_yn "Install Playwright MCP (browser automation & UI testing)? [y/N]: "; then
-      scope=$(prompt_scope "playwright")
-      if [ "$scope" = "project" ] && [ -n "$PROJECT_DIR" ]; then
-        ( cd "$PROJECT_DIR" && \
-          claude mcp add --scope project playwright -- npx @playwright/mcp@latest )
-      else
-        claude mcp add --scope user playwright -- npx @playwright/mcp@latest
-      fi
-      echo "  playwright MCP installed."
-    fi
-  else
-    echo "  Installing playwright MCP..."
-    claude mcp add --scope user playwright -- npx @playwright/mcp@latest
-    echo "  playwright MCP installed."
-  fi
-fi
+register_optional_mcp playwright \
+  "Install Playwright MCP (browser automation & UI testing)? [y/N]: " _add_playwright

@@ -1,23 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$SCRIPT_DIR/lib.sh"
 
 if [ $# -ne 1 ]; then
   echo "Usage: $0 <path-to-project>"
   exit 1
 fi
 
-# Resolve relative paths (e.g., ".") to absolute by cd-ing into the dir and printing pwd.
-# If the path doesn't exist or can't be resolved, cd fails and we catch it with ||.
-PROJECT_DIR="$(cd "$1" 2>/dev/null && pwd)" || {
-  echo "Error: Cannot resolve path: $1"
-  exit 1
-}
-
-if [ ! -d "$PROJECT_DIR" ]; then
-  echo "Error: Directory does not exist: $PROJECT_DIR"
-  exit 1
-fi
+PROJECT_DIR="$(resolve_project_dir "$1")" || exit 1
 
 # Preflight checks
 if ! command -v claude &>/dev/null; then

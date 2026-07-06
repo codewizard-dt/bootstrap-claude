@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$SCRIPT_DIR/lib.sh"
 # Packed copy of the repo .gitignore (dotfiles are never included in npm packages)
 TEMPLATE_GITIGNORE="$SCRIPT_DIR/templates/gitignore"
 
@@ -10,15 +11,7 @@ if [ $# -ne 1 ]; then
   exit 1
 fi
 
-PROJECT_DIR="$(cd "$1" 2>/dev/null && pwd)" || {
-  echo "Error: Cannot resolve path: $1"
-  exit 1
-}
-
-if [ ! -d "$PROJECT_DIR" ]; then
-  echo "Error: Directory does not exist: $PROJECT_DIR"
-  exit 1
-fi
+PROJECT_DIR="$(resolve_project_dir "$1")" || exit 1
 
 TARGET="$PROJECT_DIR/.gitignore"
 

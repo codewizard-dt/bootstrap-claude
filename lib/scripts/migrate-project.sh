@@ -14,7 +14,8 @@ set -euo pipefail
 # Usage:
 #   migrate-project.sh [--dry-run] <path-to-project> [additional context...]
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$SCRIPT_DIR/lib.sh"
 TEMPLATE="$SCRIPT_DIR/../prompts/migrate-wiki.md"
 
 if [ ! -f "$TEMPLATE" ]; then
@@ -37,17 +38,9 @@ if [ $# -lt 1 ]; then
   exit 1
 fi
 
-PROJECT_DIR="$(cd "$1" 2>/dev/null && pwd)" || {
-  echo "Error: Cannot resolve path: $1" >&2
-  exit 1
-}
+PROJECT_DIR="$(resolve_project_dir "$1")" || exit 1
 shift
 EXTRA_CONTEXT="${*}"
-
-if [ ! -d "$PROJECT_DIR" ]; then
-  echo "Error: Directory does not exist: $PROJECT_DIR" >&2
-  exit 1
-fi
 
 # --- Preflight 1: legacy content must exist -------------------------------
 LEGACY_FAMILIES=(tasks uat adr prd bugs roadmaps)

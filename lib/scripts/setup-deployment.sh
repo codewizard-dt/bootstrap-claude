@@ -16,7 +16,8 @@ set -euo pipefail
 #   - .gitleaks.toml    → created once, skipped if present
 #   - Makefile          → Docker targets added/merged if a Makefile already exists
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$SCRIPT_DIR/lib.sh"
 GUIDE="$SCRIPT_DIR/../../raw/guides/deployment-strategy.md"
 TEMPLATE="$SCRIPT_DIR/../prompts/setup-deployment.md"
 
@@ -45,17 +46,9 @@ if [ $# -lt 1 ]; then
   exit 1
 fi
 
-PROJECT_DIR="$(cd "$1" 2>/dev/null && pwd)" || {
-  echo "Error: Cannot resolve path: $1" >&2
-  exit 1
-}
+PROJECT_DIR="$(resolve_project_dir "$1")" || exit 1
 shift
 EXTRA_CONTEXT="${*}"
-
-if [ ! -d "$PROJECT_DIR" ]; then
-  echo "Error: Directory does not exist: $PROJECT_DIR" >&2
-  exit 1
-fi
 
 if [ "$DRY_RUN" = true ]; then
   echo "Docker and Compose files in $PROJECT_DIR:"
