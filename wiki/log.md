@@ -21,3 +21,9 @@ UAT promoted to its own work family at `work/uat/` (own lifecycle, statuses `pen
 
 ## [2026-06-14] scaffold | Archive subdirs and log rotation added
 Added `archive/` subdirectory (with `archive/index.md`) to all 6 work families. Updated `lifecycle.md` files to clarify that active files are never moved but terminal items may be moved to `archive/` by `/wiki-archive`. Added two new skills: `/wiki-archive` (batch-moves terminal items) and `/wiki-rotate-log` (rotates log.md to dated segment files at ~400 entries). Updated `conventions.md` with §5 Archiving and §6 Log rotation. The "files are never moved" rule is now "active files are never moved" — link safety is preserved because links use stable IDs not paths.
+
+## [2026-07-06] ingest | Research: Improving the LLM Wiki tooling
+Ingested from `raw/research/wiki-tooling-improvements/index.md` (+ `sources.md`). Key claims: Claude Code's native Auto Memory has no bridge to this repo's wiki; independent gist reimplementations converged on a hot-cache session-handoff file, provenance tagging, and multi-writer locking, none of which this repo has yet; dedicated agent-memory frameworks (Mem0/Zep/Letta/Hindsight) solve a different problem than this wiki and shouldn't be adopted as a default. 5 entity pages touched (1 person, 4 tools), 4 concept pages touched, 1 new source summary page.
+
+## [2026-07-06] roadmap | ROADMAP-001 created — Improve wiki tooling based on 2026-07-06 research
+Created `wiki/work/roadmaps/ROADMAP-001-wiki-tooling-improvements.md` (5 phases, 11 inline items, all pending task-file creation via `/roadmap-next`). Phases: audit/fix skill-template drift, documentation bridge (Auto Memory vs. wiki), session-continuity hot cache, provenance/confidence tagging, and deferred concurrency-safety locking. Derived from the same-day research ingest above. Owner: David Taylor.

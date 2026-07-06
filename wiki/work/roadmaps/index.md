@@ -1,6 +1,6 @@
 ---
 title: Roadmaps Index
-updated: 2026-06-11
+updated: 2026-07-06
 ---
 
 # Roadmaps — Active Items
@@ -9,4 +9,4 @@ Lists **only active** roadmaps (`active`). When a roadmap completes (`done`), de
 
 Entry format: `- [ROADMAP-NNN — Title](ROADMAP-NNN-slug.md) — one-line summary · N/M items checked`
 
-_(none yet)_
+- [ROADMAP-001 — Improve wiki tooling based on 2026-07-06 research](ROADMAP-001-wiki-tooling-improvements.md) — hot cache, provenance tagging, Auto Memory/wiki boundary, plus a skill-drift audit · 0/12 items checked

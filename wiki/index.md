@@ -1,6 +1,6 @@
 ---
 title: Wiki Index
-updated: 2026-06-11
+updated: 2026-07-06
 ---
 
 # Wiki Index — Home Map
@@ -20,17 +20,19 @@ The wiki is split into two domains with opposite organizing laws:
 ## Knowledge
 
 ### Sources
-_(none yet)_ — one summary page per ingested `raw/` source. See [knowledge/sources/](knowledge/sources/).
+- [Research: Improving the LLM Wiki tooling](knowledge/sources/wiki-tooling-improvements.md) — what's changed in the second-brain/LLM-wiki ecosystem since Karpathy's gist, and what's portable to this repo
 
 ### Concepts
-_(none yet)_ — patterns, ideas, conventions, recurring themes. See [knowledge/concepts/](knowledge/concepts/).
+- [LLM Wiki Hot Cache](knowledge/concepts/llm-wiki-hot-cache.md) — session-handoff summary file pattern, converged on by multiple gist reimplementations
+- [Wiki Provenance Tagging](knowledge/concepts/wiki-provenance-tagging.md) — extracted/inferred/ambiguous claim tagging, activates this repo's reserved frontmatter
+- [Wiki Multi-Writer Safety](knowledge/concepts/wiki-multi-writer-safety.md) — advisory locking for concurrent agent writes to shared wiki index files
+- [Agent Memory Frameworks Landscape](knowledge/concepts/agent-memory-frameworks-landscape.md) — Mem0/Zep/Letta/Hindsight/A-Mem survey vs. this repo's markdown-only wiki
 
 ### Entities
-_(none yet)_ — one page per entity, filed by sub-type:
-- People — [knowledge/entities/people/](knowledge/entities/people/)
-- Organisations — [knowledge/entities/organisations/](knowledge/entities/organisations/)
-- Tools — [knowledge/entities/tools/](knowledge/entities/tools/)
-- Components — [knowledge/entities/components/](knowledge/entities/components/) (this repo's own skills, hooks, scripts)
+- People — [knowledge/entities/people/](knowledge/entities/people/): [Andrej Karpathy](knowledge/entities/people/andrej-karpathy.md)
+- Organisations — [knowledge/entities/organisations/](knowledge/entities/organisations/) — _(none yet)_
+- Tools — [knowledge/entities/tools/](knowledge/entities/tools/): [Claude Code Auto Memory](knowledge/entities/tools/claude-code-auto-memory.md), [claude-obsidian](knowledge/entities/tools/claude-obsidian.md), [qmd](knowledge/entities/tools/qmd.md), [Hindsight](knowledge/entities/tools/hindsight.md)
+- Components — [knowledge/entities/components/](knowledge/entities/components/) (this repo's own skills, hooks, scripts) — _(none yet)_
 
 ---
 
