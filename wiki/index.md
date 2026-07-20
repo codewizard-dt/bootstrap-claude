@@ -21,18 +21,20 @@ The wiki is split into two domains with opposite organizing laws:
 
 ### Sources
 - [Research: Improving the LLM Wiki tooling](knowledge/sources/wiki-tooling-improvements.md) — what's changed in the second-brain/LLM-wiki ecosystem since Karpathy's gist, and what's portable to this repo
+- [Research: Serena MCP server disconnects mid-session](knowledge/sources/serena-mcp-disconnect.md) — live-reproduced root cause: the health-tracking hook kills a live Serena process on a misclassified error, plus a state-file race that can hard-block the fallback too
 
 ### Concepts
 - [LLM Wiki Hot Cache](knowledge/concepts/llm-wiki-hot-cache.md) — session-handoff summary file pattern, converged on by multiple gist reimplementations
 - [Wiki Provenance Tagging](knowledge/concepts/wiki-provenance-tagging.md) — extracted/inferred/ambiguous claim tagging, activates this repo's reserved frontmatter
-- [Wiki Multi-Writer Safety](knowledge/concepts/wiki-multi-writer-safety.md) — advisory locking for concurrent agent writes to shared wiki index files
+- [Wiki Multi-Writer Safety](knowledge/concepts/wiki-multi-writer-safety.md) — advisory locking for concurrent agent writes to shared wiki index files (⚠ contradiction flagged — its cited exemplar hook has a live-reproduced race bug)
 - [Agent Memory Frameworks Landscape](knowledge/concepts/agent-memory-frameworks-landscape.md) — Mem0/Zep/Letta/Hindsight/A-Mem survey vs. this repo's markdown-only wiki
+- [Responded Error Proves Liveness](knowledge/concepts/responded-error-proves-liveness.md) — health-check anti-pattern: an error response proves a process is alive, not hung; kill-on-misclassification defaults are backwards
 
 ### Entities
 - People — [knowledge/entities/people/](knowledge/entities/people/): [Andrej Karpathy](knowledge/entities/people/andrej-karpathy.md)
 - Organisations — [knowledge/entities/organisations/](knowledge/entities/organisations/) — _(none yet)_
 - Tools — [knowledge/entities/tools/](knowledge/entities/tools/): [Claude Code Auto Memory](knowledge/entities/tools/claude-code-auto-memory.md), [claude-obsidian](knowledge/entities/tools/claude-obsidian.md), [qmd](knowledge/entities/tools/qmd.md), [Hindsight](knowledge/entities/tools/hindsight.md)
-- Components — [knowledge/entities/components/](knowledge/entities/components/) (this repo's own skills, hooks, scripts) — _(none yet)_
+- Components — [knowledge/entities/components/](knowledge/entities/components/): [Serena Health-Tracking Hook](knowledge/entities/components/serena-health-tracking-hook.md)
 
 ---
 

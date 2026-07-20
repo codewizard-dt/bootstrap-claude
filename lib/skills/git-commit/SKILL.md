@@ -92,6 +92,10 @@ Edit **every file** that contains a version using the Edit tool — do not stop 
 
 ## Step 5: Commit
 
+### ⛔ Never create a branch — commit on the current branch
+
+**NEVER run `git branch`, `git checkout -b`, `git switch -c`, or any other branch-creating or branch-switching command.** Commit onto whatever branch is currently checked out, even if that is `main` or `master`. Creating or switching branches is out of scope for this skill and is explicitly forbidden — if you think a branch is warranted, stop and tell the user rather than doing it yourself.
+
 - `git-commit` is a bash alias for `git add . && git commit -m`
 - **ALWAYS use the `git-commit` bash alias.** Never use `git add` or `git commit` directly.
 - Always commit ALL files unless they are in `.gitignore`

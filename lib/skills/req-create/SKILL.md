@@ -33,7 +33,7 @@ Write when there's a real problem worth aligning on, more than one decision area
 3. Read `CLAUDE.md`, `PROJECT_STATUS.md` (if present), `wiki/work/requirements/lifecycle.md` (authoritative template/lifecycle/anti-patterns), and a sample of recent requirements for local conventions.
 
 ## Step 2: Locate directory, assign number
-Requirements live at `wiki/work/requirements/REQ-NNN-slug.md` (3-digit zero-padded). `list_dir` the directory, highest prefix + 1 (first is `REQ-001`). Derive the slug — names the **initiative**, lowercase dash-separated ≤60 chars (e.g. "Self-serve billing portal" → `REQ-004-self-serve-billing-portal.md`). Confirm number + slug via `AskUserQuestion` if non-obvious.
+Requirements live at `wiki/work/requirements/REQ-NNN-slug.md` (3-digit zero-padded). `list_dir` both `wiki/work/requirements/` and `wiki/work/requirements/archive/` (skip either that doesn't exist) — highest prefix across both + 1 (first is `REQ-001`). Never re-use a number; retired requirements keep theirs forever. Derive the slug — names the **initiative**, lowercase dash-separated ≤60 chars (e.g. "Self-serve billing portal" → `REQ-004-self-serve-billing-portal.md`). Confirm number + slug via `AskUserQuestion` if non-obvious.
 
 ## Step 3: Research (optional, scoped)
 For an unfamiliar product space, run a **lightweight** `/research` for **product context only**:

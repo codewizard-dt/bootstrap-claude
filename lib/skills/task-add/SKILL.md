@@ -57,9 +57,11 @@ If no roadmap reference: skip this step entirely.
 
 ### Step 4: Determine the next task number
 
-Scan `wiki/work/tasks/` using `mcp__serena__list_dir`. Collect every `TASK-NNN` prefix from filenames. Take `max + 1`, zero-pad to 3 digits. The first task is `TASK-001`.
-
-Do **not** look in completed/ or trashed/ subdirectories — files never move; all tasks live in `wiki/work/tasks/` regardless of status.
+Scan **all** task locations to find the next available number:
+- `mcp__serena__list_dir` on `wiki/work/tasks/` and `wiki/work/tasks/archive/` (skip either that doesn't exist).
+- Collect every `TASK-NNN` prefix from filenames across **both** directories. Take `max + 1`, zero-pad to 3 digits. The first task is `TASK-001`.
+- Also scan `wiki/work/tasks/index.md` for any reserved IDs not yet on disk.
+- Never re-use a number — IDs are immutable references, and archived tasks keep their original number forever (terminal tasks move to `archive/`; they don't stay in `wiki/work/tasks/`).
 
 This number is a preview for planning; re-verify immediately before writing (Step 7a).
 

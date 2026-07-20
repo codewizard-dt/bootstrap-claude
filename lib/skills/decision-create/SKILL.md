@@ -48,7 +48,7 @@ Default to **single-decision** unless `$ARGUMENTS` starts with `group:` or the u
 ## Step 2: Locate directory, assign number
 1. Find/create `wiki/work/decisions/`. If creating, add a `lifecycle.md` index and confirm via `AskUserQuestion` first.
 2. Read `lifecycle.md` for the current chain, area conventions, graph.
-3. Next file number: `list_dir`, highest 4-digit prefix + 1 (first is `0001`).
+3. Next file number: `list_dir` on `wiki/work/decisions/` **and** `wiki/work/decisions/archive/` (skip either that doesn't exist) — highest 4-digit prefix across both + 1 (first is `0001`). Never re-use a number; archived/superseded decisions keep theirs forever.
 4. Derive the file slug — names the **group**, lowercase dash-separated ≤60 chars (single: `DEC-0007-session-storage-strategy.md`; group: `DEC-0007-session-management.md`).
 
 ## Step 2.5: Detect existing decision area (per-decision supersession check, mandatory)

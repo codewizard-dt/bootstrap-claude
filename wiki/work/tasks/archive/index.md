@@ -15,3 +15,9 @@ Terminal task files (`done` or `trashed`) moved here by `/wiki-archive` to reduc
 | [[TASK-005]] | Add Optional tooling pointer (qmd, Hindsight) to CLAUDE.md | done | 2026-07-06 |
 | [[TASK-010]] | Update /wiki-ingest to populate the confidence field on new/updated knowledge pages | done | 2026-07-06 |
 | [[TASK-008]] | Update /primer to read wiki/hot.md first, before Serena memories | done | 2026-07-06 |
+| [[TASK-012]] | Build wiki-dashboard-server.js zero-dependency static file server | done | 2026-07-06 |
+| [[TASK-013]] | Build dashboard.html self-contained live dashboard client | done | 2026-07-06 |
+| [[TASK-014]] | Wire dashboard command into bin/cli.js | done | 2026-07-06 |
+| [[TASK-015]] | Sync dashboard.html into projects as an always-refresh scaffold file | done | 2026-07-06 |
+| [[TASK-016]] | Document the dashboard command in README.md, lib/scripts/README.md, and CLAUDE.md | done | 2026-07-06 |
+| [[TASK-017]] | Manually verify dashboard liveness and edge cases | done | 2026-07-06 |

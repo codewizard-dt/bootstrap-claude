@@ -56,7 +56,7 @@ If the topic is a single task with several steps, **stop and tell the user** —
 
 Roadmaps live at `wiki/work/roadmaps/NNN-slug.md`. Numbers are 3-digit zero-padded.
 
-1. **Use `mcp__serena__list_dir` on `wiki/work/roadmaps/`** to scan existing files. Collect every `NNN-` prefix.
+1. **Use `mcp__serena__list_dir` on `wiki/work/roadmaps/` and `wiki/work/roadmaps/archive/`** (skip either that doesn't exist) to scan existing files. Collect every `NNN-` prefix from **both** directories — completed roadmaps move to `archive/` but keep their original number forever.
 2. **Use `mcp__serena__search_for_pattern`** against `wiki/work/roadmaps/index.md` for `ROADMAP-\d{3}` entries — these may reserve numbers not yet on disk.
 3. Take `max + 1`, zero-pad to 3 digits. The first roadmap is `001`.
 4. **Derive the file slug** — names the **initiative**. Lowercase, dash-separated, ≤ 60 chars:
@@ -120,9 +120,9 @@ If the user requests edits, loop back to the relevant Step 3 elicitation, re-ask
 
 The number determined in Step 2 may now be stale (other roadmaps created mid-session, the README Index may list reservations not yet on disk). Do a fresh scan now:
 
-- `mcp__serena__list_dir` on `wiki/work/roadmaps/`
+- `mcp__serena__list_dir` on `wiki/work/roadmaps/` **and** `wiki/work/roadmaps/archive/` (skip either that doesn't exist)
 - `mcp__serena__search_for_pattern` against `wiki/work/roadmaps/index.md` for `ROADMAP-\d{3}` entries
-- Collect every `NNN-` prefix, take `max + 1`, zero-pad to 3 digits
+- Collect every `NNN-` prefix from both directories, take `max + 1`, zero-pad to 3 digits
 - If the number you planned to use in Step 4 has been taken, silently bump to the new next-available number and use it. Do not re-prompt the user.
 - **Never call `Write` before completing this re-scan.**
 

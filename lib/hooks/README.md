@@ -79,19 +79,36 @@ Serena calls and blocked fallbacks. To prevent this, enforcement is **fail-open*
   cost is one small JSON stat+read per guarded call.
 - **Failures drive the decision.** `serena-usage-tracker.js` sees every Serena
   call outcome (success **and** failure) and classifies failures:
-  - *tool-level* (e.g. "symbol not found", "no results") — the server answered,
-    the query just missed. Record the error, **keep enforcing**.
-  - *transport-level* (timeout / connection closed / broken pipe / unknown /
-    empty) — probe the OS for a Serena process bound to this project's `--project`
-    path. If one is alive but failing (hung), make **one best-effort restart
-    attempt** (`pkill` scoped to the project path, brief wait, re-probe). If a
-    live process remains, keep enforcing; if none remains, write
+  - *tool-level* (e.g. "symbol not found", "no results", or a benign decline
+    like "cannot extract symbols" for a file type not enabled in
+    `.serena/project.yml`) — the server answered, the query just missed or was
+    declined for an expected reason. Record the error, **keep enforcing**. An
+    unrecognized error string also defaults here — a hook only runs because
+    the MCP round-trip completed with a payload to classify, which already
+    proves the server responded.
+  - *transport-level* (timeout / connection closed / broken pipe / a genuinely
+    empty payload) — probe the OS for a Serena process bound to this
+    project's `--project` path, **diagnostically only** (the process is never
+    terminated: a live process that just answered, even with an error, has
+    already proven it isn't hung, and there is no documented way to
+    reconnect a stdio MCP server mid-session — killing it has no realistic
+    upside and a confirmed downside). If a live process remains, keep
+    enforcing, just record the error; if none remains, write
     `health.should_enforce = false` and emit a **one-time** `systemMessage`
     notice that Serena-first enforcement is disabled for the session.
 - **Auto-recovery.** The next **successful** Serena call restores
   `health` to enforcing/healthy (and re-arms the one-time notice), so enforcement
   comes back automatically once Serena reconnects or the session restarts
   (`serena-session-reset.js` wipes the file at SessionStart).
+- **Gate 1 deadlock backstop.** `serena-first-read-guard.js` tracks
+  `warmup_block_count` — consecutive Gate 1 blocks with no successful Serena
+  call in between. If it reaches 3 (an unforeseen error type evaded the
+  classification above, or Serena never gets a call attempted at all), the
+  guard escalates to the same circuit breaker — `health.should_enforce =
+  false` plus a one-time notice — rather than blocking indefinitely. It
+  escalates the shared flag, not just this one guard, so the deadlock can't
+  simply relocate to the next guard hook. Resets to 0 on the next successful
+  Serena call, same as the rest of `health`.
 
 **Version compatibility.** `PostToolUseFailure` fires on failed tool calls
 (including MCP tools, in every permission mode) but is a newer event; its `error`
@@ -100,15 +117,49 @@ payload is undocumented and handled defensively. On Claude Code builds without
 `PostToolUse` error-shaped `tool_response` — so the wiring registers
 `serena-usage-tracker.js` on **both** events with the same matcher, and either
 path produces the same health outcome. There is no documented way to reconnect a
-stdio MCP server mid-session, so a "restart" only succeeds if the host respawns
-the process; otherwise fail-open + auto-recovery is the guaranteed path.
+stdio MCP server mid-session, so the process is never killed on the theory that
+the host might respawn it — fail-open + auto-recovery (or the Gate 1 backstop,
+as a last resort) is the only guaranteed path back to a working session.
 
 ### Shared library
 
 | File | Used by |
 |------|---------|
-| `lib/serena.js` | All Serena hooks — intent→tool mapping, `isAllowedPath`, block-message builders, per-project state file (`getStateFilePath`/`readStateFile`/`writeStateFile`/`shouldEnforceSerena`), failure classification + process health (`classifySerenaFailure`/`isSerenaProcessAlive`/`attemptSerenaRestart`), and consolidated symbol detection (`isCodeSymbol`/`extractSymbolsFromPattern`) |
+| `lib/serena.js` | All Serena hooks — intent→tool mapping, `isAllowedPath`, block-message builders, per-project state file (`getStateFilePath`/`readStateFile`/`writeStateFile`/`shouldEnforceSerena`/`defaultFlag`/`defaultHealth`), an advisory lock + atomic read-modify-write helper (`acquireLock`/`releaseLock`/`updateStateFile`) used by every hook that writes the state file, failure classification + process health (`classifySerenaFailure`/`isSerenaProcessAlive` — diagnostic only, never terminates the process), and consolidated symbol detection (`isCodeSymbol`/`extractSymbolsFromPattern`) |
 | `lib/serena-languages.js` | `lib/serena.js` — reads `.serena/project.yml` to scope enforcement to configured languages |
+
+### State file JSON schema
+
+One file per project cwd, `~/.claude/state/lsp-ready-<md5(cwd).slice(0,12)>`,
+written via `updateStateFile()` (locked, atomic) by `serena-usage-tracker.js`
+and `serena-first-read-guard.js`:
+
+```jsonc
+{
+  "cwd": "/path/to/project",
+  "warmup_done": false,          // Gate 1: has a Serena nav call ever succeeded this session?
+  "nav_count": 0,                // successful nav calls since warmup (Gates 4/5)
+  "read_count": 0,               // len(read_files)
+  "read_files": [],              // code files already Read this session
+  "warmup_block_count": 0,       // consecutive Gate 1 blocks — resets on any success, see backstop above
+  "cold_start_retries": 0,
+  "timestamp": 0,                // last write; entries older than 24h are treated as missing
+  "last_tool": "",
+  "health": {
+    "should_enforce": true,      // false ⇒ every guard fails open for this project
+    "healthy": true,
+    "error_count": 0,
+    "last_error": null,
+    "last_check": 0,
+    "notified": false            // one-time systemMessage already shown for this outage
+  }
+}
+```
+
+A sibling `<path>.lock` file exists only transiently, for the duration of a
+single read-modify-write cycle (a few ms). It self-heals: a lock older than
+750ms is treated as orphaned (its holder crashed) and is cleared by the next
+acquirer rather than blocking on it.
 
 ---
 

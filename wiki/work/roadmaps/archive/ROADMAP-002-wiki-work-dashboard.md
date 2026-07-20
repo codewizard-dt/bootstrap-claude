@@ -1,7 +1,7 @@
 ---
 id: ROADMAP-002
 title: Live HTML dashboard for wiki/work families
-status: active
+status: done
 created: 2026-07-06
 updated: 2026-07-06
 owner: David Taylor
@@ -20,24 +20,26 @@ Derived from a plan-mode design session (2026-07-06) that researched `wiki/work/
 
 ## Phase 1: Static Server
 
-- [ ] Build `lib/scripts/wiki-dashboard-server.js` — zero-dependency static file server with no-cache headers and port fallback
+- [x] [[TASK-012: Build wiki-dashboard-server.js zero-dependency static file server]]
 
 ## Phase 2: Dashboard Client
 
-- [ ] Build `lib/scripts/templates/wiki/dashboard.html` — self-contained live dashboard client (parsers, rendering, polling)
+- [x] [[TASK-013: Build dashboard.html self-contained live dashboard client]]
 
 ## Phase 3: CLI & Distribution
 
-- [ ] Wire a `dashboard` command into `bin/cli.js`
-- [ ] Sync `dashboard.html` into projects as an always-refresh scaffold file via `sync-wiki-scaffold.sh`
+- [x] [[TASK-014: Wire dashboard command into bin/cli.js]]
+- [x] [[TASK-015: Sync dashboard.html into projects as an always-refresh scaffold file]]
 
 ## Phase 4: Docs
 
-- [ ] Document the `dashboard` command in `README.md`, `lib/scripts/README.md`, and `CLAUDE.md`
+- [x] [[TASK-016: Document the dashboard command in README.md, lib/scripts/README.md, and CLAUDE.md]]
 
 ## Phase 5: Verification
 
-- [ ] Manually verify dashboard liveness and edge cases against the plan's verification checklist
+- [x] [[TASK-017: Manually verify dashboard liveness and edge cases]]
 
 ## Notes
+
+> **Renumbered 2026-07-06**: this roadmap's tasks were originally created as TASK-001 through TASK-006 / UAT-001 through UAT-006, colliding with the pre-existing archived ROADMAP-001 tasks of the same numbers (task-add's next-number scan only checked the active `wiki/work/tasks/` directory, not `archive/`). Renumbered to TASK-012–017 / UAT-012–017. Root cause fixed in `lib/skills/task-add/SKILL.md` (and, proactively, `roadmap-create`, `decision-create`, `req-create`, which had the same bug).
 

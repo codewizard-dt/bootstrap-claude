@@ -36,6 +36,8 @@ project_name: "bootstrap-wiki2"
 languages:
 - bash
 - markdown
+- python
+- typescript
 - yaml
 
 # the encoding used by text files in the project

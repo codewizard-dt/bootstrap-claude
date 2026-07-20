@@ -14,6 +14,7 @@ const SCRIPTS = {
   deployment: { script: 'setup-deployment.sh', args: ['.', ...extraArgs] },
   migrate: { script: 'migrate-project.sh', args: ['.', ...extraArgs] },
   typechecks: { script: 'setup-strict-typechecks.sh', args: extraArgs },
+  dashboard: { script: 'wiki-dashboard-server.js', args: ['.', ...extraArgs] },
 };
 
 if (!command || !SCRIPTS[command]) {
@@ -30,6 +31,8 @@ if (!command || !SCRIPTS[command]) {
   console.error('                Pass --dry-run to preview; runs on a fresh wiki-migration branch');
   console.error('  typechecks    Run strict typecheck setup via Claude (optional: language list)');
   console.error('                e.g. bootstrap typechecks typescript python');
+  console.error('  dashboard     Launch the live wiki/work dashboard in this project (Ctrl-C to stop)');
+  console.error('                Optional: pass a port number, e.g. bootstrap dashboard 4400');
   process.exit(1);
 }
 

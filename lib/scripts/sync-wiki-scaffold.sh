@@ -39,10 +39,12 @@ mkdir -p \
 rsync -av --ignore-existing \
   --exclude 'conventions.md' \
   --exclude 'lifecycle.md' \
+  --exclude 'dashboard.html' \
   "$TEMPLATES/" "$PROJECT_DIR/wiki/"
 
-# 3. ALWAYS-REFRESH: spec docs that remain template-owned; always overwrite
+# 3. ALWAYS-REFRESH: spec docs (conventions.md, lifecycle.md) and dashboard.html that remain template-owned; always overwrite
 rsync -av "$TEMPLATES/conventions.md" "$PROJECT_DIR/wiki/conventions.md"
+rsync -av "$TEMPLATES/dashboard.html" "$PROJECT_DIR/wiki/dashboard.html"
 for fam in requirements decisions roadmaps tasks uat bugs; do
   rsync -av "$TEMPLATES/work/$fam/lifecycle.md" "$PROJECT_DIR/wiki/work/$fam/lifecycle.md"
 done

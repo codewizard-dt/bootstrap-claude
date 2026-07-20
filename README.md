@@ -26,7 +26,7 @@ At a glance, the package entry point selects a script, scripts copy or generate 
 
 - **Responsibility:** Routes `bootstrap <command>` and `npx @codewizard-dt/bootstrap <command>` invocations to the appropriate setup script.
 - **Tech:** Node.js CommonJS, `child_process.execFileSync`
-- **Inputs:** Commands such as `setup`, `update`, `install`, `deploy`, `migrate`, and `typechecks`, plus optional extra arguments for deploy and migration flows.
+- **Inputs:** Commands such as `setup`, `update`, `install`, `deploy`, `migrate`, `typechecks`, and `dashboard`, plus optional extra arguments for deploy, migration, and dashboard (port override) flows.
 - **Outputs:** Executes the selected script with inherited stdio and propagates the script exit status.
 - **Depends on:** Setup Scripts
 
@@ -354,6 +354,11 @@ node bin/cli.js install
 
 # Run setup against the current repository
 node bin/cli.js setup
+
+# Launch the live wiki/work dashboard for the current repository (Ctrl-C to stop)
+# Serves on http://localhost:4317 by default; pass a port to override
+node bin/cli.js dashboard
+node bin/cli.js dashboard 4400
 
 # Preview deployment-scaffold detection for the current repository
 node lib/scripts/setup-deployment.sh --dry-run .

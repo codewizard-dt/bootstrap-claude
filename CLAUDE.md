@@ -74,6 +74,7 @@ Follow the root `README.md` to configure a new project, or use the npm package:
 - `npx @codewizard-dt/bootstrap deploy` — runs `lib/scripts/setup-deployment.sh` (scaffolds `.github/` workflows + `.gitleaks.toml` into the project; copy-once so existing workflows are preserved)
 - `npx @codewizard-dt/bootstrap migrate [--dry-run]` — runs `lib/scripts/migrate-project.sh` (Claude-driven migration of a legacy `.docs/` project to the wiki structure; requires a clean git tree, runs on a fresh `wiki-migration` branch, `git mv` preserves history)
 - `npx @codewizard-dt/bootstrap typechecks [languages]` — runs `lib/scripts/setup-strict-typechecks.sh` (strict type-checking setup via Claude)
+- `npx @codewizard-dt/bootstrap dashboard [port]` — runs `lib/scripts/wiki-dashboard-server.js` (zero-dependency Node server that serves the live `wiki/work/` dashboard read-only over HTTP; foreground until Ctrl-C; default `http://localhost:4317`, override with a port arg e.g. `dashboard 4400`, auto-falls back to the next free port if taken)
 
 **Manual setup steps:**
 

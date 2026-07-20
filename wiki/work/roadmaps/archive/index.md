@@ -4,3 +4,4 @@ Terminal roadmap files (`done`) moved here by `/wiki-archive` to reduce director
 
 | ID | Title | Final Status | Archived |
 |----|-------|--------------|----------|
+| [[ROADMAP-002]] | Live HTML dashboard for wiki/work families | done | 2026-07-06 |

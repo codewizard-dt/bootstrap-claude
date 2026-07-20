@@ -15,3 +15,9 @@ Terminal UAT files (`passed`, `skipped`, or `trashed`) moved here by `/wiki-arch
 | [[UAT-005]] | Add Optional tooling pointer (qmd, Hindsight) to CLAUDE.md | passed | 2026-07-06 |
 | [[UAT-010]] | Update /wiki-ingest to populate the confidence field on new/updated knowledge pages | skipped | 2026-07-06 |
 | [[UAT-008]] | Update /primer to read wiki/hot.md first, before Serena memories | skipped | 2026-07-06 |
+| [[UAT-012]] | Build wiki-dashboard-server.js zero-dependency static file server | passed | 2026-07-06 |
+| [[UAT-013]] | Build dashboard.html self-contained live dashboard client | skipped | 2026-07-06 |
+| [[UAT-014]] | Wire dashboard command into bin/cli.js | passed | 2026-07-06 |
+| [[UAT-015]] | Sync dashboard.html into projects as an always-refresh scaffold file | passed | 2026-07-06 |
+| [[UAT-016]] | Document the dashboard command in README.md, lib/scripts/README.md, and CLAUDE.md | passed | 2026-07-06 |
+| [[UAT-017]] | Manually verify dashboard liveness and edge cases | passed | 2026-07-06 |
