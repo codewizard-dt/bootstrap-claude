@@ -2,7 +2,7 @@
 name: bug-close
 description: Close an in-progress bug — record root cause and resolution, require a regression test, then move it to archive/ (or delete it for late wontfix decisions)
 category: executing
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 argument-hint: <BUG-NNNN, path, or number-slug>
 disable-model-invocation: false
 user-invocable: true

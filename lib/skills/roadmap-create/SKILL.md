@@ -2,7 +2,7 @@
 name: roadmap-create
 description: Create a structured execution-plan roadmap in wiki/work/roadmaps/ via short Socratic Q&A — captures goal, phases, and the initial hybrid (task-link OR inline) checklist
 category: planning
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 argument-hint: <initiative/goal description>
 disable-model-invocation: false
 user-invocable: true

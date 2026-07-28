@@ -40,6 +40,22 @@ mcp_installed() {
 }
 
 # ---------------------------------------------------------------------------
+# mcp_matches <name> <expected>
+#
+# Fixed-string match against `claude mcp get` output; used to distinguish
+# "installed with expected shape" from "installed but stale (needs upgrade)".
+# ---------------------------------------------------------------------------
+mcp_matches() { claude mcp get "$1" 2>/dev/null | grep -qF "$2"; }
+
+# ---------------------------------------------------------------------------
+# wait_http_up <url> [attempts]
+#
+# Any HTTP status proves the listener is up — streamable-HTTP servers 4xx
+# plain GETs, so `curl -f` would false-negative.
+# ---------------------------------------------------------------------------
+wait_http_up() { local i code; for i in $(seq 1 "${2:-10}"); do code="$(curl -s -o /dev/null -m 2 -w '%{http_code}' "$1" 2>/dev/null || true)"; [ -n "$code" ] && [ "$code" != "000" ] && return 0; sleep 1; done; return 1; }
+
+# ---------------------------------------------------------------------------
 # serena_installed <project_dir>
 #
 # True when Serena is already registered for <project_dir> (its project-scoped

@@ -2,7 +2,7 @@
 name: bug-file
 description: File a new bug report in wiki/work/bugs/ with required-on-report fields and append it to the bug index
 category: planning
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 argument-hint: <short bug description>
 disable-model-invocation: false
 user-invocable: true

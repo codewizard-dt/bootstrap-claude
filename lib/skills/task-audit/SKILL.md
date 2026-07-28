@@ -2,7 +2,7 @@
 name: task-audit
 description: Generate a dependency graph of active tasks showing which block others and which can run in parallel; also checks for unannotated implementations and auto-completes tasks
 category: researching
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 argument-hint: [--json]
 disable-model-invocation: false
 user-invocable: true

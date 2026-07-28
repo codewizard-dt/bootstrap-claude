@@ -17,7 +17,7 @@
 
 ### Workflow
 
-1. **No explicit launch step** — the browser starts automatically on the first tool call.
+1. **No explicit launch step** — the browser starts automatically on the first tool call. On macOS the browser server is a shared, launchd-managed HTTP service (one per machine); each session still gets an isolated browser context.
 2. **Accessibility-tree first** — always call `browser_snapshot` to get the current page structure and element `ref` IDs before interacting. Pass the `ref` to `browser_click`, `browser_type`, etc.
 3. Use `browser_take_screenshot` for visual verification after navigation or interaction.
 

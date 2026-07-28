@@ -2,7 +2,7 @@
 name: frontend-taste
 description: Wire the house-style design system into the current project — copies tokens/tailwind.preset.ts + tokens.json, components/*.tsx patterns, and the base CSS layer from ~/code/house-style; wires the Tailwind preset and Inter Tight font; matches the calm technical editorial aesthetic described in ~/code/house-style/README.md. Use when starting any new frontend feature, UI component, or screen that should match the design language.
 category: executing
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 ---
 
 # Frontend Taste

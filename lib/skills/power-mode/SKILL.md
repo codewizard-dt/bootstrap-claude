@@ -2,7 +2,7 @@
 name: power-mode
 description: Orchestrator for parallel agent teams. When invoked with a roadmap file path, drives every item through the full tackle → uat-generate → uat-auto pipeline until complete. When invoked with a task file path, runs that pipeline once and stops.
 category: executing
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 argument-hint: "[roadmap-file-path | task-file-path]"
 disable-model-invocation: false
 user-invocable: true

@@ -2,7 +2,7 @@
 name: update-docs
 description: Update task, UAT, and project documentation files to reflect implementation work just completed
 category: executing
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 disable-model-invocation: false
 user-invocable: true
 ---

@@ -2,7 +2,7 @@
 name: uat-walk
 description: Walk through a pending UAT file test-by-test with the user
 category: executing
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 argument-hint: <path/to/uat-file.md, number-slug, or description>
 disable-model-invocation: false
 user-invocable: true

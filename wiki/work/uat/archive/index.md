@@ -21,3 +21,8 @@ Terminal UAT files (`passed`, `skipped`, or `trashed`) moved here by `/wiki-arch
 | [[UAT-015]] | Sync dashboard.html into projects as an always-refresh scaffold file | passed | 2026-07-06 |
 | [[UAT-016]] | Document the dashboard command in README.md, lib/scripts/README.md, and CLAUDE.md | passed | 2026-07-06 |
 | [[UAT-017]] | Manually verify dashboard liveness and edge cases | passed | 2026-07-06 |
+| [[UAT-020]] | UAT: Convert brave-search MCP setup to a single global Docker container | skipped | 2026-07-28 |
+| [[UAT-021]] | UAT: Shared plumbing for single-process HTTP MCP servers (constants, helpers, upgrade detection) | passed | 2026-07-28 |
+| [[UAT-022]] | UAT: brave-search → single HTTP-mode Docker container (supersedes TASK-020 exec-wrapper) | passed | 2026-07-28 |
+| [[UAT-023]] | UAT: playwright → native launchd LaunchAgent HTTP server (darwin), stdio fallback elsewhere | passed | 2026-07-28 |
+| [[UAT-024]] | UAT: Docs & guide alignment for single-process HTTP MCP servers | passed | 2026-07-28 |

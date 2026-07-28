@@ -2,7 +2,7 @@
 name: wiki-query
 description: Answer a question from the wiki — locate pages via the index, synthesize a cited answer, and offer to file valuable answers back as new wiki pages
 category: researching
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 argument-hint: <question>
 disable-model-invocation: false
 user-invocable: true

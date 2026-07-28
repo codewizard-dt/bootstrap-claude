@@ -9,7 +9,7 @@ description: >-
   a build's closing phase to harvest corrections back into the method. Pairs with
   frontend-design, run/verify, and claude-api.
 category: executing
-model: claude-opus-4-8
+model: claude-opus-5
 effort: high
 ---
 

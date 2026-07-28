@@ -2,7 +2,7 @@
 name: mermaid-flowchart
 description: Summarize an architecture file (markdown, YAML, Docker Compose) into a Mermaid flowchart in a new markdown file
 category: executing
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 argument-hint: <path to source file> [optional output path]
 disable-model-invocation: false
 user-invocable: true

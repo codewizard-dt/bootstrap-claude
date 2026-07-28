@@ -2,7 +2,7 @@
 name: wiki-rotate-log
 description: Rotate wiki/log.md into a timestamped archive file when it grows past ~500 lines; create a fresh log.md with an archive-pointer header
 category: wiki
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 ---
 
 # Wiki Rotate Log

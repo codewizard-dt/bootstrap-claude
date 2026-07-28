@@ -2,7 +2,7 @@
 name: wiki-lint
 description: Health-check the wiki — find contradictions, stale claims, orphan pages, missing concept pages, missing cross-references, and never-ingested raw sources; fix only with approval
 category: researching
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 disable-model-invocation: false
 user-invocable: true
 ---

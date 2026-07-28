@@ -2,7 +2,7 @@
 name: wiki-archive
 description: Cleanup tool — sweep for work items with terminal status that were not auto-archived by their originating skill, and move them to archive/
 category: wiki
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 ---
 
 # Wiki Archive

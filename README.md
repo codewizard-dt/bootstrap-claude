@@ -41,7 +41,7 @@ At a glance, the package entry point selects a script, scripts copy or generate 
 #### MCP Installer
 
 - **Responsibility:** Registers Serena, Brave Search, Context7, and Playwright MCP servers with the correct user or project scope.
-- **Tech:** Bash, `claude mcp add`, `uvx`, `npx`
+- **Tech:** Bash, `claude mcp add`, `uvx`, `npx`, Docker (shared `brave-search-mcp` container), launchd (macOS Playwright LaunchAgent)
 - **Inputs:** `--interactive`, `--project-dir`, `BRAVE_API_KEY`, optional `CONTEXT7_API_KEY`, and scope choices from interactive prompts.
 - **Outputs:** User-scope MCP registrations for shared tools and project-scope `.mcp.json` registration for Serena when selected.
 - **Depends on:** Claude Code CLI, uv/uvx, npm package execution
@@ -129,6 +129,7 @@ flowchart LR
   subgraph Global ["Global Claude Code State"]
     GSKILLS["~/.claude/skills/"]
     GHOOKS["~/.claude/hooks/"]
+    GSETTINGS["~/.claude/settings.json<br/>permissions.deny"]
     GMCP["User MCPs<br/>Brave, Context7, Playwright"]
   end
 
@@ -143,7 +144,9 @@ flowchart LR
   subgraph External ["External Tools"]
     CLAUDE["Claude Code CLI"]
     UVX["uvx<br/>Serena"]
-    NPX["npx<br/>MCP packages"]
+    DOCKER["Docker<br/>brave-search-mcp container<br/>http :8941"]
+    LAUNCHD["launchd<br/>playwright-mcp LaunchAgent<br/>http :8931 (macOS)"]
+    NPX["npx<br/>Playwright MCP (non-macOS stdio)"]
     GHA["GitHub Actions"]
     NPM["npm Registry"]
   end
@@ -160,12 +163,15 @@ flowchart LR
   SETUP -->|runs| SERENA
   INSTALL -->|rsync| SKILLS
   INSTALL -->|rsync| HOOKS
+  INSTALL -->|merge deny list| GSETTINGS
   SKILLS -->|copy| GSKILLS
   HOOKS -->|copy| GHOOKS
   MCPS -->|claude mcp add| GMCP
   MCPS -->|project scope| MCP_JSON
   MCPS -->|launches| UVX
-  MCPS -->|launches| NPX
+  MCPS -->|docker run| DOCKER
+  MCPS -->|bootstraps plist| LAUNCHD
+  MCPS -->|non-macOS| NPX
   WIKI -->|copy-once + refresh| TEMPLATES
   WIKI -->|writes| WIKI_DIR
   GUIDE -->|assemble selected sections| STUBS
@@ -196,11 +202,14 @@ sequenceDiagram
   Dev->>CLI: npx @codewizard-dt/bootstrap setup
   CLI->>Setup: execFileSync(setup-project.sh ".")
   Setup->>MCP: install-mcps.sh --interactive --project-dir <project>
-  MCP->>Claude: claude mcp add selected servers
+  MCP-->>MCP: docker run brave-search-mcp (http :8941, API key baked in)
+  MCP-->>MCP: bootstrap playwright launchd agent (http :8931, macOS)
+  MCP->>Claude: claude mcp add selected servers (http URLs for brave/playwright)
   MCP-->>Project: .mcp.json for Serena when selected
   Setup->>Global: install-global.sh --skip-mcps
   Global-->>Global: rsync skills to ~/.claude/skills/
   Global-->>Global: rsync hooks to ~/.claude/hooks/
+  Global-->>Global: merge canonical deny list into ~/.claude/settings.json
   Setup->>Wiki: sync-wiki-scaffold.sh <project>
   Wiki-->>Project: raw/, wiki/, CLAUDE.md snippets, .docs/guides/
   Setup->>Guide: build-mcp-guide.sh <project> <installed-mcps>
@@ -323,7 +332,9 @@ No environment variables are required to build or publish this package from a lo
 
 | Variable | Required | Example | Description |
 |---|---|---|---|
-| `BRAVE_API_KEY` | yes for non-interactive Brave MCP install | `BSA...` | Secret passed to the Brave Search MCP server; prompted interactively if absent. |
+| `BRAVE_API_KEY` | yes for non-interactive Brave MCP install | `BSA...` | Secret baked into the `brave-search-mcp` Docker container's environment at creation (it stays out of `~/.claude.json`); prompted interactively if absent. To rotate: `docker rm -f brave-search-mcp`, then re-run `bootstrap update` with the new key. |
+| `BRAVE_MCP_PORT` | no — defaults to `8941` | `8941` | Host port for the shared Brave Search MCP Docker container (mapped to the container's fixed port `8941`); the registered endpoint is `http://127.0.0.1:<port>/mcp`. |
+| `PLAYWRIGHT_MCP_PORT` | no — defaults to `8931` | `8931` | Port the shared Playwright MCP launchd agent listens on (macOS); the registered endpoint is `http://127.0.0.1:<port>/mcp`. |
 | `CONTEXT7_API_KEY` | optional for Context7 MCP install | `ctx_...` | Optional secret sent as a Context7 MCP HTTP header; Context7 can be installed without it. |
 | `GITHUB_TOKEN` | yes in GitHub Actions | `${{ secrets.GITHUB_TOKEN }}` | GitHub-provided token used by Gitleaks and GHCR login in workflows. |
 | `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` | yes in workflows | `true` | Plain workflow config forcing JavaScript actions to run on Node 24. |
@@ -465,8 +476,10 @@ Useful first places to inspect:
 - **`command not found: bootstrap`:** The package binary is not on PATH; run through `npx @codewizard-dt/bootstrap <command>` or use `node bin/cli.js <command>` locally.
 - **`claude: command not found`:** Claude Code is missing; install it with `npm install -g @anthropic-ai/claude-code` before running setup, deploy scaffolding, migration, or typecheck setup.
 - **`uv: command not found`:** Serena setup cannot launch; install uv so `uvx` is available, then rerun setup.
-- **Brave MCP install prompts for an API key:** Set `BRAVE_API_KEY` before non-interactive installs or enter it when prompted by `install-mcps.sh`.
+- **Brave MCP install prompts for an API key:** Set `BRAVE_API_KEY` before non-interactive installs or enter it when prompted by `install-mcps.sh`. The key is baked into the `brave-search-mcp` container at creation, so a re-run never re-prompts while the container exists; to change the key, `docker rm -f brave-search-mcp` and re-run `bootstrap update`. Brave install also requires Docker to be running — if it is not, the script skips brave-search until the next `bootstrap update`.
+- **`brave-search endpoint not answering`:** The shared container should be serving `http://127.0.0.1:8941/mcp` (host port overridable via `BRAVE_MCP_PORT`). Check `docker logs brave-search-mcp` and confirm Docker Desktop is running; enable Docker Desktop's "Start when you sign in" so the container comes back after reboots.
+- **`playwright endpoint not answering` (macOS):** The launchd agent `com.bootstrap-claude.playwright-mcp` should be serving `http://127.0.0.1:8931/mcp` (overridable via `PLAYWRIGHT_MCP_PORT`). Inspect it with `launchctl print gui/$(id -u)/com.bootstrap-claude.playwright-mcp` and check `~/Library/Logs/playwright-mcp.log`. Over SSH there is no GUI session for the agent to bootstrap into — log into the Mac GUI once, then re-run `bootstrap update`.
 - **Context7 installs without authenticated access:** Set `CONTEXT7_API_KEY` if authenticated Context7 access is required; otherwise the script can register Context7 without the header.
-- **Hooks copy but do not run:** `install-global.sh` copies scripts to `~/.claude/hooks/`, but hook registration in `~/.claude/settings.json` is a separate manual step documented in `lib/hooks/README.md`.
+- **Hooks copy but do not run:** `install-global.sh` copies scripts to `~/.claude/hooks/`, but hook registration in `~/.claude/settings.json` is a separate manual step documented in `lib/hooks/README.md`. The `permissions.deny` list is the exception: `install-global.sh` merges the canonical deny list from `lib/scripts/templates/settings-deny.json` into `~/.claude/settings.json` automatically (additive-only — your own entries are never removed or reordered). Deleting a canonical entry locally means it gets re-added on the next `install`/`setup`/`update` run; that re-convergence is the point of a canonical list.
 - **Manual build workflow skips:** `.github/workflows/build.yml` intentionally skips the build job unless a root-level `Dockerfile` exists.
 - **npm package points at unexpected repository metadata:** Check `package.json` `repository`, `homepage`, and `bugs` fields before publishing; they are independent of the local git remote.

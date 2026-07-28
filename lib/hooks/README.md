@@ -299,18 +299,19 @@ for why both events are wired. If your Claude Code build does not support
 `PostToolUseFailure`, that block is simply ignored and the `PostToolUse` error
 path still catches failures.
 
-Recommended companion `deny` entries (belt-and-suspenders for normal modes):
+The companion `deny` entries (belt-and-suspenders for normal modes) no longer
+need manual wiring: the full canonical deny list lives in
+[`lib/scripts/templates/settings-deny.json`](../scripts/templates/settings-deny.json)
+and is merged into `~/.claude/settings.json` automatically by
+`install-global.sh` (so by `bootstrap install`, `setup`, and `update`). The
+merge is additive-only — your own entries are never removed or reordered.
 
-```json
-{
-  "permissions": {
-    "deny": [
-      "Bash(git stash:*)",
-      "Bash(git restore:*)",
-      "Bash(git checkout:*)"
-    ]
-  }
-}
-```
+Two documented caveats on those deny rules:
+
+- Deny rules are **not enforced** in `bypassPermissions` mode — that is exactly
+  why these hooks exist (see above). The deny list covers normal modes.
+- `Bash(git push --force *)` / `Bash(git push -f *)` are prefix matches, so a
+  command like `git push origin main --force` slips past them — partial
+  protection only.
 
 Hooks load at session start, so restart any running session after wiring.

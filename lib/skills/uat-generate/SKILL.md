@@ -2,7 +2,7 @@
 name: uat-generate
 description: Generate UAT tests in wiki/work/uat/ for a task
 category: planning
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 argument-hint: <TASK-NNN | path/to/task-file.md | feature description>
 disable-model-invocation: false
 user-invocable: true

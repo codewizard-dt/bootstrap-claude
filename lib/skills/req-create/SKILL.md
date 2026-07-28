@@ -2,7 +2,7 @@
 name: req-create
 description: Draft a new requirement in wiki/work/requirements/ via Socratic Q&A capturing problem, personas, user stories, success metrics, and non-goals
 category: planning
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 effort: high
 argument-hint: <feature description, problem statement, or product initiative title>
 disable-model-invocation: false

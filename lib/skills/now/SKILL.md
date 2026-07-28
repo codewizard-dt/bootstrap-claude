@@ -2,7 +2,7 @@
 name: now
 description: Plan and delegate a task to subagents (max 3 concurrent)
 category: executing
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 effort: high
 argument-hint: <task description>
 disable-model-invocation: false

@@ -2,7 +2,7 @@
 name: eval-gap
 description: Analyse the project's eval suite against the 5-stage framework and produce a prioritised gap report — what's missing, what's thin, and what to build next
 category: researching
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 effort: low
 argument-hint: [optional: stage — golden | scenarios | replay | rubric | all]
 disable-model-invocation: false

@@ -2,7 +2,7 @@
 name: company-align
 description: Analyse project–company fit — maps project implementation, style, and functionality against company mission, values, and likely needs; surfaces gaps and strengths
 category: researching
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 effort: high
 argument-hint: [company-slug]
 disable-model-invocation: false

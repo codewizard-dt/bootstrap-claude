@@ -2,7 +2,7 @@
 name: decision-finalize
 description: Finalize a single proposed decision block; run E-C-A-D-R audit, supersession check, and flip status to accepted
 category: planning
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 effort: high
 argument-hint: <path/to/decision.md#DM, NNNN-slug#DM, or NNNN#DM>
 disable-model-invocation: false

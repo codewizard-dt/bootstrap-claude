@@ -2,7 +2,7 @@
 name: eval-run
 description: Execute the project's eval suite (golden sets, scenarios, replays), report pass/fail per case, surface regressions, and emit a summary report
 category: executing
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 effort: medium
 argument-hint: [optional: stage — golden | scenarios | replay | all]
 disable-model-invocation: false

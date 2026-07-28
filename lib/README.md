@@ -12,7 +12,7 @@ lib/
 
 | Folder | What it is | Installed to |
 |--------|-----------|---------------|
-| [`hooks/`](hooks/README.md) | Enforcement scripts that block unsafe or non-Serena tool calls, even under `--dangerously-skip-permissions` | `~/.claude/hooks/` (copied by `install-global.sh`; registration in `~/.claude/settings.json` is manual — see `hooks/README.md`) |
+| [`hooks/`](hooks/README.md) | Enforcement scripts that block unsafe or non-Serena tool calls, even under `--dangerously-skip-permissions` | `~/.claude/hooks/` (copied by `install-global.sh`; registration in `~/.claude/settings.json` is manual — see `hooks/README.md` — though the `permissions.deny` list is merged automatically) |
 | [`scripts/`](scripts/README.md) | Bash scripts that back every `bootstrap` CLI command, plus shared helpers and copy-once templates | Run in place from the installed npm package; write into the target project and `~/.claude/` |
 | [`prompts/`](prompts/README.md) | Prompt templates for the setup steps that are too context-sensitive for static file copies (CI scaffolding, wiki migration, strict typechecks) | Read by scripts in `lib/scripts/` at runtime; never installed anywhere themselves |
 | [`skills/`](skills/README.md) | One directory per skill, each holding a `SKILL.md` — the wiki-ops, requirement/decision/task/UAT/bug lifecycle, research, and utility skills | `~/.claude/skills/` (copied verbatim by `install-global.sh`) |

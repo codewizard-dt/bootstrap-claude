@@ -93,7 +93,7 @@ Write ~/.claude/skills/typecheck/SKILL.md with this exact content (do not alter 
 ---
 name: typecheck
 description: Run typecheck, fix the first error, repeat until clean
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 disable-model-invocation: false
 user-invocable: true
 ---

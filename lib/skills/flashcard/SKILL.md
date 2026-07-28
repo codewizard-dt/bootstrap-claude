@@ -2,7 +2,7 @@
 name: flashcard
 description: Turn markdown/research files into a self-contained interactive flashcard HTML page
 category: researching
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 argument-hint: "<file1> [file2 ...] [-- <what's important>]"
 ---
 

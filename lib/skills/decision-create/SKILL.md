@@ -2,7 +2,7 @@
 name: decision-create
 description: Create a Decision Group file in wiki/work/decisions/ with one or more proposed decisions, table-only comparisons, and mermaid flowcharts
 category: planning
-model: claude-opus-4-8
+model: claude-opus-5
 effort: high
 argument-hint: <decision topic, group title, or "group: <title>" for an explicit multi-decision file>
 disable-model-invocation: false
@@ -65,7 +65,7 @@ Prevents two parallel `accepted` decisions in one area (breaks the chain). Per p
 |------------------------|----------------------|
 | Context | code state for *this decision*; constraints from prior decisions; business/compliance forces |
 | Decision Drivers | concrete forces: perf budgets, team skill, security, ecosystem fit, deadline |
-| Considered Options | ≥2 viable options (Context7 for lib/framework docs; Brave 1/sec sequential for ecosystem patterns) |
+| Considered Options | ≥2 viable options (Context7 for lib/framework docs; Brave (parallel, up to 50/sec) for ecosystem patterns) |
 | Pros & Cons | symmetric per option |
 | Consequences | real follow-on: new deps, migration cost, what gets harder/easier |
 | Validation | measurable signal + threshold + timeframe (E-C-A-D-R "R") |

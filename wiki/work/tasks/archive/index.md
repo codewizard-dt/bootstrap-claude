@@ -21,3 +21,8 @@ Terminal task files (`done` or `trashed`) moved here by `/wiki-archive` to reduc
 | [[TASK-015]] | Sync dashboard.html into projects as an always-refresh scaffold file | done | 2026-07-06 |
 | [[TASK-016]] | Document the dashboard command in README.md, lib/scripts/README.md, and CLAUDE.md | done | 2026-07-06 |
 | [[TASK-017]] | Manually verify dashboard liveness and edge cases | done | 2026-07-06 |
+| [[TASK-020]] | Convert brave-search MCP setup to a single global Docker container | done | 2026-07-28 |
+| [[TASK-021]] | Shared plumbing for single-process HTTP MCP servers (constants, helpers, upgrade detection) | done | 2026-07-28 |
+| [[TASK-022]] | brave-search → single HTTP-mode Docker container (supersedes TASK-020 exec-wrapper) | done | 2026-07-28 |
+| [[TASK-023]] | playwright → native launchd LaunchAgent HTTP server (darwin), stdio fallback elsewhere | done | 2026-07-28 |
+| [[TASK-024]] | Docs & guide alignment for single-process HTTP MCP servers | done | 2026-07-28 |

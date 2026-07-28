@@ -75,4 +75,10 @@ if [ ${#ORPHAN_FOUND[@]} -gt 0 ]; then
   fi
 fi
 
-echo "Global setup complete (MCPs + skills)."
+# 4. Merge the canonical Bash deny list into ~/.claude/settings.json
+echo ""
+echo "Merging permissions deny list (~/.claude/settings.json)..."
+node "$SCRIPT_DIR/merge-settings-deny.js"
+echo ""
+
+echo "Global setup complete (MCPs + hooks + skills + deny list)."

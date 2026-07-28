@@ -2,7 +2,7 @@
 name: task-add
 description: Create a structured, execution-ready task file in wiki/work/tasks/
 category: planning
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 argument-hint: <task description> [--decision DEC-NNNN#DM] [--roadmap ROADMAP-NNN]
 disable-model-invocation: false
 user-invocable: true

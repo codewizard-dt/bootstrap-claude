@@ -2,7 +2,7 @@
 name: wiki-tidy
 description: One-shot wiki cleanup — runs lint, archives terminal items across all families, and rotates the log if overgrown, in sequence with user confirmation at each phase
 category: wiki
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 user-invocable: true
 ---
 

@@ -2,7 +2,7 @@
 name: decision-walkthrough
 description: Walk through a decision file decision-by-decision, presenting each architecture choice and confirming it with the user via Q&A
 category: planning
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 argument-hint: <path/to/decision.md, NNNN-slug, or NNNN>
 disable-model-invocation: false
 user-invocable: true

@@ -2,7 +2,7 @@
 name: research-company
 description: Comprehensive company research — mission, operations, leadership, products/services deep-dive, and ~5 years of recent news
 category: researching
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 effort: high
 argument-hint: <company name> [URL]
 disable-model-invocation: false
@@ -38,7 +38,7 @@ If a URL was provided, fetch it first via WebFetch to extract mission, products,
 
 **NOTE**: Brave Search supports up to **50 requests per second** — parallel searches are allowed.
 
-Search sequentially for each of the following. Use the company name (and domain if known) in queries.
+Search for each of the following (parallel searches allowed). Use the company name (and domain if known) in queries.
 
 ### 2a. Mission & Overview
 - Query: `"<company name>" mission vision what does <company> do`

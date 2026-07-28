@@ -97,7 +97,7 @@ EOF
     echo "| Library docs | Context7 | \`WebSearch\` / \`WebFetch\` |"
   fi
   if has_mcp "brave-search"; then
-    echo "| General research | Brave Search (sequential, 1/sec) | Parallel searches |"
+    echo "| General research | Brave Search (parallel, up to 50/sec) | \`WebSearch\` |"
   fi
   if has_mcp "playwright"; then
     echo "| Browser interaction | Playwright | \`WebFetch\` for rendered content |"
