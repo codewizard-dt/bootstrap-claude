@@ -158,6 +158,7 @@ Standard Read/Edit/Write tools are permitted for markdown and config files (JSON
 - `raw/llm-wiki.md` — The LLM Wiki pattern spec; foundational reference for all wiki operations
 - `raw/design-principles.md` — Engineering principles: the mandate, KISS, DRY, SOLID, YAGNI, boundary essentials
 - `raw/house-style/` — Design system snapshot
+- **npm packaging note:** `package.json` `files` ships `raw/` because consumers need `llm-wiki.md`, `design-principles.md`, `guides/`, and `house-style/`. It then negates `raw/research/`, `raw/companies/`, and `raw/*.pdf` — the `/research` and `/research-company` landing zones are project-internal and would otherwise grow the published tarball on every report (they were 24 files / ~276 kB before this was added). Keep the negations when adding new `raw/` landing zones.
 - `raw/guides/` — Source guides delivered tier-wise to `wiki/guides/` in target projects by `sync-wiki-scaffold.sh`: `command-anti-patterns.md` (required, always refreshed); `evals-framework.md` and `type-checking-templates/` (optional, interactive opt-in — sticky once present); `deployment-strategy.md` (delivered only by `deploy`). `mcp-tools.md` is assembled per-project by `build-mcp-guide.sh` from `lib/scripts/templates/guides/stubs/`
 - `wiki/index.md` — Page catalog and home Map of Content (sectioned Knowledge / Work); read first on every wiki query; updated on every ingest and filed answer
 - `wiki/log.md` — Append-only operation log; last entry shows when the wiki was last touched

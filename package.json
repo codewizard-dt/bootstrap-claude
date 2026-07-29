@@ -23,6 +23,9 @@
     "bin/",
     "lib/",
     "raw/",
+    "!raw/research/",
+    "!raw/companies/",
+    "!raw/*.pdf",
     ".github/",
     ".gitleaks.toml"
   ],
