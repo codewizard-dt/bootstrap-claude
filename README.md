@@ -136,7 +136,7 @@ flowchart LR
   subgraph Target ["Target Project"]
     WIKI_DIR["wiki/ + raw/"]
     DOCS[".docs/guides/mcp-tools.md"]
-    MCP_JSON[".mcp.json<br/>Serena"]
+    MCP_JSON["Serena (local scope)<br/>~/.claude.json project entry"]
     SERENA_CFG[".serena/project.yml"]
     WORKFLOWS[".github/workflows/"]
   end
@@ -205,7 +205,7 @@ sequenceDiagram
   MCP-->>MCP: docker run brave-search-mcp (http :8941, API key baked in)
   MCP-->>MCP: bootstrap playwright launchd agent (http :8931, macOS)
   MCP->>Claude: claude mcp add selected servers (http URLs for brave/playwright)
-  MCP-->>Project: .mcp.json for Serena when selected
+  MCP-->>Project: serena registered at local scope (~/.claude.json) when selected
   Setup->>Global: install-global.sh --skip-mcps
   Global-->>Global: rsync skills to ~/.claude/skills/
   Global-->>Global: rsync hooks to ~/.claude/hooks/

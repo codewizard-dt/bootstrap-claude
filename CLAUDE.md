@@ -78,10 +78,10 @@ Follow the root `README.md` to configure a new project, or use the npm package:
 
 **Manual setup steps:**
 
-1. **Serena MCP** — code exploration, editing, and memory (per-project — run from the project root): `claude mcp add --scope project serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context claude-code --project "$(pwd)"` (writes `.mcp.json`; gitignored — machine-local)
+1. **Serena MCP** — code exploration, editing, and memory (per-project — run from the project root): `claude mcp add --scope local serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context claude-code --project "$(pwd)"` (local scope — stored in `~/.claude.json` under this project's entry; machine-local, never the repo's shareable `.mcp.json`, which would leak a machine-specific absolute path to teammates)
 2. **Brave Search MCP** — web search (up to 50 req/sec, parallel searches allowed). Installed by step 5 as a shared local Docker container (`brave-search-mcp`, image `mcp/brave-search`) serving HTTP at `http://127.0.0.1:8941/mcp`; the API key is baked into the container env (not `~/.claude.json`) and the server is registered at user scope
 3. **Context7 MCP** — library documentation lookups
-4. **Playwright MCP** — browser automation. On macOS, installed by step 5 as a shared HTTP server at `http://127.0.0.1:8931/mcp`, run by a launchd LaunchAgent (`com.bootstrap-claude.playwright-mcp`) in the GUI session so headed browsers work; each Claude session gets an isolated browser context. On other platforms it registers a per-session stdio server (`npx @playwright/mcp`)
+4. **Playwright MCP** — browser automation. Registered under the name **`playwright-shared`** (user scope) so it coexists with any project-scoped `playwright` a team ships in its `.mcp.json`. On macOS, installed by step 5 as a shared HTTP server at `http://localhost:8931/mcp`, run by a launchd LaunchAgent (`com.bootstrap-claude.playwright-mcp`) in the GUI session so headed browsers work; each Claude session gets an isolated browser context. On other platforms it registers a per-session stdio server (`npx @playwright/mcp`)
 5. **Install MCPs and skills globally** — run `./lib/scripts/install-global.sh` (or `npx @codewizard-dt/bootstrap install`) to configure Brave/Context7/Playwright MCPs and copy skills to `~/.claude/skills/`
 
 ## Custom Commands

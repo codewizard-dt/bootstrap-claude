@@ -34,6 +34,10 @@ BRAVE_MCP_URL="http://127.0.0.1:${BRAVE_MCP_PORT}/mcp"
 # server is started with --host 127.0.0.1) — 127.0.0.1 URLs get 403 "Access is
 # only allowed at localhost:<port>". Found by TASK-025 runtime UAT.
 PLAYWRIGHT_MCP_URL="http://localhost:${PLAYWRIGHT_MCP_PORT}/mcp"
+# The bootstrap-managed server registers under its own name so it can coexist
+# with a project-scoped `playwright` entry in a team's committed .mcp.json —
+# we never edit that file; a distinct name avoids [Conflicting scopes] entirely.
+PLAYWRIGHT_MCP_NAME="${PLAYWRIGHT_MCP_NAME:-playwright-shared}"
 
 # mcp_installed, serena_installed, prompt_yn, prompt_scope live in lib.sh.
 
@@ -50,21 +54,30 @@ mcp_add_scoped() {
   fi
 }
 
-# register_optional_mcp <name> <interactive-prompt> <adder-fn> [expected]
+# register_optional_mcp <name> <interactive-prompt> <adder-fn> [expected] [fixed_scope]
 # Common wrapper for the optional MCPs (brave-search / context7 / playwright):
 # skip if already installed; in interactive mode gate on a y/n prompt and ask
 # for scope; otherwise install non-interactively at user scope. <adder-fn>
 # performs the actual `claude mcp add` (including any API-key prompting) and
 # receives the resolved scope ("user" | "project") as its only argument.
 # Optional [expected]: a string the existing registration must contain (checked
-# via mcp_matches, lib.sh). If installed but not matching, the stale
-# registration is removed and the adder re-run directly at user scope (upgrade
-# path — the server was already wanted, so no interactive gating is re-applied).
+# via mcp_matches, lib.sh). If installed but not matching, a stale USER-scope
+# registration is removed and the adder re-run at user scope (upgrade path).
+# A project/local-scoped registration under the same name is never removed —
+# it is repository/machine config we don't own; we skip and say so.
+# Optional [fixed_scope]: skip the scope prompt and use this scope (for MCPs
+# that only support one scope — asking and ignoring the answer is worse).
 register_optional_mcp() {
-  local name="$1" prompt="$2" adder="$3" expected="${4:-}" scope
+  local name="$1" prompt="$2" adder="$3" expected="${4:-}" fixed_scope="${5:-}" scope cur_scope
   if mcp_installed "$name"; then
     if [ -z "$expected" ] || mcp_matches "$name" "$expected"; then
       echo "  $name: already installed, skipping."
+      return 0
+    fi
+    cur_scope="$(mcp_scope_of "$name")"
+    if [ "$cur_scope" != "user" ]; then
+      echo "  $name: registered at ${cur_scope} scope with a different config — leaving it untouched."
+      echo "  To adopt the bootstrap-managed server instead: claude mcp remove $name -s ${cur_scope} (inside the project), then re-run 'npx @codewizard-dt/bootstrap update'."
       return 0
     fi
     echo "  $name: upgrading registration (stdio → shared http)."
@@ -74,7 +87,11 @@ register_optional_mcp() {
   fi
   if [ "$INTERACTIVE" = true ]; then
     if prompt_yn "$prompt"; then
-      scope="$(prompt_scope "$name")"
+      if [ -n "$fixed_scope" ]; then
+        scope="$fixed_scope"
+      else
+        scope="$(prompt_scope "$name")"
+      fi
       "$adder" "$scope"
       echo "  $name MCP installed."
     fi
@@ -163,7 +180,7 @@ _playwright_bootstrap_agent() {
 _add_playwright() {
   if [ "$(uname -s)" != "Darwin" ]; then
     # Non-macOS: per-session stdio server (shared-server wiring is macOS-only for now).
-    mcp_add_scoped "$1" playwright -- npx @playwright/mcp@latest
+    mcp_add_scoped "$1" "$PLAYWRIGHT_MCP_NAME" -- npx @playwright/mcp@latest
     return 0
   fi
   # macOS: one shared HTTP server per machine, run as a launchd LaunchAgent in
@@ -240,27 +257,44 @@ PLIST
   if [ "$rc" -eq 2 ]; then
     return 0
   fi
-  # Always user scope: a project-scoped playwright entry would shadow the global one.
-  mcp_add_scoped user playwright --transport http "$PLAYWRIGHT_MCP_URL"
-  wait_http_up "$PLAYWRIGHT_MCP_URL" && echo "  playwright: listening on $PLAYWRIGHT_MCP_URL" \
-    || { echo "  WARNING: playwright endpoint not answering — diagnostics:"; \
+  # Always user scope, under our own name — coexists with any project-scoped
+  # `playwright` a team ships in .mcp.json.
+  mcp_add_scoped user "$PLAYWRIGHT_MCP_NAME" --transport http "$PLAYWRIGHT_MCP_URL"
+  wait_http_up "$PLAYWRIGHT_MCP_URL" && echo "  $PLAYWRIGHT_MCP_NAME: listening on $PLAYWRIGHT_MCP_URL" \
+    || { echo "  WARNING: $PLAYWRIGHT_MCP_NAME endpoint not answering — diagnostics:"; \
          launchctl print "gui/${uid}/${label}" 2>/dev/null || true; \
          echo "  Log: ${log_file}"; }
 }
 
 # ---------------------------------------------------------------------------
-# Serena (always project scope — only when --project-dir provided)
+# Serena (always LOCAL scope — only when --project-dir provided)
+#
+# Local scope stores the entry in ~/.claude.json under this project's key:
+# per-project (no serena language-config bleed) but machine-local. Project
+# scope would write a machine-specific absolute --project path into the repo's
+# shareable .mcp.json and force the per-user .mcp.json approval gate — both
+# wrong (earlier bootstrap versions did exactly this; migration below).
 # ---------------------------------------------------------------------------
 if [ -n "$PROJECT_DIR" ]; then
+  # Migrate a bootstrap-written serena entry out of the repo's .mcp.json.
+  # Consent-gated: .mcp.json may be committed team config, so the removal is
+  # offered, never forced; declining keeps the existing entry working.
+  if [ -f "$PROJECT_DIR/.mcp.json" ] && grep -q '"serena"' "$PROJECT_DIR/.mcp.json" 2>/dev/null; then
+    if [ "$INTERACTIVE" = true ] && prompt_yn "  serena: found in this project's .mcp.json (added by an earlier bootstrap; carries a machine-specific path). Move it to local scope in ~/.claude.json? [y/N]: "; then
+      ( cd "$PROJECT_DIR" && claude mcp remove serena -s project ) || true
+    else
+      echo "  serena: leaving the existing .mcp.json entry in place (migrate later by re-running 'npx @codewizard-dt/bootstrap update')."
+    fi
+  fi
   if serena_installed "$PROJECT_DIR"; then
     echo "  serena: already registered for this project, skipping."
   elif [ "$INTERACTIVE" = true ]; then
-    if prompt_yn "Install Serena MCP (code exploration & editing, always project scope)? [Y/n]: "; then
+    if prompt_yn "Install Serena MCP (code exploration & editing, always local scope)? [Y/n]: "; then
       ( cd "$PROJECT_DIR" && \
-        claude mcp add --scope project serena -- \
+        claude mcp add --scope local serena -- \
           uvx --from git+https://github.com/oraios/serena \
           serena start-mcp-server --context claude-code --project "$PROJECT_DIR" )
-      echo "  serena MCP registered."
+      echo "  serena MCP registered (local scope — ~/.claude.json, this machine only)."
     fi
   fi
   # Non-interactive with --project-dir: skip Serena — setup-project.sh previously
@@ -271,26 +305,35 @@ fi
 # Optional MCPs (near-identical wrappers — see register_optional_mcp above)
 # ---------------------------------------------------------------------------
 register_optional_mcp brave-search \
-  "Install Brave Search MCP globally (web research, requires API key + Docker)? [y/N]: " _add_brave "$BRAVE_MCP_URL"
+  "Install Brave Search MCP globally (web research, requires API key + Docker)? [y/N]: " _add_brave "$BRAVE_MCP_URL" user
 
 register_optional_mcp context7 \
   "Install Context7 MCP (library documentation lookups)? [y/N]: " _add_context7
 
+# Migrate the legacy bootstrap-managed `playwright` USER-scope entry to the new
+# name. Only shapes bootstrap itself created are touched (the shared-http URL
+# or the old stdio `npx @playwright/mcp` form), and only at user scope — a
+# project-scoped `playwright` is repository config and coexists with ours by
+# name. Detection reads ~/.claude.json top-level mcpServers directly because
+# `claude mcp get playwright` resolves to the project entry when one exists.
+if node -e '
+  const p = (require(require("os").homedir() + "/.claude.json").mcpServers || {}).playwright;
+  if (!p) process.exit(1);
+  const j = JSON.stringify(p);
+  process.exit(j.includes(process.argv[1]) || j.includes("@playwright/mcp") ? 0 : 1);
+' "$PLAYWRIGHT_MCP_URL" 2>/dev/null; then
+  echo "  playwright: migrating legacy bootstrap user-scope entry to '$PLAYWRIGHT_MCP_NAME'."
+  claude mcp remove playwright -s user 2>/dev/null || true
+fi
+
 # Shared-http upgrade detection is darwin-only: on Linux the stdio entry is the
 # desired end state, so pass an empty expected arg there (empty = never upgrade).
+# The scope prompt is skipped on darwin (the shared server is user-scope only).
 playwright_expected=""
+playwright_fixed_scope=""
 if [ "$(uname -s)" = "Darwin" ]; then
   playwright_expected="$PLAYWRIGHT_MCP_URL"
+  playwright_fixed_scope="user"
 fi
-register_optional_mcp playwright \
-  "Install Playwright MCP (browser automation & UI testing)? [y/N]: " _add_playwright "$playwright_expected"
-
-# Darwin only: a project-scoped playwright entry in the project's .mcp.json
-# shadows the user-scope shared HTTP server. Detection mirrors serena_installed
-# (lib.sh). Hint only — never edit a project's .mcp.json.
-if [ "$(uname -s)" = "Darwin" ] && [ -n "$PROJECT_DIR" ] \
-  && [ -f "$PROJECT_DIR/.mcp.json" ] \
-  && grep -q '"playwright"' "$PROJECT_DIR/.mcp.json" 2>/dev/null; then
-  echo "  WARNING: playwright is also registered in $PROJECT_DIR/.mcp.json (project scope) — it shadows the user-scope shared HTTP server."
-  echo "  Remove it with: cd \"$PROJECT_DIR\" && claude mcp remove playwright -s project"
-fi
+register_optional_mcp "$PLAYWRIGHT_MCP_NAME" \
+  "Install Playwright MCP (browser automation & UI testing)? [y/N]: " _add_playwright "$playwright_expected" "$playwright_fixed_scope"

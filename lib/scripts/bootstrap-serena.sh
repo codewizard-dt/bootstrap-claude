@@ -36,10 +36,12 @@ if [ ! -f ".serena/project.yml" ]; then
     uvx --from git+https://github.com/oraios/serena serena --help >/dev/null 2>&1 || true
   fi
   echo "Triggering Claude Code to initialize Serena (.serena/ will be created)..."
-  if [ -f ".mcp.json" ]; then
-    # Project-scoped .mcp.json servers need one-time interactive approval that a
-    # headless --print run can never grant; --mcp-config + --strict-mcp-config
-    # loads serena explicitly, bypassing the approval gate.
+  if [ -f ".mcp.json" ] && grep -q '"serena"' .mcp.json 2>/dev/null; then
+    # Legacy layout: serena in the project's .mcp.json. Those servers need a
+    # one-time interactive approval that a headless --print run can never grant;
+    # --mcp-config + --strict-mcp-config loads serena explicitly, bypassing the
+    # gate. (The bootstrap default is local scope, which has no approval gate —
+    # the plain branch below covers it.)
     claude --print --mcp-config .mcp.json --strict-mcp-config "exit" >/dev/null 2>&1 || true
   else
     claude --print "exit" >/dev/null 2>&1 || true
@@ -47,8 +49,8 @@ if [ ! -f ".serena/project.yml" ]; then
   if [ ! -f ".serena/project.yml" ]; then
     echo "Error: .serena/project.yml was not created by 'claude --print'."
     echo "Ensure Serena MCP is registered for this project — run 'npx @codewizard-dt/bootstrap setup' and answer Yes to the Serena prompt,"
-    echo "or register it manually: claude mcp add --scope project serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context claude-code --project \"$PROJECT_DIR\""
-    echo "If it IS registered, open 'claude' interactively in $PROJECT_DIR once to approve the project MCP servers, then re-run 'npx @codewizard-dt/bootstrap update'."
+    echo "or register it manually (from the project root): claude mcp add --scope local serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context claude-code --project \"$PROJECT_DIR\""
+    echo "Then re-run 'npx @codewizard-dt/bootstrap update'."
     exit 1
   fi
 else

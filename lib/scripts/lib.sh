@@ -48,6 +48,26 @@ mcp_installed() {
 mcp_matches() { claude mcp get "$1" 2>/dev/null | grep -qF "$2"; }
 
 # ---------------------------------------------------------------------------
+# mcp_scope_of <name>
+#
+# Prints the scope of the resolved registration: user | project | local |
+# unknown. Parses the "Scope:" line of `claude mcp get` (no --json mode
+# exists). "unknown" means the output format drifted or the server is absent —
+# callers must treat it as do-not-touch (scope conflicts break OAuth/token
+# storage and produce duplicate servers).
+# ---------------------------------------------------------------------------
+mcp_scope_of() {
+  local line
+  line="$(claude mcp get "$1" 2>/dev/null | grep -m1 'Scope:')" || { echo unknown; return 0; }
+  case "$line" in
+    *User*)              echo user ;;
+    *[Pp]roject*)        echo project ;;
+    *[Ll]ocal*)          echo local ;;
+    *)                   echo unknown ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
 # wait_http_up <url> [attempts]
 #
 # Any HTTP status proves the listener is up — streamable-HTTP servers 4xx
@@ -58,12 +78,12 @@ wait_http_up() { local i code; for i in $(seq 1 "${2:-10}"); do code="$(curl -s 
 # ---------------------------------------------------------------------------
 # serena_installed <project_dir>
 #
-# True when Serena is already registered for <project_dir> (its project-scoped
-# .mcp.json names "serena").
+# True when Serena is registered for <project_dir> at any scope — local
+# (~/.claude.json project entry, the bootstrap default), project (.mcp.json,
+# legacy bootstrap installs), or user.
 # ---------------------------------------------------------------------------
 serena_installed() {
-  [ -n "$1" ] && [ -f "$1/.mcp.json" ] && \
-    grep -q '"serena"' "$1/.mcp.json" 2>/dev/null
+  [ -n "$1" ] && ( cd "$1" 2>/dev/null && claude mcp get serena &>/dev/null )
 }
 
 # ---------------------------------------------------------------------------
@@ -82,11 +102,17 @@ detect_installed_mcps() {
   if serena_installed "$project_dir"; then
     result="serena"
   fi
-  for mcp in context7 brave-search playwright; do
+  for mcp in context7 brave-search; do
     if mcp_installed "$mcp"; then
       result="${result:+$result }$mcp"
     fi
   done
+  # The bootstrap-managed playwright server registers as "playwright-shared" so
+  # it can coexist with a project-scoped "playwright"; either name enables the
+  # playwright guide section (guide key stays "playwright").
+  if mcp_installed "playwright-shared" || mcp_installed "playwright"; then
+    result="${result:+$result }playwright"
+  fi
   printf '%s\n' "$result"
 }
 
