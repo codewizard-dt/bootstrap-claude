@@ -11,12 +11,22 @@ scripts sit on disk and never run.
 
 ## Why hooks (vs. allow/deny permission rules)
 
-The permissions `deny` list is **not consulted** when an agent runs in
-`bypassPermissions` mode (`--dangerously-skip-permissions`, power-mode teammates,
-or any subagent spawned with `mode: bypassPermissions`). `PreToolUse` hooks, by
-contrast, fire in **every** permission mode and for **subagent** tool calls. So a
-hook is the only reliable enforcement point for "this must never run, even under
-bypass." Keep a matching `deny` entry too — belt-and-suspenders for normal modes.
+The permissions `deny` list **is** enforced in every permission mode, including
+`bypassPermissions` (`--dangerously-skip-permissions`, power-mode teammates, or
+any subagent spawned with `mode: bypassPermissions`), and for subagent tool calls
+as well as main-session ones. Hooks are not here to cover a gap under bypass —
+there isn't one.
+
+Hooks exist because **a `deny` rule matches a literal command spelling, while a
+hook parses the command.** `Bash(rm -rf ~*)` does not stop `/bin/rm -rf ~`, and
+no pattern can see inside `bash -c`, `python -c`, or an absolute-path fetcher.
+A hook reads the actual command string, so it catches the variants a pattern
+cannot enumerate — and it can return a **message** explaining the block, which a
+`deny` rule cannot. Both reasons hold in every mode.
+
+`PreToolUse` hooks also fire *before* permission rules are evaluated, so a hook
+exiting 2 stops a call the rules would never see. Keep a matching `deny` entry
+too — defence in depth, and the rules keep working if a hook ever fails to fire.
 
 ---
 
@@ -29,6 +39,384 @@ bypass." Keep a matching `deny` entry too — belt-and-suspenders for normal mod
 | `env-file-guard.js` | `Read\|Write\|Edit\|MultiEdit` | Reading or writing any `.env` file (`.env`, `.env.local`, etc.) — `.env.example` is allowed |
 | `mv-absolute-path-block.js` | `Bash` (`if: Bash(mv *)`) | `mv` to an absolute path outside the project root |
 | `git-protected-ops-block.js` | `Bash` (no `if:`) | `git stash` / `git restore` / `git checkout` in any command segment |
+
+### Command-class guards
+
+The hooks above gate a named tool or a named command. The six files below gate a
+*class* of invocation that a `deny` rule provably cannot reach, because the
+dangerous part of the command is not where a pattern can look: inside a quoted
+`-c` payload, behind an absolute path, after a redirect operator, in an
+environment assignment, or on the far side of an MCP tool boundary.
+
+| Script | Matcher | Blocks |
+|--------|---------|--------|
+| `interpreter-indirection-guard.js` | `Bash` | An interpreter handed an inline program (`bash -c`, `node -e`, `python3 -c`, …) or a command substitution as its program |
+| `package-install-consent.js` | `Bash` | Every package-manager install, with one allowlisted source (Serena) |
+| `absolute-path-guard.js` | `Bash` | Evasive *spellings* of destructive commands (`/bin/rm`, `\rm`, `env rm`) |
+| `protected-write-guard.js` | `Bash` | `>`/`>>` into shell/git/Claude config, `DYLD_*`/`LD_*` injection, `git -c` RCE config keys |
+| `claude-settings-guard.js` | `Edit\|Write\|NotebookEdit\|MultiEdit` | File-tool writes to `~/.claude/settings*.json` (with a bootstrap-claude exception) and `~/.claude/hooks/**` (no exception) |
+| `env-content-read-guard.js` | `Bash\|mcp__serena__.*\|mcp__plugin_[^_]+_serena__.*` | `.env` *contents* reaching the transcript, on both the Bash and Serena surfaces |
+
+They share `lib/command-parse.js` (stdin read, segment split, tokenize, deny
+envelope). `git-protected-ops-block.js` deliberately still carries its own copies
+of those four helpers — see [Shared library](#shared-library).
+
+#### `interpreter-indirection-guard.js`
+
+**Blocks** `bash|sh|zsh|python|python3 -c`, `node -e|--eval`, `ruby|perl -e` in
+any segment, plus any of those interpreters whose first non-flag argument
+contains `$(…)` or backticks. The interpreter token is matched on its *basename*
+after stripping leading `\`, so `/bin/bash -c`, `env bash -c`, and `\bash -c` are
+all caught; the flag comparison is `startsWith`, so `-c'echo hi'` and
+`--eval=code` match alongside the spaced form.
+
+**Why a hook.** The entire point of `-c` is that the real program lives inside a
+quoted string, where no permission pattern can reach it. One approved `bash -c`
+can carry a fetcher, a redirect into `~/.zshrc`, or an absolute-path `rm`.
+
+**Deny outright, not payload inspection.** The narrower alternative — allow
+`bash -c` when the payload contains no fetcher, nested interpreter, or redirect —
+was rejected because scanning the payload for forbidden substrings *is* the
+literal-spelling matching this layer exists to escape. `bash -c
+'c=cur;l=l;$c$l http://x'`, base64, or `eval` defeats it in one line, and a
+control a trivial rewrite bypasses is worse than none because it reads as
+coverage.
+
+**False positives and escape hatch.** The common inline-scripting idioms
+(`python3 -c "import json…"`, `node -e "…"`) are blocked. The escape hatch, named
+in the deny message: write the script to a file and run the file, so its contents
+appear in the diff and are reviewable before execution.
+
+**Measured cost in this repo: zero.** Every `bash -c` / `sh -c` / `node -e` under
+`lib/` lives *inside* a shell script (`setup-runner.sh:73`, `startup.sh:25`/`:37`,
+`install-mcps.sh:321`), which runs as a subprocess of an already-approved
+`bash <script>.sh` call and is never seen by a PreToolUse hook. `bash -n
+script.sh` — the static gate `/tackle` mandates — uses `-n`, not `-c`.
+
+**Not covered, deliberately:** other POSIX shells (`dash`, `ksh`); bundled short
+flags (`sh -ec '…'`) are not decomposed.
+
+#### `package-install-consent.js`
+
+**Blocks** `npm install|i|add`, `pnpm add|install`, `yarn add`, `pip|pip3
+install`, `uv pip install`, `pipx install`, `gem install`, `cargo install`,
+`go install`, `brew install`, and `uvx --from <anything>`. Leading `VAR=…`,
+`env`, and `sudo` are stripped and the manager is matched on its basename, so
+`FOO=1 sudo /usr/local/bin/npm install` gates identically to `npm install`.
+`--dry-run`, `--help`, and `-h` fall through — an install that resolves nothing
+and writes nothing is not a package addition.
+
+Read-only and lockfile-driven subcommands are not gated because they are *absent
+from the map*, not because of a negative list: `npm ci`, `npm test`, `npm run *`,
+`npm ls`, `pip list`, `cargo build`, `go build`, `brew list`. `yarn install` is
+omitted for the same reason as `npm ci` — it installs what the lockfile already
+records, adding nothing the repo has not already consented to.
+
+**The one allowlisted source** is `uvx --from
+git+https://github.com/oraios/serena` (an optional `.git` suffix and an optional
+`@ref` pin are accepted as ordinary spellings of the same repo). It is matched on
+the *source URL*, not on `uvx --from` generally, so every other `--from` target
+still gates.
+
+**Why a hook.** That exception is the reason. A deny rule cannot carry one: deny
+beats allow at every scope, and a hook returning `allow` cannot loosen a deny
+rule either — but a hook can simply decline to deny.
+
+**Why not `permissions.ask`.** `ask` is the natural fit for consent and works
+correctly in an interactive session. This repo routinely runs headless (`claude
+-p` under `/uat-auto-plus` and power-mode), where nobody can answer the prompt and
+the call becomes a block or a hang. A consent gate that hangs an unattended run is
+worse than one that denies with instructions. *(That headless-`ask` behavior is
+recorded as inference, not primary source, in
+`raw/research/bypass-mode-enforcement/index.md`.)*
+
+**The deny reason echoes the segment verbatim**, never a re-join of tokens —
+re-joining silently drops quoting (`npm install "@scope/pkg@^1.0"`), and the
+entire value of this gate over a deny rule is that the user can copy the exact
+string back out and run it. In a chain (`npm test && npm install foo`) the
+*segment* is echoed, which is the install part alone.
+
+**Not gated by construction:** installs inside shell scripts. PreToolUse sees only
+the command Claude asks to run; when that is `bash lib/scripts/install-mcps.sh`,
+everything the script executes is a subprocess of an already-approved call.
+`install-mcps.sh:197`/`:297` and `bootstrap-serena.sh:35`/`:51` therefore run
+unaffected, while the same `npm install -g @playwright/mcp@latest` typed at the
+prompt IS gated. Both are correct: consent was given once for the setup script as
+a whole; an ad-hoc install carries no such consent.
+
+**Known friction, real and expected.**
+`lib/skills/frontend-taste/SKILL.md:29` instructs Claude to run
+`cd ~/code/house-style/preview && npm i && npm run dev`. That command *is*
+hook-visible and will be gated. It is the one genuine friction point this gate
+introduces in-repo — not a bug. Approve it by running it yourself.
+
+**Not covered, deliberately:** bare `uvx <pkg>` with no `--from`; `npx`; and a
+manager that is not the segment's first token, so `claude mcp add … -- uvx --from
+…` does not match.
+
+#### `absolute-path-guard.js`
+
+**Blocks evasive spellings** — not commands — of eleven names: `rm`, `dd`,
+`mkfs`, `sudo`, `diskutil`, `chmod`, `chown`, `shutdown`, `launchctl`, `crontab`,
+`osascript`. Three evasion kinds fire it: a leading `\` (`\rm`, which also skips
+alias and shell-function lookup), a `/` anywhere in the token (`/bin/rm`, `./rm`),
+or having skipped a wrapper or env-assignment prefix to reach it (`env rm`,
+`FOO=1 rm`, `command`/`exec`/`nohup`).
+
+**Why a hook.** A deny rule matches a literal spelling anchored at the start of
+the string. `Bash(rm -rf ~*)` blocks `rm -rf ~` and nothing else — `/bin/rm -rf
+~`, `\rm -rf ~`, and `env rm -rf ~` run the identical program and none match.
+Enumerating path prefixes is unbounded (`/bin`, `/usr/bin`, `/usr/sbin`,
+`/opt/homebrew/bin`, any relative path), so the class only closes by parsing.
+
+**It fires on the spelling, never on the command — and this is load-bearing.**
+The deny entries for these names are deliberately *narrow*: `rm` is denied only
+for catastrophic targets (`rm -rf ~*`, `rm -rf /Users*`), `chmod` only for
+`777`/`a+rwx`/`+s`, `chown` only for `-R`, `diskutil` only for the erase verbs,
+`launchctl` only for `load`/`bootstrap`/`submit`. An unconditional block on the
+name would break routine `rm build/out.js`, `chmod +x script.sh`, `chown me
+file`, `diskutil list`, and `launchctl list` — a regression far worse than the gap
+being closed. A plainly-spelled invocation therefore falls straight through to the
+permission engine, which decides it on its own merits.
+
+**Argument-blind is deliberate.** The hook grants nothing; it only forces a
+command back into the form the deny list can inspect. Inspecting arguments to
+decide whether to fire would be literal-spelling matching again.
+
+**Accepted consequence, stated plainly:** `/bin/rm file.txt` is blocked even
+though `rm file.txt` is allowed. The escape hatch is to retype it with the plain
+name — which is not a workaround, it re-exposes the command to the deny rules,
+which will permit it if it is safe.
+
+**The list is intentionally partial** — eleven names, not a mirror of the ~116
+deny entries. Each addition costs a class of false positives, so names are added
+only when the consequence of an ungated run is destructive and irreversible.
+
+**Not covered, deliberately:** `xargs rm` and `find -exec rm` (the command is not
+a first token); `env -i rm` (the `-i` flag halts the wrapper walk); `sh -c
+'/bin/rm …'` (covered by `interpreter-indirection-guard.js`).
+
+#### `protected-write-guard.js`
+
+Three rules that look unrelated but share one property: each is a **write to
+something that executes later**, expressed in a form the permission engine does
+not recognise as a write at all.
+
+1. **Redirects into files that execute later.** `>`/`>>` targeting `~/.zshrc`,
+   `~/.zshenv`, `~/.zprofile`, `~/.bashrc`, `~/.bash_profile`, `~/.profile`,
+   `~/.gitconfig`, `~/.claude/settings.json`, `~/.claude/settings.local.json`,
+   anything under `~/.claude/hooks/`, or `~/Library/LaunchAgents/`. `~`, `$HOME`,
+   and `${HOME}` are expanded and relative targets resolve against the session's
+   `cwd`, so `echo x > .zshrc` run from `$HOME` is caught. This is the documented
+   gap in the deny list's protected-dotfile group: `Edit(~/.zshrc)` covers the
+   Edit tool and the Bash writers the engine recognises, but `echo … >> ~/.zshrc`
+   is an `echo`, and the file it lands in is a redirect target the matcher never
+   inspects. The deny list has no vocabulary for "wherever this command's stdout
+   ends up".
+2. **Dynamic-linker injection** — `DYLD_INSERT_LIBRARIES=`, `DYLD_LIBRARY_PATH=`,
+   `LD_PRELOAD=`, `LD_LIBRARY_PATH=` anywhere in a segment. This is not a command
+   at all: `DYLD_INSERT_LIBRARIES=/tmp/x.dylib git log` is, to a literal matcher,
+   a read-only `git log`. The code that runs is a library loaded before `main()`.
+3. **`git -c` config keys git executes itself** — `core.fsmonitor=<non-empty>`
+   and `alias.x=!…`, in both the spaced (`-c key=value`) and fused
+   (`-ckey=value`) forms. Git runs its own config on ordinary commands, so this
+   is remote code execution that is neither a fetch nor a write nor a watched
+   subcommand: `Bash(git status:*)` — an entry most people would call obviously
+   safe — matches it (GHSA-9ccr-r5hg-74gf, TALOS-2025-2243). An **empty**
+   `core.fsmonitor=` is the CVE *remediation* and is allowed; `git -c
+   alias.foo=status` and `git -c user.name=…` are unaffected, since only a
+   `!`-prefixed alias body is executed as a shell command.
+
+**Why the rules match differently.** Rule 1 is a whole-segment *regex* scan: a
+redirect operator can appear anywhere, and `>>~/.zshrc` is one whitespace token
+while `>> ~/.zshrc` is two, so tokenizing first would split the operator from its
+target in one form and not the other. (`(?![&>])` is what keeps `2>&1` from being
+read as a redirect to a file named `&1`.) Rules 2 and 3 are whole-segment *token*
+scans, because an assignment can appear as a bare prefix, an argument to `env`, or
+an argument to `export`, and `-c` can sit anywhere before a git subcommand.
+
+**Not covered, deliberately:** `tee ~/.zshrc` and `cp x ~/.zshrc` write the same
+files without a redirect (worth a follow-up); redirect targets resolve
+*lexically* rather than through `realpath()`, because the target usually does not
+exist yet, so a pre-existing symlink with an unremarkable name pointing into
+`~/.claude/` is missed; `git --config-env=alias.x=VAR` reads the payload from an
+environment variable, so the dangerous string never appears in the command.
+
+#### `claude-settings-guard.js`
+
+**The only new guard that matches file tools rather than Bash** —
+`env-file-guard.js` is the structural precedent. The Bash side of the same
+protected paths (`echo … >> ~/.claude/settings.json`) is
+`protected-write-guard.js` rule 1.
+
+**Blocks** `Edit`/`Write`/`NotebookEdit`/`MultiEdit` targeting
+`~/.claude/settings.json` and `~/.claude/settings.local.json` — **except** when
+the session's working directory sits inside a genuine bootstrap-claude checkout —
+and anything under `~/.claude/hooks/` with **no exception at all**.
+
+**A checkout is identified by marker file, not by path substring.**
+`cwd.includes('bootstrap-claude')` is spoofed by `mkdir bootstrap-claude`, so
+both of these must hold at a candidate root: `lib/scripts/templates/settings-deny.json`
+exists, **and** `package.json` at that root parses with
+`name === "@codewizard-dt/bootstrap"`. The walk up from the session cwd is lexical
+(`path.dirname`, so it cannot follow a symlink into a cycle), capped at 64
+iterations, and lazy — a MultiEdit batch touching no protected path never hits the
+filesystem. No marker root found means no exception.
+
+**Why the exception has to live in a hook.** `Edit(~/.claude/settings.json)` and
+`Edit(~/.claude/settings.local.json)` were deny entries and had to be *removed*
+for the carve-out to be expressible at all: deny beats allow at every scope, and a
+hook returning `allow` cannot loosen a deny rule. While the entries existed the
+exception was unsayable — and this repo legitimately manages those files (that is
+exactly what `install-global.sh` and `merge-settings-deny.js` do), so a blanket
+deny made the repo unable to work on itself. A hook is the only layer that can
+carry a conditional. The shipped deny list carries zero `.claude/settings`
+entries today and `test/settings-deny.test.js` locks that in, so the carve-out is
+live rather than dead on arrival.
+
+**Why the `~/.claude/hooks/` tree is also checked here, and is not duplication.** The
+`Edit(~/.claude/hooks/**)` and `Edit(**/.claude/hooks/**)` deny entries remain in
+place and are the primary control. But file permission checks consult only
+`Edit(path)` and `Read(path)`: `Write(...)` rules are accepted by the settings
+parser and then never consulted, while the Write *tool* still works. So
+`Write(~/.claude/hooks/evil.js)` had no deny coverage whatsoever, and neither did
+the MultiEdit or NotebookEdit surface. That is the deny list proving insufficient,
+not the hook restating it.
+
+**Path resolution handles targets that do not exist yet.** `realpathSync()` throws
+on an uncreated path — the normal case for a `Write` — so the hook walks up to the
+nearest ancestor that *does* resolve, resolves that, and re-attaches the
+components below it. A new file inside a symlinked directory therefore still
+resolves through the symlink into `~/.claude/`. `os.homedir()` goes through the
+same function so both sides of the comparison are real paths, and a literal `~` in
+`tool_input` is expanded first — the shell never sees it, it arrives raw in JSON.
+`NotebookEdit` names its target `notebook_path`; `MultiEdit` is checked per
+`edits[].file_path`, so a protected target cannot ride along in a batch.
+
+**Residual risk, accepted deliberately.** An agent working inside a genuine
+bootstrap-claude checkout can still self-grant permissions by writing
+`~/.claude/settings.json`. This hook does not prevent that and is not trying to:
+managing those settings is this repo's entire purpose, so the exception *is* the
+feature. The containment for a compromised agent inside this repo is OS-level
+sandboxing, not this hook. **Do not "harden" this by removing the exception** —
+it breaks the repo and still would not contain a Bash-capable agent.
+
+**Not covered, deliberately:** project-level `.claude/settings.json` files (this
+hook is scoped to the user-global `~/.claude/` tree); and writing a script
+elsewhere and executing it, which is a Bash concern.
+
+#### `env-content-read-guard.js`
+
+> **Wiring warning:** the matcher must be
+> `Bash|mcp__serena__.*|mcp__plugin_[^_]+_serena__.*`. Under a `Bash`-only matcher
+> the entire Serena half of this hook is silently inert.
+
+**Stops `.env` *contents* reaching the transcript** on the two surfaces that can
+emit them. This closed a hole that was live, not hypothetical: `cat .env` printed
+secrets into the conversation, because three controls each assumed one of the
+others covered it. `Read(**/.env)` is a *file-tool* rule that a Bash command never
+reaches; `env-file-guard.js` matches only `Read|Write|Edit|MultiEdit`, never Bash
+and never an MCP tool; and `serena-bash-grep-block.js` intercepts
+`cat`/`head`/`tail`/`less`/`more`/`bat` only when the target is `.md` or a code
+extension, which `.env` is neither.
+
+**Relationship to `serena-bash-grep-block.js`.** That hook's grep phase goes
+further and *explicitly allows* `.env` targets as a "non-code extension"
+(`:126`, `:160`, `:189`). That is correct for its purpose — Serena-first
+navigation does not care about non-code files — and wrong for this one, and it is
+why `grep KEY .env` leaked. The two are complementary: the navigation hook decides
+where you should look for *code*, this one decides what may be *displayed*.
+
+**Bash side.** Content-emitting readers pointed at a `.env`: whole-file dumpers
+(`cat tac nl head tail less more most bat od xxd hexdump strings rev`), the grep
+family (`grep egrep fgrep rg ag ack` — a grep against a credentials file prints
+the payload), and stream processors used as readers (`sed awk gawk cut sort uniq
+paste column`). Also copiers (`cp scp rsync ditto install`) with a `.env` as the
+*source*, and an input redirect `< .env` regardless of verb (which catches
+`tee /tmp/x < .env`). `.env.example` is always allowed, matching the standing
+exception in `env-file-guard.js` and the shipped gitignore
+(`templates/gitignore:23-25`) — so the guard and the thing that keeps secrets out
+of git define "secret" identically.
+
+**Direction is load-bearing.** `cat .env.example > .env` is ordinary scaffolding
+and passes; `cat .env > /tmp/x` is exfiltration and is blocked. The only thing
+separating them is which side of the operator the non-example path sits on, so
+output-redirect destinations are dropped from the input-path set while
+input-redirect sources are kept. Likewise `cp .env.example .env` passes because
+only a `.env` used as a *source* fires the copier rule.
+
+**Serena side.** Tools that return file contents — `read_file`,
+`search_for_pattern`, `find_symbol` (`include_body=true`),
+`find_referencing_symbols`, `get_symbols_overview` — plus the mutating tools
+`create_text_file`, `replace_content`, `replace_in_files`, `replace_lines`,
+`delete_lines`, `insert_at_line`, whenever a `relative_path`, `file_path`, `path`,
+or `paths_include_glob` names a `.env`. The mutating half is parity, not leak
+prevention: `env-file-guard.js` says a `.env` can be neither read nor written, and
+these tools reach the file without passing through it. `find_file` and `list_dir`
+return paths only — knowing a `.env` exists is not a leak — so they are
+deliberately absent.
+
+Closing only Bash would have moved the leak rather than sealed it:
+`serena-bash-grep-block.js` actively redirects Bash greps toward Serena, so
+`search_for_pattern` is the first thing reached for after a Bash block, and it
+returns exactly the same lines.
+
+**`source .env` and `. .env` remain permitted. This is deliberate — do not "close
+the gap" later.** `CLAUDE.md` grants it and `env-file-guard.js:39` says so in its
+own deny message. Sourcing loads values into the environment and prints *nothing*;
+the leak is sourcing **plus emission** (`source .env && echo $KEY`), and the
+emission half can be written without `source` at all. Blocking `source` would
+block the safe case and miss the unsafe one. This hook governs **display and
+duplication, not use** — every deny message says so and names `source .env &&
+./script.sh` as the alternative, along with reading `.env.example` to learn which
+keys exist.
+
+**Not covered, deliberately:** a `search_for_pattern` with no `relative_path`
+(denying every unscoped search would make the tool unusable, and Serena's project
+scan honours gitignore, where `.env` always sits); the same for a `relative_path`
+naming a *directory* that contains a `.env`; `find . -name .env -exec cat {} +`
+and `xargs cat` (the reader is not at the front of a segment); `git show
+HEAD:.env`; `docker exec … cat .env`.
+
+**Follow-up.** `isBlockedEnvFile` is byte-identical to `env-file-guard.js:6-13`
+and is annotated "change it in both places or in neither". It should be extracted
+into `lib/` so the two cannot drift; that was left undone here because it means
+editing a live shipped control for a refactor.
+
+#### Known divergence: how much of a segment each guard inspects
+
+`absolute-path-guard.js` inspects only the **first token** of each segment, so
+`echo "use /bin/rm"` and `ls /bin/rm` pass cleanly. The other three Bash guards
+scan the **whole segment**, so a command that merely quotes a guarded form can
+fire on text it is only talking about — `grep -rn "cat .env" docs/` does.
+(`git-protected-ops-block.js` has always behaved this way too.)
+
+**How far the quoting actually protects you is inconsistent, and it is worth
+knowing which way.** Where the guard matches a *token* against a fixed name, an
+adjacent quote character defeats the match and the command passes: `echo "bash -c
+foo"` **allows** (the opening `"` is part of the token, so the basename lookup
+misses) while unquoted `echo bash -c foo` **denies**. Same for `echo "add it with
+>> ~/.zshrc"`, which **allows** because the trailing `"` attaches to the redirect
+target and resolves to `~/.zshrc"`. Where the guard matches a *substring* instead,
+the quote does not help. So the false-positive class is real, but a quoted example
+is often not an instance of it — do not reason from one to the other. All four
+spellings above are pinned in `test/command-class-hooks.test.js` so this stays
+true.
+
+This is a real inconsistency and it is left in place on purpose. Unifying it means
+one of two bad trades:
+
+- Narrow the whole-segment guards to first-token-only, which destroys them. An
+  interpreter's `-c` flag, a redirect operator, a `DYLD_` assignment, a `git -c`
+  config pair, and a reader's `.env` operand never sit at the front of a command.
+- Teach all four to parse shell quoting well enough to tell a mention from an
+  invocation — i.e. reimplement the shell inside a hook.
+
+The split is not arbitrary: first-token-only is right for a guard asking *"what
+program is this segment running?"*, whole-segment is right for a guard asking
+*"does this segment contain this construct?"*. The cost of the divergence is that
+a quoted mention triggers a block. The remedy is one rephrase, and every deny
+message names it — cheap enough that neither trade above is worth making.
 
 ### Serena-first enforcement hooks (ported from `claude-code-lsp-enforcement-kit`)
 
@@ -52,6 +440,12 @@ source of truth; changes here propagate on the next `install-global.sh` run.
 does its own matching in JS (splitting on `;`, `&&`, `||`, `|` and handling
 `git -C …`, `--no-pager`, etc.), so enforcement never depends on the same
 permission-matcher path that lets compound/piped commands slip past a `deny` rule.
+
+It also still carries its own inline copies of the four `lib/command-parse.js`
+helpers rather than requiring them. The refactor is behaviour-identical on
+inspection, but it is a working shipped control and `command-parse.js` has so far
+only been exercised statically — migrating one onto the other trades zero risk for
+nonzero risk to save about ten lines. Revisit once UAT has exercised the helper.
 
 ### Health tracking & fail-open enforcement
 
@@ -125,6 +519,7 @@ as a last resort) is the only guaranteed path back to a working session.
 
 | File | Used by |
 |------|---------|
+| `lib/command-parse.js` | All six [command-class guards](#command-class-guards) — `readHookInput(handler)` (stdin accumulate + `JSON.parse`; unparseable input exits 0 silently), `splitSegments(cmd)` (the `/;\|&&\|\|\|\|\|/` split, lifted verbatim from `git-protected-ops-block.js`), `tokenize(segment)`, and `deny(reason)` (the `permissionDecision: 'deny'` envelope). Every helper is fail-open: a hook that exits non-zero breaks a call it was never meant to gate. `readHookInput` carries **no** `tool_name` guard by design — `claude-settings-guard.js` matches file tools, not Bash — so each hook does its own |
 | `lib/serena.js` | All Serena hooks — intent→tool mapping, `isAllowedPath`, block-message builders, per-project state file (`getStateFilePath`/`readStateFile`/`writeStateFile`/`shouldEnforceSerena`/`defaultFlag`/`defaultHealth`), an advisory lock + atomic read-modify-write helper (`acquireLock`/`releaseLock`/`updateStateFile`) used by every hook that writes the state file, failure classification + process health (`classifySerenaFailure`/`isSerenaProcessAlive` — diagnostic only, never terminates the process), and consolidated symbol detection (`isCodeSymbol`/`extractSymbolsFromPattern`) |
 | `lib/serena-languages.js` | `lib/serena.js` — reads `.serena/project.yml` to scope enforcement to configured languages |
 
@@ -188,6 +583,24 @@ hook objects to its existing `hooks` array rather than creating a second block.
           {
             "type": "command",
             "command": "node ~/.claude/hooks/env-file-guard.js"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|NotebookEdit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/claude-settings-guard.js"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|mcp__serena__.*|mcp__plugin_[^_]+_serena__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/env-content-read-guard.js"
           }
         ]
       },
@@ -260,6 +673,22 @@ hook objects to its existing `hooks` array rather than creating a second block.
           {
             "type": "command",
             "command": "node ~/.claude/hooks/git-protected-ops-block.js"
+          },
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/interpreter-indirection-guard.js"
+          },
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/package-install-consent.js"
+          },
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/absolute-path-guard.js"
+          },
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/protected-write-guard.js"
           }
         ]
       }
@@ -290,6 +719,32 @@ hook objects to its existing `hooks` array rather than creating a second block.
 }
 ```
 
+Three notes on the command-class guard matchers, each of which makes a hook
+silently inert if it is wrong:
+
+- **`env-content-read-guard.js` gets its own block**, matcher
+  `Bash|mcp__serena__.*|mcp__plugin_[^_]+_serena__.*`. Do **not** move it into the
+  `Bash` block to tidy things up: the guard handles two surfaces, and under a
+  `Bash`-only matcher its whole Serena half never receives a call. Multiple
+  `PreToolUse` blocks may match the same tool and every matching hook runs, so a
+  Bash command legitimately passes through both this block and the `Bash` one.
+- **`claude-settings-guard.js` is a file-tool hook**, matcher
+  `Edit|Write|NotebookEdit|MultiEdit` — it is the one command-class guard that
+  never sees a Bash call. Note this is *not* the same matcher as
+  `env-file-guard.js`'s `Read|Write|Edit|MultiEdit`: this guard adds
+  `NotebookEdit` and drops `Read`, because a read of a settings file is harmless
+  and a notebook write is not.
+- The other four are `Bash`-matched and are appended to the existing `Bash` block.
+  None of them takes an `if:` filter — like `git-protected-ops-block.js` they do
+  their own matching in JS, so enforcement never depends on the same
+  permission-matcher path that lets compound and piped commands slip past a `deny`
+  rule.
+
+Reminder: `install-global.sh` rsyncs these scripts to `~/.claude/hooks/` on every
+run, but it never touches the `hooks` section of `~/.claude/settings.json`.
+Registration is the one-time manual step above; until it is done every script
+here sits on disk and does nothing.
+
 The `PostToolUse` matcher is broadened from the six navigation tools to **all**
 Serena tools so every call feeds health tracking; the tracker gates the read-guard
 nav counters internally (only the six nav/exploration tools advance the gate, as
@@ -299,7 +754,7 @@ for why both events are wired. If your Claude Code build does not support
 `PostToolUseFailure`, that block is simply ignored and the `PostToolUse` error
 path still catches failures.
 
-The companion `deny` entries (belt-and-suspenders for normal modes) no longer
+The companion `deny` entries (defence in depth alongside these hooks) no longer
 need manual wiring: the full canonical deny list lives in
 [`lib/scripts/templates/settings-deny.json`](../scripts/templates/settings-deny.json)
 and is merged into `~/.claude/settings.json` automatically by
@@ -308,10 +763,12 @@ merge is additive-only — your own entries are never removed or reordered.
 
 Two documented caveats on those deny rules:
 
-- Deny rules are **not enforced** in `bypassPermissions` mode — that is exactly
-  why these hooks exist (see above). The deny list covers normal modes.
-- `Bash(git push --force *)` / `Bash(git push -f *)` are prefix matches, so a
-  command like `git push origin main --force` slips past them — partial
-  protection only.
+- Deny rules match a **literal command spelling**, not a capability — that is
+  exactly why these hooks exist (see above). They are enforced in every mode,
+  `bypassPermissions` included; what they cannot do is see through `/bin/rm`,
+  `bash -c`, or `python -c`.
+- Deny rules cannot carry allowlist exceptions: a broad deny blocks every
+  matching call even when a narrower `allow` rule also matches. So
+  `Bash(git stash:*)` also blocks read-only `git stash list`.
 
 Hooks load at session start, so restart any running session after wiring.

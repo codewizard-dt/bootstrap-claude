@@ -26,3 +26,6 @@ Terminal task files (`done` or `trashed`) moved here by `/wiki-archive` to reduc
 | [[TASK-022]] | brave-search → single HTTP-mode Docker container (supersedes TASK-020 exec-wrapper) | done | 2026-07-28 |
 | [[TASK-023]] | playwright → native launchd LaunchAgent HTTP server (darwin), stdio fallback elsewhere | done | 2026-07-28 |
 | [[TASK-024]] | Docs & guide alignment for single-process HTTP MCP servers | done | 2026-07-28 |
+| [[TASK-026]] | Audit and harden the canonical settings deny list | done | 2026-07-29 |
+| [[TASK-025]] | Migrate this machine's MCP registrations to the single-process design (runtime UAT) | done | 2026-07-29 |
+| [[TASK-027]] | Tier-2 PreToolUse hooks — gate command classes deny rules cannot express | done | 2026-07-29 |

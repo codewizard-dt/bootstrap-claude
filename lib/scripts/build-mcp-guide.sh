@@ -34,6 +34,14 @@ has_mcp() {
 
 mkdir -p "$PROJECT_DIR/wiki/guides"
 
+# Resolve the playwright server name actually registered for this machine:
+# the canonical `playwright`, or the conflict-resolution alternate
+# `playwright-shared` (used when a project ships its own playwright entry).
+PW_SERVER_NAME="playwright"
+if claude mcp get playwright-shared 2>/dev/null | grep -q "/mcp"; then
+  PW_SERVER_NAME="playwright-shared"
+fi
+
 {
   # 1. Always: title + TOP RULE
   cat "$STUBS_DIR/00-header.md"
@@ -70,7 +78,7 @@ EOF
   if has_mcp "serena";       then cat "$STUBS_DIR/serena.md";       echo ""; fi
   if has_mcp "context7";     then cat "$STUBS_DIR/context7.md";     echo ""; fi
   if has_mcp "brave-search"; then cat "$STUBS_DIR/brave-search.md"; echo ""; fi
-  if has_mcp "playwright";   then cat "$STUBS_DIR/playwright.md";   echo ""; fi
+  if has_mcp "playwright";   then sed "s|__PW_SERVER_NAME__|$PW_SERVER_NAME|g" "$STUBS_DIR/playwright.md"; echo ""; fi
 
   # 4. Quick Reference table (always present; rows per installed MCP)
   cat <<'EOF'

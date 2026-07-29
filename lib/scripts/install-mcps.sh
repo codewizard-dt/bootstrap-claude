@@ -34,10 +34,12 @@ BRAVE_MCP_URL="http://127.0.0.1:${BRAVE_MCP_PORT}/mcp"
 # server is started with --host 127.0.0.1) — 127.0.0.1 URLs get 403 "Access is
 # only allowed at localhost:<port>". Found by TASK-025 runtime UAT.
 PLAYWRIGHT_MCP_URL="http://localhost:${PLAYWRIGHT_MCP_PORT}/mcp"
-# The bootstrap-managed server registers under its own name so it can coexist
-# with a project-scoped `playwright` entry in a team's committed .mcp.json —
-# we never edit that file; a distinct name avoids [Conflicting scopes] entirely.
-PLAYWRIGHT_MCP_NAME="${PLAYWRIGHT_MCP_NAME:-playwright-shared}"
+# Default server name. When a project already ships its own `playwright`
+# registration, the interactive conflict flow (see _install_playwright_flow)
+# may register ours under the alternate name below instead — a team's
+# committed .mcp.json is never edited.
+PLAYWRIGHT_MCP_NAME="${PLAYWRIGHT_MCP_NAME:-playwright}"
+PLAYWRIGHT_MCP_ALT_NAME="${PLAYWRIGHT_MCP_ALT_NAME:-playwright-shared}"
 
 # mcp_installed, serena_installed, prompt_yn, prompt_scope live in lib.sh.
 
@@ -178,9 +180,11 @@ _playwright_bootstrap_agent() {
 }
 
 _add_playwright() {
+  # $1 = scope, $2 = server name (defaults to the canonical name)
+  local reg_name="${2:-$PLAYWRIGHT_MCP_NAME}"
   if [ "$(uname -s)" != "Darwin" ]; then
     # Non-macOS: per-session stdio server (shared-server wiring is macOS-only for now).
-    mcp_add_scoped "$1" "$PLAYWRIGHT_MCP_NAME" -- npx @playwright/mcp@latest
+    mcp_add_scoped "$1" "$reg_name" -- npx @playwright/mcp@latest
     return 0
   fi
   # macOS: one shared HTTP server per machine, run as a launchd LaunchAgent in
@@ -257,11 +261,10 @@ PLIST
   if [ "$rc" -eq 2 ]; then
     return 0
   fi
-  # Always user scope, under our own name — coexists with any project-scoped
-  # `playwright` a team ships in .mcp.json.
-  mcp_add_scoped user "$PLAYWRIGHT_MCP_NAME" --transport http "$PLAYWRIGHT_MCP_URL"
-  wait_http_up "$PLAYWRIGHT_MCP_URL" && echo "  $PLAYWRIGHT_MCP_NAME: listening on $PLAYWRIGHT_MCP_URL" \
-    || { echo "  WARNING: $PLAYWRIGHT_MCP_NAME endpoint not answering — diagnostics:"; \
+  # Always user scope for the shared HTTP server.
+  mcp_add_scoped user "$reg_name" --transport http "$PLAYWRIGHT_MCP_URL"
+  wait_http_up "$PLAYWRIGHT_MCP_URL" && echo "  $reg_name: listening on $PLAYWRIGHT_MCP_URL" \
+    || { echo "  WARNING: $reg_name endpoint not answering — diagnostics:"; \
          launchctl print "gui/${uid}/${label}" 2>/dev/null || true; \
          echo "  Log: ${log_file}"; }
 }
@@ -310,30 +313,131 @@ register_optional_mcp brave-search \
 register_optional_mcp context7 \
   "Install Context7 MCP (library documentation lookups)? [y/N]: " _add_context7
 
-# Migrate the legacy bootstrap-managed `playwright` USER-scope entry to the new
-# name. Only shapes bootstrap itself created are touched (the shared-http URL
-# or the old stdio `npx @playwright/mcp` form), and only at user scope — a
-# project-scoped `playwright` is repository config and coexists with ours by
-# name. Detection reads ~/.claude.json top-level mcpServers directly because
-# `claude mcp get playwright` resolves to the project entry when one exists.
-if node -e '
-  const p = (require(require("os").homedir() + "/.claude.json").mcpServers || {}).playwright;
-  if (!p) process.exit(1);
-  const j = JSON.stringify(p);
-  process.exit(j.includes(process.argv[1]) || j.includes("@playwright/mcp") ? 0 : 1);
-' "$PLAYWRIGHT_MCP_URL" 2>/dev/null; then
-  echo "  playwright: migrating legacy bootstrap user-scope entry to '$PLAYWRIGHT_MCP_NAME'."
-  claude mcp remove playwright -s user 2>/dev/null || true
-fi
+# _disable_project_playwright_locally
+# Rejects the project's .mcp.json `playwright` on THIS machine only, via
+# disabledMcpjsonServers in $PROJECT_DIR/.claude/settings.local.json — the
+# team's .mcp.json is never touched. Idempotent; warns + skips on unparseable
+# or unexpected file shapes (same fail-safe posture as merge-settings-deny.js).
+_disable_project_playwright_locally() {
+  node -e '
+    const fs = require("fs"), path = require("path");
+    const file = path.join(process.argv[1], ".claude", "settings.local.json");
+    let s = {};
+    if (fs.existsSync(file)) {
+      try { s = JSON.parse(fs.readFileSync(file, "utf8")); } catch (e) {
+        console.error("  WARNING: could not parse " + file + " — skipping local disable."); process.exit(0);
+      }
+      if (typeof s !== "object" || s === null || Array.isArray(s)) {
+        console.error("  WARNING: " + file + " is not a JSON object — skipping local disable."); process.exit(0);
+      }
+    }
+    if ("disabledMcpjsonServers" in s && !Array.isArray(s.disabledMcpjsonServers)) {
+      console.error("  WARNING: disabledMcpjsonServers is not an array — skipping local disable."); process.exit(0);
+    }
+    const list = s.disabledMcpjsonServers || (s.disabledMcpjsonServers = []);
+    if (!list.includes("playwright")) list.push("playwright");
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    const tmp = file + ".tmp-" + process.pid;
+    fs.writeFileSync(tmp, JSON.stringify(s, null, 2) + "\n");
+    fs.renameSync(tmp, file);
+    console.log("  playwright: project entry disabled on this machine (.claude/settings.local.json disabledMcpjsonServers).");
+  ' "$PROJECT_DIR" || true
+}
 
-# Shared-http upgrade detection is darwin-only: on Linux the stdio entry is the
-# desired end state, so pass an empty expected arg there (empty = never upgrade).
-# The scope prompt is skipped on darwin (the shared server is user-scope only).
-playwright_expected=""
-playwright_fixed_scope=""
-if [ "$(uname -s)" = "Darwin" ]; then
-  playwright_expected="$PLAYWRIGHT_MCP_URL"
-  playwright_fixed_scope="user"
-fi
-register_optional_mcp "$PLAYWRIGHT_MCP_NAME" \
-  "Install Playwright MCP (browser automation & UI testing)? [y/N]: " _add_playwright "$playwright_expected" "$playwright_fixed_scope"
+# _install_playwright_flow
+# Dedicated install/conflict logic for playwright (the generic wrapper cannot
+# express this). Two variables decide the path: WHERE an existing `playwright`
+# registration lives (user / project / local), and — for project scope —
+# whether .mcp.json is CHECKED IN (git-tracked ⇒ team-owned, never modified).
+_install_playwright_flow() {
+  local pw_scope choice expected=""
+  [ "$(uname -s)" = "Darwin" ] && expected="$PLAYWRIGHT_MCP_URL"
+
+  # Rename-back: a user-scope `playwright-shared` pointing at our URL is the
+  # never-published 2.11.3 naming — fold it back into the canonical name when
+  # no conflicting `playwright` blocks that (the conflict branches below keep
+  # it as-is, since there it IS the desired registration).
+  if ! mcp_installed playwright && mcp_installed "$PLAYWRIGHT_MCP_ALT_NAME" \
+    && mcp_matches "$PLAYWRIGHT_MCP_ALT_NAME" "$PLAYWRIGHT_MCP_URL"; then
+    echo "  playwright: reverting '$PLAYWRIGHT_MCP_ALT_NAME' back to the canonical name 'playwright'."
+    claude mcp remove "$PLAYWRIGHT_MCP_ALT_NAME" -s user 2>/dev/null || true
+    _add_playwright user "$PLAYWRIGHT_MCP_NAME"
+    return 0
+  fi
+
+  if ! mcp_installed playwright; then
+    # Fresh install (same gating as register_optional_mcp).
+    if [ "$INTERACTIVE" = true ]; then
+      if prompt_yn "Install Playwright MCP (browser automation & UI testing)? [y/N]: "; then
+        _add_playwright user "$PLAYWRIGHT_MCP_NAME"
+        echo "  playwright MCP installed."
+      fi
+    else
+      echo "  Installing playwright MCP..."
+      _add_playwright user "$PLAYWRIGHT_MCP_NAME"
+      echo "  playwright MCP installed."
+    fi
+    return 0
+  fi
+
+  pw_scope="$(mcp_scope_of playwright)"
+
+  if [ "$pw_scope" = "user" ]; then
+    if [ -z "$expected" ] || mcp_matches playwright "$expected"; then
+      echo "  playwright: already installed, skipping."
+    else
+      echo "  playwright: upgrading registration (stdio → shared http)."
+      claude mcp remove playwright -s user 2>/dev/null || true
+      _add_playwright user "$PLAYWRIGHT_MCP_NAME"
+    fi
+    # Cleanup a leftover alternate-name duplicate of ours at user scope.
+    if mcp_installed "$PLAYWRIGHT_MCP_ALT_NAME" && mcp_matches "$PLAYWRIGHT_MCP_ALT_NAME" "$PLAYWRIGHT_MCP_URL"; then
+      echo "  playwright: removing duplicate '$PLAYWRIGHT_MCP_ALT_NAME' user-scope entry."
+      claude mcp remove "$PLAYWRIGHT_MCP_ALT_NAME" -s user 2>/dev/null || true
+    fi
+    return 0
+  fi
+
+  # Conflict: playwright registered at project/local scope (or undetectable).
+  if [ "$INTERACTIVE" != true ] || [ ! -t 0 ] || [ -z "$PROJECT_DIR" ] || [ "$pw_scope" = "unknown" ]; then
+    echo "  playwright: an existing ${pw_scope}-scope registration was found — leaving everything untouched."
+    echo "  Resolve interactively: run 'npx @codewizard-dt/bootstrap update' in a terminal to choose how to proceed."
+    return 0
+  fi
+
+  if [ "$pw_scope" = "project" ] \
+    && git -C "$PROJECT_DIR" ls-files --error-unmatch .mcp.json >/dev/null 2>&1; then
+    # Team-owned: .mcp.json is checked into the repo. NEVER modified.
+    echo "  playwright: this project's committed .mcp.json registers its own playwright server."
+    echo "    [1] Register the bootstrap shared server as '$PLAYWRIGHT_MCP_ALT_NAME' and disable the project one on this machine only"
+    echo "    [2] Register '$PLAYWRIGHT_MCP_ALT_NAME' alongside it (both active — browser tools will appear twice)"
+    echo "    [3] Don't touch anything (default)"
+    read -r -p "  How should we proceed? [1/2/3]: " choice || choice=3
+    case "$choice" in
+      1)
+        _add_playwright user "$PLAYWRIGHT_MCP_ALT_NAME"
+        _disable_project_playwright_locally
+        ;;
+      2)
+        _add_playwright user "$PLAYWRIGHT_MCP_ALT_NAME"
+        ;;
+      *)
+        echo "  playwright: left untouched."
+        ;;
+    esac
+    return 0
+  fi
+
+  # Machine-local registration: untracked .mcp.json (project scope) or the
+  # ~/.claude.json project entry (local scope). Safe to modify with consent.
+  echo "  playwright: an existing ${pw_scope}-scope registration was found (machine-local, not checked in)."
+  if prompt_yn "  Replace it with the bootstrap shared server (removes the ${pw_scope}-scope entry)? [y/N] (no = keep it and register ours as '$PLAYWRIGHT_MCP_ALT_NAME'): "; then
+    ( cd "$PROJECT_DIR" && claude mcp remove playwright -s "$pw_scope" ) || true
+    _add_playwright user "$PLAYWRIGHT_MCP_NAME"
+  else
+    _add_playwright user "$PLAYWRIGHT_MCP_ALT_NAME"
+    echo "  playwright: existing entry kept; bootstrap server registered as '$PLAYWRIGHT_MCP_ALT_NAME'."
+  fi
+}
+
+_install_playwright_flow

@@ -1,6 +1,6 @@
 ---
 title: Wiki Index
-updated: 2026-07-06
+updated: 2026-07-30
 ---
 
 # Wiki Index — Home Map
@@ -22,6 +22,11 @@ The wiki is split into two domains with opposite organizing laws:
 ### Sources
 - [Research: Improving the LLM Wiki tooling](knowledge/sources/wiki-tooling-improvements.md) — what's changed in the second-brain/LLM-wiki ecosystem since Karpathy's gist, and what's portable to this repo
 - [Research: Serena MCP server disconnects mid-session](knowledge/sources/serena-mcp-disconnect.md) — live-reproduced root cause: the health-tracking hook kills a live Serena process on a misclassified error, plus a state-file race that can hard-block the fallback too
+- [Research: gitignored wiki dirs vs tool visibility](knowledge/sources/gitignored-wiki-tool-visibility.md) — gitignoring .serena/raw/wiki blinds Serena and Claude Grep; .git/info/exclude is the source-verified escape hatch
+- [Research: Agent Sandbox-Escape Vectors Relevant to Claude Code](knowledge/sources/agent-sandbox-escape-vectors.md) — verified permission-rule syntax, 8 Bash bypass classes, 9 persistence vectors, and the deny → hook → sandbox tiering (⚠ one claim contradicted by the bypass-mode report)
+- [Research: Deny rules vs. PreToolUse hooks](knowledge/sources/deny-rules-vs-hooks.md) — per-subcommand decomposition is real (bare-interpreter denies ship, pipe patterns never fire), and `permissions.ask` replaces a planned package-consent hook
+- [Research: Which Claude Code controls survive --dangerously-skip-permissions](knowledge/sources/bypass-mode-enforcement.md) — deny/ask/hooks/sandbox all enforce under bypass; what bypass destroys is the built-in protected-path guard (supersedes the sandbox-escape report on that point)
+- [Research: git exclude vs Claude Code @ autocomplete](knowledge/sources/git-exclude-at-autocomplete.md) — info/exclude blinds the @ picker (and rg); no git-side layout fixes it; the documented `fileSuggestion` custom command is the escape hatch (supersedes the info/exclude report's "Claude tools unaffected" claim)
 
 ### Concepts
 - [LLM Wiki Hot Cache](knowledge/concepts/llm-wiki-hot-cache.md) — session-handoff summary file pattern, converged on by multiple gist reimplementations
@@ -29,12 +34,19 @@ The wiki is split into two domains with opposite organizing laws:
 - [Wiki Multi-Writer Safety](knowledge/concepts/wiki-multi-writer-safety.md) — advisory locking for concurrent agent writes to shared wiki index files (⚠ contradiction flagged — its cited exemplar hook has a live-reproduced race bug)
 - [Agent Memory Frameworks Landscape](knowledge/concepts/agent-memory-frameworks-landscape.md) — Mem0/Zep/Letta/Hindsight/A-Mem survey vs. this repo's markdown-only wiki
 - [Responded Error Proves Liveness](knowledge/concepts/responded-error-proves-liveness.md) — health-check anti-pattern: an error response proves a process is alive, not hung; kill-on-misclassification defaults are backwards
+- [Git-Ignore Tool Visibility](knowledge/concepts/git-ignore-tool-visibility.md) — .gitignore = ignored by git AND agents; .git/info/exclude = visible to Serena only (rg and the @ picker still skip it); picker visibility needs `fileSuggestion`
+- [Deny Matches a Spelling, Not a Capability](knowledge/concepts/deny-matches-a-spelling-not-a-capability.md) — the organizing principle of agent hardening: `Bash(rm *)` misses `/bin/rm`, no pattern sees inside `bash -c`
+- [Three-Tier Agent Control Model](knowledge/concepts/three-tier-agent-control-model.md) — deny rules (spelling) → PreToolUse hook (capability class) → OS sandbox (subprocess); not substitutes
+- [Agent Persistence & Sandbox-Escape Vectors](knowledge/concepts/agent-persistence-vectors.md) — C1–C9 catalogue of persistence primitives reachable through the Bash tool, with the control that addresses each
+- [Per-Subcommand Decomposition](knowledge/concepts/per-subcommand-decomposition.md) — rules match each subcommand independently, so pipe-containing patterns can never fire and bare `Bash(sh)` can; no startup warning either way
+- [Consent Requires a Yes-Path (the `ask` Tier)](knowledge/concepts/consent-requires-a-yes-path.md) — deny has no yes-path; `permissions.ask` cannot be silenced by allow, bypass mode, a hook, or the sandbox (⚠ open contradiction: ask vs. hook for headless package consent)
+- [Control Survival Across Permission Modes](knowledge/concepts/permission-mode-control-survival.md) — what still enforces under `bypassPermissions`: deny/ask/hooks/sandbox yes, `allow` inert, built-in protected paths gone (⚠ carries the flagged contradiction with the sandbox-escape report)
 
 ### Entities
 - People — [knowledge/entities/people/](knowledge/entities/people/): [Andrej Karpathy](knowledge/entities/people/andrej-karpathy.md)
 - Organisations — [knowledge/entities/organisations/](knowledge/entities/organisations/) — _(none yet)_
-- Tools — [knowledge/entities/tools/](knowledge/entities/tools/): [Claude Code Auto Memory](knowledge/entities/tools/claude-code-auto-memory.md), [claude-obsidian](knowledge/entities/tools/claude-obsidian.md), [qmd](knowledge/entities/tools/qmd.md), [Hindsight](knowledge/entities/tools/hindsight.md)
-- Components — [knowledge/entities/components/](knowledge/entities/components/): [Serena Health-Tracking Hook](knowledge/entities/components/serena-health-tracking-hook.md)
+- Tools — [knowledge/entities/tools/](knowledge/entities/tools/): [Serena](knowledge/entities/tools/serena.md), [Claude Code Auto Memory](knowledge/entities/tools/claude-code-auto-memory.md), [claude-obsidian](knowledge/entities/tools/claude-obsidian.md), [qmd](knowledge/entities/tools/qmd.md), [Hindsight](knowledge/entities/tools/hindsight.md), [Claude Code Permission System](knowledge/entities/tools/claude-code-permission-system.md), [Claude Code OS Sandbox](knowledge/entities/tools/claude-code-sandbox.md), [Claude Code @ File Picker (fileSuggestion)](knowledge/entities/tools/claude-code-file-picker.md)
+- Components — [knowledge/entities/components/](knowledge/entities/components/): [Serena Health-Tracking Hook](knowledge/entities/components/serena-health-tracking-hook.md), [Canonical Settings Deny List](knowledge/entities/components/settings-deny-list.md), [lib/hooks — Project-Managed Hook Scripts](knowledge/entities/components/bootstrap-claude-hooks.md)
 
 ---
 

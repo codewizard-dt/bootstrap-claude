@@ -1,9 +1,9 @@
 ---
 id: ROADMAP-003
 title: "Single-process (shared HTTP) MCP servers for the bootstrap"
-status: active
+status: done
 created: 2026-07-28
-updated: 2026-07-28
+updated: 2026-07-29
 owner: David Taylor
 tags: [mcp, setup-scripts, docker, launchd]
 ---
@@ -47,4 +47,4 @@ Full implementation detail (exact commands, plist keys, known pitfalls like the 
 
 ## Phase 5: Migrate this machine (doubles as runtime UAT)
 
-- [ ] [[TASK-025: Migrate this machine's MCP registrations to the single-process design]] — `claude mcp remove brave-search|playwright -s user`, `docker rm -f brave-search-mcp` (old sleep container), re-run `install-mcps.sh` non-interactively; verify both connected in `claude mcp list`, two concurrent sessions → exactly one brave container process + one playwright cli.js process total with zero per-session children (guards claude-code#29688-style stdio-child bug), reboot survival (`--restart unless-stopped` + `RunAtLoad`), live `brave_web_search` + `browser_snapshot` calls
+- [x] [[TASK-025: Migrate this machine's MCP registrations to the single-process design]] — `claude mcp remove brave-search|playwright -s user`, `docker rm -f brave-search-mcp` (old sleep container), re-run `install-mcps.sh` non-interactively; verify both connected in `claude mcp list`, two concurrent sessions → exactly one brave container process + one playwright cli.js process total with zero per-session children (guards claude-code#29688-style stdio-child bug), reboot survival (`--restart unless-stopped` + `RunAtLoad`), live `brave_web_search` + `browser_snapshot` calls

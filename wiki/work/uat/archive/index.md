@@ -26,3 +26,6 @@ Terminal UAT files (`passed`, `skipped`, or `trashed`) moved here by `/wiki-arch
 | [[UAT-022]] | UAT: brave-search → single HTTP-mode Docker container (supersedes TASK-020 exec-wrapper) | passed | 2026-07-28 |
 | [[UAT-023]] | UAT: playwright → native launchd LaunchAgent HTTP server (darwin), stdio fallback elsewhere | passed | 2026-07-28 |
 | [[UAT-024]] | UAT: Docs & guide alignment for single-process HTTP MCP servers | passed | 2026-07-28 |
+| [[UAT-026]] | UAT: Audit and harden the canonical settings deny list | passed | 2026-07-29 |
+| [[UAT-025]] | UAT: Migrate this machine's MCP registrations to the single-process design | skipped | 2026-07-29 |
+| [[UAT-027]] | UAT: Tier-2 PreToolUse hooks — gate command classes deny rules cannot express | passed | 2026-07-29 |

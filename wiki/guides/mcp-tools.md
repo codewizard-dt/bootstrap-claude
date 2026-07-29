@@ -298,6 +298,8 @@ Use for general research, best practices, troubleshooting, news. Do NOT use for 
 
 ## Playwright (Browser Automation)
 
+Server name in this project: `playwright` — tools appear as `mcp__playwright__browser_*`.
+
 ### Tools
 
 | Tool | Purpose |

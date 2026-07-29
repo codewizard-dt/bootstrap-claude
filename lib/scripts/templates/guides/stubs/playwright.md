@@ -1,6 +1,8 @@
 
 ## Playwright (Browser Automation)
 
+Server name in this project: `__PW_SERVER_NAME__` — tools appear as `mcp____PW_SERVER_NAME____browser_*`.
+
 ### Tools
 
 | Tool | Purpose |

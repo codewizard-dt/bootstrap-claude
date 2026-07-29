@@ -59,11 +59,14 @@ mcp_matches() { claude mcp get "$1" 2>/dev/null | grep -qF "$2"; }
 mcp_scope_of() {
   local line
   line="$(claude mcp get "$1" 2>/dev/null | grep -m1 'Scope:')" || { echo unknown; return 0; }
+  # Match the scope word immediately after "Scope: " — descriptive parentheticals
+  # like "Local config (private to you in this project)" contain other scope
+  # words, so loose substring matching misclassifies.
   case "$line" in
-    *User*)              echo user ;;
-    *[Pp]roject*)        echo project ;;
-    *[Ll]ocal*)          echo local ;;
-    *)                   echo unknown ;;
+    *"Scope: User"*|*"Scope: user"*)         echo user ;;
+    *"Scope: Project"*|*"Scope: project"*)   echo project ;;
+    *"Scope: Local"*|*"Scope: local"*)       echo local ;;
+    *)                                       echo unknown ;;
   esac
 }
 
@@ -107,8 +110,9 @@ detect_installed_mcps() {
       result="${result:+$result }$mcp"
     fi
   done
-  # The bootstrap-managed playwright server registers as "playwright-shared" so
-  # it can coexist with a project-scoped "playwright"; either name enables the
+  # The bootstrap-managed playwright server is normally named "playwright";
+  # "playwright-shared" is the conflict-resolution alternate (used when a
+  # project ships its own playwright entry). Either name enables the
   # playwright guide section (guide key stays "playwright").
   if mcp_installed "playwright-shared" || mcp_installed "playwright"; then
     result="${result:+$result }playwright"
@@ -141,7 +145,7 @@ run_project_sync() {
 
   echo "Syncing wiki scaffold..."
   "$script_dir/sync-wiki-scaffold.sh" --interactive "$project_dir"
-  "$script_dir/merge-gitignore.sh" "$project_dir"
+  "$script_dir/merge-gitignore.sh" --interactive "$project_dir"
   echo ""
 
   echo "Building MCP tools guide..."

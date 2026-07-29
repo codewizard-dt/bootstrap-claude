@@ -42,7 +42,7 @@ Pick the smallest set of sources that could contain the failure signal. Do not d
 | Background server crashed / 500s | `TaskOutput` on the dev server task | `TaskOutput` |
 | Test failure / assertion error | `TaskOutput` on the test task, or rerun with `--reporter=verbose` | `TaskOutput`, `Bash` |
 | Build / compile error | Build task output, `tsc` / `next build` cache, `.next/trace` | `TaskOutput`, `Read` |
-| Browser-side failure (UI bug, console error) | Playwright snapshot + screenshot | `mcp__playwright-shared__browser_snapshot`, `mcp__playwright-shared__browser_take_screenshot` (or `mcp__playwright__*` when the project registers its own server) |
+| Browser-side failure (UI bug, console error) | Playwright snapshot + screenshot | `mcp__playwright__browser_snapshot`, `mcp__playwright__browser_take_screenshot` (or `mcp__playwright-shared__*` when bootstrap registered under the alternate name to avoid a project conflict — see `wiki/guides/mcp-tools.md`) |
 | Type / lint regression | IDE diagnostics | `mcp__ide__getDiagnostics` |
 | CI failure on a PR/branch | GitHub Actions logs | `gh run list`, `gh run view --log-failed` |
 | Deployed app failure (DigitalOcean) | App platform logs | `mcp__digitalocean__apps-get-logs` |

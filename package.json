@@ -1,6 +1,6 @@
 {
   "name": "@codewizard-dt/bootstrap",
-  "version": "2.13.0",
+  "version": "2.14.0",
   "description": "Bootstrap Claude Code projects with an LLM Wiki, reusable skills, hooks, and MCP setup",
   "homepage": "https://github.com/codewizard-dt/bootstrap-wiki#readme",
   "bugs": {
@@ -27,6 +27,6 @@
     ".gitleaks.toml"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test 'test/*.test.js'"
   }
 }

@@ -1,27 +1,31 @@
 ---
 title: Hot Cache
-updated: 2026-07-28
+updated: 2026-07-29
 ---
 
 # Hot Cache
 
 Session-handoff summary of what changed most recently — the small file an agent reads first to get oriented fast. **Fully regenerated at the end of every wiki-writing session, never appended to.** Keep it under ~500 words; if a fact stops being "recent", it drops off (its durable form lives in a knowledge or work page).
 
-_Last updated: 2026-07-28_
+_Last updated: 2026-07-29_
 
 ## Key Recent Facts
-- **ROADMAP-003 created (2026-07-28, active, 0/6)**: convert bootstrap MCP servers to **single shared HTTP processes** — brave-search → HTTP-mode Docker container (port 8941, `--restart unless-stopped`), playwright → native launchd LaunchAgent (port 8931, globally-installed package — never npx-under-launchd), shared plumbing (`mcp_matches`/`wait_http_up`/upgrade detection), docs alignment, local-machine migration as runtime UAT. Context7 already remote HTTP; **serena deferred**; separate declarative MCP config file **rejected** (provisioning is behavior, not data). Derived from `raw/research/mcp-one-process-per-user/` (not yet ingested): stdio = 1 client : 1 subprocess per MCP spec; host-level sharing is an open Claude Code feature request (#28860).
-- **ROADMAP-003 Phase 0 supersedes TASK-020** (`pending-uat`, exec-wrapper shipped in `install-mcps.sh` + `setup-project.sh`): close via `/uat-skip` with a supersession note — implementation was real and statically verified (5/5), but the wrapper design (one container, N exec'd processes) is replaced by true single-process HTTP. UAT-020 (9 cases, pending) gets skipped, not run.
-- Known implementation pitfalls captured in the roadmap: value-less `docker -e` only forwards *exported* vars (use prefix assignment); latent `read -r BRAVE_API_KEY` EOF failure under `set -e` (install-mcps.sh:73-74); old sleep-entrypoint container must be `docker rm -f`'d on migration (detect via `docker inspect -f '{{.Path}}'`).
-- **The Serena health-tracking hook bug is still unpatched** (`lib/hooks/lib/serena.js` + `serena-usage-tracker.js`) — see [Serena Health-Tracking Hook](knowledge/entities/components/serena-health-tracking-hook.md); no fix task filed; `.serena/project.yml` still lacks `typescript`.
-- [Wiki Multi-Writer Safety](knowledge/concepts/wiki-multi-writer-safety.md) remains `confidence: ambiguous`.
+
+- **`.git/info/exclude` blinds Claude Code's `@` autocomplete** — new research (`git-exclude-at-autocomplete`) verified that rg-class tools honor `info/exclude` and recent Claude Code versions suggest only git-*tracked* files; no git-side layout (untracked, nested repos) fixes it. **Escape hatch: the documented `fileSuggestion` settings key** — a custom command replaces the picker and can re-include the bootstrap-excluded dirs. The prior "info/exclude is tool-invisible" claim is now narrowed to **Serena only**; concept page corrected, over-broad comments in `merge-gitignore.sh` + `templates/gitignore` still need fixing (queued task).
+- **Deny rules ARE enforced under `bypassPermissions`** — as are ask rules, PreToolUse hooks, and the sandbox; only `permissions.allow` goes inert. Bypass destroys the built-in protected-path guard, so the deny list is worth **more** under bypass. See [Control Survival Across Permission Modes](knowledge/concepts/permission-mode-control-survival.md).
+- **Deny matches a spelling, not a capability** — rules match per subcommand, pipe-containing patterns can never fire (no startup warning), bare `Bash(sh)` does fire. `Write(...)` path rules are accepted but never consulted. `settings-deny.json` at 116 entries, verified by UAT-026.
+- **Six Tier-2 command-class hooks landed** (TASK-027) with `test/command-class-hooks.test.js`; `npm test` = 69/0. UAT-027 has 3 session-blocked cases pending `PreToolUse` wiring in `~/.claude/settings.json` — not archived, `in-progress`.
+- **Release 2.14.0 still pending** — working tree holds interactive gitignore + playwright conflict flow + info/exclude + hooks; npm registry stuck at 2.11.2 (`npm login` expired).
 
 ## Recent Changes
-- Created: `wiki/work/roadmaps/ROADMAP-003-single-process-mcp-servers.md`, `raw/research/mcp-one-process-per-user/index.md` + `sources.md` (10-source register).
-- Created earlier same day: `wiki/work/uat/UAT-020-brave-search-mcp-docker.md` (9 cases, pending → will be skipped per Phase 0), `raw/research/brave-mcp-single-docker-container/` (prior research, also not yet ingested).
-- Updated: `wiki/work/tasks/TASK-020-brave-search-mcp-docker.md` (implemented + `pending-uat`), `lib/scripts/install-mcps.sh` + `lib/scripts/setup-project.sh` (exec-wrapper shipped — now due for Phase 2 rework), roadmaps/tasks/uat indexes, `wiki/log.md`.
+
+- Created: `work/tasks/TASK-029-filesuggestion-autocomplete.md` (todo; renumbered from 028 — a concurrent session claimed TASK-028 for the interpreter-guard task); `knowledge/sources/git-exclude-at-autocomplete.md`; `knowledge/entities/tools/claude-code-file-picker.md`; `raw/research/git-exclude-at-autocomplete/{index,sources}.md` (research op).
+- Updated: `knowledge/concepts/git-ignore-tool-visibility.md` (resolved contradiction — decision rule narrowed, `fileSuggestion` added); `knowledge/sources/gitignored-wiki-tool-visibility.md` (superseded_by callout); `wiki/index.md`, `wiki/log.md`.
+- Flagged: **(1)** resolved — `info/exclude` "visible to agents" superseded by the @-autocomplete research (Serena-only). **(2)** still open — package-install consent mechanism disagreement (`ask` vs hook), callout on `consent-requires-a-yes-path`.
 
 ## Active Threads
-- **ROADMAP-003 is the live thread — tasks minted (2026-07-28)**: TASK-021 (shared plumbing) → TASK-022 (brave HTTP container) ∥ TASK-023 (playwright launchd) → TASK-024 (docs) → TASK-025 (local migration = runtime UAT). Wave 1 ready now: `/uat-skip wiki/work/uat/UAT-020-brave-search-mcp-docker.md` (Phase 0 closure) and `/tackle wiki/work/tasks/TASK-021-mcp-http-shared-plumbing.md`.
-- **Two research reports await ingest**: `/wiki-ingest raw/research/mcp-one-process-per-user/index.md` and `/wiki-ingest raw/research/brave-mcp-single-docker-container/index.md`.
-- ROADMAP-001 Phase 4 (advisory locking) remains intentionally deferred; Serena hook fix still not filed as a task.
+
+- **TASK-029 (todo)** — fileSuggestion @-autocomplete restoration: template `file-suggestion.sh` (sentinel-scoped re-include), `--set-key` generalization of `merge-settings-deny.js` (absorbs the backlog item) wired into `install-global.sh`, prose corrections in `merge-gitignore.sh`/`templates/gitignore`/READMEs. parallel_safe_with TASK-027 and TASK-028 (interpreter guard, filed concurrently by another session); concept page already corrected during ingest.
+- **UAT-027 (in-progress)** — 3 session-blocked cases need `PreToolUse` matcher wiring in `~/.claude/settings.json`; TASK-027 stays open until then. Two prose defects pinned (quoted-string examples in `lib/hooks/README.md` + `protected-write-guard.js:50-53`).
+- **Not yet filed**: `permissions.ask` template (`--set-key` merge generalization now lands via TASK-028); `/decision-create` on enabling `/sandbox` for `power-mode`/`uat-auto-plus`.
+- **Research reports awaiting ingest**: `raw/research/mcp-one-process-per-user/`, `brave-mcp-single-docker-container/`, `mcp-scope-conflict-handling/`, `mcp-add-scope-writes/`.
