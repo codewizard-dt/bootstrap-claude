@@ -7,7 +7,7 @@ argument-hint: <raw-file-path>
 disable-model-invocation: false
 user-invocable: true
 ---
-**Prereqs:** obey `.docs/guides/mcp-tools.md`.
+**Prereqs:** obey `wiki/guides/mcp-tools.md`.
 
 # Wiki Ingest
 

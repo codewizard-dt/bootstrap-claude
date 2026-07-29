@@ -7,7 +7,7 @@ argument-hint: <ROADMAP-NNN> [--phase "<name>"] [--task NNN | <task path> | <inl
 disable-model-invocation: false
 user-invocable: true
 ---
-**Prereqs:** obey `.docs/guides/mcp-tools.md`; run /primer if not done this session.
+**Prereqs:** obey `wiki/guides/mcp-tools.md`; run /primer if not done this session.
 
 $ARGUMENTS
 
@@ -217,7 +217,7 @@ If the added item is an inline placeholder, append this note after the table:
 
 | Anti-Pattern | Remedy |
 |--------------|--------|
-| Editing the roadmap with `sed`, `awk`, `echo >>`, or `cat <<EOF` | **Never.** Always use `Read` + `Edit`. See `.docs/guides/mcp-tools.md` |
+| Editing the roadmap with `sed`, `awk`, `echo >>`, or `cat <<EOF` | **Never.** Always use `Read` + `Edit`. See `wiki/guides/mcp-tools.md` |
 | Using `Write` to rewrite the whole roadmap file | Use surgical `Edit` calls only |
 | Inventing a task title when the task file is missing | Ask via `AskUserQuestion` whether to fall back to inline, or cancel |
 | Bumping the `Progress` numerator | This skill **never** touches the numerator — that is auto-checkoff's job (`/tackle`, `/uat-walk`, `/uat-auto`, `/uat-auto-plus`, `/uat-skip`) |

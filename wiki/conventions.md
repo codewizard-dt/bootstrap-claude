@@ -51,19 +51,10 @@ Every page has YAML frontmatter. **Base keys (used now):**
 | `tags` | all | flat list, discovery only — not primary structure |
 | `aliases` | knowledge | alternative names for durable linking (item 2) |
 | `sources` | knowledge | back-links to the `raw/` source(s) a page derives from |
-| `confidence` | knowledge | provenance of the page's claims: `extracted` (default), `inferred`, or `ambiguous` — see below |
-
-**`confidence` (knowledge pages only).** Tags where a page's claims come from, so a reader can weigh them. It applies only to `knowledge/` pages (`sources/`, `concepts/`, `entities/`); `work/` artifacts track their state with `status` instead. Three values:
-
-- **`extracted`** (default) — the claim is directly supported by source material. Use when the page restates what a `raw/` source says.
-- **`inferred`** — the claim is LLM synthesis or reasoning that goes beyond what any source states directly. Mirrors the `/research` skill's "inference — no primary source" note, formalized as frontmatter.
-- **`ambiguous`** — sources disagree, or the claim is genuinely uncertain.
-
-Omitting `confidence` means `extracted`. Adoption is forward-only: existing pages need no backfill, and adding the key later is a lint pass, never a structural rewrite.
 
 **Reserved keys (declared, optional — populated later by overlays, safe to ignore until then):**
 
-`tier`, `last_verified`, `supersedes`, `superseded_by`, `scope`.
+`confidence`, `tier`, `last_verified`, `supersedes`, `superseded_by`, `scope`.
 
 Adopting the corresponding behavior later is a frontmatter backfill via lint — never a structural rewrite. Keep these names consistent if you use them early.
 
@@ -83,6 +74,8 @@ Keep the two organizing laws separate — do not file a stateful artifact under 
 - **`work/`** — stateful, **status-organized** lifecycle artifacts. Active files are **never moved** after creation; state lives in the `status:` field; each family has a `lifecycle.md` defining its schema and valid transitions, an `index.md` listing only active items, and an `archive/` subdirectory for terminal items. Sub-trees: `requirements/`, `decisions/`, `roadmaps/`, `tasks/`, `uat/`, `bugs/`.
 
 Cross-domain links are encouraged and carry meaning — e.g. a decision `derived_from::` a source, a task `implements::` a requirement.
+
+**Template-owned infrastructure (exempt from both laws).** A small set of files inside `wiki/` is owned by the bootstrap templates, not by this wiki: `conventions.md` (this file), every `work/<family>/lifecycle.md`, `dashboard.html`, and everything under `guides/` (delivered reference guides — MCP tool rules, anti-patterns, opted-in frameworks). They carry no frontmatter, are never listed as knowledge pages, are exempt from the atomic-page rule, and must **never be edited in place** — they are refreshed by `npx @codewizard-dt/bootstrap update`, which overwrites local changes.
 
 ---
 

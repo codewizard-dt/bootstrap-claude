@@ -41,7 +41,7 @@ Typical workflow: `get_symbols_overview` → `find_symbol` → edit with `replac
 
 ## 2. File tools (path/line/pattern ops — compete with Claude Code built-ins)
 
-Upstream ships these, but the Serena team recommends disabling them when running inside a harness that already has Read/Edit/Grep/Glob. This repo now enables most of them via `.serena/project.yml` `included_optional_tools` so subagents and orchestrators can use Serena exclusively when needed. Per `.docs/guides/mcp-tools.md`, directory/file exploration (any file type) **must** go through Serena (`list_dir`, `find_file`, `search_for_pattern`); for editing, Serena symbolic tools are mandatory on code files and Claude Code's `Read`/`Edit`/`Write` are preferred for markdown/config.
+Upstream ships these, but the Serena team recommends disabling them when running inside a harness that already has Read/Edit/Grep/Glob. This repo now enables most of them via `.serena/project.yml` `included_optional_tools` so subagents and orchestrators can use Serena exclusively when needed. Per `wiki/guides/mcp-tools.md`, directory/file exploration (any file type) **must** go through Serena (`list_dir`, `find_file`, `search_for_pattern`); for editing, Serena symbolic tools are mandatory on code files and Claude Code's `Read`/`Edit`/`Write` are preferred for markdown/config.
 
 | Tool | Upstream default | Available here | Purpose |
 |------|------------------|----------------|---------|
@@ -133,7 +133,7 @@ Use the LSP-backed `find_symbol` / `rename_symbol` / etc. unless the JetBrains b
 
 ## Practical notes for this project
 
-- **Mandatory per `.docs/guides/mcp-tools.md`**: symbolic Serena tools for all code edits; Claude Code built-ins (`Read`/`Edit`/`Write`/`Glob`/`Grep`) for markdown and config. `sed`/`awk`/`echo >>` are banned for any file type.
+- **Mandatory per `wiki/guides/mcp-tools.md`**: symbolic Serena tools for all code edits; Claude Code built-ins (`Read`/`Edit`/`Write`/`Glob`/`Grep`) for markdown and config. `sed`/`awk`/`echo >>` are banned for any file type.
 - **First calls on a fresh session**: `check_onboarding_performed` → (if missing) `onboarding` → `list_memories` to orient.
 - **Editing checklist**: `get_symbols_overview` → `find_symbol` (include_body only when needed) → `replace_symbol_body` / `insert_*_symbol` → `find_referencing_symbols` to sanity-check.
 - **Refactor rename**: always prefer `rename_symbol` over search-and-replace.

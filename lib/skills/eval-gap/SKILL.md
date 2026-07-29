@@ -8,7 +8,7 @@ argument-hint: [optional: stage — golden | scenarios | replay | rubric | all]
 disable-model-invocation: false
 user-invocable: true
 ---
-**Prereqs:** obey `.docs/guides/mcp-tools.md`.
+**Prereqs:** obey `wiki/guides/mcp-tools.md`.
 
 $ARGUMENTS
 
@@ -24,7 +24,7 @@ Read-only audit of the project's eval suite. Produces a prioritised gap report a
 
 ## Step 1: Read the framework
 
-Read `.docs/guides/evals-framework.md`. This defines the expected shape of each stage and is required context for meaningful gap analysis.
+Read `wiki/guides/evals-framework.md`. This defines the expected shape of each stage and is required context for meaningful gap analysis.
 
 If the file does not exist, STOP — do not proceed from memory. Tell the user:
 

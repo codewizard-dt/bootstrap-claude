@@ -10,7 +10,7 @@ one, note:
 
 ## Phase 2 — Establish strict-mode baselines (per language)
 
-IMPORTANT: If `.docs/guides/type-checking-templates/` exists in the project, it is the authoritative baseline — start there, not from web
+IMPORTANT: If `wiki/guides/type-checking-templates/` exists in the project, it is the authoritative baseline — start there, not from web
 research. Read its `README.md` to pick the right variant, then read the chosen template files (they carry inline annotations explaining
 every non-obvious decision):
 - TypeScript: `tsconfig/` (node-esm / Vite three-file split / lib) + `eslint/eslint.config.ts`
@@ -20,7 +20,7 @@ Use Context7 (library docs) or Brave Search (general practices, up to 50 req/sec
 cover: languages with no template (Go: staticcheck, go vet; Rust: #![deny(warnings)], Clippy --deny warnings; etc.), framework-specific
 plugins, or flags added since the templates were written.
 
-If `.docs/guides/type-checking-templates/` does NOT exist, fall back to researching current strict-mode recommendations from scratch with
+If `wiki/guides/type-checking-templates/` does NOT exist, fall back to researching current strict-mode recommendations from scratch with
 Context7 / Brave Search:
 - TypeScript: tsconfig strict, tseslint strictTypeChecked, stylisticTypeChecked, parserOptions.project
 - Python: mypy --strict, pyproject.toml [tool.mypy]
@@ -111,7 +111,7 @@ user-invocable: true
 
 # Run typecheck and fix issues
 
-IMPORTANT: Adhere to all rules in `.docs/guides/mcp-tools.md` if it exists.
+IMPORTANT: Adhere to all rules in `wiki/guides/mcp-tools.md` if it exists.
 
 ## Step 1: find the problem
 

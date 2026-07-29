@@ -8,7 +8,7 @@ argument-hint: "[stage: golden|scenarios|replay|rubric] [description of the eval
 disable-model-invocation: false
 user-invocable: true
 ---
-**Prereqs:** obey `.docs/guides/mcp-tools.md`.
+**Prereqs:** obey `wiki/guides/mcp-tools.md`.
 
 $ARGUMENTS
 
@@ -36,7 +36,7 @@ Parse `$ARGUMENTS` immediately. The argument string can take several forms:
 **Direct mode** (any non-empty argument that is not a bare stage keyword):
 
 1. Acknowledge the request: "Creating a golden set eval for: `<extracted description>`"
-2. Read `.docs/guides/evals-framework.md` (always required — if missing, stop and tell the user to re-run `npx @codewizard-dt/bootstrap update` and opt in to `evals-framework.md`, as in Step 1)
+2. Read `wiki/guides/evals-framework.md` (always required — if missing, stop and tell the user to re-run `npx @codewizard-dt/bootstrap update` and opt in to `evals-framework.md`, as in Step 1)
 3. Survey `evals/golden/` to find the next ID and check bootstrap vs gap-fill state
 4. Go directly to **Step 4-Direct** — skip Steps 1–3
 
@@ -48,7 +48,7 @@ Parse `$ARGUMENTS` immediately. The argument string can take several forms:
 
 ## Step 1: Read the framework
 
-Read `.docs/guides/evals-framework.md` in full. This is authoritative for stage definitions, schemas, check types, and anti-patterns. Do not proceed until you have read it.
+Read `wiki/guides/evals-framework.md` in full. This is authoritative for stage definitions, schemas, check types, and anti-patterns. Do not proceed until you have read it.
 
 If the file does not exist, STOP — do not proceed from memory. Tell the user:
 

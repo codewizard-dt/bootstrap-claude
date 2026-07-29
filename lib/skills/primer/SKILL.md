@@ -6,7 +6,7 @@ model: claude-haiku-4-5-20251001
 disable-model-invocation: false
 user-invocable: true
 ---
-**Prereqs:** obey `.docs/guides/mcp-tools.md`.
+**Prereqs:** obey `wiki/guides/mcp-tools.md`.
 
 # MANDATORY REQUIREMENTS
 
@@ -69,7 +69,7 @@ Keep memories current and useful for future conversations:
 3. **Rename disorganized memories**: Use `mcp__serena__rename_memory` to move memories into proper topic hierarchies
 4. **Do NOT write memories for**: information already in code comments or docs, temporary state, easily re-derivable facts
 
-See `.docs/guides/mcp-tools.md` for the complete Serena memory reference.
+See `wiki/guides/mcp-tools.md` for the complete Serena memory reference.
 
 ---
 

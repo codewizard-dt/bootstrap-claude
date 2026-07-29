@@ -6,7 +6,7 @@ model: claude-sonnet-5
 disable-model-invocation: false
 user-invocable: true
 ---
-**Prereqs:** obey `.docs/guides/mcp-tools.md` + `wiki/work/tasks/lifecycle.md`.
+**Prereqs:** obey `wiki/guides/mcp-tools.md` + `wiki/work/tasks/lifecycle.md`.
 
 # Update Documentation
 
@@ -26,7 +26,7 @@ In scope:
 Out of scope (do NOT touch):
 - **Serena memories — NEVER call `mcp__serena__write_memory` or `mcp__serena__edit_memory` here, for any reason.**
 - ADR or PRD files
-- `.docs/guides/` files
+- `wiki/guides/` files
 - Any doc unrelated to the changes in this session
 
 ---

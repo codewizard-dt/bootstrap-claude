@@ -8,7 +8,7 @@ argument-hint: <path/to/decision.md#DM, NNNN-slug#DM, or NNNN#DM>
 disable-model-invocation: false
 user-invocable: true
 ---
-**Prereqs:** obey `.docs/guides/mcp-tools.md`; run /primer if not done this session.
+**Prereqs:** obey `wiki/guides/mcp-tools.md`; run /primer if not done this session.
 **Read `wiki/work/decisions/lifecycle.md` first** — it defines the Decision Group model, the per-decision supersession rule, the two-block cross-reference rule, and the relationship graph that finalization must keep in sync.
 
 # Finalize Decision

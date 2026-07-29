@@ -7,7 +7,7 @@ argument-hint: <task description> [--decision DEC-NNNN#DM] [--roadmap ROADMAP-NN
 disable-model-invocation: false
 user-invocable: true
 ---
-**Prereqs:** obey `.docs/guides/mcp-tools.md`; run /primer if not done this session.
+**Prereqs:** obey `wiki/guides/mcp-tools.md`; run /primer if not done this session.
 
 $ARGUMENTS
 

@@ -1,6 +1,6 @@
 # Type-Checking & Linting Templates
 
-Templates live in `.docs/guides/type-checking-templates/`. Created by analyzing all configs across ~/Repositories (15 tsconfigs, 6 pyproject.tomls, 3 eslint configs, 2 pyrightconfigs, 1 mypy.ini).
+Templates live in `wiki/guides/type-checking-templates/` (source: `raw/guides/type-checking-templates/`; optional opt-in guide since 2.12, wiki location since 2.13). Created by analyzing real-world configs (15 tsconfigs, 6 pyproject.tomls, 3 eslint configs, 2 pyrightconfigs, 1 mypy.ini).
 
 ## Template Files
 

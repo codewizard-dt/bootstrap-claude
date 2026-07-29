@@ -7,7 +7,7 @@ argument-hint: <wiki/work/requirements/REQ-NNN-slug.md, NNN-slug, or NNN> [reaso
 disable-model-invocation: false
 user-invocable: true
 ---
-**Prereqs:** obey `.docs/guides/mcp-tools.md`; run /primer if not done this session.
+**Prereqs:** obey `wiki/guides/mcp-tools.md`; run /primer if not done this session.
 **Read `wiki/work/requirements/lifecycle.md` first** — it defines the requirement lifecycle, terminal states, and the archive rule.
 
 # Retire Requirement
@@ -179,7 +179,7 @@ Print a tabular summary:
 2. **Never auto-cascade** to linked decisions or tasks. Surface them as suggestions only.
 3. **Confirm with the user before any edits** — `AskUserQuestion` is mandatory in Step 3.
 4. **Retirement reason is required** — refuse to retire without a documented reason.
-5. **Never use `sed` / `awk` / `echo >>` / `cat <<EOF`** — always `Edit`. `Bash` is permitted only for `git mv`. See `.docs/guides/mcp-tools.md`.
+5. **Never use `sed` / `awk` / `echo >>` / `cat <<EOF`** — always `Edit`. `Bash` is permitted only for `git mv`. See `wiki/guides/mcp-tools.md`.
 6. **Refuse if already retired or superseded** — these are terminal states; running again is a no-op, not an error.
 7. Maximum 3 sub-processes at a time if delegating any step.
 8. Always terminate background processes when done.

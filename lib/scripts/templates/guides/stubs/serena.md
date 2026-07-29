@@ -16,7 +16,7 @@
   - Reading file contents for inspection → use `mcp__serena__get_symbols_overview` (code) or `Read` (markdown/config), **never** `cat` / `head` / `tail`
   - Editing via shell → **never** `sed` / `awk` / `echo >>`
 
-The rule of thumb: **the shell is for running programs, not for inspecting or modifying files.** Even on a markdown file, do not `cat README.md` — use `Read`. Do not `grep -r foo .docs/` — use `mcp__serena__search_for_pattern` or the `Grep` tool.
+The rule of thumb: **the shell is for running programs, not for inspecting or modifying files.** Even on a markdown file, do not `cat README.md` — use `Read`. Do not `grep -r foo wiki/` — use `mcp__serena__search_for_pattern` or the `Grep` tool.
 
 ### Common anti-patterns and their fixes
 
@@ -26,7 +26,7 @@ These are real mistakes AI agents make on this codebase. Do not repeat them.
 
 ```bash
 # WRONG — never do this
-sed -i '' 's/- \[ \] Launch Puppeteer/- [x] Launch Puppeteer/; s/- \[ \] Navigate and screenshot/- [x] Navigate and screenshot/' .docs/tasks/051-ux-conversion-audit.md
+sed -i '' 's/- \[ \] Launch Puppeteer/- [x] Launch Puppeteer/; s/- \[ \] Navigate and screenshot/- [x] Navigate and screenshot/' wiki/work/tasks/TASK-051-ux-conversion-audit.md
 ```
 
 This pattern shows up most often when marking multiple steps complete in a task file. It triggers an approval prompt every time, is fragile against whitespace or escaping, and silently corrupts files when a regex backfires.
@@ -34,10 +34,10 @@ This pattern shows up most often when marking multiple steps complete in a task 
 ✅ **Correct**: call the `Edit` tool once per checkbox (or use `replace_all: true` if every `- [ ]` in the file should become `- [x]`):
 
 ```
-Edit(file_path=".docs/tasks/051-ux-conversion-audit.md",
+Edit(file_path="wiki/work/tasks/TASK-051-ux-conversion-audit.md",
      old_string="- [ ] Launch Puppeteer",
      new_string="- [x] Launch Puppeteer")
-Edit(file_path=".docs/tasks/051-ux-conversion-audit.md",
+Edit(file_path="wiki/work/tasks/TASK-051-ux-conversion-audit.md",
      old_string="- [ ] Navigate and screenshot each marketing",
      new_string="- [x] Navigate and screenshot each marketing")
 # ...one Edit call per checkbox
@@ -49,7 +49,7 @@ Yes, even if there are ten checkboxes. Ten `Edit` calls is correct. One `sed` is
 
 ```bash
 # WRONG
-cat .docs/tasks/051-ux-conversion-audit.md
+cat wiki/work/tasks/TASK-051-ux-conversion-audit.md
 ```
 
 ✅ **Correct**: `Read` tool. Always.
@@ -58,10 +58,10 @@ cat .docs/tasks/051-ux-conversion-audit.md
 
 ```bash
 # WRONG
-ls .docs/uat/screenshots/
+ls wiki/work/uat/screenshots/
 ```
 
-✅ **Correct**: `mcp__serena__list_dir(relative_path=".docs/uat/screenshots/")`
+✅ **Correct**: `mcp__serena__list_dir(relative_path="wiki/work/uat/screenshots/")`
 
 #### ❌ Anti-pattern: `grep -r` to find a string across files
 

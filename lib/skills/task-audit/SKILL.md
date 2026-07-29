@@ -7,7 +7,7 @@ argument-hint: [--json]
 disable-model-invocation: false
 user-invocable: true
 ---
-**Prereqs:** obey `.docs/guides/mcp-tools.md` + `wiki/work/tasks/lifecycle.md`.
+**Prereqs:** obey `wiki/guides/mcp-tools.md` + `wiki/work/tasks/lifecycle.md`.
 
 # Task Audit
 
@@ -189,7 +189,7 @@ Report what Step 2 discovered and changed:
 ### Auto-Completed Steps
 | Task | Step | Evidence |
 |------|------|----------|
-| 005-command-anti-patterns | "Add mcp-tools.md guide" | File found at .docs/guides/mcp-tools.md |
+| 005-command-anti-patterns | "Add mcp-tools.md guide" | File found at wiki/guides/mcp-tools.md |
 
 ### Fully-Completed Tasks Moved
 | Task | Action |

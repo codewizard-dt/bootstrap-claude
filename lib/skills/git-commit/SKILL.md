@@ -6,7 +6,7 @@ model: claude-haiku-4-5-20251001
 disable-model-invocation: true
 user-invocable: true
 ---
-**Prereqs:** obey `.docs/guides/mcp-tools.md`.
+**Prereqs:** obey `wiki/guides/mcp-tools.md`.
 
 # git-commit
 

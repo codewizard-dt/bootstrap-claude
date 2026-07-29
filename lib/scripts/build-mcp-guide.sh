@@ -3,7 +3,7 @@ set -euo pipefail
 
 # build-mcp-guide.sh <project-dir> [mcp-name...]
 #
-# Assembles .docs/guides/mcp-tools.md in the target project from per-server stubs.
+# Assembles wiki/guides/mcp-tools.md in the target project from per-server stubs.
 # Only sections for the listed MCP names are included.
 #
 # Valid MCP names: serena  context7  brave-search  playwright
@@ -22,7 +22,7 @@ fi
 PROJECT_DIR="$1"; shift
 INSTALLED_MCPS=("$@")
 
-OUT="$PROJECT_DIR/.docs/guides/mcp-tools.md"
+OUT="$PROJECT_DIR/wiki/guides/mcp-tools.md"
 
 has_mcp() {
   local name="$1"
@@ -32,7 +32,7 @@ has_mcp() {
   return 1
 }
 
-mkdir -p "$PROJECT_DIR/.docs/guides"
+mkdir -p "$PROJECT_DIR/wiki/guides"
 
 {
   # 1. Always: title + TOP RULE

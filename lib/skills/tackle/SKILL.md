@@ -7,7 +7,7 @@ argument-hint: <path/to/task.md, number-slug, or description>
 disable-model-invocation: false
 user-invocable: true
 ---
-**Prereqs:** obey `.docs/guides/mcp-tools.md` + `wiki/work/tasks/lifecycle.md`; run /primer if not done this session.
+**Prereqs:** obey `wiki/guides/mcp-tools.md` + `wiki/work/tasks/lifecycle.md`; run /primer if not done this session.
 
 # Tackle Outline
 
@@ -73,9 +73,9 @@ Every delegated sub-agent **MUST** use Serena, non-negotiable:
 | Find files / dirs | `find_file`, `list_dir` | `Glob`, `find`, `ls`, `cat` |
 | Library docs | Context7 | `WebSearch`/`WebFetch` |
 
-Standard Read/Edit/Write are allowed for markdown and config (JSON, YAML, `.env`) only. **Every** sub-agent prompt must include: *"Use Serena for all code exploration/editing and all file/directory exploration. Standard Read/Edit/Write for markdown and config only. Never bash `ls`/`cat`/`find`/`grep`/`sed`. See `.docs/guides/mcp-tools.md`."*
+Standard Read/Edit/Write are allowed for markdown and config (JSON, YAML, `.env`) only. **Every** sub-agent prompt must include: *"Use Serena for all code exploration/editing and all file/directory exploration. Standard Read/Edit/Write for markdown and config only. Never bash `ls`/`cat`/`find`/`grep`/`sed`. See `wiki/guides/mcp-tools.md`."*
 
-**Verification scope: static gates only** (`bash -n`, typecheck, lint, unit tests). Runtime/E2E is the UAT phase's job — see `.docs/guides/command-anti-patterns.md#verification-belongs-to-the-right-phase`.
+**Verification scope: static gates only** (`bash -n`, typecheck, lint, unit tests). Runtime/E2E is the UAT phase's job — see `wiki/guides/command-anti-patterns.md#verification-belongs-to-the-right-phase`.
 
 ---
 

@@ -99,7 +99,7 @@ Migrated N tasks, N UAT files, N decisions, N requirements, N bugs, N roadmaps f
 
 1. `git rm` the old per-family `README.md` indexes (after extracting status hints).
 2. After all moves, the old family dirs (`.docs/tasks`, `.docs/uat`, `.docs/adr`, `.docs/prd`, `.docs/bugs`, `.docs/roadmaps`) must contain nothing but empty subdirectories and `.gitkeep` files — `git rm` the `.gitkeep`s and remove the empty directories.
-3. **KEEP `.docs/guides/` and `.docs/company-context/`** — they are still used.
+3. Guides live in `wiki/guides/` (template-owned, delivered by the scaffold that ran before this migration) — do not create or keep a `.docs/guides/` directory. **KEEP** any skill scratch output dirs under `.docs/` (`demo/`, `MARP/`, `port/`, `extract/`) untouched; if `.docs/` ends up empty, remove it.
 
 ## Final report
 
@@ -108,4 +108,4 @@ End with a concise report:
 - Rows added to each family index
 - ID remaps performed (old → new)
 - Anything ambiguous or skipped — listed explicitly, never silently dropped
-- Confirmation that `.docs/` now contains only `guides/` and `company-context/`
+- Confirmation that `.docs/` is now empty (and removed) or contains only skill scratch dirs (`demo/`, `MARP/`, `port/`, `extract/`)

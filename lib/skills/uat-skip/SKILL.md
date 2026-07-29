@@ -7,7 +7,7 @@ argument-hint: <TASK-NNN or path/to/task-file.md>
 disable-model-invocation: false
 user-invocable: true
 ---
-**Prereqs:** obey `.docs/guides/mcp-tools.md`; run /primer if not done this session.
+**Prereqs:** obey `wiki/guides/mcp-tools.md`; run /primer if not done this session.
 
 # UAT Skip
 

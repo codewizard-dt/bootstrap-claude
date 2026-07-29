@@ -105,7 +105,7 @@ Forbidden (each triggers an approval prompt and obscures output): multiple `curl
 
 ## Step 5 — Update the file per verdict
 
-Use the **`Edit`** tool — **one `Edit` call per status line**, even when many flip in a row. **Never** `sed`, `awk`, `perl -i`, or `echo` to flip a marker (each triggers an approval prompt; see `.docs/guides/mcp-tools.md` "Common anti-patterns"). Replace only the status line with the appropriate marker + `<!-- YYYY-MM-DD -->`. Do not modify any other part of the test block — preserve all metadata, headings, and whitespace exactly.
+Use the **`Edit`** tool — **one `Edit` call per status line**, even when many flip in a row. **Never** `sed`, `awk`, `perl -i`, or `echo` to flip a marker (each triggers an approval prompt; see `wiki/guides/mcp-tools.md` "Common anti-patterns"). Replace only the status line with the appropriate marker + `<!-- YYYY-MM-DD -->`. Do not modify any other part of the test block — preserve all metadata, headings, and whitespace exactly.
 
 ---
 

@@ -8,7 +8,7 @@ argument-hint: <feature description, problem statement, or product initiative ti
 disable-model-invocation: false
 user-invocable: true
 ---
-**Prereqs:** obey `.docs/guides/mcp-tools.md`; run /primer if not done this session.
+**Prereqs:** obey `wiki/guides/mcp-tools.md`; run /primer if not done this session.
 **Check `wiki/work/requirements/lifecycle.md`** for the REQ template, status lifecycle, required-non-empty fields, and anti-patterns this skill enforces; **`wiki/work/requirements/index.md`** for the index row format.
 
 # Create Requirement

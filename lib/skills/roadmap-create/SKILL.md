@@ -7,7 +7,7 @@ argument-hint: <initiative/goal description>
 disable-model-invocation: false
 user-invocable: true
 ---
-**Prereqs:** obey `.docs/guides/mcp-tools.md`; run /primer if not done this session.
+**Prereqs:** obey `wiki/guides/mcp-tools.md`; run /primer if not done this session.
 **Read `wiki/work/roadmaps/lifecycle.md` first — it is authoritative for the roadmap frontmatter schema, status lifecycle, and ID/filename rules. The file template, item-format rules, index format, and anti-patterns are specified inline in this skill below.**
 **Run `/research <topic>` on the roadmap topic BEFORE any Q&A or file creation. Do not skip this step.**
 
@@ -168,7 +168,7 @@ Edit `wiki/work/roadmaps/index.md` to add a new bullet line (active items only �
 
    where `<title>` is the roadmap's H1 sub-title (without any `Roadmap NNN:` prefix), `<one-line summary>` is a short description of the goal, and `<total>` is the count of `- [ ]` checkboxes you just wrote across all phases.
 
-Use `Edit` (not `sed`, `awk`, `echo >>`, or any shell redirection). See `.docs/guides/mcp-tools.md`.
+Use `Edit` (not `sed`, `awk`, `echo >>`, or any shell redirection). See `wiki/guides/mcp-tools.md`.
 
 ### Step 8: Refresh the hot cache
 
@@ -217,7 +217,7 @@ This is informational only — no action required now.
 
 1. **Refuse to write the file if any required field is empty or fails its quality bar** (Goal, Owner, ≥1 phase with ≥1 item). Loop back to Step 3 — do not silently fill gaps with invented content.
 2. **Never invent task links.** Every `[[TASK-NNN: ...]]` wiki link must correspond to a real file under `wiki/work/tasks/`. Verify with `mcp__serena__find_file` before rendering.
-3. **Never use `sed`, `awk`, `echo >>`, or shell redirection to edit markdown.** Always `Read` then `Edit`. See `.docs/guides/mcp-tools.md`.
+3. **Never use `sed`, `awk`, `echo >>`, or shell redirection to edit markdown.** Always `Read` then `Edit`. See `wiki/guides/mcp-tools.md`.
 4. **Never auto-create downstream artifacts.** This skill creates exactly one roadmap file (plus the index row edit). Do **not** create tasks, PRDs, or ADRs as a side effect — the user can file tasks afterward via `/task-add --roadmap ROADMAP-NNN`.
 5. **Redirect step-level detail to task territory** — if the user starts specifying *how* under an item, restate the question as "what's the single checkable unit?" and re-elicit.
 6. **Status starts as `active` and stays there.** This skill never writes `done`. The flip from `active` → `done` is a manual decision the human makes when every box is `[x]`. After flipping, the file may be moved to `wiki/work/roadmaps/archive/` — `/roadmap-next` will suggest this step.

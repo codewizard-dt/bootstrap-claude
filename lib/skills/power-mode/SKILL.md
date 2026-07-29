@@ -46,7 +46,7 @@ Inspect the path argument:
 Every agent spawned in power-mode MUST include `mode: "bypassPermissions"` and the following footer appended to its prompt:
 
 ```
-IMPORTANT: Follow .docs/guides/mcp-tools.md for all file and code operations. Use Serena (mcp__serena__*) for ALL file/directory exploration and ALL code editing. Never use ls, cat, find, grep, sed, awk, or any shell command to inspect or modify files. Use Read/Edit/Write only for markdown and config files.
+IMPORTANT: Follow wiki/guides/mcp-tools.md for all file and code operations. Use Serena (mcp__serena__*) for ALL file/directory exploration and ALL code editing. Never use ls, cat, find, grep, sed, awk, or any shell command to inspect or modify files. Use Read/Edit/Write only for markdown and config files.
 
 IMPORTANT: If at any point you are not 100% sure how to fix an issue or which implementation strategy to use, invoke /research first and act on its recommendation before proceeding.
 ```

@@ -7,7 +7,7 @@ argument-hint: <TASK-NNN | path/to/task-file.md | feature description>
 disable-model-invocation: false
 user-invocable: true
 ---
-**Prereqs:** obey `.docs/guides/mcp-tools.md`; run /primer if not done this session.
+**Prereqs:** obey `wiki/guides/mcp-tools.md`; run /primer if not done this session.
 
 # UAT Generator
 

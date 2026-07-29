@@ -7,7 +7,7 @@ argument-hint: <short bug description>
 disable-model-invocation: false
 user-invocable: true
 ---
-**Prereqs:** obey `.docs/guides/mcp-tools.md` + `wiki/work/bugs/lifecycle.md`; run /primer if not done this session.
+**Prereqs:** obey `wiki/guides/mcp-tools.md` + `wiki/work/bugs/lifecycle.md`; run /primer if not done this session.
 
 # File Bug
 
@@ -99,7 +99,7 @@ Append a bullet line to `wiki/work/bugs/index.md` (active items only — a flat 
 
 `<status>` is the status you set in Step 6; `<priority>` is `—` until triage. If the index still shows the placeholder line (`_(none yet)_`), replace it with the new line.
 
-Use **`Edit`** — one targeted call. Never `sed`, `awk`, `perl -i`, or `echo >>`. See `.docs/guides/mcp-tools.md`.
+Use **`Edit`** — one targeted call. Never `sed`, `awk`, `perl -i`, or `echo >>`. See `wiki/guides/mcp-tools.md`.
 
 ### Step 8: Report Completion
 

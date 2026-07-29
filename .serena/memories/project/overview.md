@@ -19,7 +19,7 @@ CLAUDE.md     Schema: tells the LLM how the wiki is structured
 - `lib/hooks/` — PreToolUse hook scripts. Installed to `~/.claude/hooks/` by `install-global.sh`.
 - `lib/prompts/` — Claude prompt templates read by setup scripts.
 - `lib/scripts/` — Shell scripts; templates at `lib/scripts/templates/wiki/`.
-- `raw/guides/` — Source guides (always-refreshed to `.docs/guides/` in target projects).
+- `raw/guides/` — Source guides delivered tier-wise to `wiki/guides/` in target projects (required always-refreshed; optional interactive opt-in; deployment-strategy deploy-only).
 - `wiki/` — This repo's own wiki instance (dogfoods `sync-wiki-scaffold.sh`).
 
 ## Script path convention (CRITICAL)
@@ -37,9 +37,9 @@ TEMPLATE_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"   # repo root
 - `lib/scripts/install-global.sh` — Installs MCPs (brave-search, context7, playwright) at user scope, rsyncs skills to `~/.claude/skills/`, rsyncs hooks to `~/.claude/hooks/`, detects and removes stale old-named skills (adr-*, prd-*).
 - `lib/scripts/setup-project.sh` — New projects: install-global → sync-wiki-scaffold → merge-gitignore → setup-deployment → bootstrap-serena.
 - `lib/scripts/update-project.sh` — Existing projects: install-global → sync-wiki-scaffold → merge-gitignore → bootstrap-serena. Deliberately does NOT call setup-deployment.
-- `lib/scripts/sync-wiki-scaffold.sh` — Scaffolds empty wiki + raw/ + .docs/guides/ into target projects. Copy-once for index/log/gitkeeps; always-refresh for conventions.md and lifecycle.md files and all guides. Also delivers the wiki-schema section to the target's CLAUDE.md (copy-once, sentinel `## LLM Wiki`, template at lib/scripts/templates/CLAUDE-wiki.md).
+- `lib/scripts/sync-wiki-scaffold.sh` — Scaffolds empty wiki + raw/ + wiki/guides/ into target projects. Copy-once for index/log/gitkeeps; always-refresh for conventions.md, lifecycle.md files, dashboard.html, and required guides; optional guides are interactive opt-in (sticky once present); migrates legacy .docs/guides/. Also delivers the wiki-schema section to the target's CLAUDE.md (copy-once, sentinel `## LLM Wiki`, template at lib/scripts/templates/CLAUDE-wiki.md).
 - `lib/scripts/setup-deployment.sh` — CI/CD scaffolding. Copies `.github/` + `.gitleaks.toml`. Copy-once except security.yml (always overwritten).
-- `lib/scripts/migrate-project.sh` — Claude-driven migration of legacy `.docs/` projects to wiki structure. Preflight: clean git tree + fresh `wiki-migration` branch; `--dry-run` previews. Prompt at `lib/prompts/migrate-wiki.md`. git mv preserves history; keeps `.docs/guides/` + `.docs/company-context/`.
+- `lib/scripts/migrate-project.sh` — Claude-driven migration of legacy `.docs/` projects to wiki structure. Preflight: clean git tree + fresh `wiki-migration` branch; `--dry-run` previews. Prompt at `lib/prompts/migrate-wiki.md`. git mv preserves history; guides live in `wiki/guides/`, skill scratch dirs under `.docs/` are kept.
 - `bin/cli.js` — CLI entry point; resolves scripts via `path.resolve(__dirname, '..', 'lib', 'scripts', script)`.
 
 ## Work families (wiki/work/)

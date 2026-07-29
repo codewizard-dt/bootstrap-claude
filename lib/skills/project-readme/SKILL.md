@@ -7,7 +7,7 @@ argument-hint: "[path to project directory (defaults to cwd)] [custom instructio
 disable-model-invocation: false
 user-invocable: true
 ---
-**Prereqs:** obey `.docs/guides/mcp-tools.md`.
+**Prereqs:** obey `wiki/guides/mcp-tools.md`.
 
 Generate (or update) a **project README** structured for optimal AI parsing and portfolio presentation. The strict section format is machine-readable by AI tools that extract project metadata (name, description, architecture, technologies, use cases, skills).
 

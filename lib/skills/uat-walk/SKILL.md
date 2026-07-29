@@ -7,7 +7,7 @@ argument-hint: <path/to/uat-file.md, number-slug, or description>
 disable-model-invocation: false
 user-invocable: true
 ---
-**Prereqs:** obey `.docs/guides/mcp-tools.md` + `wiki/work/uat/lifecycle.md`; run /primer if not done this session.
+**Prereqs:** obey `wiki/guides/mcp-tools.md` + `wiki/work/uat/lifecycle.md`; run /primer if not done this session.
 
 Read `~/.claude/skills/uat-walk/UAT-CORE.md` now — it defines Steps 1–5 (resolution, prerequisites, classification, judging, closure). This file defines only what differs for **interactive** mode.
 

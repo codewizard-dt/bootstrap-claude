@@ -35,7 +35,7 @@ At a glance, the package entry point selects a script, scripts copy or generate 
 - **Responsibility:** Coordinate project setup, updates, global installs, explicit deployment scaffolding, Serena bootstrapping, wiki migration, and strict type-checking setup.
 - **Tech:** Bash, `rsync`, `find`, `grep`, `claude` CLI, npm-executed shell scripts
 - **Inputs:** Target project path, interactive prompts, CLI flags such as `--dry-run`, API keys supplied by environment variables or stdin, and optional user context for deploy/typecheck setup.
-- **Outputs:** Global hooks and skills, MCP registrations, project-local `wiki/`, `raw/`, `.docs/guides/`, `.mcp.json`, `.serena/project.yml`, and optional deployment or type-check configuration when those explicit commands are run.
+- **Outputs:** Global hooks and skills, MCP registrations, project-local `wiki/`, `raw/`, `wiki/guides/`, `.mcp.json`, `.serena/project.yml`, and optional deployment or type-check configuration when those explicit commands are run.
 - **Depends on:** CLI Entry Point, Skills Library, Hooks Library, Wiki Scaffold Templates, Prompt Templates, Guide Stubs, Claude Code CLI, MCP servers
 
 #### MCP Installer
@@ -72,10 +72,10 @@ At a glance, the package entry point selects a script, scripts copy or generate 
 
 #### Guide Stubs
 
-- **Responsibility:** Builds `.docs/guides/mcp-tools.md` from only the MCP sections that apply to the target project.
+- **Responsibility:** Builds `wiki/guides/mcp-tools.md` from only the MCP sections that apply to the target project.
 - **Tech:** Markdown fragments in `lib/scripts/templates/guides/stubs/`, Bash assembly in `build-mcp-guide.sh`
 - **Inputs:** Target project path and installed MCP server names.
-- **Outputs:** A tailored MCP tools guide in the target project's `.docs/guides/` directory.
+- **Outputs:** A tailored MCP tools guide in the target project's `wiki/guides/` directory.
 - **Depends on:** MCP Installer, Setup Scripts
 
 #### Prompt Templates
@@ -135,7 +135,7 @@ flowchart LR
 
   subgraph Target ["Target Project"]
     WIKI_DIR["wiki/ + raw/"]
-    DOCS[".docs/guides/mcp-tools.md"]
+    DOCS["wiki/guides/mcp-tools.md"]
     MCP_JSON["Serena (local scope)<br/>~/.claude.json project entry"]
     SERENA_CFG[".serena/project.yml"]
     WORKFLOWS[".github/workflows/"]
@@ -211,9 +211,9 @@ sequenceDiagram
   Global-->>Global: rsync hooks to ~/.claude/hooks/
   Global-->>Global: merge canonical deny list into ~/.claude/settings.json
   Setup->>Wiki: sync-wiki-scaffold.sh <project>
-  Wiki-->>Project: raw/, wiki/, CLAUDE.md snippets, .docs/guides/ (tiered: required + opted-in optional)
+  Wiki-->>Project: raw/, wiki/, CLAUDE.md snippets, wiki/guides/ (tiered: required + opted-in optional)
   Setup->>Guide: build-mcp-guide.sh <project> <installed-mcps>
-  Guide-->>Project: .docs/guides/mcp-tools.md
+  Guide-->>Project: wiki/guides/mcp-tools.md
   Setup->>Claude: bootstrap-serena prompt
   Claude-->>Project: .serena/project.yml
   Setup-->>Dev: setup complete
@@ -440,7 +440,7 @@ npx @codewizard-dt/bootstrap@latest
 gh run list --workflow security.yml --limit 5
 ```
 
-For end-to-end validation, run `npx @codewizard-dt/bootstrap@latest setup` inside a disposable repository and confirm `wiki/`, `raw/`, `.docs/guides/`, and the selected MCP configuration files are created.
+For end-to-end validation, run `npx @codewizard-dt/bootstrap@latest setup` inside a disposable repository and confirm `wiki/`, `raw/`, `wiki/guides/`, and the selected MCP configuration files are created.
 
 ### Rollback
 

@@ -25,6 +25,9 @@ These MCP servers are **REQUIRED** for all applicable operations. Using standard
 | **Brave Search** | All general web research | WebSearch (for non-library topics) |
 | **Playwright** | Browser automation, screenshots, UI interaction | WebFetch (for rendered pages) |
 
+---
+
+
 ### Standard tools (`Read`, `Edit`, `Write`) are permitted for:
 
 - **Markdown files** (`.md`) — content edits use standard tools (Serena's symbolic editor doesn't apply to prose)
@@ -42,7 +45,7 @@ These MCP servers are **REQUIRED** for all applicable operations. Using standard
   - Reading file contents for inspection → use `mcp__serena__get_symbols_overview` (code) or `Read` (markdown/config), **never** `cat` / `head` / `tail`
   - Editing via shell → **never** `sed` / `awk` / `echo >>`
 
-The rule of thumb: **the shell is for running programs, not for inspecting or modifying files.** Even on a markdown file, do not `cat README.md` — use `Read`. Do not `grep -r foo .docs/` — use `mcp__serena__search_for_pattern` or the `Grep` tool.
+The rule of thumb: **the shell is for running programs, not for inspecting or modifying files.** Even on a markdown file, do not `cat README.md` — use `Read`. Do not `grep -r foo wiki/` — use `mcp__serena__search_for_pattern` or the `Grep` tool.
 
 ### Common anti-patterns and their fixes
 
@@ -52,7 +55,7 @@ These are real mistakes AI agents make on this codebase. Do not repeat them.
 
 ```bash
 # WRONG — never do this
-sed -i '' 's/- \[ \] Launch Puppeteer/- [x] Launch Puppeteer/; s/- \[ \] Navigate and screenshot/- [x] Navigate and screenshot/' .docs/tasks/051-ux-conversion-audit.md
+sed -i '' 's/- \[ \] Launch Puppeteer/- [x] Launch Puppeteer/; s/- \[ \] Navigate and screenshot/- [x] Navigate and screenshot/' wiki/work/tasks/TASK-051-ux-conversion-audit.md
 ```
 
 This pattern shows up most often when marking multiple steps complete in a task file. It triggers an approval prompt every time, is fragile against whitespace or escaping, and silently corrupts files when a regex backfires.
@@ -60,10 +63,10 @@ This pattern shows up most often when marking multiple steps complete in a task 
 ✅ **Correct**: call the `Edit` tool once per checkbox (or use `replace_all: true` if every `- [ ]` in the file should become `- [x]`):
 
 ```
-Edit(file_path=".docs/tasks/051-ux-conversion-audit.md",
+Edit(file_path="wiki/work/tasks/TASK-051-ux-conversion-audit.md",
      old_string="- [ ] Launch Puppeteer",
      new_string="- [x] Launch Puppeteer")
-Edit(file_path=".docs/tasks/051-ux-conversion-audit.md",
+Edit(file_path="wiki/work/tasks/TASK-051-ux-conversion-audit.md",
      old_string="- [ ] Navigate and screenshot each marketing",
      new_string="- [x] Navigate and screenshot each marketing")
 # ...one Edit call per checkbox
@@ -75,7 +78,7 @@ Yes, even if there are ten checkboxes. Ten `Edit` calls is correct. One `sed` is
 
 ```bash
 # WRONG
-cat .docs/tasks/051-ux-conversion-audit.md
+cat wiki/work/tasks/TASK-051-ux-conversion-audit.md
 ```
 
 ✅ **Correct**: `Read` tool. Always.
@@ -84,10 +87,10 @@ cat .docs/tasks/051-ux-conversion-audit.md
 
 ```bash
 # WRONG
-ls .docs/uat/screenshots/
+ls wiki/work/uat/screenshots/
 ```
 
-✅ **Correct**: `mcp__serena__list_dir(relative_path=".docs/uat/screenshots/")`
+✅ **Correct**: `mcp__serena__list_dir(relative_path="wiki/work/uat/screenshots/")`
 
 #### ❌ Anti-pattern: `grep -r` to find a string across files
 
@@ -174,78 +177,6 @@ Serena provides two editing approaches:
 
 ---
 
-## Context7 (Library Documentation)
-
-Two-step workflow — resolve the library ID, then query docs.
-
-### Step 1: Resolve Library ID
-
-```python
-mcp__context7__resolve-library-id(libraryName="sqlalchemy")
-# Returns: "/sqlalchemy/sqlalchemy"
-```
-
-Skip only if user provides an explicit `/org/project` ID.
-
-### Step 2: Query Documentation
-
-```python
-mcp__context7__query-docs(
-    libraryId="/sqlalchemy/sqlalchemy",
-    query="async session management"
-)
-```
-
-If results are insufficient, refine the query with more specific terms.
-
----
-
-## Brave Search (Web Research)
-
-### Rate Limit: 50 requests per second
-
-- Up to 50 requests per second are supported — parallel searches are allowed
-- On 429 errors, back off briefly and retry (max 3 times)
-
-### Usage
-
-```python
-mcp__brave-search__brave_web_search(
-    query="FastAPI dependency injection best practices 2025",
-    count=10
-)
-```
-
-Use for general research, best practices, troubleshooting, news. Do NOT use for library documentation (use Context7).
-
----
-
-## Playwright (Browser Automation)
-
-### Tools
-
-| Tool | Purpose |
-|------|---------|
-| `browser_navigate` | Navigate to a URL |
-| `browser_take_screenshot` | Screenshot current page |
-| `browser_snapshot` | Get accessibility tree (use to get element `ref` IDs before clicking/typing) |
-| `browser_click` | Click element by `ref` ID from snapshot |
-| `browser_type` | Type into an input field by `ref` ID |
-| `browser_evaluate` | Execute JavaScript in browser |
-| `browser_select_option` | Select dropdown option by `ref` ID |
-| `browser_hover` | Hover over element by `ref` ID |
-| `browser_close` | Close the browser |
-
-### Workflow
-
-1. **No explicit launch step** — the browser starts automatically on the first tool call.
-2. **Accessibility-tree first** — always call `browser_snapshot` to get the current page structure and element `ref` IDs before interacting. Pass the `ref` to `browser_click`, `browser_type`, etc.
-3. Use `browser_take_screenshot` for visual verification after navigation or interaction.
-
-Use for visual verification, form interaction, and browser-rendered content. Do NOT use for static content fetching or library docs.
-
----
-
 ## Onboarding & Memory
 
 Always run onboarding check when starting work:
@@ -316,10 +247,88 @@ Write memories to persist **non-obvious project knowledge** useful for future ta
 
 ---
 
+
+## Context7 (Library Documentation)
+
+Two-step workflow — resolve the library ID, then query docs.
+
+### Step 1: Resolve Library ID
+
+```python
+mcp__context7__resolve-library-id(libraryName="sqlalchemy")
+# Returns: "/sqlalchemy/sqlalchemy"
+```
+
+Skip only if user provides an explicit `/org/project` ID.
+
+### Step 2: Query Documentation
+
+```python
+mcp__context7__query-docs(
+    libraryId="/sqlalchemy/sqlalchemy",
+    query="async session management"
+)
+```
+
+If results are insufficient, refine the query with more specific terms.
+
+---
+
+
+## Brave Search (Web Research)
+
+### Rate Limit: 50 requests per second
+
+- Up to 50 requests per second are supported — parallel searches are allowed
+- On 429 errors, back off briefly and retry (max 3 times)
+
+### Usage
+
+```python
+mcp__brave-search__brave_web_search(
+    query="FastAPI dependency injection best practices 2025",
+    count=10
+)
+```
+
+Use for general research, best practices, troubleshooting, news. Do NOT use for library documentation (use Context7).
+
+---
+
+
+## Playwright (Browser Automation)
+
+### Tools
+
+| Tool | Purpose |
+|------|---------|
+| `browser_navigate` | Navigate to a URL |
+| `browser_take_screenshot` | Screenshot current page |
+| `browser_snapshot` | Get accessibility tree (use to get element `ref` IDs before clicking/typing) |
+| `browser_click` | Click element by `ref` ID from snapshot |
+| `browser_type` | Type into an input field by `ref` ID |
+| `browser_evaluate` | Execute JavaScript in browser |
+| `browser_select_option` | Select dropdown option by `ref` ID |
+| `browser_hover` | Hover over element by `ref` ID |
+| `browser_close` | Close the browser |
+
+### Workflow
+
+1. **No explicit launch step** — the browser starts automatically on the first tool call. On macOS the browser server is a shared, launchd-managed HTTP service (one per machine); each session still gets an isolated browser context.
+2. **Accessibility-tree first** — always call `browser_snapshot` to get the current page structure and element `ref` IDs before interacting. Pass the `ref` to `browser_click`, `browser_type`, etc.
+3. Use `browser_take_screenshot` for visual verification after navigation or interaction.
+
+Use for visual verification, form interaction, and browser-rendered content. Do NOT use for static content fetching or library docs.
+
+---
+
 ## Quick Reference: Which Tool for What
 
 | Task | MUST Use | NEVER Use |
 |------|----------|-----------|
+| Read markdown content | Standard `Read` | `cat`, `head`, `tail` |
+| Edit markdown content | Standard `Edit` / `Write` | `sed`, `awk`, `echo >>` |
+| Edit config files (JSON, YAML, .env) | Standard `Read`/`Edit`/`Write` | `sed` |
 | Explore code structure | Serena `get_symbols_overview` | `Read` on code files, `cat` |
 | Find function/class | Serena `find_symbol` | `Grep` on code files, `bash grep` |
 | Edit code | Serena symbolic or file/line tools | Standard `Edit` on code files, `sed` |
@@ -327,9 +336,6 @@ Write memories to persist **non-obvious project knowledge** useful for future ta
 | Search file contents | Serena `search_for_pattern` or `Grep` tool | `bash grep` / `rg` / `ag` |
 | List a directory | Serena `list_dir` | `ls`, `tree`, `find -type d` |
 | Find files by name | Serena `find_file` or `Glob` tool | `find -name`, `ls \| grep` |
-| Read markdown content | Standard `Read` | `cat`, `head`, `tail` |
-| Edit markdown content | Standard `Edit` / `Write` | `sed`, `awk`, `echo >>` |
-| Edit config files (JSON, YAML, .env) | Standard `Read`/`Edit`/`Write` | `sed`, Serena symbolic tools |
 | Library docs | Context7 | `WebSearch` / `WebFetch` |
-| General research | Brave Search (up to 50 req/sec, parallel OK) | WebSearch |
+| General research | Brave Search (parallel, up to 50/sec) | `WebSearch` |
 | Browser interaction | Playwright | `WebFetch` for rendered content |

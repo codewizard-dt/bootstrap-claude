@@ -8,7 +8,7 @@ argument-hint: <decision topic, group title, or "group: <title>" for an explicit
 disable-model-invocation: false
 user-invocable: true
 ---
-**Prereqs:** obey `.docs/guides/mcp-tools.md`; run /primer if not done this session.
+**Prereqs:** obey `wiki/guides/mcp-tools.md`; run /primer if not done this session.
 **Run `/research <topic>` on the decision topic BEFORE drafting any decision block. Do not skip.**
 **Read `wiki/work/decisions/lifecycle.md` first** — it defines the Decision Group model, supersession rule, relationship graph, and index format this command must respect.
 

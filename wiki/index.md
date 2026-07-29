@@ -48,3 +48,9 @@ Each family's `index.md` lists its **active items only** (completed/terminal ite
 - **Tasks** — TASK-NNN. [Active index](work/tasks/index.md) · [lifecycle](work/tasks/lifecycle.md)
 - **UAT** — UAT-NNN, one per task. [Active index](work/uat/index.md) · [lifecycle](work/uat/lifecycle.md)
 - **Bugs** — BUG-NNNN. [Active index](work/bugs/index.md) · [lifecycle](work/bugs/lifecycle.md)
+
+---
+
+## Guides
+
+Template-owned reference guides delivered by the bootstrap tooling — read, never edit (refreshed by `bootstrap update`). See [guides/](guides/): tool rules in `mcp-tools.md`, shell hygiene in `command-anti-patterns.md`, plus any opted-in guides.

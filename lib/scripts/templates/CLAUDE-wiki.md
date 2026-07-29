@@ -4,7 +4,8 @@ This project maintains a three-layer LLM Wiki. This section is the **schema** �
 
 ```
 raw/          Immutable ground-truth sources. Read them; NEVER modify, move, or delete them.
-wiki/         LLM-maintained knowledge base. You own this layer entirely.
+wiki/         LLM-maintained knowledge base. You own this layer — except wiki/guides/ and the
+              other template-owned files (conventions.md, work/*/lifecycle.md, dashboard.html).
 CLAUDE.md     This schema section.
 ```
 
@@ -25,7 +26,9 @@ CLAUDE.md     This schema section.
 - `wiki/work/uat/` — UAT-NNN (own family, one per task)
 - `wiki/work/bugs/` — BUG-NNNN
 
-**Navigation:** `wiki/index.md` is the home Map of Content — read it first on every wiki query. Knowledge pages are listed there individually; work items live only in their family index. `wiki/log.md` is the append-only operation log. `wiki/conventions.md` holds the page rules (atomic pages, stable IDs/aliases, typed links, frontmatter namespace).
+**`wiki/guides/`** — template-owned reference guides delivered by the bootstrap tooling (MCP tool rules in `mcp-tools.md`, shell anti-patterns, opted-in frameworks like evals or type-checking templates). Read them and obey them; **never edit them** — they are refreshed by `npx @codewizard-dt/bootstrap update` and any local edit will be overwritten. They are infrastructure, not wiki content: no frontmatter, no index entries, exempt from the atomic-page rule.
+
+**Navigation:** `wiki/index.md` is the home Map of Content — read it first on every wiki query. Knowledge pages are listed there individually; work items live only in their family index. `wiki/log.md` is the append-only operation log. `wiki/conventions.md` holds the page rules (atomic pages, stable IDs/aliases, typed links, frontmatter namespace). Tool-usage rules live in `wiki/guides/mcp-tools.md`.
 
 ### Auto Memory vs. this wiki
 
@@ -58,3 +61,4 @@ Keep the two from duplicating or contradicting each other: project-specific stat
 5. Answer from the wiki, not general knowledge — if the wiki lacks coverage, say so and suggest `/wiki-ingest` for relevant sources
 6. Atomic pages — one concept, entity, or artifact per file; split a page rather than let it cover two things
 7. Typed links — when a link has a meaning, annotate it inline as `rel::[[target]]` (e.g. `implements::[[REQ-012]]`, `supersedes::[[DEC-0003#D2]]`); keep the two domains separate — never file a stateful artifact under `knowledge/` or a timeless synthesis under `work/`
+8. Template-owned files are read-only — never edit `wiki/guides/*`, `wiki/conventions.md`, `wiki/work/*/lifecycle.md`, or `wiki/dashboard.html`; they are refreshed from the bootstrap templates and local edits will be lost

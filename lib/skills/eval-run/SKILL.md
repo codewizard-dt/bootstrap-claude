@@ -8,7 +8,7 @@ argument-hint: [optional: stage — golden | scenarios | replay | all]
 disable-model-invocation: false
 user-invocable: true
 ---
-**Prereqs:** obey `.docs/guides/mcp-tools.md`.
+**Prereqs:** obey `wiki/guides/mcp-tools.md`.
 
 $ARGUMENTS
 
