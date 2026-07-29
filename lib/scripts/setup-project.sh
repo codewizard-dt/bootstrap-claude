@@ -65,4 +65,4 @@ echo "Ports: brave-search 8941, playwright 8931 — override via BRAVE_MCP_PORT 
 echo ""
 echo "To add a Context7 key later:"
 echo "  claude mcp remove context7 -s user"
-echo "  claude mcp add --scope user --transport http --header \"CONTEXT7_API_KEY: <key>\" context7 https://mcp.context7.com/mcp"
+echo "  claude mcp add --scope user --transport http context7 https://mcp.context7.com/mcp --header \"CONTEXT7_API_KEY: <key>\""

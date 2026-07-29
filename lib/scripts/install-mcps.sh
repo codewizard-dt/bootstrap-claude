@@ -130,9 +130,11 @@ _add_context7() {
     read -r CONTEXT7_API_KEY || true
   fi
   if [ -n "${CONTEXT7_API_KEY:-}" ]; then
+    # --header is variadic (<header...>) and swallows following positionals —
+    # it must come AFTER the name and URL or `claude mcp add` sees no <name>.
     mcp_add_scoped "$1" --transport http \
-      --header "CONTEXT7_API_KEY: ${CONTEXT7_API_KEY}" \
-      context7 https://mcp.context7.com/mcp
+      context7 https://mcp.context7.com/mcp \
+      --header "CONTEXT7_API_KEY: ${CONTEXT7_API_KEY}"
   else
     mcp_add_scoped "$1" --transport http \
       context7 https://mcp.context7.com/mcp
