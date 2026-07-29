@@ -28,10 +28,27 @@ echo "Bootstrapping Serena for: $PROJECT_DIR"
 cd "$PROJECT_DIR"
 
 if [ ! -f ".serena/project.yml" ]; then
+  # Fresh machines: serena's first launch via uvx clones the repo and builds a
+  # venv, which can exceed Claude Code's MCP startup timeout. Prewarm the uvx
+  # cache outside claude so the real launch is fast.
+  if command -v uvx &>/dev/null; then
+    echo "Prewarming Serena (first run downloads the package — may take a few minutes)..."
+    uvx --from git+https://github.com/oraios/serena serena --help >/dev/null 2>&1 || true
+  fi
   echo "Triggering Claude Code to initialize Serena (.serena/ will be created)..."
-  claude --print "exit" >/dev/null 2>&1 || true
+  if [ -f ".mcp.json" ]; then
+    # Project-scoped .mcp.json servers need one-time interactive approval that a
+    # headless --print run can never grant; --mcp-config + --strict-mcp-config
+    # loads serena explicitly, bypassing the approval gate.
+    claude --print --mcp-config .mcp.json --strict-mcp-config "exit" >/dev/null 2>&1 || true
+  else
+    claude --print "exit" >/dev/null 2>&1 || true
+  fi
   if [ ! -f ".serena/project.yml" ]; then
-    echo "Error: .serena/project.yml was not created by 'claude --print'. Ensure Serena MCP is registered for this project (run setup-project.sh first)."
+    echo "Error: .serena/project.yml was not created by 'claude --print'."
+    echo "Ensure Serena MCP is registered for this project — run 'npx @codewizard-dt/bootstrap setup' and answer Yes to the Serena prompt,"
+    echo "or register it manually: claude mcp add --scope project serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context claude-code --project \"$PROJECT_DIR\""
+    echo "If it IS registered, open 'claude' interactively in $PROJECT_DIR once to approve the project MCP servers, then re-run 'npx @codewizard-dt/bootstrap update'."
     exit 1
   fi
 else
@@ -82,10 +99,12 @@ REQUIRED = ['markdown', 'python', 'typescript', 'yaml']
 p = pathlib.Path(sys.argv[1])
 text = p.read_text()
 
-# Match the languages: block including list items at ANY indentation (0-indent is valid YAML).
-# The trailing alternative allows a final item with no trailing newline.
+# Match the languages block including list items at ANY indentation (0-indent is valid YAML).
+# Newer Serena versions renamed the key `languages:` -> `language_servers:`; accept both
+# and preserve whichever the file uses. The trailing alternative allows a final item
+# with no trailing newline.
 LANG_BLOCK = re.compile(
-    r'^(languages:[ \t]*\n)'
+    r'^((?:languages|language_servers):[ \t]*\n)'
     r'((?:[ \t]*-[ \t]+[^\n]+\n)*(?:[ \t]*-[ \t]+[^\n]+)?)',
     re.MULTILINE
 )
@@ -108,10 +127,10 @@ if bm:
     print('added:' + ','.join(missing) if missing else 'present')
     sys.exit(0)
 
-# languages: [] inline form
-m = re.search(r'^languages:[ \t]*\[\][ \t]*\n?', text, re.MULTILINE)
+# languages: [] / language_servers: [] inline form
+m = re.search(r'^((?:languages|language_servers):)[ \t]*\[\][ \t]*\n?', text, re.MULTILINE)
 if m:
-    block = 'languages:\n' + ''.join(f'  - {lang}\n' for lang in REQUIRED)
+    block = m.group(1) + '\n' + ''.join(f'  - {lang}\n' for lang in REQUIRED)
     p.write_text(text[:m.start()] + block + text[m.end():])
     print('added:' + ','.join(REQUIRED))
     sys.exit(0)
@@ -141,5 +160,5 @@ elif [[ "$LANG_RESULT" == added:* ]]; then
     echo "Serena not running — updated config will apply on next start."
   fi
 else
-  echo "Warning: could not find 'languages:' key in .serena/project.yml — add markdown, python, typescript, yaml manually."
+  echo "Warning: could not find a 'languages:' or 'language_servers:' key in .serena/project.yml — add markdown, python, typescript, yaml manually."
 fi
