@@ -121,7 +121,8 @@ detect_installed_mcps() {
 #
 # The shared setup/update sequence run identically by setup-project.sh and
 # update-project.sh: install MCPs interactively, install skills+hooks globally,
-# sync the wiki scaffold, merge the .gitignore, build the MCP-tools guide for
+# sync the wiki scaffold (tiered guide delivery — --interactive enables the
+# optional-guide prompts), merge the .gitignore, build the MCP-tools guide for
 # the detected MCPs, then bootstrap Serena's project.yml. Prints the same
 # section headers and blank-line separators the two scripts printed inline.
 # ---------------------------------------------------------------------------
@@ -139,7 +140,7 @@ run_project_sync() {
   echo ""
 
   echo "Syncing wiki scaffold..."
-  "$script_dir/sync-wiki-scaffold.sh" "$project_dir"
+  "$script_dir/sync-wiki-scaffold.sh" --interactive "$project_dir"
   "$script_dir/merge-gitignore.sh" "$project_dir"
   echo ""
 

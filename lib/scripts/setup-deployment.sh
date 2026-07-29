@@ -4,6 +4,8 @@ set -euo pipefail
 # Deployment / CI scaffolding seam — separate from the wiki/skills/MCP sync flow.
 # Reads raw/guides/deployment-strategy.md as a prompt template and runs Claude
 # to scaffold .github/ workflows + Makefile + .gitleaks.toml into a target project.
+# Also copies the guide itself into the target's .docs/guides/ (deploy-only tier
+# — the wiki sync deliberately never ships it).
 #
 # Deliberately not called by setup-project.sh or update-project.sh: workflows get
 # hand-customized per project (Dockerfile paths, runner labels, deploy steps) and
@@ -67,6 +69,13 @@ if [ "$DRY_RUN" = true ]; then
   done
   exit 0
 fi
+
+# Deliver the deployment guide into the target (deploy-only tier — the wiki
+# sync never ships it). Always refreshed: template-owned reference documenting
+# the topology the scaffolded CI implements. Landed before the Claude run so
+# it survives a timeout.
+mkdir -p "$PROJECT_DIR/.docs/guides"
+rsync -av "$GUIDE" "$PROJECT_DIR/.docs/guides/deployment-strategy.md"
 
 TASK="$(sed "s|__PROJECT_DIR__|$PROJECT_DIR|g" "$TEMPLATE")"
 

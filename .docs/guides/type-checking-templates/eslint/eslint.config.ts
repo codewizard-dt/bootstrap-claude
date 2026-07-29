@@ -32,7 +32,7 @@ export default defineConfig([
       js.configs.recommended,
       // strictTypeChecked = recommended + strict + ALL type-aware lint rules.
       // Requires parserOptions.projectService below — without it, type-aware
-      // rules are silently disabled. This was the primary gap in portfolio_v2.
+      // rules are silently disabled — the most common gap seen in real configs.
       tseslint.configs.strictTypeChecked,
       // stylisticTypeChecked adds formatting-adjacent TS rules (optional)
       tseslint.configs.stylisticTypeChecked,

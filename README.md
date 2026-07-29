@@ -211,7 +211,7 @@ sequenceDiagram
   Global-->>Global: rsync hooks to ~/.claude/hooks/
   Global-->>Global: merge canonical deny list into ~/.claude/settings.json
   Setup->>Wiki: sync-wiki-scaffold.sh <project>
-  Wiki-->>Project: raw/, wiki/, CLAUDE.md snippets, .docs/guides/
+  Wiki-->>Project: raw/, wiki/, CLAUDE.md snippets, .docs/guides/ (tiered: required + opted-in optional)
   Setup->>Guide: build-mcp-guide.sh <project> <installed-mcps>
   Guide-->>Project: .docs/guides/mcp-tools.md
   Setup->>Claude: bootstrap-serena prompt

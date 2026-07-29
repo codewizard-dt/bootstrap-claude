@@ -6,8 +6,19 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATE_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 TEMPLATES="$SCRIPT_DIR/templates/wiki"
 
+INTERACTIVE=false
+POSITIONAL=()
+for arg in "$@"; do
+  case "$arg" in
+    --interactive) INTERACTIVE=true ;;
+    *) POSITIONAL+=("$arg") ;;
+  esac
+done
+# bash 3.2 + set -u: expanding an empty array is an unbound-variable error
+set -- ${POSITIONAL[@]+"${POSITIONAL[@]}"}
+
 if [ $# -ne 1 ]; then
-  echo "Usage: $0 <path-to-project>"
+  echo "Usage: $0 [--interactive] <path-to-project>"
   exit 1
 fi
 
@@ -49,8 +60,63 @@ for fam in requirements decisions roadmaps tasks uat bugs; do
   rsync -av "$TEMPLATES/work/$fam/lifecycle.md" "$PROJECT_DIR/wiki/work/$fam/lifecycle.md"
 done
 
-# 4. GUIDES: always refresh from raw/guides/ into target .docs/guides/
-rsync -av "$TEMPLATE_DIR/raw/guides/" "$PROJECT_DIR/.docs/guides/"
+# 4. GUIDES: tiered delivery into target .docs/guides/
+#    REQUIRED — always refreshed (template-owned).
+#    OPTIONAL — exists in target => refresh in place (user opted in previously);
+#               missing => prompt in interactive mode (default no), skip silently
+#               otherwise. Opt out by deleting the file/dir (costs one default-no
+#               prompt per interactive update).
+#    mcp-tools.md is assembled per-project by build-mcp-guide.sh, and
+#    deployment-strategy.md is delivered only by setup-deployment.sh
+#    (`bootstrap deploy`) — neither is synced here.
+GUIDES_SRC="$TEMPLATE_DIR/raw/guides"
+GUIDES_DST="$PROJECT_DIR/.docs/guides"
+
+# Tier lists — plain space-separated words (bash 3.2: no associative arrays).
+# Entries may be files or directories; names must not contain spaces.
+REQUIRED_GUIDES="command-anti-patterns.md"
+OPTIONAL_GUIDES="evals-framework.md type-checking-templates"
+
+deliver_guide() {
+  # $1 = guide name (file or dir under GUIDES_SRC)
+  if [ -d "$GUIDES_SRC/$1" ]; then
+    rsync -av "$GUIDES_SRC/$1/" "$GUIDES_DST/$1/"
+  else
+    rsync -av "$GUIDES_SRC/$1" "$GUIDES_DST/"
+  fi
+}
+
+for guide in $REQUIRED_GUIDES; do
+  deliver_guide "$guide"
+done
+
+for guide in $OPTIONAL_GUIDES; do
+  if [ -e "$GUIDES_DST/$guide" ]; then
+    deliver_guide "$guide"
+    echo "  $guide: refreshed (already present — previously opted in)."
+  elif [ "$INTERACTIVE" = true ] && prompt_yn "  Install optional guide '$guide'? [y/N]: "; then
+    deliver_guide "$guide"
+  else
+    echo "  $guide: skipped. Opt in any time: re-run 'npx @codewizard-dt/bootstrap update' and answer yes."
+  fi
+done
+
+# 4b. CLEANUP: remove guides this tool previously shipped that are now
+#     deprecated or irrelevant for this project.
+#     - task-spec.md: superseded by wiki/work/tasks/lifecycle.md and actively
+#       contradicts it — always removed.
+#     - deployment-strategy.md: deploy-only tier; a copy with no deploy
+#       artifacts alongside it is leftover from the old blanket sync. When
+#       `bootstrap deploy` has run (its build.yml marker exists), the copy is
+#       legitimate and kept.
+if [ -f "$GUIDES_DST/task-spec.md" ]; then
+  rm -f "$GUIDES_DST/task-spec.md"
+  echo "  Removed deprecated guide task-spec.md (superseded by wiki/work/tasks/lifecycle.md)."
+fi
+if [ -f "$GUIDES_DST/deployment-strategy.md" ] && [ ! -f "$PROJECT_DIR/.github/workflows/build.yml" ]; then
+  rm -f "$GUIDES_DST/deployment-strategy.md"
+  echo "  Removed deployment-strategy.md (deploy-only guide; delivered by 'npx @codewizard-dt/bootstrap deploy')."
+fi
 
 # 5. Ensure raw/ has a .gitkeep so git tracks the empty dir
 touch -a "$PROJECT_DIR/raw/.gitkeep" 2>/dev/null || true

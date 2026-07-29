@@ -36,7 +36,7 @@ Parse `$ARGUMENTS` immediately. The argument string can take several forms:
 **Direct mode** (any non-empty argument that is not a bare stage keyword):
 
 1. Acknowledge the request: "Creating a golden set eval for: `<extracted description>`"
-2. Read `.docs/guides/evals-framework.md` (always required)
+2. Read `.docs/guides/evals-framework.md` (always required — if missing, stop and tell the user to re-run `npx @codewizard-dt/bootstrap update` and opt in to `evals-framework.md`, as in Step 1)
 3. Survey `evals/golden/` to find the next ID and check bootstrap vs gap-fill state
 4. Go directly to **Step 4-Direct** — skip Steps 1–3
 
@@ -49,6 +49,10 @@ Parse `$ARGUMENTS` immediately. The argument string can take several forms:
 ## Step 1: Read the framework
 
 Read `.docs/guides/evals-framework.md` in full. This is authoritative for stage definitions, schemas, check types, and anti-patterns. Do not proceed until you have read it.
+
+If the file does not exist, STOP — do not proceed from memory. Tell the user:
+
+> This project doesn't have the evals framework guide installed. Run `npx @codewizard-dt/bootstrap update` and answer **yes** when prompted to install the optional guide `evals-framework.md`, then re-run this skill.
 
 ---
 

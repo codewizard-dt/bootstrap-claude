@@ -21,7 +21,7 @@ lib/
 
 1. A user runs `npx @codewizard-dt/bootstrap <command>` (or the installed `bootstrap` bin).
 2. `bin/cli.js` resolves the command to a script in `lib/scripts/` and execs it with the target project path.
-3. That script sources `lib/scripts/lib.sh` for shared helpers, then does some combination of: installing MCP servers, `rsync`-ing `lib/skills/` and `lib/hooks/` to `~/.claude/`, scaffolding `wiki/`/`raw/` from `lib/scripts/templates/wiki/`, assembling `.docs/guides/mcp-tools.md` from `lib/scripts/templates/guides/stubs/`, and/or invoking `claude --print` with a prompt from `lib/prompts/` for anything that needs project-specific judgment (CI/CD scaffolding, `.docs/`→wiki migration, strict type-check setup).
+3. That script sources `lib/scripts/lib.sh` for shared helpers, then does some combination of: installing MCP servers, `rsync`-ing `lib/skills/` and `lib/hooks/` to `~/.claude/`, scaffolding `wiki/`/`raw/` from `lib/scripts/templates/wiki/`, delivering tiered guides from `raw/guides/`, assembling `.docs/guides/mcp-tools.md` from `lib/scripts/templates/guides/stubs/`, and/or invoking `claude --print` with a prompt from `lib/prompts/` for anything that needs project-specific judgment (CI/CD scaffolding, `.docs/`→wiki migration, strict type-check setup).
 4. Once installed, the target project's Claude Code sessions pick up the copied hooks (enforcement) and skills (slash commands) automatically; the wiki scaffold and `CLAUDE.md` additions give those sessions durable, file-system-backed state.
 
 See the root [`README.md`](../README.md) for the full architecture diagram and component descriptions; this file and its children document `lib/` at the file level.

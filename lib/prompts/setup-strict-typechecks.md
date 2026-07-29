@@ -8,19 +8,30 @@ one, note:
 - What config files already exist (tsconfig, pyproject.toml, mypy.ini, .eslintrc, etc.)
 - What package manager / toolchain is in use
 
-## Phase 2 — Research best practices (per language)
+## Phase 2 — Establish strict-mode baselines (per language)
 
-For each language found, use Context7 (for library docs) or Brave Search (for general practices, up to 50 req/sec, parallel OK) to look up the
-current strict-mode recommendations:
+IMPORTANT: If `.docs/guides/type-checking-templates/` exists in the project, it is the authoritative baseline — start there, not from web
+research. Read its `README.md` to pick the right variant, then read the chosen template files (they carry inline annotations explaining
+every non-obvious decision):
+- TypeScript: `tsconfig/` (node-esm / Vite three-file split / lib) + `eslint/eslint.config.ts`
+- Python: `python/pyproject.toml` (mypy strict + ruff + basedpyright companion), `python/mypy.ini`, `python/pyrightconfig.json`
+
+Use Context7 (library docs) or Brave Search (general practices, up to 50 req/sec, parallel OK) only to fill gaps the templates do not
+cover: languages with no template (Go: staticcheck, go vet; Rust: #![deny(warnings)], Clippy --deny warnings; etc.), framework-specific
+plugins, or flags added since the templates were written.
+
+If `.docs/guides/type-checking-templates/` does NOT exist, fall back to researching current strict-mode recommendations from scratch with
+Context7 / Brave Search:
 - TypeScript: tsconfig strict, tseslint strictTypeChecked, stylisticTypeChecked, parserOptions.project
 - Python: mypy --strict, pyproject.toml [tool.mypy]
 - Go: staticcheck, go vet
 - Rust: #![deny(warnings)], Clippy --deny warnings
 - …and so on for any other language present
 
-Research what the strict flags actually enable, what the known gotchas are (e.g. type-aware ESLint rules requiring parserOptions.project;
-mypy needing ignore_missing_imports for third-party stubs), and what companion tools are idiomatic (e.g. ESLint for TypeScript,
-mypy/pyright for Python).
+Either way, understand what the strict flags actually enable, the known gotchas (e.g. type-aware ESLint rules requiring
+parserOptions.projectService; mypy needing per-module ignore_missing_imports for third-party stubs), and the idiomatic companion tools
+(ESLint for TypeScript, mypy/pyright for Python). (The templates are an optional guide — the user can install them by re-running
+`npx @codewizard-dt/bootstrap update` and answering yes for `type-checking-templates`.)
 
 ## Phase 3 — Install toolchain packages
 

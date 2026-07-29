@@ -119,8 +119,15 @@ else
   echo ""
 fi
 
-# --- Scaffold first: wiki tree + CLAUDE.md schema + guides -----------------
-"$SCRIPT_DIR/sync-wiki-scaffold.sh" "$PROJECT_DIR"
+# --- Scaffold first: wiki tree + CLAUDE.md schema + tiered guides ----------
+"$SCRIPT_DIR/sync-wiki-scaffold.sh" --interactive "$PROJECT_DIR"
+echo ""
+
+# --- Assemble mcp-tools.md for the detected MCPs (sync no longer ships it) --
+echo "Building MCP tools guide..."
+installed_mcps="$(detect_installed_mcps "$PROJECT_DIR")"
+# Unquoted on purpose: word-split the space-separated names into arguments.
+"$SCRIPT_DIR/build-mcp-guide.sh" "$PROJECT_DIR" $installed_mcps
 echo ""
 
 # --- Run the Claude-driven migration ---------------------------------------

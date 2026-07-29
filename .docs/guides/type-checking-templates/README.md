@@ -1,6 +1,6 @@
 # Type-Checking & Linting Config Templates
 
-Best-practice templates synthesized from analysis of all configs across ~/Repositories. Each template includes inline annotations explaining every non-obvious decision.
+Best-practice templates synthesized from analysis of real-world project configs. Each template includes inline annotations explaining every non-obvious decision.
 
 ---
 
@@ -79,9 +79,9 @@ Run basedpyright alongside mypy with `typeCheckingMode = "off"` — opt in only 
 
 **Anti-patterns observed in the wild:**
 - `ignore_errors = true` on internal modules — silences real type errors, not just stub gaps
-- `cryptwiz_py`: manually approximating strict mode without `strict = true`, leaving gaps
+- Manually approximating strict mode with individual flags instead of `strict = true` — always leaves gaps
 - Missing `[tool.ruff.lint.isort]` `known-first-party` — isort can't distinguish first-party vs third-party without it
-- `sales-agent`: no pydantic.mypy plugin despite heavy Pydantic usage
+- Skipping the `pydantic.mypy` plugin in a Pydantic-heavy project
 
 ---
 
@@ -95,9 +95,9 @@ Run basedpyright alongside mypy with `typeCheckingMode = "off"` — opt in only 
 - Let the TypeScript parser handle `ecmaVersion`; do not hard-code it
 
 **Anti-patterns observed in the wild:**
-- `portfolio_v2`: missing `parserOptions.projectService` — all type-aware lint rules silently disabled
-- `openemr`: `FlatCompat` bridge for jest — use `jest.configs['flat/recommended']` instead
-- `openemr`: `no-undef`, `no-unused-vars`, `no-redeclare` set to `"warn"` — silent tech debt
+- Missing `parserOptions.projectService` — all type-aware lint rules silently disabled
+- Using a `FlatCompat` bridge for jest — use `jest.configs['flat/recommended']` instead
+- `no-undef`, `no-unused-vars`, `no-redeclare` downgraded to `"warn"` — silent tech debt
 
 ---
 
@@ -108,5 +108,5 @@ Run basedpyright alongside mypy with `typeCheckingMode = "off"` — opt in only 
 - `"standard"` is a safe project-wide floor; use per-file suppressions for legacy code
 
 **Anti-patterns observed in the wild:**
-- Neither `openemr` nor `cryptwiz_py` set `typeCheckingMode` — Pyright defaulted to `"off"` and did nothing
+- Omitting `typeCheckingMode` entirely — Pyright defaults to `"off"` and does nothing
 - `reportMissingImports: "warning"` — broken imports should always be errors

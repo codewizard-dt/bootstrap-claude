@@ -26,6 +26,10 @@ Read-only audit of the project's eval suite. Produces a prioritised gap report a
 
 Read `.docs/guides/evals-framework.md`. This defines the expected shape of each stage and is required context for meaningful gap analysis.
 
+If the file does not exist, STOP — do not proceed from memory. Tell the user:
+
+> This project doesn't have the evals framework guide installed. Run `npx @codewizard-dt/bootstrap update` and answer **yes** when prompted to install the optional guide `evals-framework.md`, then re-run this skill.
+
 ---
 
 ## Step 2: Inventory existing evals
