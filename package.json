@@ -14,7 +14,7 @@
   "author": "",
   "type": "commonjs",
   "bin": {
-    "bootstrap": "./bin/cli.js"
+    "bootstrap": "bin/cli.js"
   },
   "publishConfig": {
     "access": "public"
