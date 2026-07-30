@@ -54,7 +54,7 @@ environment assignment, or on the far side of an MCP tool boundary.
 | `package-install-consent.js` | `Bash` | Every package-manager install, with one allowlisted source (Serena) |
 | `absolute-path-guard.js` | `Bash` | Evasive *spellings* of destructive commands (`/bin/rm`, `\rm`, `env rm`) |
 | `protected-write-guard.js` | `Bash` | `>`/`>>` into shell/git/Claude config, `DYLD_*`/`LD_*` injection, `git -c` RCE config keys |
-| `claude-settings-guard.js` | `Edit\|Write\|NotebookEdit\|MultiEdit` | File-tool writes to `~/.claude/settings*.json` (with a bootstrap-claude exception) and `~/.claude/hooks/**` (no exception) |
+| `claude-settings-guard.js` | `Edit\|Write\|NotebookEdit\|MultiEdit` | File-tool writes to `~/.claude/settings*.json` and `~/.claude/hooks/**` — unconditional, no exceptions |
 | `env-content-read-guard.js` | `Bash\|mcp__serena__.*\|mcp__plugin_[^_]+_serena__.*` | `.env` *contents* reaching the transcript, on both the Bash and Serena surfaces |
 
 They share `lib/command-parse.js` (stdin read, segment split, tokenize, deny
@@ -352,10 +352,27 @@ protected paths (`echo … >> ~/.claude/settings.json`) is
 `protected-write-guard.js` rule 1.
 
 **Blocks** `Edit`/`Write`/`NotebookEdit`/`MultiEdit` targeting
-`~/.claude/settings.json` and `~/.claude/settings.local.json` — **except** when
-the session's working directory sits inside a genuine bootstrap-claude checkout —
-and anything under `~/.claude/hooks/` with **no exception at all**.
+`~/.claude/settings.json`, `~/.claude/settings.local.json`, and anything under
+`~/.claude/hooks/`. **Unconditional — the verdict does not depend on cwd.**
 
+> **A bootstrap-claude carve-out existed here and was removed on 2026-07-30.**
+> It allowed the settings write when the session's cwd sat inside a genuine
+> checkout, identified by marker file (`lib/scripts/templates/settings-deny.json`
+> plus a `package.json` named `@codewizard-dt/bootstrap`) rather than by directory
+> name. The rationale was that this repo manages those files.
+>
+> **That rationale was wrong.** The repo writes them through
+> `node merge-settings-deny.js` *inside* `install-global.sh` — a Bash subprocess
+> that no `PreToolUse` hook and no permission rule ever observes. Nothing here
+> ever needed the Edit *tool* on those paths. The exception was not load-bearing,
+> and it did let any agent running in this repo rewrite its own permission
+> boundary — which was demonstrated live before it was closed.
+>
+> The former marker shapes are still exercised in
+> `test/command-class-hooks.test.js`, now asserting **deny**, because they are the
+> most sensitive canaries for the carve-out creeping back.
+
+<!-- superseded, retained for provenance:
 **A checkout is identified by marker file, not by path substring.**
 `cwd.includes('bootstrap-claude')` is spoofed by `mkdir bootstrap-claude`, so
 both of these must hold at a candidate root: `lib/scripts/templates/settings-deny.json`
@@ -375,6 +392,18 @@ deny made the repo unable to work on itself. A hook is the only layer that can
 carry a conditional. The shipped deny list carries zero `.claude/settings`
 entries today and `test/settings-deny.test.js` locks that in, so the carve-out is
 live rather than dead on arrival.
+-->
+
+**The deny entries stay out, and that is now a free choice rather than a forced one.**
+`Edit(~/.claude/settings.json)` and `Edit(~/.claude/settings.local.json)` were
+removed from `settings-deny.json` to make the carve-out expressible — deny beats
+allow at every scope, and a hook cannot loosen a deny rule, so the exception was
+unsayable while they existed. With the carve-out gone they could be restored as
+defence in depth. They have not been, deliberately: the deny merge is
+additive-only with **no removal path**, so re-adding them is permanent for every
+installed user, and the hook already blocks the same surface *plus* the `Write`
+and `NotebookEdit` tools that `Edit(...)` rules never reach. Restore them only if
+the hook proves unreliable.
 
 **Why the `~/.claude/hooks/` tree is also checked here, and is not duplication.** The
 `Edit(~/.claude/hooks/**)` and `Edit(**/.claude/hooks/**)` deny entries remain in
@@ -395,13 +424,18 @@ same function so both sides of the comparison are real paths, and a literal `~` 
 `NotebookEdit` names its target `notebook_path`; `MultiEdit` is checked per
 `edits[].file_path`, so a protected target cannot ride along in a batch.
 
-**Residual risk, accepted deliberately.** An agent working inside a genuine
-bootstrap-claude checkout can still self-grant permissions by writing
-`~/.claude/settings.json`. This hook does not prevent that and is not trying to:
-managing those settings is this repo's entire purpose, so the exception *is* the
-feature. The containment for a compromised agent inside this repo is OS-level
-sandboxing, not this hook. **Do not "harden" this by removing the exception** —
-it breaks the repo and still would not contain a Bash-capable agent.
+**Residual risk, stated plainly.** This hook guards the file *tools*. An agent
+with Bash can still reach these files another way — `node write-settings.js`
+gets there, and nothing here parses inside a script file.
+`protected-write-guard.js` catches shell redirects
+(`echo … >> ~/.claude/settings.json`) and `interpreter-indirection-guard.js`
+catches `node -e`, but a script written to disk and then executed is uncovered by
+design.
+
+So this is a guardrail, not a boundary: it closes the casual and accidental paths
+— which is most of them — and raises the cost of the deliberate one. The only
+real containment for a compromised agent is OS-level sandboxing (`/sandbox`).
+Do not read "unconditional" as "guaranteed".
 
 **Not covered, deliberately:** project-level `.claude/settings.json` files (this
 hook is scoped to the user-global `~/.claude/` tree); and writing a script

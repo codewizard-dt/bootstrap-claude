@@ -86,15 +86,57 @@ list_reincluded() {
   done
 }
 
+# --- matching ----------------------------------------------------------------
+# Subsequence ("fuzzy") matching, because replacing the built-in picker replaces
+# its matcher too, and a plain substring match is strictly worse than what it
+# displaced: `@wikitasks` and `@wiki/tasks` both find nothing under -F, since
+# neither appears contiguously in `wiki/work/tasks/...`. The query's characters
+# must appear in order, not adjacently.
+#
+# Build an ERE with `.*` between each character. Escaping is per-character and
+# happens *while* building, never as a separate pass — escaping first and then
+# interleaving would split a backslash from the character it escapes.
+fuzzy_pattern() {
+  local q=$1 out='' i c
+  for (( i = 0; i < ${#q}; i++ )); do
+    c=${q:i:1}
+    case $c in
+      # ERE metacharacters, plus backslash. Anything else is literal.
+      '.'|'['|']'|'('|')'|'{'|'}'|'*'|'+'|'?'|'|'|'^'|'$'|'\') out="$out\\$c" ;;
+      *) out="$out$c" ;;
+    esac
+    out="$out.*"
+  done
+  printf '%s' "$out"
+}
+
+# Contiguous matches rank above merely-subsequence ones: `@tasks` should surface
+# `wiki/work/tasks/` before a path that happens to contain t…a…s…k…s scattered.
+# Both passes read the same candidate list from a temp file rather than running
+# the (expensive) listing twice.
+rank() {
+  local candidates=$1 pattern
+  if [ -z "$QUERY" ]; then
+    cat -- "$candidates"
+    return 0
+  fi
+  pattern=$(fuzzy_pattern "$QUERY")
+  grep -iF -- "$QUERY" "$candidates"
+  # Subsequence hits that are not already contiguous hits.
+  grep -iE -- "$pattern" "$candidates" | grep -ivF -- "$QUERY"
+}
+
 # --- emit --------------------------------------------------------------------
 # `head` truncating the pipe SIGPIPEs the upstream stages; the pipeline's status
 # is head's (pipefail is deliberately not set) and their stderr is already gone.
+CANDIDATES=$(mktemp -t file-suggestion) || exit 0
+trap 'rm -f -- "$CANDIDATES"' EXIT
+
 {
   list_base
   list_reincluded
-} \
-  | sort -u \
-  | { if [ -n "$QUERY" ]; then grep -iF -- "$QUERY"; else cat; fi; } \
-  | head -n "$MAX_RESULTS"
+} | sort -u > "$CANDIDATES"
+
+rank "$CANDIDATES" | head -n "$MAX_RESULTS"
 
 exit 0

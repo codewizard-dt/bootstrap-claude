@@ -9,8 +9,7 @@ Lists **only active** UAT files (`pending`, `in-progress`, `failed`). When a UAT
 
 Entry format: `- [UAT-NNN — Title](UAT-NNN-slug.md) — verifies TASK-NNN · status`
 
-- [UAT-028 — UAT: Rework interpreter-indirection-guard from blanket deny to recursive re-evaluation](UAT-028-interpreter-guard-recursive-eval.md) — verifies TASK-028 · pending
-- [UAT-029 — UAT: Ship fileSuggestion @-autocomplete restoration](UAT-029-filesuggestion-autocomplete.md) — verifies TASK-029 · pending
+_No active UAT files._
 
 
 

@@ -1,7 +1,7 @@
 ---
 id: UAT-029
 title: "UAT: Ship fileSuggestion @-autocomplete restoration for info/exclude'd wiki dirs"
-status: in-progress
+status: passed
 task: TASK-029
 created: 2026-07-30
 updated: 2026-07-30
@@ -292,7 +292,7 @@ Three premises inherited from the task's findings, restated so nobody re-derives
   - Step 2 prints `Installing file suggestion picker (~/.claude/file-suggestion.sh)...`, then `settings.json: "fileSuggestion" set`, then **`Restart Claude Code sessions to pick up the new file suggestion command.`**, and closes with `Global setup complete (MCPs + hooks + skills + deny list + file suggestion).`
   - Step 3 shows an executable `~/.claude/file-suggestion.sh` and `{"type":"command","command":"~/.claude/file-suggestion.sh"}`, with the deny count **not lower** than in step 1.
   - A second run of step 2 must print `already set` and **no** restart line.
-- [FAIL: BLOCKED — not run; requires explicit human go-ahead. Per this case's own warning: "It mutates `~/.claude/settings.json` and creates `~/.claude/file-suggestion.sh`. The deny merge is additive with **no removal path**. Get explicit go-ahead before running it, and do not run it as part of an automated sweep." No go-ahead was given for this headless sweep.] <!-- 2026-07-30 -->
+- [x] Pass <!-- 2026-07-30 --> <!-- satisfied-by-prior-run: install-global.sh was run once with explicit user consent outside this sweep; it was NOT re-run here. Outcome verified read-only: ~/.claude/file-suggestion.sh exists and is executable (-rwxr-xr-x), md5 fd71f63b7e6f74e82aa3f0c5277241ac — byte-identical to the current template, so the post-fuzzy-fix copy is the installed one; settings.json holds fileSuggestion={"type":"command","command":"~/.claude/file-suggestion.sh"} with 117 deny entries, not lower than the pre-install 117. NOT observable after the fact: the step-1 before-state and step-2 stdout lines; the "second run prints already set with no restart line" assertion is covered mechanically by UAT-INSTALL-001 step 2, which prints exactly `settings.json: "fileSuggestion" already set`. -->
 
 ---
 
@@ -308,7 +308,7 @@ Three premises inherited from the task's findings, restated so nobody re-derives
      D=$(bash "$UAT029/mkfix.sh" 'secret/' "$SENT" '.serena/' 'raw/' 'wiki/') && printf '{"query":"hot"}' | CLAUDE_PROJECT_DIR="$D" ~/.claude/file-suggestion.sh; echo "exit=$?"
      ```
 - **Expected Result**: Exit 0, and exactly `.serena/hotcache.txt`, `raw/hotraw.md`, `src/hotsrc.txt`, `wiki/hot.md` — `secret/secret-hotel.txt` stays hidden. If this errors with "permission denied" the `chmod +x` at `install-global.sh:87` did not take.
-- [FAIL: BLOCKED — depends on UAT-INSTALL-003, which was not run. `~/.claude/file-suggestion.sh` does not exist, so the installed artifact this case exercises is absent. Unblocks automatically once UAT-INSTALL-003 is consented and run.] <!-- 2026-07-30 -->
+- [x] Pass <!-- 2026-07-30 --> <!-- unblocked by the consented install. The installed ~/.claude/file-suggestion.sh, invoked directly (not `bash <path>`), exit=0 and printed exactly .serena/hotcache.txt, raw/hotraw.md, src/hotsrc.txt, wiki/hot.md — secret/secret-hotel.txt stayed hidden. No permission-denied, so the chmod +x at install-global.sh:87 took. -->
 
 ---
 
@@ -378,7 +378,7 @@ Three premises inherited from the task's findings, restated so nobody re-derives
   - Step 4 offers `wiki/hot.md` — a path `.git/info/exclude` hides, which the **built-in** picker would not show. That is the whole feature.
   - Step 5 offers **nothing** for `secret/secret-hotel.txt`: the custom picker re-includes only sentinel-scoped paths and does not leak the user's own exclusions.
   - **If step 4 shows nothing** while step 1 printed the path, the script is correct and the integration is not: check that `~` was expanded, that the session was fully restarted, and that `~/.claude/settings.json` still holds the key.
-- [FAIL: BLOCKED — doubly blocked. (1) Depends on UAT-INSTALL-003, which was not run. (2) Manual by nature: "`@` is an interactive UI affordance; `claude -p` has no file picker, so no headless invocation can trigger it." Requires a human at a restarted interactive session — use /uat-walk.] <!-- 2026-07-30 -->
+- [x] Pass <!-- 2026-07-30 · human verdict, /uat-walk. **Confirmed on a second machine, which is stronger evidence than any fixture.** That machine held a genuine pre-existing broken repo — `.serena/`, `raw/`, `wiki/` present in `.git/info/exclude` but with **no sentinel**, i.e. Case A from TASK-029 step 6, arrived at naturally rather than constructed. Under 2.14.0's picker its `@`-autocomplete for those dirs was dead. The user ran the update script there; `merge-gitignore.sh` took the unprompted pure-repair branch, normalized the three paths under the sentinel, and **autocomplete was restored**. So the full chain is observed end-to-end in the wild: real broken state → shipping code path repairs it → picker re-includes → `@` completes. Note the earlier attempt in the bootstrap-claude repo did NOT count and is not the basis for this verdict — that repo has no sentinel and all three dirs are git-tracked (12/54/138 files), so its completion came from the base `rg --files` listing and would have worked with the built-in picker too. -->
 
 ---
 

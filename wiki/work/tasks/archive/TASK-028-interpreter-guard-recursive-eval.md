@@ -1,7 +1,7 @@
 ---
 id: TASK-028
 title: "Rework interpreter-indirection-guard from blanket deny to recursive re-evaluation"
-status: pending-uat
+status: done
 created: 2026-07-29
 updated: 2026-07-29
 depends_on: [TASK-027]

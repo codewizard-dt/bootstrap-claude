@@ -29,3 +29,5 @@ Terminal UAT files (`passed`, `skipped`, or `trashed`) moved here by `/wiki-arch
 | [[UAT-026]] | UAT: Audit and harden the canonical settings deny list | passed | 2026-07-29 |
 | [[UAT-025]] | UAT: Migrate this machine's MCP registrations to the single-process design | skipped | 2026-07-29 |
 | [[UAT-027]] | UAT: Tier-2 PreToolUse hooks — gate command classes deny rules cannot express | passed | 2026-07-29 |
+| [[UAT-028]] | UAT: Rework interpreter-indirection-guard from blanket deny to recursive re-evaluation | passed | 2026-07-30 |
+| [[UAT-029]] | UAT: Ship fileSuggestion @-autocomplete restoration | passed | 2026-07-30 |

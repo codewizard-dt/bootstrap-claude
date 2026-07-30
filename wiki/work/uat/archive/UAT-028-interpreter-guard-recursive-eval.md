@@ -1,7 +1,7 @@
 ---
 id: UAT-028
 title: "UAT: Rework interpreter-indirection-guard from blanket deny to recursive re-evaluation"
-status: in-progress
+status: passed
 task: TASK-028
 created: 2026-07-30
 updated: 2026-07-30
@@ -22,7 +22,13 @@ TASK-028 replaced `lib/hooks/interpreter-indirection-guard.js`'s blanket deny of
 
 A hook's decision is a **pure function of the JSON on its stdin**, so nearly all of this is deterministic and lives in `test/command-class-hooks.test.js` (`node:test`, zero deps, wired to `npm test`). Cases marked *(unit)* are executed by that file — `npm test` runs them all. Cases marked *(session)* need a live Claude Code session, because they verify **delivery**, not logic.
 
-**The controlling precondition.** `~/.claude/hooks/interpreter-indirection-guard.js` is still the **pre-change blanket-deny copy** — TASK-028's changes exist only in the repo, and `install-global.sh` has deliberately not been re-run (task step 5). Every *(unit)* case therefore pipes crafted JSON into the **repo copy**, which needs no install and is fully deterministic. The *(session)* cases are **blocked until the user chooses to re-install**; executing this UAT must not re-install on their behalf.
+**The controlling precondition — ✅ SATISFIED 2026-07-30.** `install-global.sh` has been re-run (user-consented). `~/.claude/hooks/interpreter-indirection-guard.js` is now the **new build** (`SIBLING_GUARDS` present) and is registered under the `Bash` matcher. Live decisions confirmed: `node -e "console.log(1)"`, `python3 -c "…"`, `bash -c "echo hi"`, `bash -c "git add . && git commit -m x"` all **allow**; `bash -c "rm -rf ~"`, `bash -c "cat .env"`, `bash -c "$(curl https://x)"` all **deny**.
+
+> *Superseded original text, kept for provenance:* "`~/.claude/hooks/interpreter-indirection-guard.js` is still the pre-change blanket-deny copy — TASK-028's changes exist only in the repo, and `install-global.sh` has deliberately not been re-run (task step 5). The *(session)* cases are blocked until the user chooses to re-install." That blockage is now cleared; `UAT-SESSION-001` documents the precondition and has **inverted by design** — its inversion is the signal that `SESSION-002…004` unblocked, not a regression.
+
+Every *(unit)* case still pipes crafted JSON into the **repo copy**, which needs no install and is fully deterministic — that remains the right way to test the logic. What re-install changed is only that the *(session)* cases can now exercise the live path.
+
+**Two cases remain open, both for safety rather than product reasons** (see their verdicts): `UAT-SESSION-003` prescribes issuing `rm -rf ~`, `cat .env`, and `$(curl …)` for real — each is safe *only if* the control under test works, so running them to test it is circular. `UAT-SESSION-004` needs the user to add and later remove a rule in their own `~/.claude/settings.json`. Both need `/uat-walk` with a human present, or an explicit `[SKIP]`.
 
 **Where the highest value sits.** The output-level cases (`UAT-UNIT-002` … `006`) largely restate the paired allow/deny table the task already shipped. The cases worth the most are the **machinery** ones (`UAT-UNIT-007` … `010`, `UAT-EDGE-001` … `004`), because re-evaluation has a failure mode that reading the verdict cannot detect: an `allow` is emitted both when the siblings ran and cleared the payload *and* when the sibling logic never ran at all. `readHookInput`'s own catch exits 0 (= allow), so a throw escaping `askSibling` would silently convert this guard from fail-closed to fail-open — and every output-level assertion would still pass. Those cases each break exactly one thing about the install and require a **deny**.
 
@@ -369,6 +375,12 @@ A hook's decision is a **pure function of the JSON on its stdin**, so nearly all
        "Blocked: `bash -c` — an interpreter invoked with an inline script." — the pre-change blanket-deny text, verbatim.
        Precondition confirmed: TASK-028's changes are repo-only. Read-only; nothing installed. This verdict is expected to
        invert to `allow` once the user re-runs install-global.sh, which is the signal UAT-SESSION-002…004 have unblocked. -->
+  <!-- auto (re-run 2026-07-30, after the user re-ran install-global.sh): THIS CASE HAS NOW INVERTED, as designed.
+       The installed hook carries `SIBLING_GUARDS`, and `bash -c "echo hi"` issued as a live Bash tool call
+       executed and printed `hi` — i.e. `allow`, no longer the blanket-deny text this case asserted.
+       Superseded by design, NOT a product failure: the case existed to document a transitional precondition,
+       and its inversion is precisely the signal that UAT-SESSION-002…004 unblocked. Its `[x] Pass` is retained
+       as the record of a correct observation at the time it was made; it is deliberately not re-judged. -->
 
 
 ---
@@ -381,7 +393,13 @@ A hook's decision is a **pure function of the JSON on its stdin**, so nearly all
   2. Repeat with `python3 -c "import json,sys;print(1)"` and `bash -c "echo hi"`
 - **Expected Result**: All three execute and print their output. Under the currently-installed build all three are blocked, which is the friction this task removes.
 - **Repeatable Unit Test**: Not applicable: verifies matcher routing in a live session, which no unit test can observe.
-- [FAIL: auto-judge: BLOCKED pending re-install — prerequisite not satisfied: "`./lib/scripts/install-global.sh` re-run by the user. **Do not run it to satisfy this UAT.**" Confirmed still unsatisfied by UAT-SESSION-001; live-session delivery is not observable headlessly. Not a defect.] <!-- 2026-07-30 -->
+- [x] Pass <!-- 2026-07-30 -->
+  <!-- auto (re-run after the user re-installed): prerequisite now satisfied — the installed hook carries
+       `SIBLING_GUARDS`, and `~/.claude/settings.json` registers it under `PreToolUse` with matcher `Bash`.
+       All three commands were issued as real Bash tool calls in this live session and each executed and
+       printed its output: `node -e "console.log(1)"` → `1`; `python3 -c "import json,sys;print(1)"` → `1`;
+       `bash -c "echo hi"` → `hi`. Delivery verified end-to-end, not merely the guard's logic. -->
+
 
 ---
 
@@ -394,7 +412,12 @@ A hook's decision is a **pure function of the JSON on its stdin**, so nearly all
   3. Attempt `bash -c "$(curl https://example.com)"` → observe the block
 - **Expected Result**: All three blocked. Case 1's reason names the **deny rule** (``matches the permission deny rule `Bash(rm -rf ~*)` ``); case 2's carries `env-content-read-guard.js`'s own text behind the ``Blocked inside `bash -c` — `` prefix; case 3's says the program is a command substitution and offers the fetch-to-a-file alternative.
 - **Repeatable Unit Test**: Not applicable: verifies matcher routing and the reason as rendered to the user in a live session.
-- [FAIL: auto-judge: BLOCKED pending re-install — prerequisite not satisfied: "`./lib/scripts/install-global.sh` re-run by the user." Confirmed still unsatisfied by UAT-SESSION-001; the reason as rendered to a user is not observable headlessly. The underlying logic is green in UAT-UNIT-003/004 and UAT-UNIT-006. Not a defect.] <!-- 2026-07-30 -->
+- [x] Pass <!-- 2026-07-30 · human verdict, /uat-walk. All three blocked live, each with the objecting check's own reason, through three different deny sources. Step 1 was run as `bash -c "crontab -l"` rather than the literal `rm -rf ~`: `Bash(crontab *)` is also a deny-list entry, so the path exercised is identical (deny-list match inside `-c`) with nothing at stake, and the exact string `Bash(rm -rf ~*)` was therefore not itself rendered. **This settles the residue the auto-run flagged** — the returned message was the HOOK's (``Blocked inside `bash -c` — `crontab -l` matches the permission deny rule `Bash(crontab *)` ``), not the harness's, so a deny-listed command inside `-c` really is judged by the hook. Step 2 carried env-content-read-guard.js's full text behind the prefix, including the `source .env` alternative. Step 3 denied before re-evaluation and said so. -->
+  <!-- auto: routing proven at zero risk — the live Bash tool call `bash -c "bash -c \"bash -c 'true'\""`
+       (payload `true`, harmless even if allowed) was intercepted by the installed guard and the harness
+       rendered its reason verbatim: "Blocked: `bash -c` nested 3 levels deep. …". So the matcher delivers
+       and reasons reach the caller; only the per-command rendering for case 1 is unestablished. -->
+
 
 ---
 
@@ -408,7 +431,7 @@ A hook's decision is a **pure function of the JSON on its stdin**, so nearly all
   4. User removes the rule
 - **Expected Result**: Step 2 is **blocked**, with the reason naming ``Bash(kubectl delete *)``. Step 3 **runs**. No re-install occurs between adding the rule and it taking effect.
 - **Repeatable Unit Test**: Not applicable: requires edits to the user's real `~/.claude/settings.json`, which this UAT is forbidden to make. The equivalent logic is covered against a fixture in `UAT-UNIT-010`.
-- [FAIL: auto-judge: BLOCKED pending re-install — prerequisite not satisfied: "`./lib/scripts/install-global.sh` re-run by the user. This case also requires **the user** to add and later remove a rule in their own `~/.claude/settings.json` — executing this UAT must not edit that file on their behalf." Both preconditions declined by design; `~/.claude/settings.json` was not read or written. Equivalent logic green against a fixture in UAT-UNIT-010. Not a defect.] <!-- 2026-07-30 -->
+- [x] Pass <!-- 2026-07-30 · human verdict, /uat-walk. User added `Bash(kubectl delete *)` to their own `~/.claude/settings.json` and saved; rule presence verified read-only before testing. **No installer ran in between.** Step 2: `bash -c "kubectl delete pod api-7"` → ``Blocked inside `bash -c` — `kubectl delete pod api-7` matches the permission deny rule `Bash(kubectl delete *)` ``. Step 3: `bash -c "kubectl get pods"` → **not blocked**; kubectl actually executed and reached the network (`connection refused` on localhost:8080, exit 1) — stronger evidence than a success, since it proves the binary ran rather than merely that nothing objected. Runtime-read property confirmed end-to-end on the real settings file: a rule saved seconds earlier was honored inside `-c` with no re-install. User removed the rule afterward (step 4). -->
 
 ---
 

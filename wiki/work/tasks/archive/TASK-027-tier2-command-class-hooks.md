@@ -143,7 +143,9 @@ This is the user's original requirement, verbatim: *"no packages added without e
 > Known gaps documented in the file header: `tee ~/.zshrc` / `cp x ~/.zshrc` write the same files without a redirect; redirect targets resolve lexically rather than via `realpath()` (target usually does not exist yet), so a pre-existing symlink into `~/.claude/` is missed; `git --config-env=alias.x=VAR` hides the payload in an env var. Inherited from step 2: a segment merely *quoting* one of these forms fires — reconcile against step 4's first-token approach at step 8.
 > - Gates: `node --check` clean, `npm test` 15/15.
 
-### 6. Hook: Claude Code settings guard — with a bootstrap-claude exception  <!-- agent: general-purpose -->
+### 6. Hook: Claude Code settings guard — ~~with a bootstrap-claude exception~~  <!-- agent: general-purpose -->
+
+> **The exception was REMOVED on 2026-07-30 — the block is now unconditional.** Kept below as the historical record of what was built and why. The premise turned out to be wrong: this repo writes `~/.claude/settings.json` through `node merge-settings-deny.js` *inside* `install-global.sh`, a Bash subprocess no `PreToolUse` hook ever sees, so the Edit-tool exception was never load-bearing. It was closed after a plain `Edit` call from inside this repo demonstrably rewrote the live permission boundary. The former marker shapes are still exercised in `test/command-class-hooks.test.js`, now asserting **deny**, as canaries against the carve-out returning.
 
 **Why this hook exists.** TASK-026 originally shipped `Edit(~/.claude/settings.json)` and `Edit(~/.claude/settings.local.json)` as deny entries. Those were **removed** (2026-07-29, user decision) because a deny rule cannot carry an exception — deny beats allow at every scope, and **a hook cannot loosen a deny rule either**, so the entries had to come out for any exception to be possible. This repo legitimately manages `~/.claude/settings.json` (that is what `install-global.sh` + `merge-settings-deny.js` do), so a blanket lock made the repo unable to work on itself.
 

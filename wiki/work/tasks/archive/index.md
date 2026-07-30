@@ -29,3 +29,5 @@ Terminal task files (`done` or `trashed`) moved here by `/wiki-archive` to reduc
 | [[TASK-026]] | Audit and harden the canonical settings deny list | done | 2026-07-29 |
 | [[TASK-025]] | Migrate this machine's MCP registrations to the single-process design (runtime UAT) | done | 2026-07-29 |
 | [[TASK-027]] | Tier-2 PreToolUse hooks — gate command classes deny rules cannot express | done | 2026-07-29 |
+| [[TASK-028]] | Rework interpreter-indirection-guard from blanket deny to recursive re-evaluation | done | 2026-07-30 |
+| [[TASK-029]] | Ship fileSuggestion @-autocomplete restoration for info/exclude'd wiki dirs | done | 2026-07-30 |

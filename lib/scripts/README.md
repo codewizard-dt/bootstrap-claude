@@ -84,19 +84,25 @@ tool call, and Claude Code hot-reloads both files so such a write takes effect
 immediately. It matters *most* under `bypassPermissions`, where Claude Code's
 built-in protection for `.claude` paths is **not** applied.
 
-That protection deliberately lives in a `PreToolUse` hook
-(`claude-settings-guard.js`), **not** in this deny list, because it needs an
-exception a deny rule cannot express: **this repo manages `~/.claude/settings.json`
-itself** — that is exactly what `install-global.sh` and `merge-settings-deny.js`
-do. A blanket `Edit(~/.claude/settings.json)` deny left bootstrap-claude unable to
-work on itself, and no allow rule or hook could carve a way back in: deny beats
-allow at every scope, and a hook returning `allow` cannot loosen a deny rule
-either. So the deny entries were removed and the hook took over.
+That protection lives in a `PreToolUse` hook (`claude-settings-guard.js`) rather
+than in this deny list. `claude-settings-guard.js` blocks `Edit`/`Write`/
+`NotebookEdit`/`MultiEdit` on `~/.claude/settings.json` and `settings.local.json`
+**unconditionally** — the verdict does not depend on cwd.
 
-The guard blocks edits to `~/.claude/settings.json` and `settings.local.json`
-outside a bootstrap-claude checkout, and permits them inside one — identifying the
-checkout by marker file (`lib/scripts/templates/settings-deny.json` plus a
-`package.json` named `@codewizard-dt/bootstrap`), not by path name.
+*History worth knowing, because the code changed under it:* the deny entries were
+originally removed to make room for a bootstrap-claude carve-out, on the belief
+that this repo needs to edit those files. **It does not.** The repo writes them
+through `node merge-settings-deny.js` *inside* `install-global.sh` — a Bash
+subprocess that no hook and no permission rule ever observes. The exception was
+never load-bearing and was removed on 2026-07-30, after it was demonstrated that
+any agent running in this repo could rewrite its own permission boundary with a
+plain `Edit` call.
+
+The deny entries stay out, but now by choice rather than necessity: the merge is
+additive-only with **no removal path**, so restoring them is permanent for every
+installed user, and the hook already covers the same paths *plus* the `Write` and
+`NotebookEdit` surfaces that `Edit(...)` rules never reach. Restore them only if
+the hook proves unreliable.
 
 **`~/.claude/hooks/**` stays in the deny list with no exception**, including
 inside this repo. The canonical flow there is to edit `lib/hooks/` and re-run

@@ -1,7 +1,7 @@
 ---
 id: TASK-029
 title: "Ship fileSuggestion @-autocomplete restoration for info/exclude'd wiki dirs"
-status: pending-uat
+status: done
 created: 2026-07-29
 updated: 2026-07-29
 depends_on: []

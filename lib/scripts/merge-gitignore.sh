@@ -86,6 +86,20 @@ section_missing_count() {
 
 added=0
 
+# section_missing_lines <section-file>: print the entries that would be added,
+# one per line, indented. Same selection logic as section_missing_count — a
+# count alone ("3 new line(s)?") asks the user to consent to something they
+# cannot see, so the prompt shows exactly what it will write.
+section_missing_lines() {
+  local line trimmed
+  while IFS= read -r line || [ -n "$line" ]; do
+    trimmed="${line#"${line%%[![:space:]]*}"}"
+    [ -z "$trimmed" ] && continue
+    case "$trimmed" in \#*) continue ;; esac
+    grep -qFx -- "$line" "$EXISTING" || printf '      %s\n' "$line"
+  done < "$1"
+}
+
 # merge_section <section-file>: append the section's missing lines, keeping
 # comment/blank lines buffered so headers only land when new entries follow.
 merge_section() {
@@ -114,26 +128,64 @@ merge_section() {
   done < "$1"
 }
 
+# Tally before asking anything: the opening question should state the real
+# scope, and a project with nothing to offer must not be asked at all.
+total_missing=0
+sections_offered=0
 i=1
 while [ "$i" -le "$SECTION_COUNT" ]; do
-  SEC="$WORK_DIR/sec.$i"
-  TITLE="section $i"
-  [ -f "$WORK_DIR/title.$i" ] && TITLE="$(cat "$WORK_DIR/title.$i")"
-  missing="$(section_missing_count "$SEC")"
-  if [ "$missing" -eq 0 ]; then
-    : # nothing new to offer for this section
-  elif prompt_yn "  Add/update .gitignore section '$TITLE' ($missing new line(s))? [y/N]: "; then
-    merge_section "$SEC"
-  else
-    echo "  .gitignore section '$TITLE': skipped."
+  n="$(section_missing_count "$WORK_DIR/sec.$i")"
+  if [ "$n" -gt 0 ]; then
+    total_missing=$((total_missing + n))
+    sections_offered=$((sections_offered + 1))
   fi
   i=$((i + 1))
 done
 
-if [ "$added" -eq 0 ]; then
-  echo ".gitignore: no changes made in $PROJECT_DIR"
+# One gate for the whole .gitignore pass, so a user who does not want their
+# .gitignore touched answers once instead of once per section. This covers the
+# section loop ONLY — the .git/info/exclude block below is a different mechanism
+# (machine-local, never committed) and keeps its own prompt, so declining here
+# still lets the sentinel repair run.
+review_sections=0
+if [ "$total_missing" -eq 0 ]; then
+  echo ".gitignore: already has everything the template offers in $PROJECT_DIR"
+elif prompt_yn "  Review .gitignore updates? ($total_missing line(s) across $sections_offered section(s)) [y/N]: "; then
+  review_sections=1
 else
+  echo ".gitignore: skipped entirely — no sections offered."
+fi
+
+if [ "$review_sections" -eq 1 ]; then
+  i=1
+  while [ "$i" -le "$SECTION_COUNT" ]; do
+    SEC="$WORK_DIR/sec.$i"
+    TITLE="section $i"
+    [ -f "$WORK_DIR/title.$i" ] && TITLE="$(cat "$WORK_DIR/title.$i")"
+    missing="$(section_missing_count "$SEC")"
+    if [ "$missing" -gt 0 ]; then
+      # Show the actual lines before asking. Comment/blank lines are omitted:
+      # they are only written as headers when a real entry follows, so listing
+      # them would misrepresent what the "y" adds.
+      echo "  .gitignore section '$TITLE' would add $missing line(s):"
+      section_missing_lines "$SEC"
+      if prompt_yn "  Add these to .gitignore? [y/N]: "; then
+        merge_section "$SEC"
+      else
+        echo "  .gitignore section '$TITLE': skipped."
+      fi
+    fi
+    i=$((i + 1))
+  done
+fi
+
+# Only summarise when the section pass actually ran; the gate's own message
+# already said what happened otherwise, and a second "no changes made" line
+# reads as if something was attempted.
+if [ "$added" -gt 0 ]; then
   echo ".gitignore: $added line(s) merged into $PROJECT_DIR"
+elif [ "$review_sections" -eq 1 ]; then
+  echo ".gitignore: no changes made in $PROJECT_DIR"
 fi
 
 # Machine-local git exclusion for bootstrap agent state. These dirs must NEVER

@@ -885,19 +885,25 @@ test('settings guard expands a literal ~ arriving unshelled in tool_input', () =
   }
 });
 
-// The carve-out that forced the deny entries out of settings-deny.json. If this
-// regresses, the repo cannot run install-global.sh on itself.
-test('settings guard allows the write inside a genuine bootstrap-claude checkout', () => {
+// The bootstrap-claude carve-out was REMOVED on 2026-07-30. It existed on the
+// belief that this repo needs the Edit tool on ~/.claude/settings.json — but the
+// repo writes those files via `node merge-settings-deny.js` inside
+// install-global.sh, a Bash subprocess no PreToolUse hook ever sees. The
+// exception was therefore never load-bearing, while it did let any agent running
+// here rewrite its own permission boundary (demonstrated live before removal).
+test('settings guard blocks the write even inside this bootstrap-claude checkout', () => {
   for (const cwd of [REPO, path.join(REPO, 'lib', 'hooks')]) {
     const r = fire(SETTINGS, { tool_name: 'Edit', tool_input: { file_path: SETTINGS_TARGET }, cwd }, cwd);
     assert.strictEqual(r.status, 0);
-    assert.strictEqual(r.decision, 'allow', `the exception did not apply from ${cwd}`);
+    assert.strictEqual(r.decision, 'deny', `the removed carve-out reappeared at ${cwd}`);
   }
 });
 
-// A path-substring test like cwd.includes('bootstrap-claude') is spoofed by
-// `mkdir bootstrap-claude`. Both markers must hold, or there is no exception.
-test('settings guard rejects a spoofed bootstrap-claude directory', () => {
+// Kept after the carve-out was removed: these five shapes are the ones that used
+// to earn the exception (or nearly), so they are the most sensitive canaries for
+// it returning. All must deny, and the unparseable-package.json case must still
+// deny rather than crash.
+test('settings guard denies every shape that formerly earned the exception', () => {
   const root = scratchDir();
   try {
     // (a) named bootstrap-claude, but neither marker present
@@ -932,10 +938,12 @@ test('settings guard rejects a spoofed bootstrap-claude directory', () => {
   }
 });
 
-test('settings guard finds a real marker root by walking up, not by path name', () => {
+// The verdict must not depend on cwd at all any more. A directory carrying BOTH
+// former markers — the exact shape that used to earn the exception — is the
+// sharpest probe for the carve-out having crept back in.
+test('settings guard verdict is independent of cwd, markers or not', () => {
   const root = scratchDir();
   try {
-    // Deliberately NOT named bootstrap-claude — the markers are what count.
     const genuine = path.join(root, 'totally-unrelated-name');
     const nested = path.join(genuine, 'a', 'b', 'c');
     fs.mkdirSync(path.join(genuine, 'lib', 'scripts', 'templates'), { recursive: true });
@@ -943,10 +951,13 @@ test('settings guard finds a real marker root by walking up, not by path name', 
     fs.writeFileSync(path.join(genuine, 'lib', 'scripts', 'templates', 'settings-deny.json'), '[]');
     fs.writeFileSync(path.join(genuine, 'package.json'), JSON.stringify({ name: '@codewizard-dt/bootstrap' }));
 
-    for (const cwd of [genuine, nested]) {
+    const bare = path.join(root, 'no-markers-here');
+    fs.mkdirSync(bare, { recursive: true });
+
+    for (const cwd of [genuine, nested, bare, REPO]) {
       const r = fire(SETTINGS, { tool_name: 'Write', tool_input: { file_path: LOCAL_TARGET }, cwd }, cwd);
       assert.strictEqual(r.status, 0);
-      assert.strictEqual(r.decision, 'allow', `marker root not found walking up from ${cwd}`);
+      assert.strictEqual(r.decision, 'deny', `cwd ${cwd} changed the verdict — the carve-out is back`);
     }
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
@@ -955,7 +966,7 @@ test('settings guard finds a real marker root by walking up, not by path name', 
 
 // No exception here, not even inside this repo: the canonical flow is to edit
 // lib/hooks/ and let install-global.sh rsync the result into place.
-test('the ~/.claude/hooks/ block is absolute — the bootstrap exception does not reach it', () => {
+test('the ~/.claude/hooks/ block is absolute, and was already so before the carve-out went', () => {
   for (const tool of ['Edit', 'Write']) {
     const r = fire(SETTINGS, { tool_name: tool, tool_input: { file_path: HOOKS_TARGET }, cwd: REPO }, REPO);
     assert.strictEqual(r.status, 0);
@@ -983,13 +994,18 @@ test('settings guard ignores unrelated targets and non-file tools', () => {
   }
 });
 
-test('settings guard reason names the marker pair, not a directory name', () => {
+test('settings guard reason routes to the reviewable flow and promises no exception', () => {
   const outside = scratchDir();
   try {
     const r = fire(SETTINGS, { tool_name: 'Edit', tool_input: { file_path: SETTINGS_TARGET }, cwd: outside }, outside);
+    // The block is only defensible if it names the sanctioned alternative:
+    // edit the template, re-run the installer, get the change in git.
     assert.match(r.reason, /settings-deny\.json/);
-    assert.match(r.reason, /@codewizard-dt\/bootstrap/);
-    assert.match(r.reason, /not by directory name/i);
+    assert.match(r.reason, /install-global\.sh/);
+    // And it must not advertise an exception that no longer exists — a reader
+    // told "unless you're in the repo" would waste time trying exactly that.
+    assert.match(r.reason, /no exception/i);
+    assert.doesNotMatch(r.reason, /@codewizard-dt\/bootstrap/, 'reason still describes the removed marker pair');
   } finally {
     fs.rmSync(outside, { recursive: true, force: true });
   }

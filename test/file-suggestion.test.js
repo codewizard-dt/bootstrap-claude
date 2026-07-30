@@ -241,22 +241,83 @@ test('absolute and parent-traversal sentinel entries are refused', () => {
   cleanup(dir);
 });
 
-test('hostile queries exit 0 and are matched literally, never as a flag or a regex', () => {
+test('hostile queries exit 0 and are never read as a flag, a glob, or a regex', () => {
   const dir = mkRepo({ exclude: CANONICAL });
 
-  for (const q of ['-v', '*', '[', '.*', '--help', 'a" b', '-e', '$(touch pwned)']) {
+  // Matching is subsequence-based, so "returns nothing" is NOT the property under
+  // test — a query whose characters genuinely appear in order should match. What
+  // must hold is that every metacharacter is escaped before it reaches grep, and
+  // that a leading dash is an operand rather than an option.
+  //
+  // These have no subsequence in any fixture path, so they must still yield zero.
+  // `.*` or `*` returning everything would mean the query reached grep unescaped;
+  // `--help` returning anything (or exiting non-zero) would mean the `--` operand
+  // guard is missing.
+  for (const q of ['*', '[', '.*', '--help', '^', '$', '(', ')', '\\', '$(touch pwned)']) {
     const res = pick(dir, q);
     assert.strictEqual(res.status, 0, `query ${JSON.stringify(q)} exited ${res.status}: ${res.stderr}`);
-    // No fixture path contains any of these substrings, so a literal match yields
-    // nothing. `-v` printing everything would mean grep read it as invert-match;
-    // `.*` or `*` printing everything would mean the filter is a regex/glob.
     assert.deepStrictEqual(
       res.lines,
       [],
-      `query ${JSON.stringify(q)} was not treated as a literal substring: ${res.lines}`
+      `query ${JSON.stringify(q)} was not escaped before reaching grep: ${res.lines}`
     );
   }
   assert.ok(!fs.existsSync(path.join(dir, 'pwned')), 'query was evaluated by the shell');
+
+  // `-e` DOES have a subsequence here: secret/secret-hotel.txt has a "-" followed
+  // later by an "e". That is correct fuzzy behaviour, not a flag leak. The leak
+  // would look different — grep reading `-e` as the pattern flag would either error
+  // or swallow the real pattern and emit every line, so assert it neither.
+  const dashE = pick(dir, '-e');
+  assert.strictEqual(dashE.status, 0, `query "-e" exited ${dashE.status}: ${dashE.stderr}`);
+  assert.deepStrictEqual(dashE.lines, ['secret/secret-hotel.txt'], 'query "-e" did not subsequence-match');
+
+  // `-v` would invert the match if grep read it as an option, printing everything
+  // except the hits. No fixture path has a "-" followed by a "v", so it must be empty.
+  const dashV = pick(dir, '-v');
+  assert.strictEqual(dashV.status, 0, `query "-v" exited ${dashV.status}: ${dashV.stderr}`);
+  assert.deepStrictEqual(dashV.lines, [], 'query "-v" was read as grep --invert-match');
+
+  cleanup(dir);
+});
+
+test('matching is subsequence-based, so a path-shaped query without the separators still hits', () => {
+  // The regression this pins: replacing the built-in picker replaces its matcher
+  // too. Under a plain `grep -F` substring filter BOTH of these return nothing —
+  // neither "wikitasks" nor "wiki/tasks" appears contiguously in the real path —
+  // which is strictly worse than the picker being replaced.
+  const dir = mkRepo({
+    exclude: CANONICAL,
+    files: ['wiki/work/tasks/TASK-001-example.md', 'src/unrelated.txt'],
+  });
+
+  for (const q of ['wikitasks', 'wiki/tasks', 'wiki/work/tasks', 'tasks', 'wktsk']) {
+    const res = pick(dir, q);
+    assert.strictEqual(res.status, 0, `query ${JSON.stringify(q)} exited ${res.status}`);
+    assert.ok(
+      res.lines.includes('wiki/work/tasks/TASK-001-example.md'),
+      `query ${JSON.stringify(q)} did not subsequence-match the task path: ${JSON.stringify(res.lines)}`
+    );
+  }
+
+  cleanup(dir);
+});
+
+test('contiguous matches rank above merely-subsequence ones', () => {
+  // Named so the contiguous hit sorts LAST alphabetically: `sort -u` alone would
+  // put aa/ first, so seeing zz/ first can only be the ranking pass.
+  const dir = mkRepo({
+    exclude: CANONICAL,
+    files: ['aa/t-a-s-k-s.md', 'zz/tasks-real.md'],
+  });
+
+  const res = pick(dir, 'tasks');
+  assert.strictEqual(res.status, 0, `exited ${res.status}: ${res.stderr}`);
+  assert.deepStrictEqual(
+    res.lines,
+    ['zz/tasks-real.md', 'aa/t-a-s-k-s.md'],
+    'contiguous match did not outrank the subsequence-only match'
+  );
 
   cleanup(dir);
 });
