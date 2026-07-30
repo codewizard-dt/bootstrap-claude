@@ -81,4 +81,27 @@ echo "Merging permissions deny list (~/.claude/settings.json)..."
 node "$SCRIPT_DIR/merge-settings-deny.js"
 echo ""
 
-echo "Global setup complete (MCPs + hooks + skills + deny list)."
+# 5. Install the @-autocomplete file suggestion picker and register it
+echo "Installing file suggestion picker (~/.claude/file-suggestion.sh)..."
+mkdir -p "$HOME/.claude"
+cp "$SCRIPT_DIR/templates/file-suggestion.sh" "$HOME/.claude/file-suggestion.sh"
+chmod +x "$HOME/.claude/file-suggestion.sh"
+
+# The merge exits 0 on every outcome, so its message is the only way to tell a
+# fresh registration from a no-op or a skip. Capture stdout+stderr together and
+# echo it back; an outcome we don't recognise gets no follow-up line.
+FILE_SUGGESTION_OUT="$(node "$SCRIPT_DIR/merge-settings-deny.js" --set-key fileSuggestion --set-value '{"type":"command","command":"~/.claude/file-suggestion.sh"}' 2>&1)"
+if [ -n "$FILE_SUGGESTION_OUT" ]; then
+  echo "$FILE_SUGGESTION_OUT"
+fi
+case "$FILE_SUGGESTION_OUT" in
+  *'"fileSuggestion" set'*)
+    echo "Restart Claude Code sessions to pick up the new file suggestion command."
+    ;;
+  *'already defines "fileSuggestion"'*)
+    echo "Keeping your existing \"fileSuggestion\" — @-autocomplete for the bootstrap wiki dirs stays off."
+    ;;
+esac
+echo ""
+
+echo "Global setup complete (MCPs + hooks + skills + deny list + file suggestion)."

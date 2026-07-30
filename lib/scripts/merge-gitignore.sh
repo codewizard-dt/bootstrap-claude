@@ -139,24 +139,136 @@ fi
 # Machine-local git exclusion for bootstrap agent state. These dirs must NEVER
 # go into .gitignore: Serena (ignore_all_files_in_gitignore: true) and Claude
 # Code's Grep mirror .gitignore and would go blind on the wiki. .git/info/exclude
-# has identical semantics for git but is invisible to those tools (Serena's
-# GitignoreParser reads only files named ".gitignore") and is never committed —
-# a per-machine choice, offered per-machine.
+# has identical semantics for git, is never committed (a per-machine choice,
+# offered per-machine), and is invisible to Serena — its GitignoreParser reads
+# only files named ".gitignore", so the dirs stay navigable. It is NOT invisible
+# to every tool: ripgrep-class walkers and Claude Code's @ file picker do honor
+# info/exclude. That is why install-global.sh installs ~/.claude/file-suggestion.sh
+# and registers it as the fileSuggestion picker — it re-includes exactly the paths
+# listed under the sentinel written below.
 GIT_EXCLUDE="$PROJECT_DIR/.git/info/exclude"
+EXCLUDE_SENTINEL="# bootstrap wiki & agent state (machine-local)"
+
+# Canonical form is what file-suggestion.sh can actually parse: the sentinel
+# line, immediately followed by .serena/, raw/, wiki/ in that order, each of the
+# four appearing exactly once, and the block terminated by a "#" comment or EOF.
+# A path sitting ABOVE the sentinel is still excluded by git but invisible to the
+# picker, so appending only the absent paths is not enough — we normalize.
+exclude_is_canonical() {
+  [ -f "$1" ] || return 1
+  awk -v sentinel="$EXCLUDE_SENTINEL" '
+    { line[NR] = $0 }
+    $0 == sentinel { sent++; at = NR }
+    $0 == ".serena/" { a++ }
+    $0 == "raw/" { b++ }
+    $0 == "wiki/" { c++ }
+    END {
+      if (sent != 1 || a != 1 || b != 1 || c != 1) exit 1
+      if (line[at + 1] != ".serena/" || line[at + 2] != "raw/" || line[at + 3] != "wiki/") exit 1
+      if (at + 3 < NR && line[at + 4] !~ /^[[:space:]]*#/) exit 1
+      exit 0
+    }
+  ' "$1"
+}
+
+# A user's own entry sitting INSIDE the sentinel block. Normalizing re-appends
+# our block at the bottom and leaves such an entry above it: git still excludes
+# it, but the picker stops re-including it, so say so rather than change the
+# user's view of their own file silently.
+exclude_stranded() {
+  [ -f "$1" ] || return 0
+  awk -v sentinel="$EXCLUDE_SENTINEL" '
+    $0 == sentinel { in_block = 1; next }
+    in_block && /^[[:space:]]*#/ { in_block = 0 }
+    in_block && $0 !~ /^[[:space:]]*$/ \
+      && $0 != ".serena/" && $0 != "raw/" && $0 != "wiki/" { print "    " $0 }
+  ' "$1"
+}
+
+# Scrub every occurrence of the sentinel and of the three exact whole-line paths
+# from anywhere in the file, then re-append the canonical block at the bottom.
+# Every other line survives verbatim and in its original order (this file may
+# hold the user's own exclusions); only a blank run the scrub itself created is
+# collapsed, and the result ends with exactly one newline.
+exclude_normalize() {
+  local file="$1" src="$1" tmp mode=""
+  [ -f "$src" ] || src=/dev/null
+  if [ -f "$file" ]; then
+    mode=$(stat -f '%Lp' "$file" 2>/dev/null || stat -c '%a' "$file" 2>/dev/null || true)
+  fi
+  mkdir -p "$(dirname "$file")" || return 1
+  tmp=$(mktemp "$(dirname "$file")/.bootstrap-exclude.XXXXXX") || return 1
+  awk -v sentinel="$EXCLUDE_SENTINEL" '
+    BEGIN { n = 0; prev_blank = 1; dropped = 0 }
+    $0 == sentinel || $0 == ".serena/" || $0 == "raw/" || $0 == "wiki/" { dropped = 1; next }
+    {
+      if ($0 ~ /^[[:space:]]*$/) {
+        if (prev_blank && dropped) next
+        prev_blank = 1
+      } else {
+        prev_blank = 0
+      }
+      keep[++n] = $0
+      dropped = 0
+    }
+    END {
+      while (n > 1 && keep[n] ~ /^[[:space:]]*$/ && keep[n - 1] ~ /^[[:space:]]*$/) n--
+      if (n == 1 && keep[1] ~ /^[[:space:]]*$/) n = 0
+      for (i = 1; i <= n; i++) print keep[i]
+      print sentinel
+      print ".serena/"
+      print "raw/"
+      print "wiki/"
+    }
+  ' "$src" > "$tmp" || { rm -f "$tmp"; return 1; }
+  mv -f "$tmp" "$file" || { rm -f "$tmp"; return 1; }
+  if [ -n "$mode" ]; then chmod "$mode" "$file" 2>/dev/null || true; fi
+  return 0
+}
+
+# Normalize and report. Never fatal: this runs under `set -euo pipefail` from
+# run_project_sync and must not abort the user's setup.
+exclude_apply() {
+  local stranded
+  stranded=$(exclude_stranded "$GIT_EXCLUDE")
+  if ! exclude_normalize "$GIT_EXCLUDE"; then
+    echo "  Warning: could not update $GIT_EXCLUDE — left unchanged."
+    return 1
+  fi
+  if [ -n "$stranded" ]; then
+    echo "  Note: these entries were inside the bootstrap block and now sit above it."
+    echo "  git still excludes them; @-autocomplete will no longer list them:"
+    printf '%s\n' "$stranded"
+  fi
+  return 0
+}
+
 if [ -d "$PROJECT_DIR/.git" ]; then
   exclude_missing=0
+  exclude_added=""
   for p in ".serena/" "raw/" "wiki/"; do
-    [ -f "$GIT_EXCLUDE" ] && grep -qFx -- "$p" "$GIT_EXCLUDE" || exclude_missing=$((exclude_missing + 1))
+    if [ -f "$GIT_EXCLUDE" ] && grep -qFx -- "$p" "$GIT_EXCLUDE"; then
+      continue
+    fi
+    exclude_missing=$((exclude_missing + 1))
+    exclude_added="${exclude_added}  + ${p} (.git/info/exclude)"$'\n'
   done
-  if [ "$exclude_missing" -gt 0 ] \
-    && prompt_yn "  Keep .serena/, raw/, wiki/ out of git on THIS machine (.git/info/exclude — not shared with the team; keeps them visible to Serena/Claude)? [y/N]: "; then
-    mkdir -p "$PROJECT_DIR/.git/info"
-    [ -f "$GIT_EXCLUDE" ] && [ -s "$GIT_EXCLUDE" ] && [ -n "$(tail -c1 "$GIT_EXCLUDE")" ] && printf '\n' >> "$GIT_EXCLUDE"
-    grep -qFx -- "# bootstrap wiki & agent state (machine-local)" "$GIT_EXCLUDE" 2>/dev/null \
-      || printf '# bootstrap wiki & agent state (machine-local)\n' >> "$GIT_EXCLUDE"
-    for p in ".serena/" "raw/" "wiki/"; do
-      grep -qFx -- "$p" "$GIT_EXCLUDE" || { printf '%s\n' "$p" >> "$GIT_EXCLUDE"; echo "  + $p (.git/info/exclude)"; }
-    done
-    echo "  Note: this protects only this clone — teammates opt in by running 'npx @codewizard-dt/bootstrap update' themselves."
+
+  if exclude_is_canonical "$GIT_EXCLUDE"; then
+    : # already canonical — leave the file byte-identical
+  elif [ "$exclude_missing" -gt 0 ]; then
+    # Accepting newly hides paths from git, so this stays a consent prompt.
+    if prompt_yn "  Keep .serena/, raw/, wiki/ out of git on THIS machine (.git/info/exclude — not shared with the team; visible to Serena; @-autocomplete restored via the installed fileSuggestion script)? [y/N]: "; then
+      if exclude_apply; then
+        printf '%s' "$exclude_added"
+        echo "  Note: this protects only this clone — teammates opt in by running 'npx @codewizard-dt/bootstrap update' themselves."
+      fi
+    fi
+  else
+    # All three are already excluded somewhere in the file: git's behaviour does
+    # not change, only the picker's view of it. A pure repair, so no prompt.
+    if exclude_apply; then
+      echo "  .git/info/exclude: reordered .serena/, raw/, wiki/ under the bootstrap sentinel (git unchanged; restores @-autocomplete)"
+    fi
   fi
 fi

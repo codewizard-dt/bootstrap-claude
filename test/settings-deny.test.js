@@ -17,7 +17,7 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { execFileSync } = require('node:child_process');
+const { execFileSync, spawnSync } = require('node:child_process');
 
 const REPO = path.resolve(__dirname, '..');
 const TEMPLATE = path.join(REPO, 'lib', 'scripts', 'templates', 'settings-deny.json');
@@ -76,6 +76,16 @@ function runMerge(target) {
 function scratchDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'deny-uat-'));
 }
+
+function run(args) {
+  return spawnSync(process.execPath, [MERGE, ...args], { encoding: 'utf8' });
+}
+
+function runSetKey(target, key, value) {
+  return run(['--target', target, '--set-key', key, '--set-value', value]);
+}
+
+const SUGGESTION = '{"type":"command","command":"~/.claude/file-suggestion.sh"}';
 
 test('template is a JSON array of strings', () => {
   assert.ok(Array.isArray(entries), 'template must be a bare JSON array');
@@ -248,6 +258,179 @@ test('merge skips when permissions.deny is not an array, leaving the file untouc
   });
 
   assert.strictEqual(fs.readFileSync(target, 'utf8'), original);
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+// --- --set-key mode (TASK-029) ------------------------------------------------
+// A separate operation from the deny merge, invoked separately by install-global.sh.
+// Same fail-safe contract on the target file; usage errors, by contrast, are loud.
+
+test('--set-key sets an absent key, preserves other keys and the file indentation', () => {
+  const dir = scratchDir();
+  const target = path.join(dir, 'settings.json');
+  fs.writeFileSync(target, JSON.stringify({ model: 'opusplan', env: { FOO: 'bar' } }, null, 4) + '\n');
+
+  const res = runSetKey(target, 'fileSuggestion', SUGGESTION);
+  assert.strictEqual(res.status, 0, res.stderr);
+  assert.match(res.stdout, /"fileSuggestion" set/);
+
+  const text = fs.readFileSync(target, 'utf8');
+  assert.match(text, /\n {4}"model"/, 'indentation not preserved');
+
+  const after = JSON.parse(text);
+  assert.deepStrictEqual(after.fileSuggestion, JSON.parse(SUGGESTION));
+  assert.strictEqual(after.model, 'opusplan');
+  assert.deepStrictEqual(after.env, { FOO: 'bar' });
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('--set-key creates the settings file when the target does not exist', () => {
+  const dir = scratchDir();
+  const target = path.join(dir, 'nested', 'settings.json');
+
+  const res = runSetKey(target, 'fileSuggestion', SUGGESTION);
+  assert.strictEqual(res.status, 0, res.stderr);
+  assert.deepStrictEqual(JSON.parse(fs.readFileSync(target, 'utf8')), {
+    fileSuggestion: JSON.parse(SUGGESTION),
+  });
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('--set-key no-ops on a deep-equal value even when key order differs', () => {
+  const dir = scratchDir();
+  const target = path.join(dir, 'settings.json');
+  // Keys deliberately in the opposite order from SUGGESTION: a JSON.stringify
+  // comparison would call this "different" and skip a legitimate no-op.
+  const original =
+    JSON.stringify(
+      { fileSuggestion: { command: '~/.claude/file-suggestion.sh', type: 'command' } },
+      null,
+      2
+    ) + '\n';
+  fs.writeFileSync(target, original);
+
+  const res = runSetKey(target, 'fileSuggestion', SUGGESTION);
+  assert.strictEqual(res.status, 0, res.stderr);
+  assert.match(res.stdout, /already set/);
+  assert.strictEqual(fs.readFileSync(target, 'utf8'), original, 'no-op rewrote the file');
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('--set-key warns and changes nothing when the key holds a different value', () => {
+  const dir = scratchDir();
+  const target = path.join(dir, 'settings.json');
+  const original =
+    JSON.stringify({ fileSuggestion: { type: 'command', command: '~/mine.sh' } }, null, 2) + '\n';
+  fs.writeFileSync(target, original);
+
+  const res = runSetKey(target, 'fileSuggestion', SUGGESTION);
+  assert.strictEqual(res.status, 0, 'must exit 0 — install-global.sh runs under set -e');
+  assert.match(res.stderr, /already defines "fileSuggestion"/);
+  assert.match(res.stderr, /file-suggestion\.sh/, 'warning must name the skipped value');
+  assert.strictEqual(res.stderr.trim().split('\n').length, 1, 'warning must be one line');
+  assert.strictEqual(fs.readFileSync(target, 'utf8'), original, 'existing value was clobbered');
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('--set-key leaves a malformed target untouched and still exits 0', () => {
+  const dir = scratchDir();
+  const target = path.join(dir, 'settings.json');
+  const garbage = '{ this is not json ';
+  fs.writeFileSync(target, garbage);
+
+  const res = runSetKey(target, 'fileSuggestion', SUGGESTION);
+  assert.strictEqual(res.status, 0);
+  assert.strictEqual(fs.readFileSync(target, 'utf8'), garbage, 'malformed target was modified');
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('a malformed --set-value is a usage error: non-zero exit, nothing written', () => {
+  const dir = scratchDir();
+  const target = path.join(dir, 'settings.json');
+  const original = JSON.stringify({ model: 'opusplan' }, null, 2) + '\n';
+  fs.writeFileSync(target, original);
+
+  const res = runSetKey(target, 'fileSuggestion', '{not json');
+  assert.notStrictEqual(res.status, 0, 'garbage --set-value must fail loudly');
+  assert.match(res.stderr, /not valid JSON/);
+  assert.strictEqual(fs.readFileSync(target, 'utf8'), original);
+
+  const missing = run(['--target', target, '--set-key', 'fileSuggestion']);
+  assert.notStrictEqual(missing.status, 0, '--set-key without --set-value must fail loudly');
+  assert.strictEqual(fs.readFileSync(target, 'utf8'), original);
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('--set-key does not run the deny merge — the two operations are independent', () => {
+  const dir = scratchDir();
+  const target = path.join(dir, 'settings.json');
+  fs.writeFileSync(target, JSON.stringify({ model: 'opusplan' }, null, 2) + '\n');
+
+  const res = runSetKey(target, 'fileSuggestion', SUGGESTION);
+  assert.strictEqual(res.status, 0, res.stderr);
+
+  const after = JSON.parse(fs.readFileSync(target, 'utf8'));
+  assert.strictEqual('permissions' in after, false, 'deny merge ran in --set-key mode');
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+// install-global.sh writes to the SAME settings.json twice in a row: the deny merge
+// (step 4), then the fileSuggestion registration (step 5). Each run re-reads and
+// re-serialises the whole file, so a bug in either could silently drop the other's
+// work. Neither single-mode test above can see that; this one runs both in order.
+test('install order — the deny merge then --set-key: both survive, in one file', () => {
+  const dir = scratchDir();
+  const target = path.join(dir, 'settings.json');
+  fs.writeFileSync(target, JSON.stringify({ model: 'opusplan' }, null, 2) + '\n');
+
+  const deny = run(['--target', target, '--source', TEMPLATE]);
+  assert.strictEqual(deny.status, 0, deny.stderr);
+
+  const key = runSetKey(target, 'fileSuggestion', SUGGESTION);
+  assert.strictEqual(key.status, 0, key.stderr);
+  assert.match(key.stdout, /"fileSuggestion" set/);
+
+  const after = JSON.parse(fs.readFileSync(target, 'utf8'));
+  assert.deepStrictEqual(after.permissions.deny, entries, 'registering fileSuggestion dropped deny entries');
+  assert.strictEqual(after.permissions.deny.length, 116, 'deny entry count changed');
+  assert.deepStrictEqual(after.fileSuggestion, JSON.parse(SUGGESTION));
+  assert.strictEqual(after.model, 'opusplan', 'unrelated key lost across the two writes');
+
+  // And re-running the whole install is a no-op on both halves.
+  const before = fs.readFileSync(target, 'utf8');
+  run(['--target', target, '--source', TEMPLATE]);
+  runSetKey(target, 'fileSuggestion', SUGGESTION);
+  assert.strictEqual(fs.readFileSync(target, 'utf8'), before, 'a second install rewrote the file');
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('default deny merge is unchanged by --set-key mode: no flags still merges, preserving tabs', () => {
+  const dir = scratchDir();
+  const target = path.join(dir, 'settings.json');
+  const before = { model: 'opusplan', permissions: { deny: ['Bash(my-own-rule *)'] } };
+  fs.writeFileSync(target, JSON.stringify(before, null, '\t') + '\n');
+
+  const res = run(['--target', target, '--source', TEMPLATE]);
+  assert.strictEqual(res.status, 0, res.stderr);
+  assert.match(res.stdout, /deny entries merged|deny entr(y|ies) merged/);
+
+  const text = fs.readFileSync(target, 'utf8');
+  assert.match(text, /\n\t"model"/, 'tab indentation not preserved');
+
+  const after = JSON.parse(text);
+  assert.strictEqual(after.model, 'opusplan');
+  assert.strictEqual(after.permissions.deny[0], 'Bash(my-own-rule *)');
+  assert.deepStrictEqual(after.permissions.deny.slice(1), entries, 'canonical list not appended verbatim');
+  assert.strictEqual('fileSuggestion' in after, false, 'set-key path leaked into the default merge');
 
   fs.rmSync(dir, { recursive: true, force: true });
 });

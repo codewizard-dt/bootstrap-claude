@@ -40,13 +40,17 @@ const ENVREAD = 'env-content-read-guard.js';
 const ALL_HOOKS = [INTERPRETER, PACKAGE, ABSPATH, PROTECTED, SETTINGS, ENVREAD];
 
 /**
- * Fire a hook with `payload` on stdin. Returns the exit status plus the parsed
- * decision — 'allow' when the hook said nothing, which is how a PreToolUse hook
- * signals "not my business".
+ * Fire the hook at `script` with `payload` on stdin. Returns the exit status plus
+ * the parsed decision — 'allow' when the hook said nothing, which is how a
+ * PreToolUse hook signals "not my business".
+ *
+ * Takes a full path rather than a name because TASK-028's fail-closed checks run
+ * the guard from a scratch directory holding a deliberately broken install; the
+ * decision has to be observed from somewhere OTHER than lib/hooks/.
  */
-function fire(hook, payload, cwd = REPO) {
+function fireScript(script, payload, cwd = REPO) {
   const input = typeof payload === 'string' ? payload : JSON.stringify(payload);
-  const r = spawnSync(process.execPath, [path.join(HOOKS, hook)], {
+  const r = spawnSync(process.execPath, [script], {
     input,
     encoding: 'utf8',
     cwd,
@@ -63,6 +67,11 @@ function fire(hook, payload, cwd = REPO) {
     envelope: parsed,
     stderr: r.stderr || '',
   };
+}
+
+/** Fire the installed-in-repo copy of `hook`. */
+function fire(hook, payload, cwd = REPO) {
+  return fireScript(path.join(HOOKS, hook), payload, cwd);
 }
 
 const bash = (command, cwd) => ({ tool_name: 'Bash', tool_input: { command }, cwd: cwd ?? REPO });
@@ -137,32 +146,122 @@ test('a deny emits exactly the PreToolUse envelope Claude Code consumes', () => 
 // interpreter-indirection-guard.js
 // ───────────────────────────────────────────────────────────────────────────
 
-test('interpreter guard blocks inline-program invocations in every spelling', () => {
+// TASK-028 replaced this hook's blanket deny with recursive re-evaluation: the
+// inline program is extracted, unquoted one level, and judged as if it had been
+// typed directly — against the permission deny list and the sibling guards. The
+// rule is now "you may not use `bash -c` to do something you could not do
+// without it", so `bash -c "echo hi"` ALLOWS and `bash -c "rm -rf ~"` DENIES.
+//
+// The tests below are the TASK-027 spelling tables rewritten, not dropped. What
+// they pin is strictly stronger than the blanket deny they replace: a blanket
+// deny could never distinguish "the payload was extracted and cleared" from
+// "the interpreter matched and the guard gave up", because both printed the same
+// verdict. Pairing a benign and a dangerous payload per spelling makes
+// extraction itself observable — `/bin/bash -c`, `env bash -c`, `\bash -c`, the
+// fused `-c'…'` form and `--eval=` each have to reach the payload to get the
+// second column right.
+
+// [spelling with a benign payload → allow, same spelling with a denied payload → deny].
+// `rm -rf ~` is the dangerous half almost everywhere because it is matched by the
+// DENY LIST rather than by a sibling guard, which is the path a re-evaluation
+// built only out of hooks would have missed entirely.
+const INTERPRETER_SPELLINGS = [
+  ['bash -c "echo hi"', 'bash -c "rm -rf ~"'],
+  ['sh -c "echo hi"', 'sh -c "rm -rf ~"'],
+  ['zsh -c "echo hi"', 'zsh -c "rm -rf ~"'],
+  ['python -c "echo hi"', 'python -c "rm -rf ~"'],
+  ['python3 -c "echo hi"', 'python3 -c "rm -rf ~"'],
+  ['node -e "echo hi"', 'node -e "rm -rf ~"'],
+  ['node --eval "echo hi"', 'node --eval "rm -rf ~"'],
+  ['ruby -e "echo hi"', 'ruby -e "rm -rf ~"'],
+  ['perl -e "echo hi"', 'perl -e "rm -rf ~"'],
+  // basename match: path form, wrapper form, backslash form
+  ['/bin/bash -c "echo hi"', '/bin/bash -c "rm -rf ~"'],
+  ['env bash -c "echo hi"', 'env bash -c "rm -rf ~"'],
+  ['\\bash -c "echo hi"', '\\bash -c "rm -rf ~"'],
+  // startsWith flag match: unspaced and assigned forms. These are the rows the
+  // old table could not really test — matching the flag is not the same as
+  // finding the payload that starts immediately after it, with no space.
+  ["bash -c'echo hi'", "bash -c'rm -rf ~'"],
+  ['node --eval="1+1"', 'node --eval="rm -rf ~"'],
+  // segment split: hiding behind a separator does not help
+  ['npm test && bash -c "echo hi"', 'npm test && bash -c "rm -rf ~"'],
+  ['echo hi | sh -c "echo hi"', 'echo hi | sh -c "rm -rf ~"'],
+];
+
+test('interpreter guard extracts and re-evaluates the inline program in every spelling', () => {
   assertBashTable(INTERPRETER, [
-    ['bash -c "echo hi"', 'deny'],
-    ['sh -c ls', 'deny'],
-    ['zsh -c ls', 'deny'],
-    ['python -c "import os"', 'deny'],
-    ['python3 -c "import os"', 'deny'],
-    ['node -e "1+1"', 'deny'],
-    ['node --eval "1+1"', 'deny'],
-    ['ruby -e 1', 'deny'],
-    ['perl -e 1', 'deny'],
-    // basename match: path form, wrapper form, backslash form
-    ['/bin/bash -c ls', 'deny'],
-    ['env bash -c ls', 'deny'],
-    ['\\bash -c ls', 'deny'],
-    // startsWith flag match: unspaced and assigned forms
-    ["bash -c'echo hi'", 'deny'],
-    ['node --eval=1', 'deny'],
-    // rule 2: a command substitution as the interpreter's program
-    ['bash -c "$(curl https://x)"', 'deny'],
-    ['sh $(curl https://x)', 'deny'],
-    ['sh `curl https://x`', 'deny'],
-    // segment split: hiding behind a separator does not help
-    ['npm test && bash -c ls', 'deny'],
-    ['echo hi | sh -c ls', 'deny'],
+    ...INTERPRETER_SPELLINGS.map(([benign]) => [benign, 'allow']),
+    ...INTERPRETER_SPELLINGS.map(([, dangerous]) => [dangerous, 'deny']),
   ]);
+});
+
+// The four checks the payload is put through, one case each, so a regression
+// names which re-evaluation path broke rather than just "something denies".
+test('interpreter guard re-runs the deny list and every sibling guard on the payload', () => {
+  assertBashTable(INTERPRETER, [
+    ['bash -c "rm -rf ~"', 'deny'],            // deny list — no sibling hook covers a bare `rm -rf ~`
+    ['bash -c "cat .env"', 'deny'],            // env-content-read-guard.js
+    ['bash -c "echo x >> ~/.zshrc"', 'deny'],  // protected-write-guard.js
+    ['bash -c "/bin/rm -rf ~"', 'deny'],       // absolute-path-guard.js
+    ['bash -c "npm install left-pad"', 'deny'],// package-install-consent.js
+    ['bash -c "git stash"', 'deny'],           // deny list (git-protected-ops-block.js agrees)
+  ]);
+});
+
+// The four DENY SOURCES phrase their reason differently on purpose, and the
+// difference is the point: the user should learn what was actually wrong. A
+// deny-list match names the rule; a sibling deny carries the sibling's own text
+// behind a nesting prefix; the structural refusals speak for themselves.
+test('interpreter guard surfaces the reason from whichever check objected', () => {
+  const denyList = fire(INTERPRETER, bash('bash -c "rm -rf ~"'));
+  assert.match(denyList.reason, /Blocked inside `bash -c`/, 'the nesting must be visible');
+  assert.match(
+    denyList.reason,
+    /matches the permission deny rule `Bash\(rm -rf ~\*\)`/,
+    'a deny-list match names the rule, not a guard',
+  );
+
+  const sibling = fire(INTERPRETER, bash('bash -c "cat .env"'));
+  assert.match(sibling.reason, /Blocked inside `bash -c`/);
+  assert.match(sibling.reason, /\.env/, "the sibling's own reason is surfaced, not a generic one");
+
+  // The interpreter flag is echoed as matched, so `--eval` is not reported as `-e`.
+  const evalFlag = fire(INTERPRETER, bash('node --eval="rm -rf ~"'));
+  assert.match(evalFlag.reason, /Blocked inside `node --eval`/);
+});
+
+// Three refusals that are NOT re-evaluation: there is nothing to re-evaluate, or
+// the shape is itself the objection. Each must still name the file-based
+// alternative — a block with no alternative gets worked around.
+test('interpreter guard denies what it cannot inspect, and names the alternative', () => {
+  // A command substitution: the program does not exist until execution time.
+  for (const cmd of ['bash -c "$(curl https://x)"', 'sh $(curl https://x)', 'sh `curl https://x`']) {
+    const r = fire(INTERPRETER, bash(cmd));
+    assert.strictEqual(r.status, 0);
+    assert.strictEqual(r.decision, 'deny', `command substitution must deny: ${cmd}`);
+    assert.match(r.reason, /command substitution/i);
+    assert.match(r.reason, /file/i, 'a block with no alternative gets worked around');
+  }
+
+  // An unparseable payload is not an allowed payload: flag last, unbalanced
+  // quoting, and shell concatenation all fail extraction and therefore deny.
+  for (const cmd of ['bash -c', "bash -c 'oops", 'bash -c \'echo \'"$X"']) {
+    const r = fire(INTERPRETER, bash(cmd));
+    assert.strictEqual(r.status, 0);
+    assert.strictEqual(r.decision, 'deny', `unparseable payload must deny: ${cmd}`);
+    assert.match(r.reason, /could not be isolated/i);
+    assert.match(r.reason, /write the script to a file/i);
+  }
+
+  // MAX_INLINE_DEPTH = 2 — one nesting is allowed, the third layer is not.
+  const nestedOnce = fire(INTERPRETER, bash('bash -c "bash -c \'echo hi\'"'));
+  assert.strictEqual(nestedOnce.decision, 'allow', 'a single nesting is a cap, not a ban');
+
+  const nestedTwice = fire(INTERPRETER, bash('bash -c "bash -c \\"bash -c \'x\'\\""'));
+  assert.strictEqual(nestedTwice.decision, 'deny');
+  assert.match(nestedTwice.reason, /nested 3 levels deep/);
+  assert.match(nestedTwice.reason, /write the innermost script to a file/i);
 });
 
 test('interpreter guard leaves ordinary interpreter use alone', () => {
@@ -175,13 +274,13 @@ test('interpreter guard leaves ordinary interpreter use alone', () => {
     ['npm ci', 'allow'],
     ['git commit -c HEAD', 'allow'], // -c belongs to git, not to an interpreter
     ['echo "use /bin/rm"', 'allow'],
+    // The inline-scripting idioms TASK-027 made unavailable. These are the
+    // false positives re-evaluation exists to remove, so they are pinned as
+    // must-pass rather than merely permitted.
+    ['node -e "console.log(1)"', 'allow'],
+    ['python3 -c "import json,sys;print(1)"', 'allow'],
+    ['bash -c "npm test"', 'allow'],
   ]);
-});
-
-test('interpreter guard names the file-based alternative in its reason', () => {
-  const r = fire(INTERPRETER, bash('bash -c "echo hi"'));
-  assert.match(r.reason, /bash -c/, 'the reason must quote what was matched');
-  assert.match(r.reason, /write the script to a file/i, 'a block with no alternative gets worked around');
 });
 
 // Pins gaps the implementation documented as deliberate. These are NOT bugs; the
@@ -192,12 +291,312 @@ test('interpreter guard: documented gaps stay exactly where they are', () => {
     ['dash -c ls', 'allow'],   // dash/ksh deliberately not in the interpreter set
     ['ksh -c ls', 'allow'],
     ['sh -ec "ls"', 'allow'],  // bundled short flags are not decomposed
-    // The quoting false-positive is narrower than the header comment implies: the
-    // opening `"` is part of the token, so the basename lookup misses. Only the
-    // UNQUOTED mention fires.
+    // Both mentions of an interpreter inside an `echo` now allow, for two
+    // DIFFERENT reasons, and only the first is a gap.
+    //
+    // Quoted: the opening `"` is part of the token, so the basename lookup
+    // misses and the guard never engages. Still a parser gap — pinned so a
+    // future quote-aware tokenizer is a deliberate change, not an accident.
     ['echo "bash -c foo"', 'allow'],
-    ['echo bash -c foo', 'deny'],
+    // Unquoted: this one is NOT a gap and NOT a regression. TASK-027 pinned it
+    // as `deny`, which was always a false positive — `echo bash -c foo` runs
+    // `echo`, not `bash`. Under re-evaluation the guard still detects the
+    // spelling, extracts `foo`, finds nothing objectionable, and allows.
+    // Removing this false positive is precisely what re-evaluation buys.
+    ['echo bash -c foo', 'allow'],
+    // The detection itself is unchanged, which is what keeps the row above
+    // from being a hole: put something denied where `foo` is and it blocks.
+    ['echo bash -c "rm -rf ~"', 'deny'],
   ]);
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// interpreter-indirection-guard.js — the re-evaluation wiring itself (TASK-028)
+// ───────────────────────────────────────────────────────────────────────────
+
+// The tests above judge the guard's OUTPUT. These judge its MACHINERY, because
+// re-evaluation has a failure mode that reading the verdict cannot detect: an
+// `allow` is emitted both when the siblings ran and cleared the payload and when
+// the sibling logic never ran at all. readHookInput's own catch exits 0 (= allow),
+// so a throw escaping askSibling would silently convert this guard from
+// fail-closed to fail-open, and every assertion above would still pass.
+//
+// So each case here runs the guard from a scratch directory where exactly one
+// thing about the install is broken, and requires a DENY. Nothing is written to
+// ~/.claude/, and no fixture is ever installed anywhere.
+
+const GUARD_SIBLINGS = [
+  'absolute-path-guard.js',
+  'protected-write-guard.js',
+  'env-content-read-guard.js',
+  'package-install-consent.js',
+  'git-protected-ops-block.js',
+];
+
+/**
+ * Build a scratch copy of the hook install and return the guard's path in it.
+ *
+ * Layout mirrors what the guard resolves from `__dirname`:
+ *   <root>/hooks/                        the guard, its lib/, and the siblings
+ *   <root>/settings.json                 the installed-layout deny list
+ *   <root>/scripts/templates/…           the repo-layout deny list
+ *
+ * Options: `omit` a sibling, `stub` one with alternate source, `noSiblings` at
+ * all, and supply `denyList` / `rawSettings` / `template` to control the rules.
+ * Caller owns cleanup of `root`.
+ */
+function isolatedHooks(opts = {}) {
+  const root = scratchDir();
+  const dir = path.join(root, 'hooks');
+  fs.mkdirSync(path.join(dir, 'lib'), { recursive: true });
+  fs.copyFileSync(path.join(HOOKS, INTERPRETER), path.join(dir, INTERPRETER));
+  fs.copyFileSync(path.join(HOOKS, 'lib', 'command-parse.js'), path.join(dir, 'lib', 'command-parse.js'));
+
+  if (!opts.noSiblings) {
+    for (const sibling of GUARD_SIBLINGS) {
+      if (opts.omit === sibling) continue;
+      if (opts.stub && opts.stub[sibling]) fs.writeFileSync(path.join(dir, sibling), opts.stub[sibling]);
+      else fs.copyFileSync(path.join(HOOKS, sibling), path.join(dir, sibling));
+    }
+  }
+
+  if (opts.denyList) {
+    fs.writeFileSync(path.join(root, 'settings.json'), JSON.stringify({ permissions: { deny: opts.denyList } }));
+  }
+  if (opts.rawSettings !== undefined) fs.writeFileSync(path.join(root, 'settings.json'), opts.rawSettings);
+  if (opts.template) {
+    fs.mkdirSync(path.join(root, 'scripts', 'templates'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'scripts', 'templates', 'settings-deny.json'), JSON.stringify(opts.template));
+  }
+
+  return { root, script: path.join(dir, INTERPRETER) };
+}
+
+/** A sibling that always denies, tagged so the guard's reason can be traced to it. */
+const denyingStub = marker =>
+  `process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:'PreToolUse',` +
+  `permissionDecision:'deny',permissionDecisionReason:'${marker}'}}));\n`;
+
+// The counterweight to everything below: a broken install must deny an inline
+// program and go on allowing everything else. The deny list is loaded lazily and
+// no sibling is spawned until a segment holds an interpreter AND an eval flag, so
+// a guard with NO siblings and NO readable rules must still wave `npm test`
+// through. If this ever fails, the guard has started charging every Bash call for
+// machinery only interpreter commands need.
+test('interpreter guard leaves the common path alone even when its install is broken', () => {
+  const { root, script } = isolatedHooks({ noSiblings: true });
+  try {
+    for (const command of ['npm test', 'git status', 'ls -la', 'bash script.sh', 'bash -n script.sh']) {
+      const r = fireScript(script, bash(command), REPO);
+      assert.strictEqual(r.status, 0, `exited ${r.status} on: ${command}\n${r.stderr}`);
+      assert.strictEqual(r.decision, 'allow', `a broken install must not block: ${command}`);
+    }
+
+    const other = fireScript(script, { tool_name: 'Read', tool_input: { file_path: '/x' }, cwd: REPO }, REPO);
+    assert.strictEqual(other.decision, 'allow', 'a tool this hook does not guard is never its business');
+
+    // …and the same broken install DOES deny the moment an interpreter appears,
+    // which is what makes the allows above a scoping result rather than a no-op.
+    const inline = fireScript(script, bash('bash -c "echo hi"'), REPO);
+    assert.strictEqual(inline.decision, 'deny', 'an inline program cannot be cleared by an install that cannot check it');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// SIBLING_GUARDS is a list, and a list can lose an entry in a refactor without any
+// test noticing: drop `env-content-read-guard.js` and `bash -c "cat .env"` still
+// denies, via the deny list. Stubbing each sibling in turn with a uniquely-tagged
+// denier makes membership itself observable — the tag can only appear if that
+// specific file was spawned and its answer read.
+test('interpreter guard consults every sibling on its list', () => {
+  for (const sibling of GUARD_SIBLINGS) {
+    const marker = `SENTINEL-${sibling}`;
+    const { root, script } = isolatedHooks({
+      denyList: ['Bash(rm -rf ~*)'],
+      stub: { [sibling]: denyingStub(marker) },
+    });
+    try {
+      const r = fireScript(script, bash('bash -c "echo hi"'), REPO);
+      assert.strictEqual(r.status, 0, `exited ${r.status} with ${sibling} stubbed\n${r.stderr}`);
+      assert.strictEqual(r.decision, 'deny', `${sibling} was never consulted — a benign payload cleared without it`);
+      assert.match(r.reason, new RegExp(marker), `the reason must come from ${sibling} itself`);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  }
+});
+
+// The synthesized envelope is what the siblings actually judge, so its shape is a
+// contract. `cwd` in particular: protected-write-guard.js resolves a relative
+// redirect target against it, and dropping it would weaken that check invisibly —
+// the guard would keep answering, just with less to go on.
+test('interpreter guard hands each sibling a PreToolUse envelope carrying the payload and cwd', () => {
+  const echoStub =
+    `let b='';process.stdin.on('data',c=>b+=c);process.stdin.on('end',()=>{` +
+    `process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:'PreToolUse',` +
+    `permissionDecision:'deny',permissionDecisionReason:'SAW '+b.trim()}}));});\n`;
+
+  const { root, script } = isolatedHooks({
+    denyList: ['Bash(rm -rf ~*)'],
+    stub: { 'absolute-path-guard.js': echoStub },
+  });
+  try {
+    const r = fireScript(script, bash('bash -c "echo hi"', '/some/session/cwd'), REPO);
+    assert.match(r.reason, /"tool_name":"Bash"/, 'the sibling must be asked as if about a Bash call');
+    assert.match(r.reason, /"command":"echo hi"/, 'the EXTRACTED program is what gets judged, not the outer command');
+    assert.match(r.reason, /"cwd":"\/some\/session\/cwd"/, 'the session cwd is carried through, not defaulted');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// Every way a sibling's verdict can fail to arrive. All of them must block, and
+// all of them must say the check could not be COMPLETED — telling a user "denied"
+// when the truth is "could not check" sends them to rewrite a command that was
+// never the problem.
+test('interpreter guard fails closed on every kind of subprocess trouble', () => {
+  const cases = [
+    ['a sibling file is missing', { omit: 'env-content-read-guard.js' }, /not installed alongside/],
+    ['a sibling writes something that is not an envelope',
+      { stub: { 'absolute-path-guard.js': 'process.stdout.write("I am not JSON");\n' } },
+      /not a decision envelope/],
+    ['a sibling crashes instead of deciding',
+      { stub: { 'package-install-consent.js': 'process.exit(3);\n' } },
+      /exited 3/],
+    // Every sibling exits 0 even when denying, so a non-zero status means it
+    // crashed rather than decided — its verdict is unknown, which blocks.
+    ['a sibling never answers', { stub: { 'git-protected-ops-block.js': 'setTimeout(() => {}, 60000);\n' } },
+      // spawnSync surfaces a timeout as an error, a signal, or both, depending on
+      // platform and on where the child was when the timer fired.
+      /was killed by|could not be run/],
+  ];
+
+  for (const [label, opts, reasonRe] of cases) {
+    const { root, script } = isolatedHooks({ denyList: ['Bash(rm -rf ~*)'], ...opts });
+    try {
+      const r = fireScript(script, bash('bash -c "echo hi"'), REPO);
+      assert.strictEqual(r.status, 0, `${label}: exited ${r.status}\n${r.stderr}`);
+      assert.strictEqual(r.decision, 'deny', `${label}: an unobtainable verdict is not an approval`);
+      assert.match(r.reason, /could not be fully checked/, `${label}: must say it could not check, not that it refused`);
+      assert.match(r.reason, reasonRe, `${label}: the reason must name what went wrong`);
+      // A throw escaping askSibling would be caught by readHookInput, which exits
+      // 0 with no output — i.e. ALLOW. Silence on stderr is how that is ruled out.
+      assert.strictEqual(r.stderr, '', `${label}: nothing may be thrown out of the guard`);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  }
+});
+
+// The deny list is the ONLY thing standing between `bash -c "rm -rf ~"` and the
+// shell — no sibling objects to a bare `rm -rf ~`. Skipping the check when the
+// file cannot be read would therefore reopen precisely the hole this guard's
+// blanket-deny predecessor had closed.
+test('interpreter guard denies when the deny list cannot be read at all', () => {
+  const cases = [
+    ['no rules file in either location', {}],
+    ['the settings file is malformed', { rawSettings: '{ not json ' }],
+  ];
+
+  for (const [label, opts] of cases) {
+    const { root, script } = isolatedHooks(opts);
+    try {
+      const r = fireScript(script, bash('bash -c "echo hi"'), REPO);
+      assert.strictEqual(r.status, 0, `${label}: exited ${r.status}\n${r.stderr}`);
+      assert.strictEqual(r.decision, 'deny', `${label}: an unreadable deny list must not read as an empty one`);
+      assert.match(r.reason, /deny list could not be read/, `${label}: name the failure`);
+      assert.match(r.reason, /install-global\.sh/, 'a repairable failure must name the repair');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  }
+});
+
+// The rules are read from disk at call time, not baked in at install time. That
+// is an emergent property of resolving from `__dirname`, and it is worth pinning:
+// it means a user who adds a rule to their own ~/.claude/settings.json has it
+// honored INSIDE `bash -c` immediately, with no re-install.
+test('interpreter guard reads the deny list at runtime, from whichever layout it is in', () => {
+  // Installed layout: ../settings.json — a rule that appears in no template.
+  const installed = isolatedHooks({ denyList: ['Bash(kubectl delete *)'] });
+  try {
+    const denied = fireScript(installed.script, bash('bash -c "kubectl delete pod api-7"'), REPO);
+    assert.strictEqual(denied.decision, 'deny', "a user's own rule must reach inside `bash -c`");
+    assert.match(denied.reason, /matches the permission deny rule `Bash\(kubectl delete \*\)`/);
+
+    const allowed = fireScript(installed.script, bash('bash -c "kubectl get pods"'), REPO);
+    assert.strictEqual(allowed.decision, 'allow', 'the rule is matched, not the command name');
+
+    // …and the rules really came from that file: `rm -rf ~` is in the shipped
+    // template but not in this fixture, so here it must pass.
+    const notInThisList = fireScript(installed.script, bash('bash -c "rm -rf ~"'), REPO);
+    assert.strictEqual(notInThisList.decision, 'allow', 'the list is read from disk, not compiled in');
+  } finally {
+    fs.rmSync(installed.root, { recursive: true, force: true });
+  }
+
+  // Repo layout: ../scripts/templates/settings-deny.json, a bare array.
+  const repo = isolatedHooks({ template: ['Bash(rm -rf ~*)', 'Bash(sudo *)'] });
+  try {
+    assert.strictEqual(fireScript(repo.script, bash('bash -c "sudo reboot"'), REPO).decision, 'deny');
+    assert.strictEqual(fireScript(repo.script, bash('bash -c "echo hi"'), REPO).decision, 'allow');
+  } finally {
+    fs.rmSync(repo.root, { recursive: true, force: true });
+  }
+});
+
+// Claude Code does not expose its permission matcher, so the guard reproduces it —
+// the one place TASK-028 accepted a second matching vocabulary. A drifting matcher
+// fails in both directions at once: `ddrescue` becomes unrunnable while `dd if=…`
+// slips through. The four semantics below are the ones the shipped list depends on.
+test('interpreter guard reproduces the deny-list pattern semantics on the payload', () => {
+  const { root, script } = isolatedHooks({
+    denyList: ['Bash(dd *)', 'Bash(sh)', 'Bash(git * --force*)', 'Bash(git stash:*)', 'Edit(~/.zshrc)'],
+  });
+  try {
+    const table = [
+      // trailing ` *` is a WORD BOUNDARY: the bare command and the command with
+      // arguments, but never a longer word starting with the same letters
+      ['bash -c "dd"', 'deny'],
+      ['bash -c "dd if=/dev/zero of=/tmp/x"', 'deny'],
+      ['bash -c "ddrescue /dev/sda img"', 'allow'],
+      // no wildcard is an EXACT match — `Bash(sh)` must not swallow shellcheck
+      ['bash -c "shellcheck script.sh"', 'allow'],
+      // `*` is an ordinary wildcard at ANY position, which is why first-token
+      // matching would not have been enough
+      ['bash -c "git -C /elsewhere push --force"', 'deny'],
+      ['bash -c "git push"', 'allow'],
+      // `:*` is that same boundary, spelled as a suffix
+      ['bash -c "git stash pop"', 'deny'],
+      ['bash -c "git stashes --list"', 'allow'],
+      // matched segment by segment, so a denied command cannot ride in behind a cd
+      ['bash -c "cd /tmp && git stash"', 'deny'],
+      // Edit(...) entries are file-tool rules and are skipped, not mis-applied to
+      // a command string — otherwise every mention of the path would block
+      ['bash -c "cat ~/.zshrc.bak"', 'allow'],
+    ];
+    for (const [command, expected] of table) {
+      const r = fireScript(script, bash(command), REPO);
+      assert.strictEqual(r.status, 0, `exited ${r.status} on: ${command}\n${r.stderr}`);
+      assert.strictEqual(r.decision, expected, `${r.decision}, expected ${expected}, for: ${command}`);
+    }
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// protected-write-guard.js resolves a relative redirect target against the session
+// cwd, so the same payload is dangerous from $HOME and ordinary from a repo. The
+// two rows differ ONLY in cwd — which is the whole point: it proves the field is
+// being carried through the synthesized envelope rather than dropped.
+test('interpreter guard re-evaluates the payload against the session cwd', () => {
+  const fromHome = fire(INTERPRETER, bash('bash -c "echo x > .zshrc"', HOME), HOME);
+  assert.strictEqual(fromHome.decision, 'deny', '`.zshrc` relative to $HOME IS ~/.zshrc');
+  assert.match(fromHome.reason, /Blocked inside `bash -c`/);
+
+  const fromRepo = fire(INTERPRETER, bash('bash -c "echo x > .zshrc"', REPO), REPO);
+  assert.strictEqual(fromRepo.decision, 'allow', 'a .zshrc inside a project is an ordinary file');
 });
 
 // ───────────────────────────────────────────────────────────────────────────

@@ -68,6 +68,13 @@ Build the Tier-2 layer of the three-tier security model established by TASK-026:
 > - **Verified the global install path:** `install-global.sh:31` rsyncs `lib/hooks/` recursively, so `require('./lib/command-parse')` resolves in both the repo and `~/.claude/hooks/`.
 > - **Known gaps, deliberately left — revisit at step 8:** `dash`/`ksh` not in the interpreter set; bundled short flags (`sh -ec '…'`) not decomposed; and — inherited from the `git-protected-ops-block.js` token-scan precedent — a segment merely *talking about* an interpreter form can false-positive, since the scan inspects every token. ~~`echo "bash -c foo"` would false-positive~~ — **corrected 2026-07-29 by UAT-027: that quoted spelling ALLOWS.** The opening `"` is part of the token so the basename lookup misses; only unquoted `echo bash -c foo` fires. The class is real, that example was not an instance of it. Both spellings pinned in `test/command-class-hooks.test.js`.
 
+<!-- Updated: 2026-07-29 -->
+> ⚠️ **The DENY OUTRIGHT decision above is SUPERSEDED by superseded_by::[[TASK-028]]** ([TASK-028-interpreter-guard-recursive-eval.md](../TASK-028-interpreter-guard-recursive-eval.md)). The guard now extracts the `-c`/`-e` payload and re-evaluates it against the permission deny list and the sibling guards, allowing unless one objects.
+>
+> **The reasoning above is not withdrawn — it was sound given the threat model it assumed.** What changed is the threat model: the escape hatch this hook names in its own deny message (*write the script to a file and run the file*) is also its complete bypass (`printf … > /tmp/x.sh && bash /tmp/x.sh`), so the obfuscation argument only ever bit against an adversary this hook could never stop. Blanket deny therefore bought nothing extra, while charging real friction against the careless one-liner it does catch.
+>
+> Consequently the `echo bash -c foo` → `deny` row noted above **no longer denies**, and that is the fix rather than a regression: payload `foo` re-evaluates clean. `echo "bash -c foo"` → `allow` still holds and is still pinned. Both rows, with this reasoning, are in `test/command-class-hooks.test.js`.
+
 ### 3. Hook: package-install consent gate  <!-- agent: general-purpose -->
 
 This is the user's original requirement, verbatim: *"no packages added without explicit user consent… show a suggested resolution — tell user the exact command to run if they approve."*

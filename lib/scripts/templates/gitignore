@@ -138,5 +138,7 @@ checkpoints/
 # NOTE (bootstrap maintainers): never add .serena/, raw/, or wiki/ here.
 # Gitignoring them blinds Serena (ignore_all_files_in_gitignore: true) and
 # Claude Code's Grep. merge-gitignore.sh offers them via .git/info/exclude
-# instead — same git semantics, invisible to the tools.
+# instead — same git semantics, invisible to Serena. Ripgrep-class walkers and
+# Claude Code's @ file picker do honor info/exclude, so install-global.sh
+# registers a fileSuggestion picker that re-includes the sentinel-scoped paths.
 # See wiki/knowledge/concepts/git-ignore-tool-visibility.md.

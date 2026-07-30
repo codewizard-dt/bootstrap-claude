@@ -50,7 +50,7 @@ environment assignment, or on the far side of an MCP tool boundary.
 
 | Script | Matcher | Blocks |
 |--------|---------|--------|
-| `interpreter-indirection-guard.js` | `Bash` | An interpreter handed an inline program (`bash -c`, `node -e`, `python3 -c`, …) or a command substitution as its program |
+| `interpreter-indirection-guard.js` | `Bash` | Extracts the inline program from `bash -c`, `node -e`, `python3 -c`, … and re-judges it as if typed directly; denies a command substitution outright |
 | `package-install-consent.js` | `Bash` | Every package-manager install, with one allowlisted source (Serena) |
 | `absolute-path-guard.js` | `Bash` | Evasive *spellings* of destructive commands (`/bin/rm`, `\rm`, `env rm`) |
 | `protected-write-guard.js` | `Bash` | `>`/`>>` into shell/git/Claude config, `DYLD_*`/`LD_*` injection, `git -c` RCE config keys |
@@ -63,38 +63,140 @@ of those four helpers — see [Shared library](#shared-library).
 
 #### `interpreter-indirection-guard.js`
 
-**Blocks** `bash|sh|zsh|python|python3 -c`, `node -e|--eval`, `ruby|perl -e` in
-any segment, plus any of those interpreters whose first non-flag argument
-contains `$(…)` or backticks. The interpreter token is matched on its *basename*
-after stripping leading `\`, so `/bin/bash -c`, `env bash -c`, and `\bash -c` are
-all caught; the flag comparison is `startsWith`, so `-c'echo hi'` and
-`--eval=code` match alongside the spaced form.
+**The rule: you may not use `bash -c` to do something you could not do without
+it.** The guard detects `bash|sh|zsh|python|python3 -c`, `node -e|--eval`,
+`ruby|perl -e` in any segment, *extracts the inline program*, strips the one
+layer of quoting the shell already consumed, and re-judges that program as if it
+had been typed at the prompt. It allows unless something objects. The interpreter
+token is matched on its *basename* after stripping leading `\`, so `/bin/bash
+-c`, `env bash -c`, and `\bash -c` are all caught; the flag comparison takes the
+longest `startsWith` match, so `-c'echo hi'` and `--eval=code` are reached
+alongside the spaced form.
 
 **Why a hook.** The entire point of `-c` is that the real program lives inside a
 quoted string, where no permission pattern can reach it. One approved `bash -c`
-can carry a fetcher, a redirect into `~/.zshrc`, or an absolute-path `rm`.
+can carry a redirect into `~/.zshrc`, an absolute-path `rm`, or an `rm -rf ~`
+that the deny list would have caught the moment it was typed plainly. A hook
+receives the raw, undecomposed string and can parse the invocation form itself.
 
-**Deny outright, not payload inspection.** The narrower alternative — allow
-`bash -c` when the payload contains no fetcher, nested interpreter, or redirect —
-was rejected because scanning the payload for forbidden substrings *is* the
-literal-spelling matching this layer exists to escape. `bash -c
-'c=cur;l=l;$c$l http://x'`, base64, or `eval` defeats it in one line, and a
-control a trivial rewrite bypasses is worse than none because it reads as
-coverage.
+**Why re-evaluation and not blanket deny.** This guard originally denied every
+inline-program invocation outright (TASK-027), on the grounds that inspecting the
+payload is defeated by one line of obfuscation — `bash -c 'c=cur;l=l;$c$l
+http://x'`. That reasoning is correct but bounded: it only bites against an
+*adversary*, and against an adversary this hook already fails, by its own
+documented escape hatch. The deny message said *write the script to a file and
+run the file* — which is also the complete bypass. `printf '…' > /tmp/x.sh &&
+bash /tmp/x.sh` runs the identical program and never touches this guard. A
+control whose published alternative is its own bypass was never an adversarial
+control and cannot become one; it is a guardrail against a careless one-liner.
 
-**False positives and escape hatch.** The common inline-scripting idioms
-(`python3 -c "import json…"`, `node -e "…"`) are blocked. The escape hatch, named
-in the deny message: write the script to a file and run the file, so its contents
-appear in the diff and are reviewable before execution.
+So blanket deny bought nothing extra against the threat it cannot stop, while
+charging real friction against the mistake it actually catches: `node -e` and
+`python3 -c` one-liners are routine and were simply unavailable.
+
+**Why re-evaluation and not a payload blocklist.** A fixed danger list (`.env`,
+`~/.zshrc`, `rm -rf`, …) is a *second matching vocabulary* that drifts out of
+sync with the guards it duplicates. Re-running the payload through the existing
+checks is exactly as strong as the direct-command path by construction, needs no
+new vocabulary, has near-zero false positives (anything permitted directly is
+permitted inside `-c`), and fails only where the direct path already fails — a
+consistency, not a new hole.
+
+**What the payload is checked against — four deny sources.** They are consulted
+in this order, and the first objection wins:
+
+1. **The permission deny list.** No hook in this directory objects to a bare `rm
+   -rf ~`, `sudo …`, `crontab -r`, or `git push --force` — the deny list does,
+   and Claude Code applies it to the literal command string, so it never sees
+   inside `-c`. Re-evaluating through the hooks *alone* would have opened a hole
+   blanket deny had closed. Each `Bash(...)` entry compiles to a RegExp matched
+   segment-by-segment, reproducing the four semantics the shipped list depends
+   on: a trailing ` *` is a word boundary (`dd *` matches `dd` and `dd if=…`, not
+   `ddrescue`), `:*` is that same boundary as a suffix, no wildcard is an exact
+   match (`sh` must not catch `shellcheck`), and `*` is an ordinary wildcard at
+   any position (`git * --force*`).
+2. **The five sibling guards**, spawned as subprocesses against a synthesized
+   PreToolUse payload: `absolute-path-guard.js`, `protected-write-guard.js`,
+   `env-content-read-guard.js`, `package-install-consent.js`,
+   `git-protected-ops-block.js`. The original `cwd` is carried through, because
+   `protected-write-guard.js` resolves relative redirect targets against it.
+3. **Unparseable payload** — flag last (`bash -c`), unbalanced quoting (`bash -c
+   'oops`), or shell concatenation (`bash -c 'echo '"$X"`). The whole basis for
+   permitting `-c` is that its program can be read; when extraction fails there
+   is nothing to evaluate, and an unreadable program is not an approved one.
+4. **Command substitution** — `bash -c "$(curl …)"` and the backtick form are
+   denied unconditionally and never re-evaluated. The program does not exist
+   until execution time, so there is genuinely nothing in the command being
+   approved to inspect.
+
+Plus a depth cap: `bash -c "bash -c '…'"` is allowed (one nesting, for the
+occasional real `ssh host bash -c` idiom), a third layer is not. Each layer of
+quoting is another chance for what executes to differ from what was read.
+
+**The deny reason is the objecting check's own**, merely prefixed with ``Blocked
+inside `bash -c` — ``. A generic "blocked" tells the caller something was wrong
+without telling them what, which is how a block gets worked around instead of
+fixed. Note that the reason differs by source: a deny-list match names the rule
+(``matches the permission deny rule `Bash(rm -rf ~*)` ``), a sibling deny carries
+that guard's text.
+
+**It reads `~/.claude/settings.json` at runtime**, not a copy baked in at install
+time. A user who edits their own deny list gets that change honored *inside* `bash
+-c` immediately, with no re-install. The lookup resolves from `__dirname`, so one
+code path serves both locations this file lives in: `../settings.json` in the
+installed layout (the live list), falling back to
+`../scripts/templates/settings-deny.json` in the repo. Exactly one exists per
+machine, so this is a fallback, not a precedence question.
+
+**Everything that cannot be checked denies.** A missing sibling file, a spawn
+error, a timeout (2s), non-JSON output, a non-zero exit, an unreadable deny list —
+all block, with a message saying the check *could not be completed* rather than
+that the command was refused. A guard that silently degrades to permissive under
+load or after a botched install is worse than one that occasionally over-blocks,
+because from the outside it is indistinguishable from a guard that approved.
+
+**`node -e` and `python3 -c` payloads are re-evaluated as Bash** even though they
+are JavaScript and Python. This is a deliberate over-approximation: a JS payload
+judged by shell rules can only ever match *more* than it should, never less, so
+the error direction is over-blocking. Writing per-language analyzers would be a
+third and fourth matching vocabulary for a guardrail that a file redirect already
+bypasses.
+
+**Cost.** ~46 ms for a command with no interpreter — the common path, where the
+deny list is never even read (loading is lazy and memoized per process) and
+nothing is spawned. ~270 ms once a segment genuinely contains an interpreter plus
+an eval flag, which is five short-lived subprocesses plus ~6 ms of regex
+compilation.
+
+**Why subprocesses rather than shared functions.** The siblings are shipped,
+globally-installed controls. Spawning them requires zero changes to them, uses
+them exactly as Claude Code does, and stays in sync automatically. Extracting
+their decision logic into shared pure functions in `lib/` would remove the spawns
+and is the better *eventual* refactor — see [Follow-up](#follow-up-shared-decision-functions).
+
+**Not covered, deliberately:**
+
+- Other POSIX shells (`dash`, `ksh`) are not in the interpreter set; bundled short
+  flags (`sh -ec '…'`) are not decomposed.
+- `permissions.allow` / `ask` and their precedence. This is a deny-only check —
+  which matches Claude Code in the direction that matters, but does mean a payload
+  the user explicitly allowed is still denied here.
+- Project-scoped `.claude/settings.json` and `.claude/settings.local.json`. Only
+  the user-scope list is consulted.
+- `Edit(…)` / `Read(…)` deny entries. They are file-tool rules and cannot match a
+  command string, so they are skipped rather than mis-applied.
+- Quote-aware decomposition. Segments come from the shared `splitSegments`, which
+  splits on `;`/`&&`/`||`/`|` without regard for quoting, so `bash -c "git commit
+  -m 'a; sudo b'"` over-blocks. That errs toward blocking, never toward allowing.
+- An interpreter mentioned inside a quoted string (`echo "bash -c foo"`) is not
+  detected at all — the opening `"` is part of the token, so the basename lookup
+  misses.
 
 **Measured cost in this repo: zero.** Every `bash -c` / `sh -c` / `node -e` under
 `lib/` lives *inside* a shell script (`setup-runner.sh:73`, `startup.sh:25`/`:37`,
 `install-mcps.sh:321`), which runs as a subprocess of an already-approved
 `bash <script>.sh` call and is never seen by a PreToolUse hook. `bash -n
 script.sh` — the static gate `/tackle` mandates — uses `-n`, not `-c`.
-
-**Not covered, deliberately:** other POSIX shells (`dash`, `ksh`); bundled short
-flags (`sh -ec '…'`) are not decomposed.
 
 #### `package-install-consent.js`
 
@@ -522,6 +624,27 @@ as a last resort) is the only guaranteed path back to a working session.
 | `lib/command-parse.js` | All six [command-class guards](#command-class-guards) — `readHookInput(handler)` (stdin accumulate + `JSON.parse`; unparseable input exits 0 silently), `splitSegments(cmd)` (the `/;\|&&\|\|\|\|\|/` split, lifted verbatim from `git-protected-ops-block.js`), `tokenize(segment)`, and `deny(reason)` (the `permissionDecision: 'deny'` envelope). Every helper is fail-open: a hook that exits non-zero breaks a call it was never meant to gate. `readHookInput` carries **no** `tool_name` guard by design — `claude-settings-guard.js` matches file tools, not Bash — so each hook does its own |
 | `lib/serena.js` | All Serena hooks — intent→tool mapping, `isAllowedPath`, block-message builders, per-project state file (`getStateFilePath`/`readStateFile`/`writeStateFile`/`shouldEnforceSerena`/`defaultFlag`/`defaultHealth`), an advisory lock + atomic read-modify-write helper (`acquireLock`/`releaseLock`/`updateStateFile`) used by every hook that writes the state file, failure classification + process health (`classifySerenaFailure`/`isSerenaProcessAlive` — diagnostic only, never terminates the process), and consolidated symbol detection (`isCodeSymbol`/`extractSymbolsFromPattern`) |
 | `lib/serena-languages.js` | `lib/serena.js` — reads `.serena/project.yml` to scope enforcement to configured languages |
+
+#### Follow-up: shared decision functions
+
+`interpreter-indirection-guard.js` re-evaluates an extracted payload by
+**spawning** five sibling guards as subprocesses — a ~270 ms cost whenever a
+command contains an interpreter plus an eval flag, and five `node` starts to
+answer a question that is pure computation.
+
+The better eventual shape is to extract each guard's decision logic into shared
+pure functions here in `lib/` — `decide(command, cwd) → {deny, reason} | null` —
+leaving each hook file as a thin stdin/stdout wrapper around its own function.
+The interpreter guard would then call five functions instead of spawning five
+processes, and the spawn-failure handling (timeouts, missing files, non-JSON
+output, non-zero exits) would disappear along with the processes.
+
+It is **deliberately not done**, for the reason recorded in TASK-027 step 7: a
+working control should not be migrated onto newer code to save a few lines. These
+are five shipped, globally-installed controls; subprocess re-evaluation requires
+zero changes to them, uses them exactly as Claude Code does, and stays in sync
+automatically. The refactor trades that guarantee for latency, and the latency is
+only paid on commands that already contain an interpreter.
 
 ### State file JSON schema
 
