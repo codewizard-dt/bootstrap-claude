@@ -31,3 +31,9 @@ Terminal task files (`done` or `trashed`) moved here by `/wiki-archive` to reduc
 | [[TASK-027]] | Tier-2 PreToolUse hooks — gate command classes deny rules cannot express | done | 2026-07-29 |
 | [[TASK-028]] | Rework interpreter-indirection-guard from blanket deny to recursive re-evaluation | done | 2026-07-30 |
 | [[TASK-029]] | Ship fileSuggestion @-autocomplete restoration for info/exclude'd wiki dirs | done | 2026-07-30 |
+| [[TASK-036]] | lib.sh MCP guard: reorder run_project_sync so MCP failures can't abort hook install or wiki sync | done | 2026-07-31 |
+| [[TASK-032]] | Settings-hooks template | done | 2026-07-31 |
+| [[TASK-033]] | Build lib/scripts/merge-settings-hooks.js — "template owns its blocks" hooks-wiring merge | done | 2026-07-31 |
+| [[TASK-034]] | Add test/settings-hooks.test.js — template invariants and merge behavior coverage | done | 2026-07-31 |
+| [[TASK-035]] | Reorder install-global.sh — local steps first, MCPs last and guarded, invoke hooks-wiring merge | done | 2026-07-31 |
+| [[TASK-037]] | Document automated hooks wiring — lib/hooks/README.md is no longer a manual-paste instruction sheet | done | 2026-07-31 |

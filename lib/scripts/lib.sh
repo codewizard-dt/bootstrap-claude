@@ -124,23 +124,28 @@ detect_installed_mcps() {
 # run_project_sync <project_dir> <script_dir>
 #
 # The shared setup/update sequence run identically by setup-project.sh and
-# update-project.sh: install MCPs interactively, install skills+hooks globally,
-# sync the wiki scaffold (tiered guide delivery — --interactive enables the
-# optional-guide prompts), merge the .gitignore, build the MCP-tools guide for
-# the detected MCPs, then bootstrap Serena's project.yml. Prints the same
-# section headers and blank-line separators the two scripts printed inline.
+# update-project.sh: install skills+hooks globally first (offline-safe, via
+# install-global.sh --skip-mcps), then attempt the interactive MCP install
+# (guarded — a failure only warns and continues, it does not abort the rest
+# of the sync), sync the wiki scaffold (tiered guide delivery — --interactive
+# enables the optional-guide prompts), merge the .gitignore, build the
+# MCP-tools guide for the detected MCPs, then bootstrap Serena's project.yml.
+# Prints the same section headers and blank-line separators the two scripts
+# printed inline.
 # ---------------------------------------------------------------------------
 run_project_sync() {
   local project_dir script_dir installed_mcps
   project_dir="$1"
   script_dir="$2"
 
-  echo "Checking MCP servers..."
-  "$script_dir/install-mcps.sh" --interactive --project-dir "$project_dir"
-  echo ""
-
   echo "Installing skills and hooks globally..."
   "$script_dir/install-global.sh" --skip-mcps
+  echo ""
+
+  echo "Checking MCP servers..."
+  if ! "$script_dir/install-mcps.sh" --interactive --project-dir "$project_dir"; then
+    echo "Warning: MCP install failed — continuing with wiki sync; re-run update to retry MCPs." >&2
+  fi
   echo ""
 
   echo "Syncing wiki scaffold..."

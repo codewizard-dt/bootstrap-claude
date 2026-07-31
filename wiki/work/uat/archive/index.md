@@ -31,3 +31,9 @@ Terminal UAT files (`passed`, `skipped`, or `trashed`) moved here by `/wiki-arch
 | [[UAT-027]] | UAT: Tier-2 PreToolUse hooks — gate command classes deny rules cannot express | passed | 2026-07-29 |
 | [[UAT-028]] | UAT: Rework interpreter-indirection-guard from blanket deny to recursive re-evaluation | passed | 2026-07-30 |
 | [[UAT-029]] | UAT: Ship fileSuggestion @-autocomplete restoration | passed | 2026-07-30 |
+| [[UAT-036]] | UAT: Reorder and guard run_project_sync in lib.sh so MCP failures can't abort hook install or wiki sync | passed | 2026-07-31 |
+| [[UAT-032]] | UAT: Extract canonical hooks wiring into settings-hooks.json | passed | 2026-07-31 |
+| [[UAT-033]] | UAT: Build lib/scripts/merge-settings-hooks.js — "template owns its blocks" hooks-wiring merge | passed | 2026-07-31 |
+| [[UAT-034]] | UAT: Add test/settings-hooks.test.js — template invariants and merge behavior coverage | passed | 2026-07-31 |
+| [[UAT-035]] | UAT: Reorder install-global.sh — local steps first, MCPs last and guarded, invoke hooks-wiring merge | passed | 2026-07-31 |
+| [[UAT-037]] | UAT: Document automated hooks wiring — lib/hooks/README.md is no longer a manual-paste instruction sheet | passed | 2026-07-31 |

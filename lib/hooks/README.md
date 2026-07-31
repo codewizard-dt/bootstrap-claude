@@ -4,10 +4,14 @@ PreToolUse / PostToolUse / SessionStart hook scripts managed by this template.
 `./lib/scripts/install-global.sh` (also `npx @codewizard-dt/bootstrap install`)
 rsyncs this directory — including `lib/` — to `~/.claude/hooks/`.
 
-**Important:** the install script copies the *scripts* but does **not** wire them
-into `~/.claude/settings.json`. Hook *registration* is a global-settings concern
-and must be added once, by hand, using the snippets below. Without the wiring the
-scripts sit on disk and never run.
+The same run also *registers* them: after the deny-list merge,
+`lib/scripts/merge-settings-hooks.js` merges the canonical wiring template
+([`lib/scripts/templates/settings-hooks.json`](../scripts/templates/settings-hooks.json))
+into the `hooks` key of `~/.claude/settings.json`. Manual pasting is no longer
+required — copying the scripts and wiring them are one step, repeated
+idempotently on every `install` / `setup` / `update` run. See
+[the wiring section below](#required-claudesettingsjson-wiring) for the merge
+semantics.
 
 ## Why hooks (vs. allow/deny permission rules)
 
@@ -362,8 +366,9 @@ protected paths (`echo … >> ~/.claude/settings.json`) is
 > name. The rationale was that this repo manages those files.
 >
 > **That rationale was wrong.** The repo writes them through
-> `node merge-settings-deny.js` *inside* `install-global.sh` — a Bash subprocess
-> that no `PreToolUse` hook and no permission rule ever observes. Nothing here
+> `node merge-settings-deny.js` (and now `merge-settings-hooks.js`) *inside*
+> `install-global.sh` — Bash subprocesses that no `PreToolUse` hook and no
+> permission rule ever observes. Nothing here
 > ever needed the Edit *tool* on those paths. The exception was not load-bearing,
 > and it did let any agent running in this repo rewrite its own permission
 > boundary — which was demonstrated live before it was closed.
@@ -717,164 +722,38 @@ acquirer rather than blocking on it.
 
 ## Required `~/.claude/settings.json` wiring
 
-Add these under `hooks`. If a block already exists for a given matcher, add the
-hook objects to its existing `hooks` array rather than creating a second block.
+The canonical wiring — which script runs on which event, under which matcher —
+lives in exactly one place:
+[`lib/scripts/templates/settings-hooks.json`](../scripts/templates/settings-hooks.json).
+It is a bare hooks-value object (four events: `SessionStart`, `PreToolUse`,
+`PostToolUse`, `PostToolUseFailure`) whose entries map 1:1 onto the scripts in
+this directory. This README deliberately does not inline a copy: the template
+file is what `merge-settings-hooks.js` reads and merges into the `hooks` key of
+`~/.claude/settings.json` on every `install` / `setup` / `update` run, so a
+second copy here could only drift from what actually ships.
 
-```json
-{
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/serena-session-reset.js"
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Read|Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/env-file-guard.js"
-          }
-        ]
-      },
-      {
-        "matcher": "Edit|Write|NotebookEdit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/claude-settings-guard.js"
-          }
-        ]
-      },
-      {
-        "matcher": "Bash|mcp__serena__.*|mcp__plugin_[^_]+_serena__.*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/env-content-read-guard.js"
-          }
-        ]
-      },
-      {
-        "matcher": "Read",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/serena-first-read-guard.js"
-          }
-        ]
-      },
-      {
-        "matcher": "Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/serena-edit-guard.js"
-          }
-        ]
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/serena-write-guard.js"
-          }
-        ]
-      },
-      {
-        "matcher": "Grep",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/serena-first-guard.js"
-          }
-        ]
-      },
-      {
-        "matcher": "Glob",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/serena-first-glob-guard.js"
-          }
-        ]
-      },
-      {
-        "matcher": "Agent",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/serena-pre-delegation.js"
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/serena-bash-grep-block.js"
-          },
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/mv-absolute-path-block.js",
-            "if": "Bash(mv *)"
-          },
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/git-protected-ops-block.js"
-          },
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/interpreter-indirection-guard.js"
-          },
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/package-install-consent.js"
-          },
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/absolute-path-guard.js"
-          },
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/protected-write-guard.js"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "mcp__serena__.*|mcp__plugin_[^_]+_serena__.*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/serena-usage-tracker.js"
-          }
-        ]
-      }
-    ],
-    "PostToolUseFailure": [
-      {
-        "matcher": "mcp__serena__.*|mcp__plugin_[^_]+_serena__.*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/serena-usage-tracker.js"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
+Merge semantics — "the template owns its blocks":
+
+- **Foreign (user-added) blocks and hook entries are never modified, reordered,
+  or removed.** The same goes for entire hooks events the template does not ship
+  (e.g. `UserPromptSubmit`): the merge never visits them. A repo hook found
+  relocated into a user-modified block is left where it is (with a warning), not
+  duplicated back into the template's block, and the merge never writes an empty
+  placeholder block. It always exits 0 — a wiring merge must never abort an
+  install.
+- **Direct edits to an *owned* entry are overwritten on the next run.** An entry
+  is owned when its `command` points at `~/.claude/hooks/<name>.js` (or an
+  absolute-path expansion of it) and `<name>` matches a hook the template ships.
+  Because the template owns its blocks, any local tweak to such an entry — and
+  any matcher drift on a block made up entirely of owned entries — is reverted
+  to the template's version the next time `install` / `setup` / `update` runs.
+  To opt an entry out of the overwrite, point its `command` at a different path
+  (e.g. a copy of the script outside `~/.claude/hooks/`) so it no longer
+  classifies as owned; the merge will then treat it as foreign and leave it
+  alone. Note the limit of that opt-out: because the re-pointed entry no longer
+  carries the template basename, the next merge run re-appends the stock
+  template entry alongside it — your variant is preserved, but the shipped hook
+  is not disabled.
 
 Three notes on the command-class guard matchers, each of which makes a hook
 silently inert if it is wrong:
@@ -897,13 +776,16 @@ silently inert if it is wrong:
   permission-matcher path that lets compound and piped commands slip past a `deny`
   rule.
 
-Reminder: `install-global.sh` rsyncs these scripts to `~/.claude/hooks/` on every
-run, but it never touches the `hooks` section of `~/.claude/settings.json`.
-Registration is the one-time manual step above; until it is done every script
-here sits on disk and does nothing.
+Reminder: `install-global.sh` rsyncs these scripts to `~/.claude/hooks/` on
+every run **and** registers them, by running `merge-settings-hooks.js` right
+after the deny-list merge. There is no one-time manual step: the wiring is
+re-merged automatically on every `install` / `setup` / `update` run, and when
+that merge creates the wiring fresh or applies changes, the install prints a
+note to restart your Claude Code sessions (hooks load at session start, so a
+running session does not pick up new wiring).
 
-The `PostToolUse` matcher is broadened from the six navigation tools to **all**
-Serena tools so every call feeds health tracking; the tracker gates the read-guard
+The template's `PostToolUse` matcher is broadened from the six navigation tools
+to **all** Serena tools so every call feeds health tracking; the tracker gates the read-guard
 nav counters internally (only the six nav/exploration tools advance the gate, as
 before). The `PostToolUseFailure` block points at the same script — see
 [Health tracking & fail-open enforcement](#health-tracking--fail-open-enforcement)
@@ -928,4 +810,5 @@ Two documented caveats on those deny rules:
   matching call even when a narrower `allow` rule also matches. So
   `Bash(git stash:*)` also blocks read-only `git stash list`.
 
-Hooks load at session start, so restart any running session after wiring.
+Hooks load at session start, so restart any running session after an install
+run that created or changed the wiring.

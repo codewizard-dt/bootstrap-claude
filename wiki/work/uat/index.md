@@ -1,6 +1,6 @@
 ---
 title: UAT Index
-updated: 2026-07-30
+updated: 2026-07-31
 ---
 
 # UAT — Active Items
@@ -9,7 +9,7 @@ Lists **only active** UAT files (`pending`, `in-progress`, `failed`). When a UAT
 
 Entry format: `- [UAT-NNN — Title](UAT-NNN-slug.md) — verifies TASK-NNN · status`
 
-_No active UAT files._
+
 
 
 

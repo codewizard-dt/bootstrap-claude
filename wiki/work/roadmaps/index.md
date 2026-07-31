@@ -1,6 +1,6 @@
 ---
 title: Roadmaps Index
-updated: 2026-07-28
+updated: 2026-07-31
 ---
 
 # Roadmaps — Active Items
@@ -10,3 +10,4 @@ Lists **only active** roadmaps (`active`). When a roadmap completes (`done`), de
 Entry format: `- [ROADMAP-NNN — Title](ROADMAP-NNN-slug.md) — one-line summary · N/M items checked`
 
 - [ROADMAP-001 — Improve wiki tooling based on 2026-07-06 research](ROADMAP-001-wiki-tooling-improvements.md) — hot cache, provenance tagging, Auto Memory/wiki boundary, plus a skill-drift audit · 11/12 items checked (Phase 4 advisory locking deliberately deferred)
+- [ROADMAP-004 — Resilient hook install + automated settings.json hooks wiring](ROADMAP-004-resilient-hook-install.md) — install order/guarding so MCP failures can't block hooks, plus template-driven settings.json hooks-wiring merge · 0/7 items checked

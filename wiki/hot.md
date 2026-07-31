@@ -1,31 +1,31 @@
 ---
 title: Hot Cache
-updated: 2026-07-29
+updated: 2026-07-31
 ---
 
 # Hot Cache
 
 Session-handoff summary of what changed most recently — the small file an agent reads first to get oriented fast. **Fully regenerated at the end of every wiki-writing session, never appended to.** Keep it under ~500 words; if a fact stops being "recent", it drops off (its durable form lives in a knowledge or work page).
 
-_Last updated: 2026-07-29_
+_Last updated: 2026-07-31_
 
 ## Key Recent Facts
 
-- **`.git/info/exclude` blinds Claude Code's `@` autocomplete** — new research (`git-exclude-at-autocomplete`) verified that rg-class tools honor `info/exclude` and recent Claude Code versions suggest only git-*tracked* files; no git-side layout (untracked, nested repos) fixes it. **Escape hatch: the documented `fileSuggestion` settings key** — a custom command replaces the picker and can re-include the bootstrap-excluded dirs. The prior "info/exclude is tool-invisible" claim is now narrowed to **Serena only**; concept page corrected, over-broad comments in `merge-gitignore.sh` + `templates/gitignore` still need fixing (queued task).
-- **Deny rules ARE enforced under `bypassPermissions`** — as are ask rules, PreToolUse hooks, and the sandbox; only `permissions.allow` goes inert. Bypass destroys the built-in protected-path guard, so the deny list is worth **more** under bypass. See [Control Survival Across Permission Modes](knowledge/concepts/permission-mode-control-survival.md).
-- **Deny matches a spelling, not a capability** — rules match per subcommand, pipe-containing patterns can never fire (no startup warning), bare `Bash(sh)` does fire. `Write(...)` path rules are accepted but never consulted. `settings-deny.json` at 116 entries, verified by UAT-026.
-- **Six Tier-2 command-class hooks landed** (TASK-027) with `test/command-class-hooks.test.js`; `npm test` = 69/0. UAT-027 has 3 session-blocked cases pending `PreToolUse` wiring in `~/.claude/settings.json` — not archived, `in-progress`.
-- **Release 2.14.0 still pending** — working tree holds interactive gitignore + playwright conflict flow + info/exclude + hooks; npm registry stuck at 2.11.2 (`npm login` expired).
+- **ROADMAP-004 filed (2026-07-31): resilient hook install.** Investigation of a new-machine "hooks missing" report found `update` *does* rsync `lib/hooks/` → `~/.claude/hooks/`, but two defects break the flow: (1) `install-mcps.sh` runs *before* the hook install in both `lib.sh:run_project_sync` and `install-global.sh`, unguarded under `set -euo pipefail` — one npm/`claude mcp add` failure aborts before hooks ever copy; (2) settings.json hook **registration** is a manual README paste — nothing ever writes the `hooks` key, so new machines and newly added hooks get scripts on disk that silently never run. Fix plan approved at `~/.claude/plans/ok-now-parallel-cerf.md`: local steps first + MCP warn-and-continue, plus a `settings-hooks.json` template merged by a new `merge-settings-hooks.js` with **"template owns its blocks"** semantics (repo blocks updated in place, user blocks never touched).
+- **Releases 2.15.0 and 2.16.0 shipped** — interpreter guard now re-evaluates `bash -c` payloads against sibling guards + deny list (not blanket deny); fileSuggestion @-autocomplete restored with fuzzy matching; settings-guard carve-out removed (**unconditional** block on `~/.claude/settings*.json` via file tools — the carve-out was a self-permission hole). Suite 108/108.
+- **Deny rules, ask rules, PreToolUse hooks, and the sandbox are all enforced under `bypassPermissions`** — only `permissions.allow` goes inert. Deny matches a spelling, not a capability; `Write(...)` path rules are never consulted.
+- **This machine is fully wired** — 18 hook scripts installed, `~/.claude/settings.json` carries the full hooks key (10 PreToolUse blocks) and 117 deny entries.
 
 ## Recent Changes
 
-- Created: `work/tasks/TASK-029-filesuggestion-autocomplete.md` (todo; renumbered from 028 — a concurrent session claimed TASK-028 for the interpreter-guard task); `knowledge/sources/git-exclude-at-autocomplete.md`; `knowledge/entities/tools/claude-code-file-picker.md`; `raw/research/git-exclude-at-autocomplete/{index,sources}.md` (research op).
-- Updated: `knowledge/concepts/git-ignore-tool-visibility.md` (resolved contradiction — decision rule narrowed, `fileSuggestion` added); `knowledge/sources/gitignored-wiki-tool-visibility.md` (superseded_by callout); `wiki/index.md`, `wiki/log.md`.
-- Flagged: **(1)** resolved — `info/exclude` "visible to agents" superseded by the @-autocomplete research (Serena-only). **(2)** still open — package-install consent mechanism disagreement (`ask` vs hook), callout on `consent-requires-a-yes-path`.
+- Created: `work/roadmaps/ROADMAP-004-resilient-hook-install.md` (active, 3 phases / 7 inline items); roadmap index row; log entry.
+- Updated: `wiki/work/roadmaps/index.md`, `wiki/log.md`.
+- Previously (2026-07-30): TASK-030 (user preferences) and TASK-031 (Tier 3 `/sandbox`) filed; UAT-028 + UAT-029 passed and archived with TASK-028/029.
 
 ## Active Threads
 
-- **TASK-029 (todo)** — fileSuggestion @-autocomplete restoration: template `file-suggestion.sh` (sentinel-scoped re-include), `--set-key` generalization of `merge-settings-deny.js` (absorbs the backlog item) wired into `install-global.sh`, prose corrections in `merge-gitignore.sh`/`templates/gitignore`/READMEs. parallel_safe_with TASK-027 and TASK-028 (interpreter guard, filed concurrently by another session); concept page already corrected during ingest.
-- **UAT-027 (in-progress)** — 3 session-blocked cases need `PreToolUse` matcher wiring in `~/.claude/settings.json`; TASK-027 stays open until then. Two prose defects pinned (quoted-string examples in `lib/hooks/README.md` + `protected-write-guard.js:50-53`).
-- **Not yet filed**: `permissions.ask` template (`--set-key` merge generalization now lands via TASK-028); `/decision-create` on enabling `/sandbox` for `power-mode`/`uat-auto-plus`.
+- **ROADMAP-004 (active, 0/7)** — next: `/roadmap-next` to create Phase 1 task files (settings-hooks.json template → merge-settings-hooks.js → test/settings-hooks.test.js). Phase 2 (install-flow reorder) depends on Phase 1's merge script existing.
+- **TASK-030 (todo)** — two-level preference store (global + git-excluded per-project), prompted during skill sync; open design decision on extending the sentinel block's canonical form.
+- **TASK-031 (todo)** — Tier 3: adopt `/sandbox` to close the script-file write path to settings.json no hook can parse; measure breakage first (note: `install-global.sh` writes `~/.claude/` by design — ROADMAP-004's merge script adds another such writer).
+- **ROADMAP-001 (11/12)** — Phase 4 advisory locking deliberately deferred.
 - **Research reports awaiting ingest**: `raw/research/mcp-one-process-per-user/`, `brave-mcp-single-docker-container/`, `mcp-scope-conflict-handling/`, `mcp-add-scope-writes/`.

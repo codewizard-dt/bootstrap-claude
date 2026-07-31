@@ -1,0 +1,151 @@
+{
+  "SessionStart": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node ~/.claude/hooks/serena-session-reset.js"
+        }
+      ]
+    }
+  ],
+  "PreToolUse": [
+    {
+      "matcher": "Read|Write|Edit|MultiEdit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node ~/.claude/hooks/env-file-guard.js"
+        }
+      ]
+    },
+    {
+      "matcher": "Edit|Write|NotebookEdit|MultiEdit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node ~/.claude/hooks/claude-settings-guard.js"
+        }
+      ]
+    },
+    {
+      "matcher": "Bash|mcp__serena__.*|mcp__plugin_[^_]+_serena__.*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node ~/.claude/hooks/env-content-read-guard.js"
+        }
+      ]
+    },
+    {
+      "matcher": "Read",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node ~/.claude/hooks/serena-first-read-guard.js"
+        }
+      ]
+    },
+    {
+      "matcher": "Edit|MultiEdit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node ~/.claude/hooks/serena-edit-guard.js"
+        }
+      ]
+    },
+    {
+      "matcher": "Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node ~/.claude/hooks/serena-write-guard.js"
+        }
+      ]
+    },
+    {
+      "matcher": "Grep",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node ~/.claude/hooks/serena-first-guard.js"
+        }
+      ]
+    },
+    {
+      "matcher": "Glob",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node ~/.claude/hooks/serena-first-glob-guard.js"
+        }
+      ]
+    },
+    {
+      "matcher": "Agent",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node ~/.claude/hooks/serena-pre-delegation.js"
+        }
+      ]
+    },
+    {
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node ~/.claude/hooks/serena-bash-grep-block.js"
+        },
+        {
+          "type": "command",
+          "command": "node ~/.claude/hooks/mv-absolute-path-block.js",
+          "if": "Bash(mv *)"
+        },
+        {
+          "type": "command",
+          "command": "node ~/.claude/hooks/git-protected-ops-block.js"
+        },
+        {
+          "type": "command",
+          "command": "node ~/.claude/hooks/interpreter-indirection-guard.js"
+        },
+        {
+          "type": "command",
+          "command": "node ~/.claude/hooks/package-install-consent.js"
+        },
+        {
+          "type": "command",
+          "command": "node ~/.claude/hooks/absolute-path-guard.js"
+        },
+        {
+          "type": "command",
+          "command": "node ~/.claude/hooks/protected-write-guard.js"
+        }
+      ]
+    }
+  ],
+  "PostToolUse": [
+    {
+      "matcher": "mcp__serena__.*|mcp__plugin_[^_]+_serena__.*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node ~/.claude/hooks/serena-usage-tracker.js"
+        }
+      ]
+    }
+  ],
+  "PostToolUseFailure": [
+    {
+      "matcher": "mcp__serena__.*|mcp__plugin_[^_]+_serena__.*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node ~/.claude/hooks/serena-usage-tracker.js"
+        }
+      ]
+    }
+  ]
+}
