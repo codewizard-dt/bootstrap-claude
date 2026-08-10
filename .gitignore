@@ -5,6 +5,7 @@
 Thumbs.db
 *~
 .idea/
+.obsidian/
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json

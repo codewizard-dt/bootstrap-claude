@@ -97,11 +97,40 @@ for guide in $OPTIONAL_GUIDES; do
   if [ -e "$GUIDES_DST/$guide" ] || [ -e "$LEGACY_GUIDES/$guide" ]; then
     deliver_guide "$guide"
     echo "  $guide: refreshed (already present — previously opted in)."
-  elif [ "$INTERACTIVE" = true ] && prompt_yn "  Install optional guide '$guide'? [y/N]: "; then
-    deliver_guide "$guide"
-  else
-    echo "  $guide: skipped. Opt in any time: re-run 'npx @codewizard-dt/bootstrap update' and answer yes."
+    # Presence on disk deliberately wins over any stored answer: the file being
+    # there is the stronger signal (the user can opt out by deleting it), so we
+    # never even consult the preference store on this branch.
+    continue
   fi
+  # The store is read HERE, ahead of the `INTERACTIVE` guard below — not behind
+  # it. The schema for guides.* says a stored `true` delivers the guide into
+  # wiki/guides/ on EVERY run, including headless ones. If this lookup lived
+  # inside the interactive branch, a stored `true` would be silently ignored on
+  # every non-interactive run (CI, `bootstrap update` piped from a script), and
+  # the answer the user recorded once would only take effect when they were
+  # sitting at a tty — exactly the case where they would have been asked anyway.
+  # Only the unanswered/`ask` case needs a tty, and that is what the guard below
+  # covers. prefs_get always exits 0 and echoes `unset` when it has no value, so
+  # this command substitution is safe under `set -euo pipefail`.
+  case "$(prefs_get "guides.$guide" "$PROJECT_DIR")" in
+    true)
+      deliver_guide "$guide"
+      echo "  $guide: delivered (remembered answer guides.$guide=true — change with /bootstrap-config)."
+      ;;
+    false)
+      # No "Opt in any time" nudge here: the question has been answered, and
+      # telling the user to re-run and answer yes would be misleading.
+      echo "  $guide: skipped (remembered answer guides.$guide=false — change with /bootstrap-config)."
+      ;;
+    *)
+      # `ask`, `unset`, or an unrecognized value — today's behavior.
+      if [ "$INTERACTIVE" = true ] && prompt_yn_sticky "guides.$guide" "$PROJECT_DIR" "  Install optional guide '$guide'? [y/N]: "; then
+        deliver_guide "$guide"
+      else
+        echo "  $guide: skipped. Opt in any time: re-run 'npx @codewizard-dt/bootstrap update' and answer yes."
+      fi
+      ;;
+  esac
 done
 
 # 4b. LEGACY MIGRATION: guides used to live in .docs/guides/. Every

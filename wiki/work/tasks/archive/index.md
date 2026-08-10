@@ -37,3 +37,20 @@ Terminal task files (`done` or `trashed`) moved here by `/wiki-archive` to reduc
 | [[TASK-034]] | Add test/settings-hooks.test.js — template invariants and merge behavior coverage | done | 2026-07-31 |
 | [[TASK-035]] | Reorder install-global.sh — local steps first, MCPs last and guarded, invoke hooks-wiring merge | done | 2026-07-31 |
 | [[TASK-037]] | Document automated hooks wiring — lib/hooks/README.md is no longer a manual-paste instruction sheet | done | 2026-07-31 |
+| [[TASK-038]] | Fake-HOME end-to-end verification of resilient hook install + hooks wiring, and the minor release | done | 2026-07-31 |
+| [[TASK-040]] | Canonical preference key registry — bootstrap-prefs-schema.json | done | 2026-08-06 |
+| [[TASK-041]] | bootstrap-prefs.js — four-state preference helper | done | 2026-08-06 |
+| [[TASK-042]] | test/bootstrap-prefs.test.js — four-state and schema-bijection coverage | done | 2026-08-06 |
+| [[TASK-018]] | Upgrade dashboard.html dark mode to a full explicit-override toggle | done | 2026-08-06 |
+| [[TASK-019]] | Teach dashboard parseIndexMarkdown to parse archive/index.md table rows so Archived counts are correct | done | 2026-08-06 |
+| [[TASK-043]] | Sticky prompt helpers in lib.sh — prompt_yn_sticky, prompt_choice_sticky, BOOTSTRAP_ASSUME_TTY | done | 2026-08-06 |
+| [[TASK-044]] | Wire the install-mcps.sh prompt sites to the preference store | done | 2026-08-06 |
+| [[TASK-045]] | Wire the sync-wiki-scaffold.sh, install-global.sh, and update-project.sh prompt sites | done | 2026-08-06 |
+| [[TASK-046]] | merge-gitignore.sh — prefs.gitTracking three-way prompt and declines-only wiring | done | 2026-08-06 |
+| [[TASK-047]] | test/prompt-stickiness.test.js — sticky-prompt coverage and the bijection un-skip | done | 2026-08-06 |
+| [[TASK-030]] | User preferences: stop skills doing consequential things without consent | done | 2026-08-07 |
+| [[TASK-048]] | /bootstrap-config skill — view, edit, and reset stored preferences | done | 2026-08-07 |
+| [[TASK-049]] | Register /bootstrap-config in lib/skills/README.md and the CLAUDE.md Custom Commands table | done | 2026-08-07 |
+| [[TASK-050]] | Document the helper, the four-state model, and the full key registry in lib/scripts/README.md | done | 2026-08-07 |
+| [[TASK-051]] | Pin bootstrap-prefs.js and bootstrap-prefs-schema.json into test/npm-pack-contents.test.js | done | 2026-08-07 |
+| [[TASK-052]] | End-to-end verification of the preference store against a scratch project | done | 2026-08-07 |

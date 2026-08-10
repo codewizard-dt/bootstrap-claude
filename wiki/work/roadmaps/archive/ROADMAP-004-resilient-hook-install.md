@@ -1,7 +1,7 @@
 ---
 id: ROADMAP-004
 title: Resilient hook install + automated settings.json hooks wiring
-status: active
+status: done
 created: 2026-07-31
 updated: 2026-07-31
 owner: David Taylor
@@ -32,7 +32,7 @@ Implementation detail lives in the approved plan at `~/.claude/plans/ok-now-para
 ## Phase 3: Docs & Release
 
 - [x] [[TASK-037: Document automated hooks wiring — lib/hooks/README.md is no longer a manual-paste instruction sheet]]
-- [ ] [[TASK-038: Fake-HOME end-to-end verification of resilient hook install + hooks wiring, and the minor release]]
+- [x] [[TASK-038: Fake-HOME end-to-end verification of resilient hook install + hooks wiring, and the minor release]]
 
 ## Notes
 

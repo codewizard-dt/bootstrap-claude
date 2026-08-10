@@ -56,7 +56,7 @@ mcp_add_scoped() {
   fi
 }
 
-# register_optional_mcp <name> <interactive-prompt> <adder-fn> [expected] [fixed_scope]
+# register_optional_mcp <name> <interactive-prompt> <adder-fn> [expected] [fixed_scope] [pref_key] [scope_pref_key]
 # Common wrapper for the optional MCPs (brave-search / context7 / playwright):
 # skip if already installed; in interactive mode gate on a y/n prompt and ask
 # for scope; otherwise install non-interactively at user scope. <adder-fn>
@@ -69,8 +69,24 @@ mcp_add_scoped() {
 # it is repository/machine config we don't own; we skip and say so.
 # Optional [fixed_scope]: skip the scope prompt and use this scope (for MCPs
 # that only support one scope — asking and ignoring the answer is worse).
+#
+# Optional [pref_key] / [scope_pref_key]: bootstrap-prefs keys for the install
+# question and for the scope question respectively. Both default to empty, and
+# empty means "no preference — behave exactly as before", so any caller that has
+# not opted in is unaffected. bash 3.2, so these are positional only: pass "" for
+# an unused slot in between. Both MCPs wired here are machine-wide, so both keys
+# are read and written at --global, matching their `scope` in
+# bootstrap-prefs-schema.json (the schema is the authority on the selector, not
+# the call site's convenience). [scope_pref_key] is moot when [fixed_scope] is
+# set — no scope question is asked at all in that case.
 register_optional_mcp() {
-  local name="$1" prompt="$2" adder="$3" expected="${4:-}" fixed_scope="${5:-}" scope cur_scope
+  local name="$1" prompt="$2" adder="$3" expected="${4:-}" fixed_scope="${5:-}"
+  local pref_key="${6:-}" scope_pref_key="${7:-}" scope cur_scope answered
+  # The mcp_installed short-circuit stays FIRST, ahead of every preference read.
+  # Side-effect stickiness is the cheapest and most accurate "already installed"
+  # signal there is; preferences only decide what happens when it is NOT
+  # installed. A prefs lookup ahead of this check would cost a node process on
+  # the common no-op path and buy nothing.
   if mcp_installed "$name"; then
     if [ -z "$expected" ] || mcp_matches "$name" "$expected"; then
       echo "  $name: already installed, skipping."
@@ -88,9 +104,18 @@ register_optional_mcp() {
     return 0
   fi
   if [ "$INTERACTIVE" = true ]; then
-    if prompt_yn "$prompt"; then
+    # Captured with if/else rather than called bare: "no" is a valid answer, and
+    # a bare failing call would abort this script under `set -euo pipefail`.
+    if [ -n "$pref_key" ]; then
+      if prompt_yn_sticky "$pref_key" --global "$prompt"; then answered=true; else answered=false; fi
+    else
+      if prompt_yn "$prompt"; then answered=true; else answered=false; fi
+    fi
+    if [ "$answered" = true ]; then
       if [ -n "$fixed_scope" ]; then
         scope="$fixed_scope"
+      elif [ -n "$scope_pref_key" ]; then
+        scope="$(prompt_scope "$name" "$scope_pref_key" --global)"
       else
         scope="$(prompt_scope "$name")"
       fi
@@ -98,6 +123,19 @@ register_optional_mcp() {
       echo "  $name MCP installed."
     fi
   else
+    # Non-interactive: honour a stored decline, ask nothing, and WRITE NOTHING.
+    # install-global.sh runs this script WITHOUT --interactive, so without this
+    # check a user who declined Brave Search during an interactive `setup` would
+    # have it silently installed by the very next `bootstrap install`. Read with
+    # prefs_get directly and never through a prompt helper — a prompt helper on
+    # this path could record an answer nobody was asked for, and one CI run would
+    # then bake in a permanent decision with no prompt left to change it with.
+    # Only a stored `false` changes behaviour; `true`, `ask` and `unset` all keep
+    # today's unconditional install exactly as it was.
+    if [ -n "$pref_key" ] && [ "$(prefs_get "$pref_key" --global)" = "false" ]; then
+      echo "  $name: skipped (remembered decline — change with /bootstrap-config)"
+      return 0
+    fi
     echo "  Installing $name MCP..."
     "$adder" user
     echo "  $name MCP installed."
@@ -283,7 +321,11 @@ if [ -n "$PROJECT_DIR" ]; then
   # Consent-gated: .mcp.json may be committed team config, so the removal is
   # offered, never forced; declining keeps the existing entry working.
   if [ -f "$PROJECT_DIR/.mcp.json" ] && grep -q '"serena"' "$PROJECT_DIR/.mcp.json" 2>/dev/null; then
-    if [ "$INTERACTIVE" = true ] && prompt_yn "  serena: found in this project's .mcp.json (added by an earlier bootstrap; carries a machine-specific path). Move it to local scope in ~/.claude.json? [y/N]: "; then
+    # Sticky: asked once per project, then remembered. The selector is safe to
+    # pass unguarded because the enclosing `[ -n "$PROJECT_DIR" ]` above already
+    # guarantees it is non-empty — an empty selector would write the prefs file
+    # into whatever directory the installer happened to be run from.
+    if [ "$INTERACTIVE" = true ] && prompt_yn_sticky mcp.serenaMigrate "$PROJECT_DIR" "  serena: found in this project's .mcp.json (added by an earlier bootstrap; carries a machine-specific path). Move it to local scope in ~/.claude.json? [y/N]: "; then
       ( cd "$PROJECT_DIR" && claude mcp remove serena -s project ) || true
     else
       echo "  serena: leaving the existing .mcp.json entry in place (migrate later by re-running 'npx @codewizard-dt/bootstrap update')."
@@ -292,7 +334,11 @@ if [ -n "$PROJECT_DIR" ]; then
   if serena_installed "$PROJECT_DIR"; then
     echo "  serena: already registered for this project, skipping."
   elif [ "$INTERACTIVE" = true ]; then
-    if prompt_yn "Install Serena MCP (code exploration & editing, always local scope)? [Y/n]: "; then
+    # The serena_installed check above still wins: an already-registered Serena
+    # short-circuits here before any preference is consulted, exactly like the
+    # mcp_installed short-circuit in register_optional_mcp. Selector is
+    # non-empty for the same reason as the migrate prompt above.
+    if prompt_yn_sticky mcp.serena "$PROJECT_DIR" "Install Serena MCP (code exploration & editing, always local scope)? [Y/n]: "; then
       ( cd "$PROJECT_DIR" && \
         claude mcp add --scope local serena -- \
           uvx --from git+https://github.com/oraios/serena \
@@ -307,11 +353,18 @@ fi
 # ---------------------------------------------------------------------------
 # Optional MCPs (near-identical wrappers — see register_optional_mcp above)
 # ---------------------------------------------------------------------------
+# brave-search pins fixed_scope=user, so it asks no scope question and needs no
+# scope key — only $6. The API-key prompt inside _add_brave is deliberately NOT
+# sticky and never reaches the store: no preference key holds a secret.
 register_optional_mcp brave-search \
-  "Install Brave Search MCP globally (web research, requires API key + Docker)? [y/N]: " _add_brave "$BRAVE_MCP_URL" user
+  "Install Brave Search MCP globally (web research, requires API key + Docker)? [y/N]: " _add_brave "$BRAVE_MCP_URL" user \
+  mcp.braveSearch
 
+# context7 takes neither [expected] nor [fixed_scope], so both slots are passed
+# empty to reach the two preference keys — positional args, bash 3.2.
 register_optional_mcp context7 \
-  "Install Context7 MCP (library documentation lookups)? [y/N]: " _add_context7
+  "Install Context7 MCP (library documentation lookups)? [y/N]: " _add_context7 \
+  "" "" mcp.context7 mcp.context7Scope
 
 # _disable_project_playwright_locally
 # Rejects the project's .mcp.json `playwright` on THIS machine only, via
@@ -368,11 +421,20 @@ _install_playwright_flow() {
   if ! mcp_installed playwright; then
     # Fresh install (same gating as register_optional_mcp).
     if [ "$INTERACTIVE" = true ]; then
-      if prompt_yn "Install Playwright MCP (browser automation & UI testing)? [y/N]: "; then
+      # mcp.playwright is global scope per the schema, and covers this
+      # fresh-install path ONLY — the conflict paths have their own keys.
+      if prompt_yn_sticky mcp.playwright --global "Install Playwright MCP (browser automation & UI testing)? [y/N]: "; then
         _add_playwright user "$PLAYWRIGHT_MCP_NAME"
         echo "  playwright MCP installed."
       fi
     else
+      # Non-interactive: honour a stored decline, ask nothing, write nothing —
+      # same reasoning as register_optional_mcp's non-interactive branch. Only
+      # `false` diverts; true/ask/unset keep the unconditional install.
+      if [ "$(prefs_get mcp.playwright --global)" = "false" ]; then
+        echo "  playwright: skipped (remembered decline — change with /bootstrap-config)"
+        return 0
+      fi
       echo "  Installing playwright MCP..."
       _add_playwright user "$PLAYWRIGHT_MCP_NAME"
       echo "  playwright MCP installed."
@@ -399,7 +461,10 @@ _install_playwright_flow() {
   fi
 
   # Conflict: playwright registered at project/local scope (or undetectable).
-  if [ "$INTERACTIVE" != true ] || [ ! -t 0 ] || [ -z "$PROJECT_DIR" ] || [ "$pw_scope" = "unknown" ]; then
+  # `! has_tty` rather than a bare `[ ! -t 0 ]`: the helper honours the
+  # BOOTSTRAP_ASSUME_TTY test seam, which is the only way a test harness (whose
+  # child always gets a pipe for stdin) can reach the conflict flow at all.
+  if [ "$INTERACTIVE" != true ] || ! has_tty || [ -z "$PROJECT_DIR" ] || [ "$pw_scope" = "unknown" ]; then
     echo "  playwright: an existing ${pw_scope}-scope registration was found — leaving everything untouched."
     echo "  Resolve interactively: run 'npx @codewizard-dt/bootstrap update' in a terminal to choose how to proceed."
     return 0
@@ -412,16 +477,37 @@ _install_playwright_flow() {
     echo "    [1] Register the bootstrap shared server as '$PLAYWRIGHT_MCP_ALT_NAME' and disable the project one on this machine only"
     echo "    [2] Register '$PLAYWRIGHT_MCP_ALT_NAME' alongside it (both active — browser tools will appear twice)"
     echo "    [3] Don't touch anything (default)"
-    read -r -p "  How should we proceed? [1/2/3]: " choice || choice=3
+    # THIS is the prompt that re-asked on every single run even after being
+    # answered: options [1] and [2] BOTH end with a registered
+    # `playwright-shared` plus a live project `playwright`, and the gating
+    # condition above ("is `playwright` installed, and at what scope?") cannot
+    # tell those two end states apart — so it fell straight back into this menu
+    # next time. Remembering the answer is the entire fix; do not try to make
+    # the gating condition smarter.
+    #
+    # NAMES, NOT DIGITS, cross the store boundary. prompt_choice_sticky does the
+    # digit -> name resolution at input time (the trailing name list below is
+    # positional and MUST stay in the printed menu order above, or two answers
+    # silently swap), and the `case` branches on names. This is deliberate and
+    # load-bearing: the store holds `shared|alongside|skip` while the old `case`
+    # matched `1`/`2`/`*`, so a remembered name fed into the digit comparison
+    # would miss every branch, fall through to `*`, and silently behave like
+    # `skip` — the user's answer discarded with no error and no visible
+    # difference from a correct run. `skip` is also the default, so it and any
+    # unrecognized value share the one `*` branch.
+    #
+    # PROJECT_DIR is guaranteed non-empty by the guard above, which returns
+    # early when it is empty — never pass an empty selector.
+    choice="$(prompt_choice_sticky mcp.playwrightConflict "$PROJECT_DIR" skip "  How should we proceed? [1/2/3]: " shared alongside skip)"
     case "$choice" in
-      1)
+      shared)
         _add_playwright user "$PLAYWRIGHT_MCP_ALT_NAME"
         _disable_project_playwright_locally
         ;;
-      2)
+      alongside)
         _add_playwright user "$PLAYWRIGHT_MCP_ALT_NAME"
         ;;
-      *)
+      skip|*)
         echo "  playwright: left untouched."
         ;;
     esac
@@ -431,7 +517,9 @@ _install_playwright_flow() {
   # Machine-local registration: untracked .mcp.json (project scope) or the
   # ~/.claude.json project entry (local scope). Safe to modify with consent.
   echo "  playwright: an existing ${pw_scope}-scope registration was found (machine-local, not checked in)."
-  if prompt_yn "  Replace it with the bootstrap shared server (removes the ${pw_scope}-scope entry)? [y/N] (no = keep it and register ours as '$PLAYWRIGHT_MCP_ALT_NAME'): "; then
+  # Project-scope key: this question is about THIS project's registration.
+  # PROJECT_DIR is non-empty here for the same reason as the conflict menu.
+  if prompt_yn_sticky mcp.playwrightReplace "$PROJECT_DIR" "  Replace it with the bootstrap shared server (removes the ${pw_scope}-scope entry)? [y/N] (no = keep it and register ours as '$PLAYWRIGHT_MCP_ALT_NAME'): "; then
     ( cd "$PROJECT_DIR" && claude mcp remove playwright -s "$pw_scope" ) || true
     _add_playwright user "$PLAYWRIGHT_MCP_NAME"
   else

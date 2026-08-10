@@ -4,7 +4,7 @@ Setting up Claude Code for a new project means 45 minutes of the same repetitive
 
 ### Why it's interesting
 
-The key idea is that markdown files are better instructions than chat. Every handoff in the workflow — task files, UAT specs, ADRs — has a defined schema that gives Claude unambiguous instructions, which means you can hand off work and trust the output. State lives in `.docs/` files rather than conversation history, so any agent in any context window can pick up a task and continue without needing to be re-briefed.
+The key idea is that markdown files are better instructions than chat. Every handoff in the workflow — task files, UAT specs, ADRs — has a defined schema that gives Claude unambiguous instructions, which means you can hand off work and trust the output. State lives in `wiki/` files rather than conversation history, so any agent in any context window can pick up a task and continue without needing to be re-briefed.
 
 ### Who it's for
 
@@ -18,4 +18,4 @@ Developers who use Claude Code daily and rebuild the same scaffolding from scrat
 
 ### The best part
 
-The whole system is stateless from the package's perspective: all project state lives in `.docs/` markdown files, which means it works equally well whether you're running one agent or an entire fleet.
+The whole system is stateless from the package's perspective: all project state lives in `wiki/` markdown files, which means it works equally well whether you're running one agent or an entire fleet.

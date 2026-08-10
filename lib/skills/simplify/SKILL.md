@@ -77,7 +77,7 @@ With user approval:
 
 After changes:
 - For code files:
-  - Run appropriate quality gates (mypy, typecheck) from `.docs/agent/quality-gates.md`
+  - Run the project's quality gates — detect and run its type checkers and tests (`/typecheck` covers detection: tsc/mypy/pyright/go vet/cargo check, etc.)
   - Ensure no functionality broken
 - For documentation:
   - Verify all critical information retained

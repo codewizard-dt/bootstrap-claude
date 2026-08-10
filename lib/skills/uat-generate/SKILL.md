@@ -17,6 +17,8 @@ UAT owns **runtime and end-to-end verification**. `/tackle` only runs static gat
 
 When a UAT case also contains behavior that can easily be preserved as a deterministic repeatable unit test, create that unit test immediately. UAT should not be the only place a cheap, automatable assertion lives.
 
+Promoting a case pays off twice: the assertion becomes repeatable, **and** the case becomes headlessly judgeable. `/uat-auto` treats a recorded unit test as a first-class evidence channel, so a Manual or edge case with one auto-passes on a green run instead of fail-closing to human verification. Every case you promote is one fewer case a human has to walk.
+
 ---
 
 **Target**: $ARGUMENTS
@@ -85,6 +87,23 @@ Do not proceed to Step 3 until you can answer yes to all:
 
 #### Step 2.5: Unit-test promotion checkpoint (mandatory)
 
+##### Preference gate
+
+This gate governs **only whether files are written under `test/`**. It never affects the UAT file itself or how UAT verdicts are judged.
+
+Read the preference **once per invocation** (not per case), before Step 2.5 does any other work:
+
+```bash
+node ~/.claude/bootstrap-prefs.js --get uatGenerate.promoteTests --project . 2>/dev/null || echo unset
+```
+
+| Value | Behaviour |
+|-------|-----------|
+| `true` | Today's behaviour — run the promotion checkpoint and create/update the unit test files. |
+| `false` | Do **not** create or update anything under `test/`. Still run the promotability *analysis* and still record it per case, as `- **Repeatable Unit Test**: Skipped by preference (uatGenerate.promoteTests=false)`. Say once in the completion report (Step 7): "No test/ files were written (uatGenerate.promoteTests=false). Change with /bootstrap-config." |
+| `ask` | Ask the user **once per invocation** (AskUserQuestion), before Step 2.5 does any work, whether to promote tests this run. Honour the answer for this run only — never write it back to the store. |
+| `unset` | Promote (today's behaviour) and note once: "uatGenerate.promoteTests is unanswered — /uat-generate promotes tests by default. Set it with: node ~/.claude/bootstrap-prefs.js --set uatGenerate.promoteTests --value <true\|false\|ask> --global" |
+
 For every planned UAT case, decide whether any part of it can be captured as a repeatable unit test with low setup cost.
 
 A UAT case is **unit-test promotable** when all are true:
@@ -104,7 +123,7 @@ Before writing the UAT file, inspect the existing test layout and runner:
 - Prefer adding focused assertions to an existing nearby test file when that is the local pattern.
 - Otherwise create the smallest conventional new test file beside the unit under test.
 
-If a case is promotable, you **must** create or update the unit test file. Do not merely list it as a recommendation. If you cannot create it because the test framework is absent or the harness would require new infrastructure, record that as a gap with the concrete blocker.
+If a case is promotable **and the preference gate allows promotion**, you **must** create or update the unit test file. Do not merely list it as a recommendation. If you cannot create it because the test framework is absent or the harness would require new infrastructure, record that as a gap with the concrete blocker. When the gate suppresses promotion, do the analysis and record `Skipped by preference` — write nothing under `test/`.
 
 ### Step 3: Generate UAT test cases
 
@@ -168,6 +187,7 @@ implements::[[TASK-NNN]]
 - **Steps**: [How to trigger this scenario]
 - **Expected Result**: [How the system should handle it]
 - **Repeatable Unit Test**: [Created: `path/to/test-file` | Not applicable: reason | Blocked: reason]
+- **Unit Test Command**: `node --test test/example.test.js`
 - [ ] Pass
 ```
 
@@ -190,6 +210,13 @@ implements::[[TASK-NNN]]
 - Add `- **Repeatable Unit Test**: Created: \`path/to/test-file\`` when you created or updated a unit test for the behavior.
 - Add `- **Repeatable Unit Test**: Not applicable: <short reason>` when the case cannot reasonably become a unit test.
 - Add `- **Repeatable Unit Test**: Blocked: <short reason>` only when it was promotable in principle but the repo lacks the needed test harness or fixtures.
+- Add `- **Repeatable Unit Test**: Skipped by preference (uatGenerate.promoteTests=false)` when the Step 2.5 preference gate suppressed promotion for this run. Record the promotability analysis as usual; only the file write is skipped.
+
+**Unit test command** (required whenever, and only when, the line above says `Created:`):
+- Add `- **Unit Test Command**: \`<cmd>\`` on the next line, holding the **file-scoped** command that runs exactly that test file — e.g. `node --test test/foo.test.js`, `npx vitest run test/foo.test.ts`, `pytest tests/test_foo.py`, `go test ./pkg/foo/`.
+- Verify it by running it once before writing the UAT file. A command that has never been run is a guess, and a wrong one costs a false failure later.
+- This is what makes a Manual or edge-case test **auto-judgeable**: `/uat-auto` and `/uat-auto-plus` run it as their evidence channel instead of fail-closing the case to human verification (UAT-CORE Step 4, "Unit-backed"). Omitting it forces them to derive a command from the repo's conventions, and a case they cannot resolve one for fails closed. It costs one line here to save a human triage pass later.
+- Do not point it at the whole suite (`npm test`) when a file-scoped form exists — a green suite is weak evidence about one case, and slow to re-run inside the auto-plus fix loop.
 
 **Auth metadata** (required for every auth-gated test):
 ```
@@ -201,7 +228,7 @@ Auth-Role: user
 
 ### Step 4: Write repeatable unit tests, the UAT file, and cross-reference
 
-1. For each promotable case from Step 2.5, create or update the actual unit test file before writing the UAT file:
+1. **If the Step 2.5 preference gate allows promotion**, create or update the actual unit test file for each promotable case from Step 2.5, before writing the UAT file. If the gate suppressed promotion, skip this step entirely — write nothing under `test/` — and record each promotable case as `Skipped by preference` instead.
    - Use existing test framework conventions and nearby examples.
    - Keep the test focused on the behavior from the UAT case.
    - Do not add broad snapshots or duplicate end-to-end checks as unit tests.
@@ -209,7 +236,7 @@ Auth-Role: user
    - If editing code test files, use Serena editing tools.
    - If creating new config/markdown/test files where Serena is unavailable, use the appropriate project-approved edit/write tool; never shell redirection.
 
-2. Include the created test path in the corresponding UAT case's `Repeatable Unit Test` metadata.
+2. Include the created test path in the corresponding UAT case's `Repeatable Unit Test` metadata, plus the verified file-scoped `Unit Test Command` — or `Skipped by preference (uatGenerate.promoteTests=false)` when the gate suppressed promotion.
 
 3. Write `wiki/work/uat/UAT-NNN-slug.md` using the `Write` tool.
 

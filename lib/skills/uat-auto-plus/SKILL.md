@@ -31,7 +31,7 @@ Autonomous variant of `/uat-auto`: run every eligible test, auto-judge from dete
 
 ## Prime Directive: truthful pass
 
-**Never mark `[x] Pass` unless the test currently passes against unmodified test logic.** Fixes go into application code, build/config, infrastructure, or test-environment setup — **never** into the UAT file's Expected/Steps/Command, and never by weakening assertions. If a failure can't be fixed without changing what is being tested, record `[FAIL: auto-fix-declined: <reason>]` and leave the code unchanged. Related: **never delete or `[SKIP: ...]` a test to avoid fixing it** — skip is a human verdict. A false pass is the worst outcome — it ships a broken feature *and* erodes trust in every later run.
+**Never mark `[x] Pass` unless the test currently passes against unmodified test logic.** Fixes go into application code, build/config, infrastructure, or test-environment setup — **never** into the UAT file's Expected/Steps/Command, **never** into the unit test file backing a unit-backed case, and never by weakening assertions. Editing the oracle you are about to be judged by is the one move that turns this mode from useful into dangerous. If a failure can't be fixed without changing what is being tested, record `[FAIL: auto-fix-declined: <reason>]` and leave the code unchanged. Related: **never delete or `[SKIP: ...]` a test to avoid fixing it** — skip is a human verdict. A false pass is the worst outcome — it ships a broken feature *and* erodes trust in every later run.
 
 ---
 
@@ -42,7 +42,7 @@ Run UAT-CORE headless throughout, adding the fix loop:
 1. **Step 1** — resolve/parse (auto/plus resolution: never prompt; auto-pick lowest-numbered pending on empty/unresolved).
 2. **Step 2** — prerequisites with **one autonomous repair attempt** each (start dev server in background + `Monitor` for ready; run migrate; run seed; obtain a documented env var), then re-verify. Still failing after one repair → hard gate (`[FAIL: auto-judge: prerequisite not satisfied — <which>]` on every untested test → Closure). Track every background process started — Closure terminates them.
 3. **Step 3 + 3.5** — classify, then stub-detect (leave stubs `- [ ] Pass`; **do not enter the fix loop** for them — implementing a feature from scratch is out of scope; surface in the summary).
-4. **Step 4** — auto-judge in document order: API/CLI by machine-checkable criteria → on `[FAIL]`, **enter the fix loop (below)**. UI and Manual are always `[FAIL: auto-judge: ... requires human verification]` and **never** enter the fix loop (no machine-checkable signal that a fix worked). Eligibility = pending + previously-failed; also reset `[FIXING: ...]` → `- [ ] Pass` before running.
+4. **Step 4** — auto-judge in document order by evidence channel: **live command** (API/CLI) and **unit-backed** (the recorded `Repeatable Unit Test` file) are both machine-checkable → on `[FAIL]`, **enter the fix loop (below)**. Bare Manual cases and every UI case are `[FAIL: auto-judge: ... requires human verification]` and **never** enter the fix loop (no machine-checkable signal that a fix worked). Eligibility = pending + previously-failed; also reset `[FIXING: ...]` → `- [ ] Pass` before running.
 5. **Step 5** — write each verdict/`[FIXING: ...]` transition **immediately** via `Edit` (no buffering).
 6. **Closure** — archive on all-pass; on any fail leave in place and **exit 0**. This mode additionally deletes this task's screenshots, **terminates every background process** it started, and supports multi-task WIP tracking in decision annotation (all per UAT-CORE Closure "Mode differences: uat-auto-plus"). Log tag ` (auto-plus)`.
 
@@ -67,9 +67,9 @@ The defining feature. On an API/CLI `[FAIL]` in Step 4, do not move on — diagn
 **Loop (per failing test, attempts 1–3):**
 1. Mark `[FIXING: attempt N/3 — <short reason>]` via `Edit`.
 2. **Diagnose** — read the test, the relevant app code, recent logs. Navigate with Serena (`find_symbol`, `find_referencing_symbols`, `get_symbols_overview`) — not Grep/Glob. For runtime failures, consider the `debug-logs` skill for a ranked hypothesis list.
-3. **Decide the smallest correct fix** that makes the test pass without weakening it. Acceptable targets: application code, build/config (missing env default, misrouted path, wrong port), test fixtures/seed data. **Never** the UAT file's Steps/Expected/Command; **never** test assertions in code.
+3. **Decide the smallest correct fix** that makes the test pass without weakening it. Acceptable targets: application code, build/config (missing env default, misrouted path, wrong port), test fixtures/seed data. **Never** the UAT file's Steps/Expected/Command; **never** test assertions in code — including the unit test file named in a unit-backed case's `Repeatable Unit Test` metadata, which is off-limits for the whole loop.
 4. **Delegate to a sub-agent** (`Agent` tool, `subagent_type: general-purpose`, or `Plan` for design-heavy fixes). Prompt must include: the test ID + full body; the actual-vs-expected evidence from Step 4; the constraint "do not modify the UAT file or test assertions; fix only application code, build, config, or fixtures"; a request for a short report of files changed + rationale.
-5. **Re-run** the test with the same Step 4 procedure and the same Bash call — do not relax assertions.
+5. **Re-run** the test with the same Step 4 procedure and the same Bash call — same curl, or the same unit-test command over an unmodified test file (verify it is unchanged before trusting the result). Do not relax assertions or narrow the run.
 6. **Evaluate:** Pass → `[x] Pass`, delete this test's fail screenshots, exit loop, next test. Fail & attempt < 3 → next attempt with diagnosis refined by the prior report. Fail & attempt = 3 → `[FAIL: auto-fix-exhausted: <last reason>]`, exit loop.
 
 **Fix-decline cases** — mark `[FAIL: auto-fix-declined: <why>]` immediately (declining is correct judgment, not failure) when:
@@ -88,7 +88,7 @@ The defining feature. On an API/CLI `[FAIL]` in Step 4, do not move on — diagn
 ━━━ UAT AUTO-PLUS COMPLETE ━━━
 File: wiki/work/uat/5-positions.uat.md  ·  Source: wiki/work/tasks/5-positions.md  ·  Mode: autonomous-fix
 Budget: attempts 7/N · wall 12m22s/30m
-✅ Passed 7 (fixed during run: 4) · ⚠️ Skipped 1 (pre-existing) · ❌ Failed 1 (auto-fix-exhausted 1 · declined 0 · auto-judge-uncertain 0)
+✅ Passed 7 (live command 5 · unit-backed 2 · fixed during run: 4) · ⚠️ Skipped 1 (pre-existing) · ❌ Failed 1 (auto-fix-exhausted 1 · declined 0 · auto-judge-uncertain 0)
 ❔ Pending 0 · 🔲 Stub-detected 0 (left untouched — implement first) · Total 9
 Fixes Applied:
   • UAT-API-001: added missing 422 handler in src/api/positions.ts
@@ -104,7 +104,7 @@ On all-pass, replace `Next action` with `Archived to archive/` and the new paths
 
 ## Rules
 
-**Autonomy boundaries** — the agent **may** modify application code, build/config, fixtures, and seed data. It **may not**: modify any UAT file's Steps/Expected/Command; modify test assertions in code (`expect(...)`); disable, comment out, `xfail`, or `[SKIP: ...]` a failing test; weaken type signatures, lower error-throwing branches, or remove validation to force a pass. When in doubt, decline and surface for review.
+**Autonomy boundaries** — the agent **may** modify application code, build/config, fixtures, and seed data. It **may not**: modify any UAT file's Steps/Expected/Command; modify test assertions in code (`expect(...)`), including any unit test file backing a unit-backed case; disable, comment out, `xfail`, or `[SKIP: ...]` a failing test; narrow a test filter so fewer cases run; weaken type signatures, lower error-throwing branches, or remove validation to force a pass. When in doubt, decline and surface for review.
 
 **Verdict discipline** — `[x] Pass` only on machine-verified evidence against unmodified logic; `[FAIL: auto-fix-exhausted: ...]` after 3 attempts; `[FAIL: auto-fix-declined: ...]` when out of scope/unsafe; `[FAIL: auto-judge: ...]` when unverifiable (UI/manual); **never** `[SKIP]`.
 

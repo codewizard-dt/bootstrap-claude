@@ -3,6 +3,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TEMPLATE_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# shellcheck source=lib.sh
+. "$SCRIPT_DIR/lib.sh"
 GLOBAL_SKILLS_DIR="$HOME/.claude/skills"
 
 # Stale global skill folders from the wiki rename (adr -> decision, prd -> req)
@@ -16,8 +18,8 @@ for arg in "$@"; do
   [ "$arg" = "--skip-mcps" ] && SKIP_MCPS=true
 done
 
-# Local/offline-safe steps (1-5) run first so hooks, skills, and settings
-# always land; the network-dependent MCP install runs last (step 6), guarded
+# Local/offline-safe steps (1-7) run first so hooks, skills, and settings
+# always land; the network-dependent MCP install runs last (step 8), guarded
 # so a failure cannot abort the script under `set -euo pipefail`.
 
 # 1. Install hooks globally
@@ -55,21 +57,23 @@ if [ ${#ORPHAN_FOUND[@]} -gt 0 ]; then
     echo "  $p"
   done
   echo ""
-  if [ -t 0 ]; then
-    read -r -p "Delete these ${#ORPHAN_FOUND[@]} folder(s)? [y/N]: " REPLY
-    case "$REPLY" in
-      [yY])
-        for p in "${ORPHAN_FOUND[@]}"; do
-          rm -rf "$p"
-        done
-        echo "Removed."
-        ;;
-      *)
-        echo "Skipped. To remove manually: rm -rf ~/.claude/skills/{adr-create,adr-finalize,adr-next,adr-walkthrough,prd-create,prd-finalize,prd-extract-decisions,prd-update,prd-trash,prd-compile}"
-        ;;
-    esac
+  # Sticky: asked once, then remembered (skills.pruneOrphans, global scope —
+  # this script has no project dir). The key decides only WHETHER the removal
+  # runs; which folders qualify is fixed by ORPHAN_SKILLS above.
+  #
+  # prompt_yn_sticky answers no in a non-interactive terminal, prints its own
+  # "skipping prompt, answering no" note, and records NOTHING — so one CI run
+  # cannot bake a permanent decline into the user's store. That path falls into
+  # the else branch below, which is therefore the single "nothing was deleted"
+  # message for both the declined and the non-interactive case, and carries the
+  # manual-removal escape route with it.
+  if prompt_yn_sticky skills.pruneOrphans --global "Delete these ${#ORPHAN_FOUND[@]} folder(s)? [y/N]: "; then
+    for p in "${ORPHAN_FOUND[@]}"; do
+      rm -rf "$p"
+    done
+    echo "Removed."
   else
-    echo "Non-interactive mode: skipping deletion. Remove manually if needed."
+    echo "Skipped. To remove manually: rm -rf ~/.claude/skills/{adr-create,adr-finalize,adr-next,adr-walkthrough,prd-create,prd-finalize,prd-extract-decisions,prd-update,prd-trash,prd-compile}"
   fi
 fi
 
@@ -120,7 +124,132 @@ case "$FILE_SUGGESTION_OUT" in
 esac
 echo ""
 
-# 6. Ensure global MCP servers are installed (user scope, non-interactive) —
+# 6. Install the preference helper into ~/.claude/ so the skills installed in
+#    step 2 can actually read the store.
+#
+#    Skills are copied to ~/.claude/skills/ and then run inside ARBITRARY
+#    projects, which may not be a bootstrap checkout and usually are not. A skill
+#    that reads a preference therefore cannot reach lib/scripts/bootstrap-prefs.js
+#    the way the installer scripts do (lib.sh resolves it from its own directory
+#    at source time). Giving the helper a fixed, project-independent home is what
+#    makes `consumer: skill` keys readable at all — same precedent, and the same
+#    directory, as the file-suggestion picker installed in step 5.
+#
+#    The schema goes to ~/.claude/templates/ rather than beside the helper
+#    because bootstrap-prefs.js resolves it as <its own dir>/templates/
+#    (bootstrap-prefs.js:111). Preserving that layout means a skill invokes the
+#    helper with NO --schema flag and still gets validation and defaults; a
+#    flattened copy would silently drop both, and a dropped default turns an
+#    unanswered key from "the documented default" into "unset" at every call
+#    site that forgot the flag.
+echo "Installing preference helper (~/.claude/bootstrap-prefs.js)..."
+if [ -f "$SCRIPT_DIR/bootstrap-prefs.js" ] && [ -f "$SCRIPT_DIR/templates/bootstrap-prefs-schema.json" ]; then
+  mkdir -p "$HOME/.claude/templates"
+  cp "$SCRIPT_DIR/bootstrap-prefs.js" "$HOME/.claude/bootstrap-prefs.js"
+  cp "$SCRIPT_DIR/templates/bootstrap-prefs-schema.json" "$HOME/.claude/templates/bootstrap-prefs-schema.json"
+  echo "  Installed. Skills read preferences with: node ~/.claude/bootstrap-prefs.js --get <key> --project ."
+else
+  echo "Warning: bootstrap-prefs.js or its schema not found — skills will read every preference as unset (today's behavior)." >&2
+fi
+echo ""
+
+# 7. Settle the skill-consent preferences that have never been answered.
+#
+#    These are the schema's `consumer: skill` keys: the ones that change what a
+#    SLASH COMMAND does, not what the installer installs. They are asked here,
+#    once, in a batch, rather than mid-task by each skill — a user answers a
+#    short list during a sync they already chose to run instead of being
+#    interrupted while committing.
+#
+#    ONLY GENUINELY UNANSWERED KEYS ARE ASKED, and "unanswered" is measured with
+#    prefs_stored_global, not prefs_get. See that function's banner in lib.sh:
+#    every one of these keys except gitCommit.versionBump's siblings carries a
+#    non-null schema default, so a prefs_get-based check reports them all as
+#    settled and this pass would ask nothing, forever, while looking like it
+#    worked. A key already stored as `false` or `ask` is a SETTLED answer and is
+#    never re-asked — re-prompting a decline is the exact annoyance this
+#    mechanism exists to remove.
+#
+#    GLOBAL SCOPE. install-global.sh takes no project path, so it cannot know
+#    which checkout the user means. All five keys are `scope: either`, so the
+#    answer recorded here is the machine-wide default and a project file can
+#    still override it per checkout later.
+#
+#    TTY-GUARDED AS A WHOLE, not per key. A non-interactive run prints one note
+#    and writes NOTHING — no answers, and no preferences file either, because
+#    prefs_stored_global's --list probe is read-only and is not even reached.
+#    One CI run must never bake a permanent answer into a user's store.
+PREFS_ASKED=0
+
+# <key> <question> — the yes/no/ask shape shared by four of the five keys.
+# `skip` is the resolved value for a bare Enter or EOF and records nothing, so
+# an accidental keystroke leaves the question open instead of settling it.
+settle_skill_pref() {
+  local key question answer
+  key="$1"
+  question="$2"
+  if prefs_stored_global "$key"; then
+    return 0
+  fi
+  echo ""
+  echo "  $question"
+  answer="$(prompt_letter_choice skip "    [y]es / [n]o / [a]sk me every time / [s]kip for now: " yes no ask skip)"
+  case "$answer" in
+    yes)  prefs_set "$key" --global true ;  echo "    $key = true" ;;
+    no)   prefs_set "$key" --global false ; echo "    $key = false" ;;
+    ask)  prefs_set "$key" --global ask ;   echo "    $key = ask (you will be prompted every run; the answer is never stored)" ;;
+    *)    echo "    $key left unanswered — today's behavior is unchanged, and you will be asked again next sync." ;;
+  esac
+  PREFS_ASKED=$(( PREFS_ASKED + 1 ))
+}
+
+echo "Checking skill preferences (~/.claude/bootstrap-prefs.json)..."
+if ! has_tty; then
+  echo "  Non-interactive terminal: skipping the preference questions. Every unanswered key keeps today's behavior."
+else
+  # gitCommit.versionBump is the odd one out: its grammar is auto/confirm/never
+  # and `confirm` IS its ask state, so it deliberately has no `ask` value and
+  # cannot go through settle_skill_pref.
+  if ! prefs_stored_global gitCommit.versionBump; then
+    echo ""
+    echo "  Should /git-commit bump the version in package.json (and every other manifest) before committing?"
+    echo "    Say 'never' for apps and private repos; 'auto' for published packages. The [patch]/[minor]/[major]"
+    echo "    subject prefix is written either way, so release tooling keeps working."
+    VERSION_BUMP_ANSWER="$(prompt_letter_choice skip "    [a]uto / [c]onfirm each time / [n]ever / [s]kip for now: " auto confirm never skip)"
+    case "$VERSION_BUMP_ANSWER" in
+      auto|confirm|never)
+        prefs_set gitCommit.versionBump --global "$VERSION_BUMP_ANSWER"
+        echo "    gitCommit.versionBump = $VERSION_BUMP_ANSWER"
+        ;;
+      *)
+        echo "    gitCommit.versionBump left unanswered — today's behavior (auto) is unchanged, and you will be asked again next sync."
+        ;;
+    esac
+    PREFS_ASKED=$(( PREFS_ASKED + 1 ))
+  fi
+
+  settle_skill_pref gitCommit.autoPush \
+    "Should /git-commit push the current branch after committing? (Default no — this turns a local action into a published one. It never creates a branch either way.)"
+  settle_skill_pref research.persistToRaw \
+    "Should /research save its report and sources to raw/research/ by default? (Findings always appear in the reply; this governs the file write only, and you can still decline any single report.)"
+  settle_skill_pref uatGenerate.promoteTests \
+    "Should /uat-generate write repeatable assertions into test/ automatically, alongside the UAT file?"
+  settle_skill_pref gitignore.offerSectionUpdates \
+    "Should setup/update offer .gitignore template section updates? (No stops the opening question entirely. The .git/info/exclude block is separate and is unaffected.)"
+
+  if [ "$PREFS_ASKED" -eq 0 ]; then
+    echo "  All skill preferences already answered — nothing to ask."
+  else
+    echo ""
+    echo "  Stored in $HOME/.claude/bootstrap-prefs.json (see bootstrap-prefs.README.md beside it for what each key does)."
+    echo "  Change an answer:    node ~/.claude/bootstrap-prefs.js --set <key> --value <value> --global"
+    echo "  Re-open a question:  node ~/.claude/bootstrap-prefs.js --unset <key> --global"
+    echo "  Or run /bootstrap-config."
+  fi
+fi
+echo ""
+
+# 8. Ensure global MCP servers are installed (user scope, non-interactive) —
 #    LAST because it is the only network-dependent step, and guarded so a
 #    failure warns instead of aborting the local installs above.
 #    Pass --skip-mcps when MCPs were already handled interactively by the caller.
@@ -132,4 +261,4 @@ if [ "$SKIP_MCPS" = false ]; then
   echo ""
 fi
 
-echo "Global setup complete (hooks + skills + deny list + hooks wiring + file suggestion + MCPs)."
+echo "Global setup complete (hooks + skills + deny list + hooks wiring + file suggestion + preferences + MCPs)."

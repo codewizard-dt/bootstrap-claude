@@ -46,7 +46,7 @@ Keep the two from duplicating or contradicting each other: project-specific stat
 | Command | Purpose |
 |---------|---------|
 | `/wiki-ingest <raw-file>` | Process a source from `raw/` into the wiki — summary page, entity/concept updates, index + log entries |
-| `/wiki-query <question>` | Answer from the wiki with citations; offer to file valuable synthesis back as a new page |
+| `/wiki-query <question>` | Answer from the wiki with citations; auto-ingest relevant un-ingested `raw/` sources when coverage is missing; offer to file valuable synthesis back as a new page |
 | `/wiki-lint` | Health-check — contradictions, orphan pages, stale claims, index drift, never-ingested raw sources |
 | `/wiki-archive [family]` | Batch-move terminal work items into `<family>/archive/`; update `archive/index.md` and log the operation |
 | `/wiki-rotate-log` | Rotate `wiki/log.md` to a timestamped archive file when it exceeds ~500 lines; create a fresh `log.md` with an archive pointer |

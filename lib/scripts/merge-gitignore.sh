@@ -36,8 +36,8 @@ PROJECT_DIR="$(resolve_project_dir "$1")" || exit 1
 TARGET="$PROJECT_DIR/.gitignore"
 
 # Interactive-only: without a tty there is nobody to ask, and we never add
-# .gitignore entries without asking.
-if [ "$INTERACTIVE" = false ] || [ ! -t 0 ]; then
+# .gitignore entries without asking. has_tty (lib.sh) is the tty seam — it also honours BOOTSTRAP_ASSUME_TTY=1.
+if [ "$INTERACTIVE" = false ] || ! has_tty; then
   echo ".gitignore: skipped (interactive only — run 'npx @codewizard-dt/bootstrap update' in a terminal to be offered the sections)."
   exit 0
 fi
@@ -147,13 +147,35 @@ done
 # section loop ONLY — the .git/info/exclude block below is a different mechanism
 # (machine-local, never committed) and keeps its own prompt, so declining here
 # still lets the sentinel repair run.
+#
+# The remembered answer is read with `prefs_get` rather than `prompt_yn_sticky`
+# because this key is `scope: either`: it must resolve project → global →
+# default. `prompt_yn_sticky` is single-selector by design (see the banner at
+# lib.sh:226-232), which is correct only for `global`/`project` keys.
 review_sections=0
 if [ "$total_missing" -eq 0 ]; then
   echo ".gitignore: already has everything the template offers in $PROJECT_DIR"
-elif prompt_yn "  Review .gitignore updates? ($total_missing line(s) across $sections_offered section(s)) [y/N]: "; then
-  review_sections=1
 else
-  echo ".gitignore: skipped entirely — no sections offered."
+  case "$(prefs_get gitignore.offerSectionUpdates "$PROJECT_DIR")" in
+    false)
+      echo ".gitignore: skipped entirely — no sections offered. (remembered answer gitignore.offerSectionUpdates=false — change with /bootstrap-config)"
+      ;;
+    true)
+      # Schema default. The opening gate is dropped, but every section is still
+      # offered by title below, so nothing is ever appended silently.
+      review_sections=1
+      echo ".gitignore: opening gate off (remembered answer gitignore.offerSectionUpdates=true — change with /bootstrap-config); each section is still offered by title."
+      ;;
+    *)
+      # `ask`, `unset`, or an unrecognized value — today's behavior.
+      if prompt_yn "  Review .gitignore updates? ($total_missing line(s) across $sections_offered section(s)) [y/N]: "; then
+        review_sections=1
+      else
+        prefs_set gitignore.offerSectionUpdates "$PROJECT_DIR" false
+        echo ".gitignore: skipped entirely — no sections offered."
+      fi
+      ;;
+  esac
 fi
 
 if [ "$review_sections" -eq 1 ]; then
@@ -164,15 +186,47 @@ if [ "$review_sections" -eq 1 ]; then
     [ -f "$WORK_DIR/title.$i" ] && TITLE="$(cat "$WORK_DIR/title.$i")"
     missing="$(section_missing_count "$SEC")"
     if [ "$missing" -gt 0 ]; then
-      # Show the actual lines before asking. Comment/blank lines are omitted:
-      # they are only written as headers when a real entry follows, so listing
-      # them would misrepresent what the "y" adds.
-      echo "  .gitignore section '$TITLE' would add $missing line(s):"
-      section_missing_lines "$SEC"
-      if prompt_yn "  Add these to .gitignore? [y/N]: "; then
-        merge_section "$SEC"
+      # The title -> key slug is computed by bootstrap-prefs.js, NOT here. One
+      # banner title contains an em dash (U+2014): "Claude Code — machine-local
+      # MCP registration (...)". A byte-wise awk/sed `[^a-z0-9]` slugifier sees
+      # that character as three UTF-8 bytes and emits three dashes; the helper's
+      # JS regex carries the `u` flag and emits one. Keeping a single Unicode-
+      # aware implementation of the rule is the whole reason for the subshell.
+      #
+      # Guarded so a key we cannot compute never silently suppresses a section:
+      # --section-key exits 1 when a title slugifies to empty, node may be absent
+      # entirely, and this script runs under `set -euo pipefail`. On any failure
+      # SECTION_KEY stays empty and we fall back to the unconditional prompt.
+      SECTION_KEY=""
+      if [ -f "$BOOTSTRAP_PREFS_JS" ] && command -v node >/dev/null 2>&1; then
+        SECTION_KEY="$(node "$BOOTSTRAP_PREFS_JS" --section-key "$TITLE" 2>/dev/null)" || SECTION_KEY=""
+      fi
+      if [ -z "$SECTION_KEY" ]; then
+        echo "  Warning: could not compute a preference key for .gitignore section '$TITLE' — asking every time." >&2
+      fi
+
+      if [ -n "$SECTION_KEY" ] && [ "$(prefs_get "$SECTION_KEY" "$PROJECT_DIR")" = "false" ]; then
+        # Remembered decline: skip BEFORE the preview. Re-listing lines the user
+        # already refused is the noise the remembered answer exists to remove.
+        echo "  .gitignore section '$TITLE': skipped (remembered answer $SECTION_KEY=false — change with /bootstrap-config)."
       else
-        echo "  .gitignore section '$TITLE': skipped."
+        # Show the actual lines before asking. Comment/blank lines are omitted:
+        # they are only written as headers when a real entry follows, so listing
+        # them would misrepresent what the "y" adds.
+        echo "  .gitignore section '$TITLE' would add $missing line(s):"
+        section_missing_lines "$SEC"
+        if prompt_yn "  Add these to .gitignore? [y/N]: "; then
+          # Deliberately records NOTHING on accept. A remembered `true` would
+          # append on the next run without asking and break the promise at the
+          # top of this file; the schema's one-value grammar (values: "false")
+          # already rejects it, so there is no second copy of the rule here.
+          merge_section "$SEC"
+        else
+          if [ -n "$SECTION_KEY" ]; then
+            prefs_set "$SECTION_KEY" "$PROJECT_DIR" false
+          fi
+          echo "  .gitignore section '$TITLE': skipped."
+        fi
       fi
     fi
     i=$((i + 1))
@@ -310,17 +364,149 @@ if [ -d "$PROJECT_DIR/.git" ]; then
     : # already canonical — leave the file byte-identical
   elif [ "$exclude_missing" -gt 0 ]; then
     # Accepting newly hides paths from git, so this stays a consent prompt.
-    if prompt_yn "  Keep .serena/, raw/, wiki/ out of git on THIS machine (.git/info/exclude — not shared with the team; visible to Serena; @-autocomplete restored via the installed fileSuggestion script)? [y/N]: "; then
+    #
+    # `gitignore.infoExclude` is declines-only: a decline records `false` and
+    # suppresses the re-offer, an accept records NOTHING, because accepting
+    # changes the world and `exclude_is_canonical` above already makes it
+    # sticky. Keep this key distinct from `gitignore.offerSectionUpdates` (the
+    # .gitignore section pass) and `prefs.gitTracking` (the preference files
+    # themselves) — declining one must never disable another.
+    if [ "$(prefs_get gitignore.infoExclude "$PROJECT_DIR")" = "false" ]; then
+      echo "  .git/info/exclude: skipped (remembered answer gitignore.infoExclude=false — change with /bootstrap-config)."
+    elif prompt_yn "  Keep .serena/, raw/, wiki/ out of git on THIS machine (.git/info/exclude — not shared with the team; visible to Serena; @-autocomplete restored via the installed fileSuggestion script)? [y/N]: "; then
       if exclude_apply; then
         printf '%s' "$exclude_added"
         echo "  Note: this protects only this clone — teammates opt in by running 'npx @codewizard-dt/bootstrap update' themselves."
       fi
+    else
+      prefs_set gitignore.infoExclude "$PROJECT_DIR" false
     fi
   else
     # All three are already excluded somewhere in the file: git's behaviour does
-    # not change, only the picker's view of it. A pure repair, so no prompt.
+    # not change, only the picker's view of it. A pure repair, so no prompt —
+    # deliberately regardless of the stored `gitignore.infoExclude` value, since
+    # a decline refuses newly hiding paths, not repairing a sentinel.
     if exclude_apply; then
       echo "  .git/info/exclude: reordered .serena/, raw/, wiki/ under the bootstrap sentinel (git unchanged; restores @-autocomplete)"
     fi
   fi
+fi
+
+# ---------------------------------------------------------------------------
+# How should git treat the preference files themselves?
+#
+# Asked LAST, after both passes above, so that any answer recorded earlier in
+# this run has already created <project>/.claude/bootstrap-prefs.json and its
+# generated companion .claude/bootstrap-prefs.README.md. The paths being offered
+# therefore actually exist, and the user can open them before deciding.
+#
+# Chicken-and-egg, and it needs no special handling: the answer to this question
+# lives in the very file the question governs. The values file is created by the
+# first recorded answer and the question is asked afterwards, so the file is
+# always there by the time we get here. `[3] neither` is a pure no-op that
+# leaves prior state untouched, and `[1]` writes to .gitignore while the user is
+# being asked, explicitly, right then — so the promise in this file's header
+# comment (nothing reaches a project's .gitignore unasked) holds for that
+# branch too.
+#
+# `prefs.gitTracking` is the ONE key in this script recorded in ALL THREE
+# directions. The declines-only rule that governs gitignore.offerSectionUpdates
+# and gitignore.infoExclude deliberately does NOT apply: this is a choice among
+# three outcomes, not a yes/no on adding lines, so every answer is a real
+# decision worth remembering. prompt_choice_sticky does that recording itself —
+# do NOT also call prefs_set. One answer governs BOTH files; they live in the
+# same directory precisely so a single question can cover them.
+#
+# The `has_tty` guard is belt-and-braces — the tty check at :40 already exits
+# before this point on a non-interactive run. It stays because it is the seam a
+# rework of that guard hangs off, and because reaching prompt_choice_sticky
+# without a tty would resolve to the default without anyone being asked.
+# ---------------------------------------------------------------------------
+if has_tty; then
+  # The two governed paths, defined once.
+  PREFS_VALUES_PATH=".claude/bootstrap-prefs.json"
+  PREFS_README_PATH=".claude/bootstrap-prefs.README.md"
+
+  echo "  How should .claude/bootstrap-prefs.json be treated by git?"
+  echo "    [1] .gitignore          — ignored for everyone who clones this repo (shared decision)"
+  echo "    [2] .git/info/exclude   — ignored on this machine only, teammates unaffected (default)"
+  echo "    [3] neither             — commit it, so the whole team shares these answers"
+  # Resolution is POSITIONAL: the trailing name list must stay in the printed
+  # menu order above, or a typed digit silently resolves to the wrong outcome.
+  answer="$(prompt_choice_sticky prefs.gitTracking "$PROJECT_DIR" exclude "  How should we proceed? [1/2/3]: " gitignore exclude neither)"
+
+  case "$answer" in
+    gitignore)
+      prefs_written=0
+      for p in "$PREFS_VALUES_PATH" "$PREFS_README_PATH"; do
+        if [ -f "$TARGET" ] && grep -qFx -- "$p" "$TARGET"; then
+          continue
+        fi
+        if [ "$prefs_written" -eq 0 ]; then
+          if [ -s "$TARGET" ]; then
+            # Same idiom as merge_section: $() strips a trailing newline, so a
+            # non-empty result means the file does not end in one.
+            if [ -n "$(tail -c1 "$TARGET")" ]; then printf '\n' >> "$TARGET"; fi
+            printf '\n' >> "$TARGET"
+          fi
+          printf '# bootstrap preferences (remembered installer answers)\n' >> "$TARGET"
+        fi
+        printf '%s\n' "$p" >> "$TARGET"
+        echo "  + $p"
+        prefs_written=$((prefs_written + 1))
+      done
+      if [ "$prefs_written" -eq 0 ]; then
+        echo "  .gitignore: already ignores the bootstrap preference files."
+      else
+        echo "  .gitignore: bootstrap preference files ignored for everyone who clones this repo."
+      fi
+      ;;
+    exclude)
+      if [ ! -d "$PROJECT_DIR/.git" ]; then
+        echo "  .git/info/exclude: $PROJECT_DIR is not a git repository — nothing to exclude; the preference files stay visible to git."
+      else
+        prefs_written=0
+        for p in "$PREFS_VALUES_PATH" "$PREFS_README_PATH"; do
+          if [ -f "$GIT_EXCLUDE" ] && grep -qFx -- "$p" "$GIT_EXCLUDE"; then
+            continue
+          fi
+          if [ "$prefs_written" -eq 0 ]; then
+            mkdir -p "$(dirname "$GIT_EXCLUDE")"
+            if [ -s "$GIT_EXCLUDE" ] && [ -n "$(tail -c1 "$GIT_EXCLUDE")" ]; then
+              printf '\n' >> "$GIT_EXCLUDE"
+            fi
+            # Their OWN "#" header, never bare. Two things depend on it: the
+            # block above may already have normalized the sentinel block to the
+            # bottom of this file, and a "#" line directly after wiki/ is exactly
+            # what exclude_is_canonical accepts as the block terminator; and
+            # exclude_stranded stops scanning at the first "#", so our entries
+            # are never reported as stranded inside the bootstrap block.
+            printf '# bootstrap preferences (machine-local)\n' >> "$GIT_EXCLUDE"
+          fi
+          printf '%s\n' "$p" >> "$GIT_EXCLUDE"
+          echo "  + $p (.git/info/exclude)"
+          prefs_written=$((prefs_written + 1))
+        done
+        if [ "$prefs_written" -eq 0 ]; then
+          echo "  .git/info/exclude: already excludes the bootstrap preference files."
+        else
+          echo "  Note: this hides them on THIS machine only — teammates are unaffected."
+        fi
+        # Verify rather than trust: a file left non-canonical is silently
+        # rewritten by exclude_normalize on every future run. Repair ONLY when
+        # the sentinel is already present — exclude_apply would otherwise create
+        # the block and hide .serena/, raw/, wiki/ from a user who just declined
+        # exactly that above. A later normalize pass leaves our lines intact,
+        # because its scrub only removes the sentinel and those three paths.
+        if [ -f "$GIT_EXCLUDE" ] \
+          && grep -qFx -- "$EXCLUDE_SENTINEL" "$GIT_EXCLUDE" \
+          && ! exclude_is_canonical "$GIT_EXCLUDE"; then
+          exclude_apply || true
+        fi
+      fi
+      ;;
+    neither|*)
+      echo "  .claude/bootstrap-prefs.json and .claude/bootstrap-prefs.README.md stay visible to git — commit them so the whole team shares these answers."
+      ;;
+  esac
 fi

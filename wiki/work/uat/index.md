@@ -9,7 +9,4 @@ Lists **only active** UAT files (`pending`, `in-progress`, `failed`). When a UAT
 
 Entry format: `- [UAT-NNN — Title](UAT-NNN-slug.md) — verifies TASK-NNN · status`
 
-
-
-
-
+- [UAT-039 — UAT: Add extensive inline comments to the hook scripts](UAT-039-hook-inline-comments.md) — verifies TASK-039 · pending

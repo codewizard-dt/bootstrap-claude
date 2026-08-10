@@ -32,14 +32,23 @@ const { spawnSync } = require('node:child_process');
 const REPO = path.resolve(__dirname, '..');
 const REAL_SCRIPTS = path.join(REPO, 'lib', 'scripts');
 
-// The six step banners install-global.sh prints, in the order TASK-035
-// mandates: local/offline-safe steps 1-5 first, MCPs last.
+// The eight step banners install-global.sh prints, in the order TASK-035
+// mandates: local/offline-safe steps 1-7 first, MCPs last as step 8.
+//
+// Steps 6 and 7 are ordered here rather than merely present-checked because
+// they depend on each other: step 6 installs ~/.claude/bootstrap-prefs.js, and
+// the step-7 consent pass reads every stored answer THROUGH that helper. An
+// inversion would leave step 7 probing a helper that is not there yet, which
+// degrades to "no key is stored" — so it would ask questions the user already
+// answered, and a presence-only check would call that a pass.
 const STEP_BANNERS = [
   'Installing hooks globally (~/.claude/hooks/)...',
   'Installing skills globally (~/.claude/skills/)...',
   'Merging permissions deny list (~/.claude/settings.json)...',
   'Merging hooks wiring (~/.claude/settings.json)...',
   'Installing file suggestion picker (~/.claude/file-suggestion.sh)...',
+  'Installing preference helper (~/.claude/bootstrap-prefs.js)...',
+  'Checking skill preferences (~/.claude/bootstrap-prefs.json)...',
   'Checking global MCP servers (user scope)...',
 ];
 
@@ -59,10 +68,26 @@ function buildTemplate({ mcpsExit = 0, withHooks = true } = {}) {
   const scripts = path.join(dir, 'lib', 'scripts');
   fs.mkdirSync(path.join(scripts, 'templates'), { recursive: true });
 
-  for (const f of ['install-global.sh', 'merge-settings-deny.js', 'merge-settings-hooks.js']) {
+  // lib.sh is REQUIRED: install-global.sh sources it under `set -euo pipefail`,
+  // so omitting it aborts the script before step 1. bootstrap-prefs.js (and the
+  // schema below) come with it so the sticky-prompt path is actually functional
+  // here — without the helper, prefs_get degrades to `unset` and prefs_set
+  // silently no-ops, which would hide a real regression rather than catch it.
+  for (const f of [
+    'install-global.sh',
+    'merge-settings-deny.js',
+    'merge-settings-hooks.js',
+    'lib.sh',
+    'bootstrap-prefs.js',
+  ]) {
     fs.copyFileSync(path.join(REAL_SCRIPTS, f), path.join(scripts, f));
   }
-  for (const f of ['settings-deny.json', 'settings-hooks.json', 'file-suggestion.sh']) {
+  for (const f of [
+    'settings-deny.json',
+    'settings-hooks.json',
+    'file-suggestion.sh',
+    'bootstrap-prefs-schema.json',
+  ]) {
     fs.copyFileSync(
       path.join(REAL_SCRIPTS, 'templates', f),
       path.join(scripts, 'templates', f)
@@ -111,7 +136,7 @@ function cleanup(...dirs) {
 
 // --- step order: local steps first, MCPs last ----------------------------------
 
-test('fresh run executes all six steps in the TASK-035 order, MCPs last', () => {
+test('fresh run executes all eight steps in the TASK-035 order, MCPs last', () => {
   const tpl = buildTemplate();
   const home = scratchDir();
 
@@ -134,7 +159,7 @@ test('fresh run executes all six steps in the TASK-035 order, MCPs last', () => 
   );
   assert.ok(
     res.stdout.includes(
-      'Global setup complete (hooks + skills + deny list + hooks wiring + file suggestion + MCPs).'
+      'Global setup complete (hooks + skills + deny list + hooks wiring + file suggestion + preferences + MCPs).'
     ),
     'final summary line missing or stale'
   );
@@ -249,7 +274,7 @@ test('a failing install-mcps.sh warns but the script still exits 0 with local in
   );
   assert.ok(
     res.stdout.includes(
-      'Global setup complete (hooks + skills + deny list + hooks wiring + file suggestion + MCPs).'
+      'Global setup complete (hooks + skills + deny list + hooks wiring + file suggestion + preferences + MCPs).'
     ),
     'final summary missing after guarded MCP failure'
   );
@@ -273,6 +298,17 @@ test('--skip-mcps skips the MCP step entirely', () => {
   assert.ok(
     !fs.existsSync(path.join(tpl, 'mcps.log')),
     'install-mcps.sh ran despite --skip-mcps'
+  );
+  // --skip-mcps guards ONLY step 8. Steps 6 and 7 sit above that guard, so they
+  // must still run here — the likeliest way to break this is to widen the guard
+  // while moving a step, which the full-run ordering test cannot see.
+  assert.ok(
+    res.stdout.includes('Installing preference helper (~/.claude/bootstrap-prefs.js)...'),
+    'preference-helper step was skipped by --skip-mcps'
+  );
+  assert.ok(
+    res.stdout.includes('Checking skill preferences (~/.claude/bootstrap-prefs.json)...'),
+    'skill-preferences step was skipped by --skip-mcps'
   );
 
   cleanup(tpl, home);

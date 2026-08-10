@@ -7,7 +7,7 @@ updated: 2026-07-30
 
 The page catalog and home Map of Content for this wiki. **Read this first on every query**, then drill into the linked pages. Updated on every ingest and every filed answer.
 
-Conventions that govern every page (atomic pages, stable IDs, typed links, frontmatter namespace): see [conventions](conventions.md). Operation history: see [log](log.md).
+Conventions that govern every page (atomic pages, stable IDs, typed links, frontmatter namespace): see [conventions](conventions.md). Operation history: see [log](log.md). Session-handoff summary of the most recent work: see [hot cache](hot.md).
 
 Entry format: `- [Title](path) — one-line summary`.
 

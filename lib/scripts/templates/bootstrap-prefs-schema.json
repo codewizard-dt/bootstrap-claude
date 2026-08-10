@@ -1,0 +1,175 @@
+{
+  "mcp.serenaMigrate": {
+    "scope": "project",
+    "consumer": "installer",
+    "summary": "Move a project-scope Serena registration out of this repo's .mcp.json",
+    "detail": "Asked by install-mcps.sh:328 when this project's .mcp.json already registers 'serena' (written by an earlier bootstrap, carrying a machine-specific absolute --project path). true runs 'claude mcp remove serena -s project' so the entry can be re-added at local scope in ~/.claude.json; false leaves the existing .mcp.json entry in place and working, and the prompt returns on the next run. .mcp.json may be committed team config, which is why the removal is offered rather than forced.",
+    "values": "true | false",
+    "default": null,
+    "askedBy": "install-mcps.sh"
+  },
+  "mcp.serena": {
+    "scope": "project",
+    "consumer": "installer",
+    "summary": "Register Serena at local scope for this project",
+    "detail": "Asked by install-mcps.sh:341 when no Serena registration exists for this project. true runs 'claude mcp add --scope local serena ...' with this project's absolute path, storing the entry in ~/.claude.json under this project's key — per-project, machine-local, never written to the repo's shareable .mcp.json. false leaves the project without Serena; code navigation falls back to Grep/Glob.",
+    "values": "true | false",
+    "default": null,
+    "askedBy": "install-mcps.sh"
+  },
+  "mcp.playwrightConflict": {
+    "scope": "project",
+    "consumer": "installer",
+    "summary": "How to resolve a committed .mcp.json that already registers its own playwright server",
+    "detail": "The three-way conflict menu at install-mcps.sh:501, reached only when this project's git-tracked .mcp.json registers 'playwright' (team-owned, so bootstrap never modifies it). 'shared' registers the bootstrap server as 'playwright-shared' and disables the project entry on this machine only via disabledMcpjsonServers in .claude/settings.local.json. 'alongside' registers 'playwright-shared' and leaves the project entry active, so browser tools appear twice. 'skip' changes nothing. This is the prompt that re-asks on every run even after being answered: 'shared' and 'alongside' both leave a registered 'playwright-shared' plus a live project 'playwright', and the gating condition cannot tell those two end states apart — remembering the answer is what fixes it. Values are stored by name, never as the raw menu digits 1/2/3, so the meaning survives a menu reorder.",
+    "values": "shared | alongside | skip",
+    "default": null,
+    "askedBy": "install-mcps.sh"
+  },
+  "mcp.playwrightReplace": {
+    "scope": "project",
+    "consumer": "installer",
+    "summary": "Replace an existing machine-local Playwright registration with the bootstrap shared server",
+    "detail": "Asked by install-mcps.sh:522 when a 'playwright' registration exists at local scope, or at project scope in an untracked .mcp.json — machine-local either way, so it is safe to modify with consent. true removes that entry and registers the bootstrap shared server under the canonical name 'playwright'. false keeps the existing entry and registers the bootstrap server alongside it as 'playwright-shared'.",
+    "values": "true | false",
+    "default": null,
+    "askedBy": "install-mcps.sh"
+  },
+  "update.legacyDocsAck": {
+    "scope": "project",
+    "consumer": "installer",
+    "summary": "Continue 'update' even though a legacy .docs/ directory was detected",
+    "detail": "Asked by update-project.sh:76 when the project still holds .docs/ artifact content from the pre-wiki layout. true continues the update, which scaffolds wiki/ but never touches the .docs/ files. false aborts with exit 0 so the user can run 'npx @codewizard-dt/bootstrap migrate' first. Answering true does not migrate anything — it only stops the warning from blocking every subsequent update.",
+    "values": "true | false",
+    "default": null,
+    "askedBy": "update-project.sh"
+  },
+  "gitignore.infoExclude": {
+    "scope": "project",
+    "consumer": "installer",
+    "summary": "Keep .serena/, raw/, and wiki/ out of git on this machine via .git/info/exclude",
+    "detail": "Asked by merge-gitignore.sh:376 when one or more of .serena/, raw/, wiki/ are not yet excluded. true writes them under the bootstrap sentinel in .git/info/exclude — machine-local, never committed, and unlike .gitignore it does not blind Serena or ripgrep-class walkers; the installed fileSuggestion script restores @-autocomplete for those paths. false leaves git tracking them here; teammates opt in separately by running update themselves. This is INDEPENDENT of the .gitignore section pass governed by gitignore.offerSectionUpdates: declining or disabling sections never disables the info/exclude mechanism, and a pure sentinel repair (all three already excluded elsewhere in the file) runs with no prompt at all regardless of this key. See also prefs.gitTracking, which decides how git treats the preferences file itself — a different question from these three directories.",
+    "values": "true | false",
+    "default": null,
+    "askedBy": "merge-gitignore.sh"
+  },
+  "prefs.gitTracking": {
+    "scope": "project",
+    "consumer": "installer",
+    "summary": "How git should treat .claude/bootstrap-prefs.json and bootstrap-prefs.README.md",
+    "detail": "New prompt owned by merge-gitignore.sh. Covers both files together: the values file .claude/bootstrap-prefs.json and its generated companion .claude/bootstrap-prefs.README.md. 'gitignore' adds both to the project's .gitignore so the whole team shares that decision. 'exclude' adds both to .git/info/exclude, keeping them untracked on this machine only. 'neither' leaves them visible to git so they can be committed and shared. Unlike the add/skip gates elsewhere in this schema, the declines-only rule does NOT apply here: this is a choice among three outcomes, not a yes/no on adding lines, so the answer is recorded in all three directions and the prompt is genuinely asked once. Related but separate: gitignore.infoExclude covers .serena/, raw/, and wiki/, not these two files.",
+    "values": "gitignore | exclude | neither",
+    "default": null,
+    "askedBy": "merge-gitignore.sh"
+  },
+  "guides.*": {
+    "scope": "project",
+    "consumer": "installer",
+    "summary": "Install a specific optional guide into wiki/guides/",
+    "detail": "One key per entry in sync-wiki-scaffold.sh's OPTIONAL_GUIDES list (sync-wiki-scaffold.sh:81), keyed by the exact entry text including any extension — today that is guides.evals-framework.md and guides.type-checking-templates. true delivers the guide into wiki/guides/ on every run; false keeps it out and suppresses the per-run prompt. A guide already present in wiki/guides/ (or in the legacy .docs/guides/) is refreshed regardless of this key — existing opt-in wins, because the file on disk is the stronger signal than a stored answer. The required guide tier is never gated by these keys.",
+    "values": "true | false",
+    "default": null,
+    "askedBy": "sync-wiki-scaffold.sh",
+    "dynamic": true
+  },
+  "gitignore.section.*": {
+    "scope": "project",
+    "consumer": "installer",
+    "summary": "Permanently decline one titled .gitignore template section",
+    "detail": "One key per titled section of lib/scripts/templates/gitignore, slugified from the section's banner title: lowercase it, replace every run of non-alphanumeric characters with a single '-', then strip leading and trailing '-' (so 'Node / TypeScript / JavaScript' becomes gitignore.section.node-typescript-javascript). The grammar is deliberately false-only: false remembers a decline and stops that section being offered again. There is intentionally no 'true' value, because a remembered yes would silently append lines to a project's .gitignore on a later run and break merge-gitignore.sh's stated invariant, 'NOTHING is ever added to a project's .gitignore without asking' (merge-gitignore.sh:11). An accepted section is therefore never recorded, so a section that gains new lines in a later template version is still offered by title on the next run rather than appended silently. The one-value grammar is the design, not a typo — do not widen it.",
+    "values": "false",
+    "default": null,
+    "askedBy": "merge-gitignore.sh",
+    "dynamic": true
+  },
+  "mcp.braveSearch": {
+    "scope": "global",
+    "consumer": "installer",
+    "summary": "Install the Brave Search MCP globally for web research",
+    "detail": "Prerequisites: a Brave Search API key and a working Docker daemon — the server runs as a shared local container serving HTTP, registered at user scope. true installs and keeps it updated on every run. false means the installer stops offering it: the prompt is never shown again on this machine until the key is changed or removed. The API key itself is never stored in this file or anywhere in the preferences schema.",
+    "values": "true | false",
+    "default": null,
+    "askedBy": "install-mcps.sh"
+  },
+  "mcp.context7": {
+    "scope": "global",
+    "consumer": "installer",
+    "summary": "Install the Context7 MCP for library documentation lookups",
+    "detail": "No prerequisites — no API key and no Docker required. true installs it at the scope chosen by mcp.context7Scope. false means the installer stops offering it: the prompt is never shown again on this machine until the key is changed or removed. Any optional API key prompt is handled outside this schema and is never stored here.",
+    "values": "true | false",
+    "default": null,
+    "askedBy": "install-mcps.sh"
+  },
+  "mcp.context7Scope": {
+    "scope": "global",
+    "consumer": "installer",
+    "summary": "Registration scope for the Context7 MCP",
+    "detail": "Asked by prompt_scope in lib.sh:387 ('Scope for context7 — [u]ser (default) or [p]roject?'). prompt_scope emits exactly two answers, 'user' and 'project' — it has no local-scope branch, and any reply that does not begin with p or P falls through to user. 'user' registers Context7 once for every project on this machine; 'project' writes the registration into the current project's shareable .mcp.json.",
+    "values": "user | project",
+    "default": null,
+    "askedBy": "lib.sh"
+  },
+  "mcp.playwright": {
+    "scope": "global",
+    "consumer": "installer",
+    "summary": "Install the Playwright MCP for browser automation and UI testing",
+    "detail": "Prerequisite on macOS: a launchd LaunchAgent (com.bootstrap-claude.playwright-mcp) runs the shared HTTP server in the GUI session so headed browsers work; other platforms get a per-session stdio server via npx. true installs it at user scope under the canonical name 'playwright'. false means the installer stops offering it: the fresh-install prompt is never shown again on this machine until the key is changed or removed. This key covers the fresh-install path only — the conflict paths are mcp.playwrightConflict and mcp.playwrightReplace.",
+    "values": "true | false",
+    "default": null,
+    "askedBy": "install-mcps.sh"
+  },
+  "skills.pruneOrphans": {
+    "scope": "global",
+    "consumer": "installer",
+    "summary": "Delete stale skill folders in ~/.claude/skills/ left by the wiki rename",
+    "detail": "Asked by install-global.sh:70 when any renamed-away skill folder (the adr-* and prd-* families) is still present in ~/.claude/skills/. true removes those folders with rm -rf; false keeps them, and they continue to appear as duplicate slash commands alongside their renamed replacements. The list of orphan names is fixed in the script — this key does not decide which folders qualify, only whether the deletion runs.",
+    "values": "true | false",
+    "default": null,
+    "askedBy": "install-global.sh"
+  },
+  "gitCommit.versionBump": {
+    "scope": "either",
+    "consumer": "skill",
+    "summary": "How /git-commit handles the version bump before committing",
+    "detail": "'auto' is today's behavior: the skill picks a bump level and applies it to every version manifest it finds, without confirmation. 'confirm' prints the suggested bump and asks before editing any manifest — 'confirm' IS this key's ask state, so there is deliberately no separate 'ask' value in the grammar. 'never' touches no version file at all but STILL prefixes the commit subject with [patch], [minor], or [major], because downstream release tooling reads that prefix. This is a choice among three behaviors, not an add/skip gate, so the declines-only rule does not apply — the answer is recorded in all three directions.",
+    "values": "auto | confirm | never",
+    "default": "auto",
+    "askedBy": "install-global.sh"
+  },
+  "gitCommit.autoPush": {
+    "scope": "either",
+    "consumer": "skill",
+    "summary": "Whether /git-commit pushes after a successful commit",
+    "detail": "true pushes the current branch after committing; false commits only; 'ask' prompts each time. The default is false because today's behavior is to never push, and defaulting an unanswered key to an outward-facing action that publishes code would break the compatibility guarantee that an absent preferences file changes nothing. The separate rule that /git-commit never creates a branch is unaffected by this key: pushing an existing branch is all that is on offer.",
+    "values": "true | false | ask",
+    "default": false,
+    "askedBy": "install-global.sh"
+  },
+  "research.persistToRaw": {
+    "scope": "either",
+    "consumer": "skill",
+    "summary": "Whether /research writes its report and sources to raw/research/",
+    "detail": "Governs the Phase 5 file write only. Findings are always synthesized into the response no matter what this key says — false suppresses the on-disk report under raw/research/<slug>/, it does not suppress the research. 'ask' prompts before writing. Note that a per-run override exists even when this is true, so a single invocation can still decline the write; the stored preference and the per-run override are different mechanisms and both must keep working.",
+    "values": "true | false | ask",
+    "default": true,
+    "askedBy": "install-global.sh"
+  },
+  "uatGenerate.promoteTests": {
+    "scope": "either",
+    "consumer": "skill",
+    "summary": "Whether /uat-generate promotes UAT checks into repeatable tests under test/",
+    "detail": "true is today's behavior: alongside the UAT file in wiki/work/uat/, the skill writes repeatable assertions into the project's test/ directory so the checks survive as regression coverage. false generates the UAT file only and adds nothing to test/. 'ask' prompts per invocation. This affects what lands on disk, not how the UAT itself is judged.",
+    "values": "true | false | ask",
+    "default": true,
+    "askedBy": "install-global.sh"
+  },
+  "gitignore.offerSectionUpdates": {
+    "scope": "either",
+    "consumer": "skill",
+    "summary": "Master gate for the .gitignore template section review pass",
+    "detail": "Controls the single opening gate at merge-gitignore.sh:171 ('Review .gitignore updates? (N line(s) across M section(s))'). This is a full three-state key: 'ask' is today's behavior, true runs the section pass without the opening question (each individual section is still offered by title, so nothing is appended silently), and false skips the whole pass with no prompt at all. The key itself never appends a line to any .gitignore — it only decides whether the pass runs. The .git/info/exclude block is OUTSIDE this gate entirely and keeps its own consent prompt: see gitignore.infoExclude. Individual section declines are remembered separately under gitignore.section.*.",
+    "values": "true | false | ask",
+    "default": true,
+    "askedBy": "install-global.sh"
+  }
+}

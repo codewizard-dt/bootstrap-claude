@@ -1,6 +1,6 @@
 ---
 name: research
-description: Deep research on a topic using codebase analysis, library docs, and web search — writes the report plus its primary sources to raw/research/<slug>/
+description: Deep research on a topic using codebase analysis, library docs, and web search — by default also writes the report plus its primary sources to raw/research/<slug>/ (preference-gated by research.persistToRaw; findings are always delivered in the reply)
 category: researching
 model: claude-sonnet-5
 effort: high
@@ -145,6 +145,31 @@ Suggest concrete next steps:
 
 ## Phase 5: Write Output Files
 
+### Phase 5 preference gate
+
+This gate governs **only the file write** under `raw/research/`. The research, synthesis, and report from Phases 1–4 are never gated — findings always go in the reply.
+
+Read the preference once, before writing anything:
+
+```bash
+node ~/.claude/bootstrap-prefs.js --get research.persistToRaw --project . 2>/dev/null || echo unset
+```
+
+| Value | Behaviour |
+|-------|-----------|
+| `true` | Write both files, as described below. |
+| `false` | Write **nothing** under `raw/research/`. Deliver the full report and the source register in the reply instead, and state once: "Not saved to raw/research/ (research.persistToRaw=false). Change with /bootstrap-config, or re-run with --save to persist just this one." |
+| `ask` | Before writing, ask the user (AskUserQuestion) whether to save this report. Honour the answer for **this run only** — never write it back to the store. |
+| `unset` | Write both files (today's behaviour) and add one line: "research.persistToRaw is unanswered — /research saves by default. Set it with: node ~/.claude/bootstrap-prefs.js --set research.persistToRaw --value <true\|false\|ask> --global" |
+
+**Per-run override** (independent of the stored value, and never written to the store):
+
+- An explicit per-run instruction in the invocation — `--no-save` / `--no-persist`, or plain language such as "don't save this one" — suppresses the Phase 5 write for that run **even when the stored value is `true`**.
+- The mirror `--save` / "save this one" forces the write **even when the stored value is `false`**.
+- `ask` and the per-run override are different mechanisms serving the same need from opposite directions (`ask` prompts every time by standing choice; the override is a one-off escape from a standing value). Both must keep working.
+
+When the write is suppressed, the run is still complete: deliver the report and the register inline, and follow the Phase 6 not-persisted branch.
+
 The synthesis from Phase 4 is the **report**; the register from the Phase 1 callout is the **primary sources**. Persist both under `raw/research/<slug>/` using the **Write tool** (do not rely only on the chat transcript). Create the directory if it does not exist. Write two files — and honor the Phase 1 no-overwrite rule: if `index.md` or `sources.md` already exists, write `index-2.md` / `sources-2.md` (then `-3`, …) carrying only non-redundant new/changed content with a cross-reference back to the prior file.
 
 ### `index.md` — the research report
@@ -219,10 +244,16 @@ Rules for this phase:
 
 ## Phase 6: Confirm & Suggest Next Steps
 
-After writing the files, tell the user:
+**If the files were written**, tell the user:
 - The paths written (`raw/research/<slug>/index.md` and `raw/research/<slug>/sources.md`)
 - A 2–4 bullet summary of the recommendation
 - That the report is now a `raw/` ground-truth source: **"Run `/wiki-ingest raw/research/<slug>/index.md` to synthesize this research into the knowledge base."**
+- Any follow-on `/task-add` or `/decision-create` suggested by the findings
+
+**If nothing was persisted** (stored `false`, a per-run `--no-save`/`--no-persist` override, or a declined `ask`), tell the user:
+- That no files were written, and which of the three reasons applies
+- The same 2–4 bullet summary of the recommendation
+- Skip the `/wiki-ingest` suggestion entirely — there is no `raw/` file to ingest
 - Any follow-on `/task-add` or `/decision-create` suggested by the findings
 
 ---
@@ -244,7 +275,7 @@ After writing the files, tell the user:
 3) **Use Serena for code**: Do NOT use Read, Grep, or Glob on code files
 4) **Maximum 3 sub-processes at a time** if delegating research steps
 5) **ALWAYS terminate processes when done**
-6) **Always write the output files** to `raw/research/<slug>/` (`index.md` + `sources.md`) with the **Write tool** — the report is not done until it is persisted as a ground-truth source
+6) **Write the output files whenever the Phase 5 gate allows it** — `raw/research/<slug>/` (`index.md` + `sources.md`) with the **Write tool**, which is the default. When the gate suppresses the write (`research.persistToRaw=false`, or a per-run `--no-save`/`--no-persist`, or a declined `ask`), the findings go in the reply and that is a complete run — never write the files anyway
 7) **Never overwrite `raw/` files**: if a target already exists, write `<name>-2.md` / `-3.md` instead, carrying only non-redundant new/changed data with a cross-reference to the prior file
 8) **No fabricated sources**: every row in `sources.md` is a source you actually consulted; mark unsupported claims as inferences rather than inventing citations
 9) **`raw/research/` is the only `raw/` path this skill may write to** — never modify or delete anything elsewhere under `raw/`

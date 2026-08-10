@@ -58,6 +58,8 @@ For each unchecked prerequisite: if it is a **runnable check** (server on a port
 | **UI** | `UAT-UI-*` prefix, or `Page:` / `Components:` metadata |
 | **Manual** | anything else (edge cases, concurrency, integration logic) |
 
+**Unit-backed** is an *attribute*, not a type — it cuts across all three. A test is unit-backed when it records `- **Repeatable Unit Test**: Created: \`<path>\`` (written by `/uat-generate` Step 2.5 when it promoted the case to a repeatable unit test). Note the path, and the `- **Unit Test Command**: \`<cmd>\`` line if present; Step 4 uses them as a machine-checkable evidence channel. The other three values of that field — `Not applicable:`, `Blocked:`, `Skipped by preference` — are **not** unit-backed: no test file exists to run.
+
 ---
 
 ## Step 3.5 — Stub detection (headless modes only)
@@ -71,6 +73,8 @@ A stub test **stays `- [ ] Pass`** — do not execute it, do not record `[FAIL]`
 3. **Stub indicators** (via `find_symbol` / `search_for_pattern`): `TODO`/`FIXME`/`HACK` inside a body; `throw new Error('not implemented')`, `raise NotImplementedError`, `notImplemented()`, `unimplemented!()`; a bare `pass` / `pass # TODO|stub`; empty body (`{}`, `return`, `return null|undefined|None`); placeholder comments (`// stub`, `# TODO: implement`, etc.).
 4. **Found** → leave status untouched, record `stub-detected` (with file + indicator) in run tracking, skip execution. **Not found / unlocatable** → proceed to Step 4.
 
+Stub detection outranks unit-backing: a stub-detected test stays `- [ ] Pass` and its unit test is not run. If you have already run one and it passed against a body carrying stub indicators, that is a contradiction, not a pass — record `[FAIL: auto-judge: unit test passes but implementation appears stubbed — <file>: <indicator>]`.
+
 ---
 
 ## Step 4 — Execute & judge
@@ -81,25 +85,56 @@ Work through eligible tests in document order; update the file immediately after
 
 ### Auto-judge criteria (uat-auto / uat-auto-plus)
 
-**API/CLI** — extract the command from `**Command**:`. No extractable command → `[FAIL: auto-judge: no machine-executable command in test body]`. Pass requires **ALL**:
+Judge each test on the **strongest evidence channel available to it**:
+
+| # | Channel | Applies when | Verdict source |
+|---|---------|--------------|----------------|
+| 1 | **Live command** | API/CLI test with an extractable `**Command**:` | run the command (below) |
+| 2 | **Unit-backed** | channel 1 unavailable **and** the test is unit-backed (Step 3) | run that unit test file (below) |
+| 3 | **Human** | neither — no machine-checkable oracle | fail-closed `[FAIL: auto-judge: ...]` |
+
+**Channel 1 outranks channel 2 and is never overridden by it.** A live command that fails is `[FAIL]` even when the test is unit-backed and its unit test passes — a green unit test beside a red live call means the live path is broken, and the narrower oracle does not get a vote. Channel 2 is reached only when channel 1 returns no verdict at all: a Manual/Edge case, or an API/CLI case whose body carries no extractable command or no machine-checkable Expected.
+
+**API/CLI** — extract the command from `**Command**:`. No extractable command → fall through to channel 2 if the test is unit-backed, else `[FAIL: auto-judge: no machine-executable command in test body]`. Pass requires **ALL**:
 1. Command exited cleanly (response returned; no connection error).
 2. HTTP status matches the Expected section's explicit status; if none specified, any 2xx is pass-eligible on status alone.
 3. Response body satisfies **every** machine-checkable assertion in Expected (literal substring, JSON key presence, JSON value equality, array length, type-of) — via `jq` or substring match.
 4. If the test references `$UAT_AUTH_TOKEN`, the token must be present in the environment.
 
-Any criterion fails → `[FAIL: auto-judge: <criterion, actual vs expected>]`. Expected section with no machine-checkable assertion → `[FAIL: auto-judge: expected section not machine-verifiable]`.
+Any criterion fails → `[FAIL: auto-judge: <criterion, actual vs expected>]` — a run that produced a verdict is final, and no unit test overrides it. Expected section with no machine-checkable assertion → channel 1 yielded no verdict at all, so fall through to channel 2 if the test is unit-backed, else `[FAIL: auto-judge: expected section not machine-verifiable]`.
 
-**UI** → always `[FAIL: auto-judge: UI test requires human verification — use /uat-walk]`. No navigation, screenshot, or browser interaction.
+**Unit-backed (channel 2)** — a recorded, passing unit test *is* hard evidence, so a unit-backed test **does not fail-closed to human verification**. Resolve a run command, run it in one Bash call, and judge the result.
 
-**Manual** → always `[FAIL: auto-judge: manual test requires human verification]`. No heuristic evaluation. Intentional fail-closed: `/uat-generate` produced a manual test because it expected a human.
+Resolve the command:
+- Use the test's `- **Unit Test Command**: \`<cmd>\`` verbatim when present.
+- Otherwise derive a **file-scoped** invocation for the project's runner — e.g. `node --test test/foo.test.js` · `npx vitest run test/foo.test.ts` · `npx jest test/foo.test.js` · `pytest tests/test_foo.py` · `go test ./pkg/foo/` · `cargo test --test foo`. Match the repo's existing convention (`package.json` `scripts.test`, CI config, nearby tests).
+- A whole-suite run (`npm test`) is acceptable **only** when its output names this file's own cases and shows them passing — otherwise a green suite says nothing about this file.
+- Cannot resolve either form → `[FAIL: auto-judge: no runnable unit-test command for <path>]`.
 
-`/uat-walk` does not auto-judge — the user issues every verdict. `/uat-auto-plus` enters its fix loop after an API/CLI `[FAIL]` (never for UI/Manual — no machine-checkable signal that a fix worked).
+Pass requires **ALL**:
+1. The recorded path resolves to a file that exists (`mcp__serena__find_file`). Missing → `[FAIL: auto-judge: unit test file not found — <path>]`; stale metadata pointing at a moved or deleted test is not evidence.
+2. The runner exited 0.
+3. The run **executed ≥1 test from that file**, and the output states the count. `0 tests` / `no tests ran` / `0 matched` / an empty pass line → `[FAIL: auto-judge: unit-test run matched 0 tests in <path>]`. **This is the load-bearing check** — a filter typo, a renamed file, or a wrong path produces exit 0 with nothing executed, which is indistinguishable from a real pass on exit code alone.
+4. Zero failing, errored, or timed-out tests in the run.
+5. The file's cases covering this UAT case actually ran — all `skip`/`todo`/`xfail`/`.only`-excluded → `[FAIL: auto-judge: unit test coverage skipped, not executed]`.
+6. The unit test file is unmodified by this run (auto-plus: its fix loop may never touch it — see that skill's Autonomy boundaries).
+7. The Expected Result contains no observable the unit test demonstrably cannot assert (live HTTP round-trip, rendering, deploy/filesystem state). Partial coverage → `[FAIL: auto-judge: unit test covers only part of Expected — <what is uncovered>]`. Apply this narrowly: a unit test that asserts the case's stated outcome by construction is complete evidence, not partial.
 
-### Bash hygiene — API/CLI tests (all modes)
+On pass: `- [x] Pass <!-- YYYY-MM-DD -->`; record `via unit test <path>` in run tracking so the summary can count it.
+
+**UI** → always `[FAIL: auto-judge: UI test requires human verification — use /uat-walk]`, **even when unit-backed**. No navigation, screenshot, or browser interaction. A unit test cannot cover what a UI case exists to check (rendering, layout, flow timing) — `/uat-generate` Step 2.5 classifies exactly those as non-promotable, so a `Created:` on a UI case covers a fragment at best.
+
+**Manual** → unit-backed goes to channel 2. Otherwise always `[FAIL: auto-judge: manual test requires human verification]`, with no heuristic evaluation — intentional fail-closed: `/uat-generate` produced a bare manual test because it expected a human.
+
+`/uat-walk` does not auto-judge — the user issues every verdict. `/uat-auto-plus` enters its fix loop after a channel 1 or channel 2 `[FAIL]` (both have a machine-checkable signal that a fix worked); never after a channel 3 `[FAIL]`.
+
+### Bash hygiene — API/CLI and unit-backed tests (all modes)
 
 **One program invocation per Bash call: one `curl` (as-is), optionally one `\| jq` stage. Nothing else.** If a generated `**Command**:` block violates this, rewrite it to the clean form before running (canonical style: `lib/skills/uat-generate/SKILL.md` "Curl command standards"). Never emit literal password/token values — only `"$UAT_AUTH_TOKEN"` / `"$UAT_TEST_PASSWORD"` references.
 
 Forbidden (each triggers an approval prompt and obscures output): multiple `curl`s in one call · `&&` / `;` / `\|\|` chaining · `echo` banners · `-w` format strings · `-o /tmp/...` then re-read · defensive flags (`--max-time`) · pre-assigned `TOKEN=...` vars · `\` line-continuations · piping to `head`/`tee`/redirection. Capture per test: HTTP status, response body (truncate display to ~50 lines; never write a temp file to read it back), connection errors.
+
+Unit-backed runs follow the same rule: **one test-runner invocation per Bash call**, unchained and unredirected, so the runner's own pass/fail/count lines reach you intact. Capture per test: exit code, tests-run count, failing test names.
 
 ---
 

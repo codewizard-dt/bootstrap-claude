@@ -10,6 +10,19 @@ user-invocable: true
 
 # git-commit
 
+## Step 0: Read the two preferences that govern this skill
+
+Two stored preferences change what this command does. Read **both, once, before Step 1** — never mid-run, and never once per file:
+
+```bash
+node ~/.claude/bootstrap-prefs.js --get gitCommit.versionBump --project . 2>/dev/null || echo unset
+node ~/.claude/bootstrap-prefs.js --get gitCommit.autoPush --project . 2>/dev/null || echo unset
+```
+
+`--project .` is required. Both keys are `scope: either`, so the answer resolves **project file → global file → schema default**; dropping the flag would read the machine-wide answer even in a repo that overrides it. If either command fails — bootstrap was never installed globally, or `node` is not on PATH — treat that answer as `unset`.
+
+`unset` means *nobody has ever been asked*. It always keeps today's behavior; it never invents one. Mention an `unset` key **once**, in the final report, never as a mid-run interruption.
+
 ## Step 1: Run Lint Fix Cycles
 
 Before committing, run the `/lint` workflow to catch and fix any diagnostics:
@@ -51,9 +64,24 @@ Use these semver rules to determine the bump:
 | **minor** | New features or capabilities that are backward-compatible; new commands, skills, config options, or APIs added without breaking existing ones |
 | **major** | Breaking changes — removed or renamed commands/APIs/config keys, changed behavior that callers must update for, deleted files that others depend on |
 
-Print the summary, then **proceed immediately** with the suggested bump — no user confirmation needed.
+Print the summary. What happens next is decided by `gitCommit.versionBump` from Step 0 — see the table in Step 4. **Do not ask for confirmation here**; the only value that asks is `confirm`, and it asks in Step 4 where the manifest list is known.
 
 ## Step 4: Bump Version in Project Files
+
+### Gate: `gitCommit.versionBump`
+
+Its grammar is `auto | confirm | never` — there is deliberately **no `ask` value**, because `confirm` *is* this key's ask state. Do not look for one.
+
+| Value | What to do |
+|-------|------------|
+| `auto` | Today's behavior. Detect every manifest and apply the bump to all of them, no confirmation. |
+| `confirm` | Print the suggested bump **and the full list of manifest files that would change**, then ask once with `AskUserQuestion` before editing anything. Approved → bump exactly as `auto` does. Declined → edit no manifest, and still commit with the subject prefix. Ask **every run** and **never persist the answer** — the standing choice is "keep asking me", so recording a reply would destroy it. |
+| `never` | Touch **no** version file at all. Skip straight to Step 5. The `[patch]`/`[minor]`/`[major]` subject prefix is still written, because downstream release tooling reads that prefix — dropping it would break releases, not just skip a bump. Say so once in the final report: `Version files untouched (gitCommit.versionBump=never); the subject prefix is still set. Change with /bootstrap-config.` |
+| `unset` | Behave exactly as `auto` — that is today's behavior and an unanswered key must never change it. Note once in the final report: `gitCommit.versionBump is unanswered — /git-commit bumps every manifest by default. Set it with: node ~/.claude/bootstrap-prefs.js --set gitCommit.versionBump --value auto --global` (or `confirm` / `never`). |
+
+Anything else stored under this key is a value from a newer bootstrap that this skill has no branch for: treat it as `unset`, and say which value you did not recognize.
+
+For `auto`, `confirm`-approved, and `unset`, continue below. For `never` and `confirm`-declined, go to Step 5.
 
 Find and update version numbers in project files.
 
@@ -170,3 +198,28 @@ If the change feels too complex to summarize in one line, **make the subject mor
 - ❌ `[patch] Fix bug` (too vague)
 
 Detailed reasoning, before/after examples, and rationale belong in **PR descriptions**, not in commit message bodies. The commit subject is the index entry; the PR is the encyclopedia.
+
+## Step 6: Push (gated on `gitCommit.autoPush`)
+
+Runs only after the commit in Step 5 succeeded. A failed commit means there is nothing to push.
+
+| Value | What to do |
+|-------|------------|
+| `true` | `git push` the **current** branch. Nothing else. |
+| `false` | Do not push. Say so once in the final report: `Committed locally; not pushed (gitCommit.autoPush=false). Change with /bootstrap-config.` |
+| `ask` | Ask once with `AskUserQuestion` whether to push this commit. Honor the answer for **this run only** and **never persist it** — `ask` is a settled answer whose content is "keep asking me", and writing a reply would overwrite it. |
+| `unset` | **Do not push.** This is the one key whose `unset` is not the schema-friendliest reading but the compatibility-correct one: today's behavior is that this skill never pushes, and defaulting an unanswered key to an outward-facing action that publishes code would break the guarantee that an absent preferences file changes nothing. Note once in the final report: `gitCommit.autoPush is unanswered — /git-commit does not push. Set it with: node ~/.claude/bootstrap-prefs.js --set gitCommit.autoPush --value true --global` (or `false` / `ask`). |
+
+### ⛔ The push is the plainest possible push
+
+- **The Step 5 branch rule is unchanged and still absolute.** Never run `git branch`, `git checkout -b`, or `git switch -c`. Pushing an existing branch is all this step ever does.
+- Never pass `--force`, `--force-with-lease`, `--set-upstream`/`-u`, `--all`, or `--tags`, and never name a different remote or refspec. Plain `git push`.
+- If the push fails for any reason — no upstream configured, no remote, rejected non-fast-forward, no credentials — **stop and report it**. The commit already succeeded and is safe; do not retry with extra flags, do not set an upstream, and do not attempt to reconcile with a pull or rebase.
+
+## Step 7: Final report
+
+One short report at the end. Include, in this order:
+
+1. The commit subject that was written.
+2. Any of the once-only preference notes from Steps 4 and 6 that apply. Each appears **at most once per run**, here — not inline, and not repeated per file.
+3. The push outcome (pushed / not pushed and why / push failed and how).

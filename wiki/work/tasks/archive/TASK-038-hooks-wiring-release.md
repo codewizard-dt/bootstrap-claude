@@ -1,13 +1,13 @@
 ---
 id: TASK-038
 title: "Fake-HOME end-to-end verification of resilient hook install + hooks wiring, and the minor release"
-status: pending-uat
+status: done
 created: 2026-07-31
 updated: 2026-07-31
 depends_on: [TASK-034, TASK-035, TASK-036, TASK-037]
 blocks: []
 parallel_safe_with: []
-uat: ""
+uat: "[[UAT-038]]"
 tags: [release, verification]
 ---
 

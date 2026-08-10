@@ -32,6 +32,97 @@ cannot enumerate — and it can return a **message** explaining the block, which
 exiting 2 stops a call the rules would never see. Keep a matching `deny` entry
 too — defence in depth, and the rules keep working if a hook ever fails to fire.
 
+## Commenting standard
+
+**The repo-wide "no comments" default is suspended in `lib/hooks/`, and only
+here.** Everywhere else the default holds: self-documenting code, no commentary.
+These files are the exception because they encode *security decisions* whose
+rationale is not recoverable from the code. A regex tells you what it matches; it
+cannot tell you which real command motivated it, which false positive was accepted
+in exchange, or what breaks if you move the check above it. The comments are that
+record — **do not "clean them up" as slop.** The exception does not extend to
+`lib/scripts/`, `lib/skills/`, or `bin/`.
+
+**Why, never what.** A comment restating a regex in English is worse than no
+comment: it adds a second thing to keep in sync and answers a question nobody
+had. Comment these five classes, and largely nothing else.
+
+1. **Why a pattern is in a list** — and what real command motivated it.
+2. **Why a threshold has its value** — `MAX_WALK = 64`, `prompt.length < 200`,
+   the 2-hour `.task/` mtime window, `FREE_READS` / `WARN_AT`. A bare number is
+   unauditable; a number with its reason can be argued with.
+3. **Known false positives, each with its escape hatch** — the deny message
+   usually names the escape hatch, so the comment's job is why the trade was
+   accepted.
+4. **Ordering dependencies** — where moving a check breaks the guard. State the
+   failure ("reversing these deadlocks Gate 1"), not that order matters.
+5. **Why a tempting simplification was rejected** — the refactor the next reader
+   will otherwise attempt, and what it costs.
+
+**Point at this README; do not restate it.** The three groups above are
+documented here in very different depth, and the inline comments take up exactly
+the slack:
+
+- **Command-class guards** already have a full per-hook section above (Blocks /
+  Why a hook / Why not X / Accepted consequence / Known friction / Residual risk
+  / Cost / Not covered). Their comments carry **none** of that argument — a
+  header block that ends in `See README.md § <section>`, plus inline notes only
+  where the prose does not reach (a specific lookahead, a fail-closed branch).
+  Two copies of one argument drift, and the copy in the code drifts silently.
+- **Serena-first hooks** get only a one-line-purpose table row plus the shared
+  narrative sections. Nothing else records their heuristics, so here the inline
+  comments *are* the primary documentation and carry the full weight.
+- **Safety / policy hooks** get a three-column table row. Same as above: comment
+  fully.
+
+**Every file opens with this header block.** It is a signpost, not a second copy
+of the README section:
+
+```js
+/**
+ * <file>.js — <event>[ + <event>] / <matcher>
+ *
+ * Blocks: <the surface it gates, one line>
+ * Why a hook: <why a settings.json rule cannot express this>
+ * Fails: open|closed — <what happens when the check itself cannot run>
+ * False positives: <the known one> — escape hatch: <the rephrase that clears it>
+ * See README.md § <exact heading> for the full rationale.
+ */
+```
+
+- The **matcher** belongs on the identity line because the wrong matcher makes a
+  hook silently inert (see [the wiring notes](#required-claudesettingsjson-wiring)).
+  A hook wired on two events lists both.
+- A hook that gates nothing (`serena-usage-tracker.js`,
+  `serena-session-reset.js`) replaces `Blocks:` with `Does:` and may drop
+  `False positives:`.
+- **`Fails:` is required for anything that can block a call**, because it is
+  never inferable from a skim and the answer is rarely the one you would guess.
+  The *infrastructure* fails **open** across nearly every guard: the shared
+  `readHookInput` in `lib/command-parse.js` wraps both the `JSON.parse` and the
+  handler call in `try { … } catch { process.exit(0) }`, and states fail-open as
+  the deliberate module-wide contract — so the five guards built on it allow the
+  call whenever the check itself cannot run. `env-file-guard.js` and
+  `mv-absolute-path-block.js` hand-roll their own stdin handlers and also fail
+  open. What fails **closed** is an ambiguous *match*: a construct the guard did
+  parse but cannot vouch for is blocked. `interpreter-indirection-guard.js` is
+  the sole genuinely fail-closed guard — a missing sibling file, a spawn error, a
+  2s timeout, non-JSON output, a non-zero exit, or an unreadable deny list all
+  deny. Serena-first guards fail **open** by explicit design (see
+  [Health tracking & fail-open enforcement](#health-tracking--fail-open-enforcement)).
+- Below the block, add free-form paragraphs only for structure the fields cannot
+  carry — a two-mode split, a payload-shape compatibility note. Keep the whole
+  header under ~30 lines; a header approaching the length of its README section
+  has become the duplicate this standard exists to prevent.
+
+**The calibration target is `serena-usage-tracker.js:4-32`** (29 lines), which
+predates this standard and already meets it: it names its two modes and what each
+one *decides*, states the one non-obvious fact a reader cannot derive (both
+PostToolUse and PostToolUseFailure payload shapes are handled, and that dual
+handling is also the version-compatibility fallback), and **delegates rather than
+restates** — `./lib/serena.js#isLspProviderTool` instead of a paragraph on tool-name
+forms. Not one line of it describes what a line of code does. Match that.
+
 ---
 
 ## Scripts
@@ -463,7 +554,7 @@ extension, which `.env` is neither.
 
 **Relationship to `serena-bash-grep-block.js`.** That hook's grep phase goes
 further and *explicitly allows* `.env` targets as a "non-code extension"
-(`:126`, `:160`, `:189`). That is correct for its purpose — Serena-first
+(`:312`, `:393`, `:454`). That is correct for its purpose — Serena-first
 navigation does not care about non-code files — and wrong for this one, and it is
 why `grep KEY .env` leaked. The two are complementary: the navigation hook decides
 where you should look for *code*, this one decides what may be *displayed*.
@@ -503,7 +594,7 @@ Closing only Bash would have moved the leak rather than sealed it:
 returns exactly the same lines.
 
 **`source .env` and `. .env` remain permitted. This is deliberate — do not "close
-the gap" later.** `CLAUDE.md` grants it and `env-file-guard.js:39` says so in its
+the gap" later.** `CLAUDE.md` grants it and `env-file-guard.js:81` says so in its
 own deny message. Sourcing loads values into the environment and prints *nothing*;
 the leak is sourcing **plus emission** (`source .env && echo $KEY`), and the
 emission half can be written without `source` at all. Blocking `source` would
@@ -519,7 +610,7 @@ naming a *directory* that contains a `.env`; `find . -name .env -exec cat {} +`
 and `xargs cat` (the reader is not at the front of a segment); `git show
 HEAD:.env`; `docker exec … cat .env`.
 
-**Follow-up.** `isBlockedEnvFile` is byte-identical to `env-file-guard.js:6-13`
+**Follow-up.** `isBlockedEnvFile` is byte-identical to `env-file-guard.js:48-55`
 and is annotated "change it in both places or in neither". It should be extracted
 into `lib/` so the two cannot drift; that was left undone here because it means
 editing a live shipped control for a refactor.

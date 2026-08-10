@@ -37,3 +37,18 @@ Terminal UAT files (`passed`, `skipped`, or `trashed`) moved here by `/wiki-arch
 | [[UAT-034]] | UAT: Add test/settings-hooks.test.js — template invariants and merge behavior coverage | passed | 2026-07-31 |
 | [[UAT-035]] | UAT: Reorder install-global.sh — local steps first, MCPs last and guarded, invoke hooks-wiring merge | passed | 2026-07-31 |
 | [[UAT-037]] | UAT: Document automated hooks wiring — lib/hooks/README.md is no longer a manual-paste instruction sheet | passed | 2026-07-31 |
+| [[UAT-038]] | UAT: Fake-HOME end-to-end verification of resilient hook install + hooks wiring, and the minor release | passed | 2026-07-31 |
+| [[UAT-040]] | UAT: Canonical preference key registry — bootstrap-prefs-schema.json | passed | 2026-08-06 |
+| [[UAT-041]] | UAT: bootstrap-prefs.js — four-state preference helper | passed | 2026-08-06 |
+| [[UAT-042]] | UAT: test/bootstrap-prefs.test.js — four-state and schema-bijection coverage | passed | 2026-08-06 |
+| [[UAT-043]] | UAT: Sticky prompt helpers in lib.sh — prompt_yn_sticky, prompt_choice_sticky, BOOTSTRAP_ASSUME_TTY | passed | 2026-08-06 |
+| [[UAT-044]] | UAT: Wire the install-mcps.sh prompt sites to the preference store | passed | 2026-08-06 |
+| [[UAT-045]] | UAT: Wire the sync-wiki-scaffold.sh, install-global.sh, and update-project.sh prompt sites | passed | 2026-08-06 |
+| [[UAT-046]] | UAT: merge-gitignore.sh — prefs.gitTracking three-way prompt and declines-only wiring | passed | 2026-08-06 |
+| [[UAT-047]] | UAT: test/prompt-stickiness.test.js — sticky-prompt coverage and the bijection un-skip | passed | 2026-08-06 |
+| [[UAT-030]] | UAT: User preferences: stop skills doing consequential things without consent | passed | 2026-08-07 |
+| [[UAT-048]] | UAT: /bootstrap-config skill — view, edit, and reset stored preferences | passed | 2026-08-07 |
+| [[UAT-049]] | UAT: Register /bootstrap-config in lib/skills/README.md and the CLAUDE.md Custom Commands table | passed | 2026-08-07 |
+| [[UAT-050]] | UAT: Document the helper, the four-state model, and the full key registry in lib/scripts/README.md | passed | 2026-08-07 |
+| [[UAT-051]] | UAT: Pin bootstrap-prefs.js and bootstrap-prefs-schema.json into test/npm-pack-contents.test.js | passed | 2026-08-07 |
+| [[UAT-052]] | UAT: End-to-end verification of the preference store against a scratch project | passed | 2026-08-07 |

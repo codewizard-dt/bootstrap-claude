@@ -9,7 +9,7 @@ Most skills operate on the LLM Wiki (`wiki/`, `raw/`) described in the root `CLA
 | Skill | Purpose |
 |-------|---------|
 | `wiki-ingest` | Process a source from `raw/` into the wiki — summary page, entity/concept updates, index + log entry |
-| `wiki-query` | Answer a question from the wiki with citations; offer to file the answer back as a new page |
+| `wiki-query` | Answer a question from the wiki with citations; auto-ingest relevant un-ingested `raw/` sources when coverage is missing; offer to file the answer back as a new page |
 | `wiki-lint` | Health-check the wiki — contradictions, stale claims, orphan pages, missing concept pages, missing cross-references, never-ingested raw sources |
 | `wiki-archive` | Batch-move terminal work items into `<family>/archive/`, update `archive/index.md`, log the operation |
 | `wiki-rotate-log` | Rotate `wiki/log.md` into a timestamped archive file once it exceeds ~500 lines |
@@ -134,6 +134,7 @@ Most skills operate on the LLM Wiki (`wiki/`, `raw/`) described in the root `CLA
 | `git-commit` | Stage all changes and commit with an auto-generated message |
 | `primer` | Refresh codebase context via Serena memories |
 | `serena-config` | Interactively configure Serena language servers in `.serena/project.yml` |
+| `bootstrap-config` | View, edit, and reset the stored bootstrap preferences that decide which installer prompts are asked and how consent-gated skills behave |
 | `anti-slop` | Detect and remove AI writing patterns from copy so it reads like a person, not a language model |
 | `frontend-taste` | Wire the house-style design system (`~/code/house-style`) into the current project — tokens, Tailwind preset, component patterns, base CSS layer |
 | `elevator-pitch` | Generate a short, punchy elevator pitch for a project |
