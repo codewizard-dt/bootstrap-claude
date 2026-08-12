@@ -89,7 +89,7 @@ Do not proceed to Step 3 until you can answer yes to all:
 
 ##### Preference gate
 
-This gate governs **only whether files are written under `test/`**. It never affects the UAT file itself or how UAT verdicts are judged.
+This gate governs **only where unit test files are written** (and whether they are written at all). It never affects the UAT file itself or how UAT verdicts are judged.
 
 Read the preference **once per invocation** (not per case), before Step 2.5 does any other work:
 
@@ -97,12 +97,25 @@ Read the preference **once per invocation** (not per case), before Step 2.5 does
 node ~/.claude/bootstrap-prefs.js --get uatGenerate.promoteTests --project . 2>/dev/null || echo unset
 ```
 
+The key answers **where** promoted tests go, not whether they exist. Its grammar is the closed enumeration `sibling | never | dedicated`.
+
 | Value | Behaviour |
 |-------|-----------|
-| `true` | Today's behaviour — run the promotion checkpoint and create/update the unit test files. |
-| `false` | Do **not** create or update anything under `test/`. Still run the promotability *analysis* and still record it per case, as `- **Repeatable Unit Test**: Skipped by preference (uatGenerate.promoteTests=false)`. Say once in the completion report (Step 7): "No test/ files were written (uatGenerate.promoteTests=false). Change with /bootstrap-config." |
-| `ask` | Ask the user **once per invocation** (AskUserQuestion), before Step 2.5 does any work, whether to promote tests this run. Honour the answer for this run only — never write it back to the store. |
-| `unset` | Promote (today's behaviour) and note once: "uatGenerate.promoteTests is unanswered — /uat-generate promotes tests by default. Set it with: node ~/.claude/bootstrap-prefs.js --set uatGenerate.promoteTests --value <true\|false\|ask> --global" |
+| `dedicated` | Write promoted tests into the project's dedicated test directory, **resolved from the repo** — an existing test directory if there is one, else the language default (`test/` for JS/TS, `tests/` for Python, `spec/` where that is the local idiom). The directory is detected, never stored: `values` is a closed list of literal tokens, and a stored path would be free text. |
+| `sibling` | Write each test **beside the file under test**, using the language's own convention — `src/parse.ts` → `src/parse.test.ts`, `src/parse.js` → `src/parse.test.js`, `parse.py` → `test_parse.py`, `parse.go` → `parse_test.go`. Never invent a suffix the language's runner does not already discover. |
+| `never` | Create or update **nothing** under any test path. Still run the promotability *analysis* and still record it per case, as `- **Repeatable Unit Test**: Skipped by preference (uatGenerate.promoteTests=never)`. Say once in the completion report (Step 7): "No test files were written (uatGenerate.promoteTests=never). Change with /bootstrap-config." |
+| `unset` | Behave as `dedicated` — today's behaviour. Note once: "uatGenerate.promoteTests is unanswered — /uat-generate writes promoted tests to a dedicated folder by default. Set it with: node ~/.claude/bootstrap-prefs.js --set uatGenerate.promoteTests --value <sibling\|never\|dedicated> --global" |
+| `true` / `false` / `ask` | **Legacy values** from the key's earlier true/false grammar. Map them and carry on — do not error: `true` → `dedicated`, `false` → `never`, `ask` → ask the user once per invocation (AskUserQuestion) which of the three locations to use, honouring the answer for this run only and never writing it back. Mention once that the stored value is from an older grammar and `/bootstrap-config` can update it. |
+
+### The project's layout outranks the stored answer
+
+**A stored location is a default for new work, not an instruction to fight the repo.** Before writing anything, look at where tests already live:
+
+- An existing test file that already covers the unit under test is **extended in place** under every value except `never`. That is neither "dedicated" nor "sibling" — it is the local pattern, and it always wins.
+- If the project visibly uses one layout and the stored preference says the other (preference says `sibling`, the repo has a populated `test/` with no siblings anywhere), **follow the repo** and say so once in Step 7: "Followed the project's existing `test/` layout over uatGenerate.promoteTests=sibling. Set it per-project with /bootstrap-config." Scattering siblings through a repo that centralises its suite makes the suite worse, and this key is `scope: either` precisely so a project can hold its own answer.
+- Only when the project has no discernible convention does the stored value decide on its own.
+
+`never` is the one value the repo cannot overrule — "write no test files" is a directive, not a layout hint.
 
 For every planned UAT case, decide whether any part of it can be captured as a repeatable unit test with low setup cost.
 
@@ -117,13 +130,13 @@ A UAT case is **not** unit-test promotable when it primarily verifies:
 - Real HTTP service wiring, authentication middleware, deployment behavior, shell environment setup, database migrations, or file permissions.
 - Third-party service behavior or integration between multiple independently deployed systems.
 
-Before writing the UAT file, inspect the existing test layout and runner:
-- Find nearby test files for the changed code.
+Before writing the UAT file, inspect the existing test layout and runner — this is also what resolves the location gate above:
+- Find nearby test files for the changed code, and note **where** the project keeps them (a dedicated directory, siblings, or both).
 - Identify the test framework, naming convention, fixtures, mocks, and command used by the repo.
-- Prefer adding focused assertions to an existing nearby test file when that is the local pattern.
-- Otherwise create the smallest conventional new test file beside the unit under test.
+- Prefer adding focused assertions to an existing nearby test file when that is the local pattern — this wins over the stored preference in every case except `never`.
+- Otherwise create the smallest conventional new test file **at the location the gate resolved to**, following the repo's visible layout when it contradicts the stored value.
 
-If a case is promotable **and the preference gate allows promotion**, you **must** create or update the unit test file. Do not merely list it as a recommendation. If you cannot create it because the test framework is absent or the harness would require new infrastructure, record that as a gap with the concrete blocker. When the gate suppresses promotion, do the analysis and record `Skipped by preference` — write nothing under `test/`.
+If a case is promotable **and the gate resolved to a location** (anything but `never`), you **must** create or update the unit test file at that location. Do not merely list it as a recommendation. If you cannot create it because the test framework is absent or the harness would require new infrastructure, record that as a gap with the concrete blocker. When the gate resolved to `never`, do the analysis and record `Skipped by preference` — write no test file anywhere.
 
 ### Step 3: Generate UAT test cases
 
@@ -210,7 +223,7 @@ implements::[[TASK-NNN]]
 - Add `- **Repeatable Unit Test**: Created: \`path/to/test-file\`` when you created or updated a unit test for the behavior.
 - Add `- **Repeatable Unit Test**: Not applicable: <short reason>` when the case cannot reasonably become a unit test.
 - Add `- **Repeatable Unit Test**: Blocked: <short reason>` only when it was promotable in principle but the repo lacks the needed test harness or fixtures.
-- Add `- **Repeatable Unit Test**: Skipped by preference (uatGenerate.promoteTests=false)` when the Step 2.5 preference gate suppressed promotion for this run. Record the promotability analysis as usual; only the file write is skipped.
+- Add `- **Repeatable Unit Test**: Skipped by preference (uatGenerate.promoteTests=never)` when the Step 2.5 preference gate suppressed promotion for this run. Record the promotability analysis as usual; only the file write is skipped.
 
 **Unit test command** (required whenever, and only when, the line above says `Created:`):
 - Add `- **Unit Test Command**: \`<cmd>\`` on the next line, holding the **file-scoped** command that runs exactly that test file — e.g. `node --test test/foo.test.js`, `npx vitest run test/foo.test.ts`, `pytest tests/test_foo.py`, `go test ./pkg/foo/`.
@@ -228,7 +241,7 @@ Auth-Role: user
 
 ### Step 4: Write repeatable unit tests, the UAT file, and cross-reference
 
-1. **If the Step 2.5 preference gate allows promotion**, create or update the actual unit test file for each promotable case from Step 2.5, before writing the UAT file. If the gate suppressed promotion, skip this step entirely — write nothing under `test/` — and record each promotable case as `Skipped by preference` instead.
+1. **If the Step 2.5 gate resolved to a location**, create or update the actual unit test file for each promotable case from Step 2.5 **at that location**, before writing the UAT file. If it resolved to `never`, skip this step entirely — write no test file anywhere — and record each promotable case as `Skipped by preference` instead.
    - Use existing test framework conventions and nearby examples.
    - Keep the test focused on the behavior from the UAT case.
    - Do not add broad snapshots or duplicate end-to-end checks as unit tests.
@@ -236,7 +249,7 @@ Auth-Role: user
    - If editing code test files, use Serena editing tools.
    - If creating new config/markdown/test files where Serena is unavailable, use the appropriate project-approved edit/write tool; never shell redirection.
 
-2. Include the created test path in the corresponding UAT case's `Repeatable Unit Test` metadata, plus the verified file-scoped `Unit Test Command` — or `Skipped by preference (uatGenerate.promoteTests=false)` when the gate suppressed promotion.
+2. Include the created test path in the corresponding UAT case's `Repeatable Unit Test` metadata, plus the verified file-scoped `Unit Test Command` — or `Skipped by preference (uatGenerate.promoteTests=never)` when the gate suppressed promotion.
 
 3. Write `wiki/work/uat/UAT-NNN-slug.md` using the `Write` tool.
 

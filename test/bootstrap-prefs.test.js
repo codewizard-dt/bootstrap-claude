@@ -3329,3 +3329,87 @@ test('consumer: skill — gitCommit.autoPush documents `unset` as DO NOT PUSH', 
     );
   }
 });
+
+test('consumer: skill — the [patch]/[minor]/[major] subject prefix is written IFF a version was bumped', () => {
+  // THE RETRACTED CONTRACT. This key originally wrote the prefix unconditionally,
+  // reasoning that downstream release tooling reads it and dropping it would
+  // break releases. That is backwards. The prefix is a CLAIM about what the
+  // commit did, and tooling ACTS on it: `[minor]` on a commit that bumped nothing
+  // does not degrade gracefully, it tags or publishes a release with no version
+  // change behind it. An unprefixed subject is merely uninformative; a lying
+  // prefix is wrong, and it gets worse the more automation sits downstream.
+  //
+  // Three files state this contract and all three must agree — the skill that
+  // executes it, the schema paragraph /bootstrap-config prints verbatim when a
+  // user edits the key, and the installer prompt that sells the choice. A user
+  // who picks `never` from the prompt's description and then finds a `[minor]`
+  // on their commit was mis-sold, so the prompt is part of the contract, not
+  // decoration.
+  //
+  // Asserted against prose because the skill file IS the program — see the
+  // banner above SKILL_CONSUMERS.
+  const skill = fs.readFileSync(path.join(REPO, SKILL_CONSUMERS['gitCommit.versionBump']), 'utf8');
+  const detail = JSON.parse(fs.readFileSync(SCHEMA, 'utf8'))['gitCommit.versionBump'].detail;
+  const installGlobal = fs.readFileSync(path.join(REPO, 'lib', 'scripts', 'install-global.sh'), 'utf8');
+
+  // 1. The retracted wording must not survive anywhere it would read as policy.
+  //    Matched as exact retired phrases rather than a fuzzy "still near prefix"
+  //    pattern, which false-positives on ordinary prose about subjects.
+  const RETIRED = [
+    /subject prefix is still written/i,
+    /prefix is written either way/i,
+    /subject prefix is written either way/i,
+    /still prefixes the commit subject/i,
+    /the subject prefix is still set/i,
+  ];
+  for (const [label, src] of [
+    ['lib/skills/git-commit/SKILL.md', skill],
+    ['the gitCommit.versionBump schema detail', detail],
+    ['lib/scripts/install-global.sh', installGlobal],
+  ]) {
+    for (const pattern of RETIRED) {
+      assert.ok(
+        !pattern.test(src),
+        `${label} still carries the retracted claim ${pattern} — the prefix must follow the bump, not outlive it`
+      );
+    }
+  }
+
+  // 2. The skill states the coupling explicitly, in the strongest available form.
+  assert.match(
+    skill,
+    /if and only if a version was actually bumped/i,
+    'lib/skills/git-commit/SKILL.md never states the iff coupling between the bump and the subject prefix'
+  );
+  assert.match(
+    detail,
+    /IF AND ONLY IF/,
+    'the gitCommit.versionBump schema detail — printed verbatim by /bootstrap-config — never states the coupling'
+  );
+
+  // 3. BOTH no-bump states say "omitted". `never` is the obvious one; the
+  //    declined half of `confirm` is the one a rewrite forgets, and forgetting
+  //    it puts a false prefix on exactly the commit the user just declined to
+  //    version.
+  for (const state of ['`never`', '`confirm` — declined']) {
+    const row = skill.split('\n').find((l) => l.startsWith(`| ${state} |`));
+    assert.ok(row, `the Step 4 gate table has no row for ${state} — the state is undocumented`);
+    assert.match(
+      row,
+      /omitted/i,
+      `the ${state} row does not say the subject prefix is omitted. Nothing was bumped, so a prefix would ` +
+        `claim a version change that did not happen:\n${row}`
+    );
+  }
+
+  // 4. And "no prefix" means NO prefix — not a placeholder. `[none]` looks
+  //    harmless and is not: tooling matching the three real values ignores a
+  //    bare subject correctly, while an unrecognized token is new noise every
+  //    consumer has to learn to skip.
+  assert.match(
+    skill,
+    /\[none\]/,
+    'the skill never rules out placeholder prefixes like `[none]` — "omit the prefix" reliably gets ' +
+      'reinterpreted as "substitute something neutral"'
+  );
+});

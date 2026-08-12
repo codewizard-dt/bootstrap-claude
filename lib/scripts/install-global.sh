@@ -214,7 +214,7 @@ else
     echo ""
     echo "  Should /git-commit bump the version in package.json (and every other manifest) before committing?"
     echo "    Say 'never' for apps and private repos; 'auto' for published packages. The [patch]/[minor]/[major]"
-    echo "    subject prefix is written either way, so release tooling keeps working."
+    echo "    subject prefix follows the bump — written when one happens, omitted when it doesn't."
     VERSION_BUMP_ANSWER="$(prompt_letter_choice skip "    [a]uto / [c]onfirm each time / [n]ever / [s]kip for now: " auto confirm never skip)"
     case "$VERSION_BUMP_ANSWER" in
       auto|confirm|never)
@@ -232,8 +232,49 @@ else
     "Should /git-commit push the current branch after committing? (Default no — this turns a local action into a published one. It never creates a branch either way.)"
   settle_skill_pref research.persistToRaw \
     "Should /research save its report and sources to raw/research/ by default? (Findings always appear in the reply; this governs the file write only, and you can still decline any single report.)"
-  settle_skill_pref uatGenerate.promoteTests \
-    "Should /uat-generate write repeatable assertions into test/ automatically, alongside the UAT file?"
+  # uatGenerate.promoteTests is the second key that cannot go through
+  # settle_skill_pref: its grammar is sibling|never|dedicated (plus the
+  # parameterized dedicated:<path>), not true|false|ask.
+  #
+  # THE OPTION NAMED HERE IS `beside`, THE VALUE STORED IS `sibling`.
+  # prompt_letter_choice matches on FIRST LETTER and takes the first listed name
+  # that matches, so offering `sibling` alongside `skip` would silently make one
+  # of the two unreachable — whichever came second could never be typed. `beside`
+  # collides with nothing and reads better in the prompt; the case below maps it
+  # back to the schema's value.
+  if ! prefs_stored_global uatGenerate.promoteTests; then
+    echo ""
+    echo "  Where should /uat-generate write the unit tests it promotes out of UAT cases?"
+    echo "    A dedicated folder keeps the suite in one place; beside puts src/parse.ts's test at"
+    echo "    src/parse.test.ts. A project's existing layout always wins over this answer."
+    TEST_LOCATION_ANSWER="$(prompt_letter_choice skip \
+      "    [d]edicated folder / [b]eside each file / [n]ever write tests / [s]kip for now: " \
+      dedicated beside never skip)"
+    case "$TEST_LOCATION_ANSWER" in
+      dedicated)
+        # No follow-up asking WHICH folder. `values` is a closed enumeration of
+        # literal tokens, and that closedness is what guarantees no preference key
+        # can hold an arbitrary string (see the schema's own no-secrets rule) — a
+        # stored path would be exactly that. The skill resolves the directory from
+        # the repo instead: an existing test directory, else the language default.
+        prefs_set uatGenerate.promoteTests --global dedicated
+        echo "    uatGenerate.promoteTests = dedicated"
+        ;;
+      beside)
+        prefs_set uatGenerate.promoteTests --global sibling
+        echo "    uatGenerate.promoteTests = sibling"
+        ;;
+      never)
+        prefs_set uatGenerate.promoteTests --global never
+        echo "    uatGenerate.promoteTests = never"
+        ;;
+      *)
+        echo "    uatGenerate.promoteTests left unanswered — today's behavior (a dedicated test folder) is unchanged, and you will be asked again next sync."
+        ;;
+    esac
+    PREFS_ASKED=$(( PREFS_ASKED + 1 ))
+  fi
+
   settle_skill_pref gitignore.offerSectionUpdates \
     "Should setup/update offer .gitignore template section updates? (No stops the opening question entirely. The .git/info/exclude block is separate and is unaffected.)"
 

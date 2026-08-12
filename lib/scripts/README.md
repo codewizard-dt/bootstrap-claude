@@ -178,6 +178,16 @@ three is the whole point of the subsystem.
   **`confirm`**, inside its own `auto | confirm | never` grammar. It has
   deliberately no separate `ask` value, and offering one is a hard failure —
   `--set gitCommit.versionBump --value ask` exits 1.
+- **The commit-subject prefix follows the bump**, for that same key. `/git-commit`
+  writes `[patch]`/`[minor]`/`[major]` **if and only if** it actually bumped a
+  version: written under `auto` and an approved `confirm`, omitted under `never`
+  and a declined `confirm`. An earlier contract wrote it unconditionally so that
+  release tooling "kept working"; that was backwards. The prefix is a claim about
+  what the commit did and tooling acts on it, so a `[minor]` on a commit that
+  bumped nothing publishes a release with no version change behind it. Pinned by
+  `test/bootstrap-prefs.test.js`, across the skill, the schema `detail`, and the
+  installer prompt — a user who picks `never` from the prompt's own description
+  and then finds a prefix on their commit was mis-sold.
 
 ### The installed layout is what makes skill keys readable
 
@@ -394,7 +404,7 @@ above; `gitignore.section.*`'s deliberate one-value grammar is in
 | `gitCommit.versionBump` | either | skill | `auto \| confirm \| never` | `auto` | `install-global.sh` | How `/git-commit` handles the version bump before committing |
 | `gitCommit.autoPush` | either | skill | `true \| false \| ask` | `false` | `install-global.sh` | Whether `/git-commit` pushes after a successful commit |
 | `research.persistToRaw` | either | skill | `true \| false \| ask` | `true` | `install-global.sh` | Whether `/research` writes its report and sources to `raw/research/` |
-| `uatGenerate.promoteTests` | either | skill | `true \| false \| ask` | `true` | `install-global.sh` | Whether `/uat-generate` promotes UAT checks into repeatable tests under `test/` |
+| `uatGenerate.promoteTests` | either | skill | `sibling \| never \| dedicated` | `dedicated` | `install-global.sh` | Where `/uat-generate` writes the unit tests it promotes out of UAT cases |
 | `gitignore.offerSectionUpdates` | either | skill | `true \| false \| ask` | `true` | `install-global.sh` | Master gate for the `.gitignore` template section review pass |
 
 These five are the entire `scope: either` population and the entire

@@ -72,12 +72,28 @@ Print the summary. What happens next is decided by `gitCommit.versionBump` from 
 
 Its grammar is `auto | confirm | never` — there is deliberately **no `ask` value**, because `confirm` *is* this key's ask state. Do not look for one.
 
-| Value | What to do |
-|-------|------------|
-| `auto` | Today's behavior. Detect every manifest and apply the bump to all of them, no confirmation. |
-| `confirm` | Print the suggested bump **and the full list of manifest files that would change**, then ask once with `AskUserQuestion` before editing anything. Approved → bump exactly as `auto` does. Declined → edit no manifest, and still commit with the subject prefix. Ask **every run** and **never persist the answer** — the standing choice is "keep asking me", so recording a reply would destroy it. |
-| `never` | Touch **no** version file at all. Skip straight to Step 5. The `[patch]`/`[minor]`/`[major]` subject prefix is still written, because downstream release tooling reads that prefix — dropping it would break releases, not just skip a bump. Say so once in the final report: `Version files untouched (gitCommit.versionBump=never); the subject prefix is still set. Change with /bootstrap-config.` |
-| `unset` | Behave exactly as `auto` — that is today's behavior and an unanswered key must never change it. Note once in the final report: `gitCommit.versionBump is unanswered — /git-commit bumps every manifest by default. Set it with: node ~/.claude/bootstrap-prefs.js --set gitCommit.versionBump --value auto --global` (or `confirm` / `never`). |
+| Value | Manifests | Subject prefix |
+|-------|-----------|----------------|
+| `auto` | Today's behavior. Detect every manifest and apply the bump to all of them, no confirmation. | **written** |
+| `confirm` — approved | Bump exactly as `auto` does. | **written** |
+| `confirm` — declined | Edit no manifest. | **omitted** |
+| `never` | Touch **no** version file at all. Skip straight to Step 5. | **omitted** |
+| `unset` | Behave exactly as `auto` — that is today's behavior and an unanswered key must never change it. | **written** |
+
+`confirm` prints the suggested bump **and the full list of manifest files that would change**, then asks once with `AskUserQuestion` before editing anything. Ask **every run** and **never persist the answer** — the standing choice is "keep asking me", so recording a reply would destroy it.
+
+### ⛔ The prefix and the bump travel together
+
+**Write `[patch]`/`[minor]`/`[major]` if and only if a version was actually bumped in this run.** The prefix is a claim about what the commit did, and release tooling reads it as one. A `[minor]` prefix on a commit that bumped nothing is not a harmless label — it is a false statement that tooling will act on, tagging or publishing a release that has no version change behind it. An unprefixed subject is merely uninformative; a lying prefix is actively wrong, and it is worse the more automation is downstream.
+
+So when no bump happens, commit a **bare subject with no bracket prefix at all**. Do not substitute `[none]`, `[skip]`, `[no-bump]`, or any other placeholder — an unrecognized token is its own kind of noise, and tooling that pattern-matches the three real values will ignore a bare subject correctly.
+
+The one case where nothing was bumped for a reason unrelated to this preference — a repo with **no manifest at all** (Detection below finds nothing) — follows the same rule: nothing was bumped, so no prefix.
+
+Report lines, each at most once per run:
+- `never` → `Version files untouched and no subject prefix written (gitCommit.versionBump=never). Change with /bootstrap-config.`
+- `confirm`-declined → `Bump declined — no manifest edited and no subject prefix written.`
+- `unset` → `gitCommit.versionBump is unanswered — /git-commit bumps every manifest by default. Set it with: node ~/.claude/bootstrap-prefs.js --set gitCommit.versionBump --value auto --global` (or `confirm` / `never`).
 
 Anything else stored under this key is a value from a newer bootstrap that this skill has no branch for: treat it as `unset`, and say which value you did not recognize.
 
@@ -128,7 +144,7 @@ Edit **every file** that contains a version using the Edit tool — do not stop 
 - **ALWAYS use the `git-commit` bash alias.** Never use `git add` or `git commit` directly.
 - Always commit ALL files unless they are in `.gitignore`
 - Consider an appropriate commit message, let's call it `$message`
-- Prefix the subject with the bump type in brackets: `[patch]`, `[minor]`, or `[major]`
+- Prefix the subject with the bump type in brackets — `[patch]`, `[minor]`, or `[major]` — **only if Step 4 actually bumped a version**. If it did not (`never`, `confirm`-declined, or no manifest in the repo), the subject starts with the description and carries no bracket prefix
 - Run: `git-commit "$message"`
 
 ### ⛔ No agent attribution — the user is the sole author
@@ -143,13 +159,14 @@ The commit must be attributed to the user's git identity **only**. Never add the
 
 The commit message MUST be a **single-line, single-quoted-argument string**. Subject only, no body. This is a hard rule because anything else triggers a Bash approval prompt and slows you down.
 
-**Required form:**
+**Required form** — bumped, and not bumped:
 
 ```bash
 git-commit "[patch] Single-line subject describing the change"
+git-commit "Single-line subject describing the change"
 ```
 
-That's it. One pair of double quotes. One line. One argument.
+That's it. One pair of double quotes. One line. One argument. The only difference between the two forms is whether Step 4 bumped a version.
 
 **❌ Forbidden — every one of these patterns triggers an approval prompt:**
 
@@ -178,14 +195,25 @@ git-commit "subject" "-m" "body"
 
 # WRONG — piping or chaining
 echo "subject" | git-commit -F -
+
+# WRONG — a placeholder standing in for a bump that did not happen
+git-commit "[none] Fix the login redirect"
+git-commit "[no-bump] Fix the login redirect"
 ```
 
-**✅ Correct — always:**
+**✅ Correct — a version was bumped:**
 
 ```bash
 git-commit "[patch] Fix UAT verdict logic for edge-case test skips"
 git-commit "[minor] Add /task-audit skill with dependency graph and wave output"
 git-commit "[major] Rename all skills to noun-first convention, drop legacy verb-first aliases"
+```
+
+**✅ Correct — no version was bumped** (`never`, `confirm`-declined, or no manifest in the repo):
+
+```bash
+git-commit "Fix UAT verdict logic for edge-case test skips"
+git-commit "Add /task-audit skill with dependency graph and wave output"
 ```
 
 ### Writing a good single-line subject
@@ -194,8 +222,10 @@ If the change feels too complex to summarize in one line, **make the subject mor
 
 - ✅ `[minor] Require research for every test type in /uat-generate with checkpoint gate`
 - ✅ `[patch] Allow standard tools for markdown editing; ban bash exploration commands`
-- ❌ `Update commands` (too vague, missing bump prefix)
+- ✅ `Allow standard tools for markdown editing; ban bash exploration commands` (no bump this run — the subject still carries its weight)
+- ❌ `Update commands` (too vague — and vague is vague with or without a prefix)
 - ❌ `[patch] Fix bug` (too vague)
+- ❌ `[patch] Fix the login redirect` **when Step 4 bumped nothing** (the prefix is false)
 
 Detailed reasoning, before/after examples, and rationale belong in **PR descriptions**, not in commit message bodies. The commit subject is the index entry; the PR is the encyclopedia.
 

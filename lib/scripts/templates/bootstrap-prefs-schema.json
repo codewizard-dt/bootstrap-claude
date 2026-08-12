@@ -131,7 +131,7 @@
     "scope": "either",
     "consumer": "skill",
     "summary": "How /git-commit handles the version bump before committing",
-    "detail": "'auto' is today's behavior: the skill picks a bump level and applies it to every version manifest it finds, without confirmation. 'confirm' prints the suggested bump and asks before editing any manifest — 'confirm' IS this key's ask state, so there is deliberately no separate 'ask' value in the grammar. 'never' touches no version file at all but STILL prefixes the commit subject with [patch], [minor], or [major], because downstream release tooling reads that prefix. This is a choice among three behaviors, not an add/skip gate, so the declines-only rule does not apply — the answer is recorded in all three directions.",
+    "detail": "'auto' is today's behavior: the skill picks a bump level and applies it to every version manifest it finds, without confirmation. 'confirm' prints the suggested bump and asks before editing any manifest — 'confirm' IS this key's ask state, so there is deliberately no separate 'ask' value in the grammar. 'never' touches no version file at all. The [patch]/[minor]/[major] commit-subject prefix is written IF AND ONLY IF a version was actually bumped: written under 'auto' and under an approved 'confirm', omitted entirely under 'never' and under a declined 'confirm'. That coupling is the point — release tooling reads the prefix as a claim about what the commit did, so a prefix on a commit that bumped nothing is a false statement the tooling would act on, not a harmless label. This is a choice among three behaviors, not an add/skip gate, so the declines-only rule does not apply — the answer is recorded in all three directions.",
     "values": "auto | confirm | never",
     "default": "auto",
     "askedBy": "install-global.sh"
@@ -157,10 +157,10 @@
   "uatGenerate.promoteTests": {
     "scope": "either",
     "consumer": "skill",
-    "summary": "Whether /uat-generate promotes UAT checks into repeatable tests under test/",
-    "detail": "true is today's behavior: alongside the UAT file in wiki/work/uat/, the skill writes repeatable assertions into the project's test/ directory so the checks survive as regression coverage. false generates the UAT file only and adds nothing to test/. 'ask' prompts per invocation. This affects what lands on disk, not how the UAT itself is judged.",
-    "values": "true | false | ask",
-    "default": true,
+    "summary": "Where /uat-generate writes the unit tests it promotes out of UAT cases",
+    "detail": "The question is WHERE promoted tests land, not whether they exist. 'dedicated' is today's behavior: they go in the project's dedicated test directory, resolved by looking at the repo first (an existing test directory) and falling back to the language default — test/ for JS/TS, tests/ for Python, spec/ where that is the local idiom. The directory is detected rather than stored, because this grammar is a closed enumeration of literal tokens and a stored path would be free text. 'sibling' puts each test beside the file under test using the language's own convention (src/parse.ts -> src/parse.test.ts). 'never' writes nothing: the skill still runs its promotability analysis and records the verdict on each UAT case, it just creates no file. An existing test file that already covers the unit is extended in place under every value, and a project's visible layout wins over a stored answer that contradicts it — so this key is a default for new work, not an override of the repo. It affects what lands on disk, not how the UAT itself is judged. Legacy true/false/ask values from the key's earlier grammar are mapped by the skill: true -> dedicated, false -> never, ask -> ask once per run.",
+    "values": "sibling | never | dedicated",
+    "default": "dedicated",
     "askedBy": "install-global.sh"
   },
   "gitignore.offerSectionUpdates": {

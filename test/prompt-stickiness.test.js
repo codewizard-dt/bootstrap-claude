@@ -3150,7 +3150,7 @@ test('prefs_stored_global: distinguishes a stored [global] answer from a schema 
   // THE LOAD-BEARING DISCOVERY, pinned in both directions on ONE key so the
   // contrast is unarguable: same key, same moment, two helpers, two answers.
   withScratchEnv((S) => {
-    const key = 'uatGenerate.promoteTests'; // schema default: true (non-null)
+    const key = 'uatGenerate.promoteTests'; // schema default: "dedicated" (non-null)
 
     // Nothing stored anywhere yet.
     assertNoPrefsFile(S.home, 'scratch HOME before the probe');
@@ -3169,11 +3169,11 @@ test('prefs_stored_global: distinguishes a stored [global] answer from a schema 
       /^STORED=no$/m,
       `prefs_stored_global claimed a never-answered key was stored:\n${before.stdout}`
     );
-    // The whole reason prefs_stored_global exists: prefs_get says `true` here,
-    // because the SCHEMA says true — not because the user ever did.
+    // The whole reason prefs_stored_global exists: prefs_get says `dedicated`
+    // here, because the SCHEMA says dedicated — not because the user ever did.
     assert.match(
       before.stdout,
-      /^GET=true$/m,
+      /^GET=dedicated$/m,
       'prefs_get did not fall through to the schema default — if this key lost its non-null default the ' +
         'contrast this test documents is gone, and so is the reason prefs_stored_global exists'
     );
@@ -3184,7 +3184,7 @@ test('prefs_stored_global: distinguishes a stored [global] answer from a schema 
     // Now store the SAME value the default already reports. prefs_get is
     // unchanged (true before, true after) while prefs_stored_global flips —
     // proving it reads the layer, not the value.
-    seedPref(S, 'global', key, true);
+    seedPref(S, 'global', key, 'dedicated');
 
     const after = runShell(
       [
@@ -3199,7 +3199,7 @@ test('prefs_stored_global: distinguishes a stored [global] answer from a schema 
       /^STORED=yes$/m,
       `prefs_stored_global did not see a value it had just stored:\n${after.stdout}`
     );
-    assert.match(after.stdout, /^GET=true$/m, 'prefs_get changed answer, defeating the point of the contrast');
+    assert.match(after.stdout, /^GET=dedicated$/m, 'prefs_get changed answer, defeating the point of the contrast');
   });
 });
 
@@ -3339,7 +3339,7 @@ test('install-global.sh e2e: step 6 installs the helper AND its schema in the la
     assert.equal(viaInstalled.status, 0, `the installed helper failed to run: ${viaInstalled.stderr}`);
     assert.equal(
       (viaInstalled.stdout || '').trim(),
-      'true',
+      'dedicated',
       'the installed helper did not resolve the schema default — the templates/ layout is broken, and every ' +
         'skill call site that omits --schema would read `unset` instead of the documented default'
     );
@@ -3348,9 +3348,20 @@ test('install-global.sh e2e: step 6 installs the helper AND its schema in the la
 
 test('install-global.sh e2e: a fresh interactive run settles all five keys, and each answer lands as its correct JSON type', () => {
   withScratchEnv((S) => {
-    // One distinct answer per key, deliberately covering all three storable
+    // One distinct answer per key, deliberately covering all four storable
     // shapes: a string grammar, a boolean true, a boolean false, and `ask`.
-    const r = runInstallGlobal(S, { input: 'n\ny\nn\na\ny\n' });
+    //
+    // `b` is uatGenerate.promoteTests' SIBLING option. Its prompt spells that
+    // option `beside` rather than `sibling` because prompt_letter_choice matches
+    // on first letter and takes the first listed name that matches — offering
+    // `sibling` next to `skip` would make one of the two untypable. The stored
+    // value is still `sibling`; only the option name differs.
+    //
+    // `ask` coverage moved to gitignore.offerSectionUpdates (final `a`) when
+    // promoteTests' grammar changed from true|false|ask to a location choice
+    // that has no ask state. Without that move this test would silently stop
+    // exercising the `ask` shape at all.
+    const r = runInstallGlobal(S, { input: 'n\ny\nn\nb\na\n' });
     assert.equal(r.status, 0, `install failed:\nstdout:\n${r.stdout}\nstderr:\n${r.stderr}`);
 
     for (const key of SKILL_PREF_KEYS) {
@@ -3367,8 +3378,8 @@ test('install-global.sh e2e: a fresh interactive run settles all five keys, and 
         'gitCommit.versionBump': 'never',
         'gitCommit.autoPush': true,
         'research.persistToRaw': false,
-        'uatGenerate.promoteTests': 'ask',
-        'gitignore.offerSectionUpdates': true,
+        'uatGenerate.promoteTests': 'sibling',
+        'gitignore.offerSectionUpdates': 'ask',
       },
       'the five answers did not round-trip. Note the types: `false` must be a JSON boolean, since a stored ' +
         '"false" string is truthy in every shell test and reads back as a settled true'
@@ -3393,14 +3404,21 @@ test('install-global.sh e2e: a re-run re-asks ONLY the unanswered key — stored
   withScratchEnv((S) => {
     // Run 1: answer four, SKIP the fifth. `s` records nothing, so
     // gitignore.offerSectionUpdates stays genuinely unanswered.
-    const r1 = runInstallGlobal(S, { input: 'a\ny\nn\na\ns\n' });
+    //
+    // The run-1 set deliberately contains BOTH a stored `false` and a stored
+    // `ask`, because those are the two shapes a naive "is it set?" check gets
+    // wrong. `ask` sits on gitCommit.autoPush here — it used to sit on
+    // uatGenerate.promoteTests, which no longer has an ask state now that its
+    // grammar answers WHERE tests go rather than whether to write them. `d` is
+    // that key's dedicated-folder option.
+    const r1 = runInstallGlobal(S, { input: 'a\na\nn\nd\ns\n' });
     assert.equal(r1.status, 0, `run 1 failed:\nstdout:\n${r1.stdout}\nstderr:\n${r1.stderr}`);
 
     const afterRun1 = {
       'gitCommit.versionBump': 'auto',
-      'gitCommit.autoPush': true,
+      'gitCommit.autoPush': 'ask',
       'research.persistToRaw': false,
-      'uatGenerate.promoteTests': 'ask',
+      'uatGenerate.promoteTests': 'dedicated',
     };
     assert.deepEqual(
       readPrefs(S.home),
@@ -3424,7 +3442,7 @@ test('install-global.sh e2e: a re-run re-asks ONLY the unanswered key — stored
       readPrefs(S.home),
       { ...afterRun1, 'gitignore.offerSectionUpdates': true },
       'run 2 changed a settled answer. Exactly one key was unanswered, so exactly one key may change — a stored ' +
-        '`false` (research.persistToRaw) and a stored `ask` (uatGenerate.promoteTests) are SETTLED ANSWERS'
+        '`false` (research.persistToRaw) and a stored `ask` (gitCommit.autoPush) are SETTLED ANSWERS'
     );
 
     // Not merely "the value survived": the settled questions must not have been
@@ -3531,7 +3549,7 @@ test('install-global.sh e2e: a NON-INTERACTIVE run still installs the schema in 
     assert.equal(viaInstalled.status, 0, `the installed helper failed to run: ${viaInstalled.stderr}`);
     assert.equal(
       (viaInstalled.stdout || '').trim(),
-      'true',
+      'dedicated',
       'the installed helper did not resolve the schema default after a NON-INTERACTIVE install — the templates/ ' +
         'layout only survives when someone is watching, which is the opposite of what step 6 promises'
     );
