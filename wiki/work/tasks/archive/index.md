@@ -54,3 +54,10 @@ Terminal task files (`done` or `trashed`) moved here by `/wiki-archive` to reduc
 | [[TASK-050]] | Document the helper, the four-state model, and the full key registry in lib/scripts/README.md | done | 2026-08-07 |
 | [[TASK-051]] | Pin bootstrap-prefs.js and bootstrap-prefs-schema.json into test/npm-pack-contents.test.js | done | 2026-08-07 |
 | [[TASK-052]] | End-to-end verification of the preference store against a scratch project | done | 2026-08-07 |
+| [[TASK-055]] | Wire install-obsidian.sh into run_project_sync() | done | 2026-08-13 |
+| [[TASK-058]] | Manually verify guarded Obsidian install end-to-end on at least one platform | done | 2026-08-13 |
+| [[TASK-054]] | Add obsidian.installApp + obsidian.plugins keys to bootstrap-prefs-schema.json | done | 2026-08-14 |
+| [[TASK-056]] | Add optional wiki/guides/ Dataview example-queries page | done | 2026-08-14 |
+| [[TASK-057]] | Reconcile /task-audit's Depends-on/Blocks blockquote with rel::[[target]] | done | 2026-08-14 |
+| [[TASK-059]] | Confirm setup/update stay non-fatal on Obsidian install failure and declining leaves everything untouched | done | 2026-08-14 |
+| [[TASK-053]] | Add lib/scripts/install-obsidian.sh (app + plugin auto-install) | done | 2026-08-14 |

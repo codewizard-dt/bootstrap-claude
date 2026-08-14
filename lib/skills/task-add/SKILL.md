@@ -119,6 +119,8 @@ Populate `depends_on`, `blocks`, and `parallel_safe_with` from Step 5 as lists o
 # TASK-NNN — Task Title
 
 implements::[[DEC-NNNN#DM]]   ← only when a decision reference was provided
+depends_on::[[TASK-NNN]]   ← one line per dependency from Step 5; omit entirely if none
+blocks::[[TASK-NNN]]   ← one line per blocked task from Step 5; omit entirely if none
 
 ## Objective
 
@@ -145,6 +147,8 @@ implements::[[DEC-NNNN#DM]]   ← only when a decision reference was provided
 Agent type annotations: valid types are `general-purpose`, `Explore`, `Plan`.
 
 **Decision link** (only when Step 2 found an accepted decision reference): Insert `implements::[[DEC-NNNN#DM]]` as a typed link on the line immediately after the H1, before `## Objective`.
+
+**Dependency links** (from the Step 5 data, no re-derivation needed): insert one `depends_on::[[TASK-NNN]]` line per dependency and one `blocks::[[TASK-NNN]]` line per blocked task, in the same position — immediately after `implements::` when it's present, or immediately after the H1 when it isn't. *Aside: these typed-link lines are additive to the existing `> **Depends on**:`/`> **Blocks**:` blockquote format, not a replacement, and creating them here does not backfill any pre-existing task file.*
 
 ### Step 9: Update the family index
 

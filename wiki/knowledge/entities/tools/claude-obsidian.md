@@ -11,6 +11,8 @@ tags: [second-brain, llm-wiki, obsidian]
 
 MIT-licensed, productized reimplementation of `derived_from::[[Andrej Karpathy]]`'s LLM Wiki pattern for Obsidian + Claude Code (`github.com/AgriciDaniel/claude-obsidian`, 358+ GitHub stars). Ships 15 Claude Code skills, multi-agent support, methodology modes (LYT/PARA/Zettelkasten/Generic), and a "10-principle thinking framework."
 
+**Disambiguation:** this is an unrelated third-party project that merely shares the word "Obsidian" in its name — for the Obsidian.md app itself, see `relates_to::[[obsidian]]`.
+
 Two features directly relevant to this repo's own wiki design, both absent from this repo's current implementation:
 
 - **Hot cache** (`wiki/hot.md`, `relates_to::[[LLM Wiki Hot Cache]]`): a compact (~500-word) session summary — Last Updated, Key Recent Facts, Recent Changes, Active Threads — regenerated at the end of every session and read first at the start of the next one.

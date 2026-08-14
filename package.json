@@ -1,6 +1,6 @@
 {
   "name": "@codewizard-dt/bootstrap",
-  "version": "2.19.0",
+  "version": "2.20.0",
   "description": "Bootstrap Claude Code projects with an LLM Wiki, reusable skills, hooks, and MCP setup",
   "homepage": "https://github.com/codewizard-dt/bootstrap-wiki#readme",
   "bugs": {

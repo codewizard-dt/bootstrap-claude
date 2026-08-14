@@ -18,6 +18,7 @@ Thumbs.db
 # ---------------------------------------------------------------------------
 .mcp.json
 .playwright-mcp/
+.claude/
 
 # ---------------------------------------------------------------------------
 # Secrets & local environment (NEVER commit real secrets)

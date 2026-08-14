@@ -1,14 +1,14 @@
 ---
 id: BUG-0009
 title: --set reports success writing a key into a layer that never reads it
-status: open
+status: verified
 severity: medium
-priority: "—"
+priority: P2
 created: 2026-08-07
-updated: 2026-08-07
+updated: 2026-08-14
 reporter: David Taylor
-assignee: unassigned
-tags: "—"
+assignee: David Taylor
+tags: preferences, bootstrap-prefs, scope
 linked_task: "—"
 ---
 
@@ -207,11 +207,19 @@ collateral damage** — the failures are the pointer to the rest of the work:
 
 ## Root Cause Analysis
 
-> _(filled at /bug-close)_
+`scopePermitsLayer` already existed as the single source of truth for whether a layer may hold a given key, and `resolve()` already used it correctly for reads. But the function was wired into exactly one write-adjacent site — `renderCompanion`, which uses it only to *explain* an inert key after the fact — and was never called from the `--set` handler itself. The handler's write path checked two things before writing (the literal `unset`/`null` sentinel, and the value grammar via `allowedValues`) and then wrote unconditionally; nothing in that sequence asked whether the resolved `targetLayer` was one the key's `scope` actually permitted. This was an omission in the write path, not an incorrect check anywhere — the correct logic already existed and was simply never invoked at the one place that needed it to prevent, rather than merely explain, the inert state.
 
 ## Resolution
 
-> _(filled at /bug-close)_
+| Field | Value |
+|-------|-------|
+| Fix commit | `9722eb8` |
+| Fix version | — |
+| Linked PR | — |
+| Linked task | — |
+| Regression test | `test/bootstrap-prefs.test.js` — 3 new tests: "--set of a global-scope key with --project exits 1 and writes nothing (BUG-0009)", "--set of a project-scope key with --global exits 1 and writes nothing (BUG-0009)", "--set of a global-scope key via --target is legal — the escape hatch is exempt from the scope check (BUG-0009)" |
+
+Fix: call `scopePermitsLayer(entry, targetLayer)` inside the `--set` handler's `entry !== null` branch, right after the value-grammar check, and exit `1` with a message naming the actual scope and the correct selector when the layer doesn't permit it. `--target` stays exempt (as `scopePermitsLayer` already returns `true` unconditionally for it); `--unset` was deliberately left permissive, per the bug's own recommendation, since unsetting an inert key from the wrong layer is harmless and is the documented workaround for a key already stuck there. Two existing test fixtures that constructed a scope-inert key via plain `--set` were rewritten to use `--target` at the resolved file path instead — this still exercises the real write path (including companion regeneration) while bypassing only the new, deliberate refusal. Updated `lib/skills/bootstrap-config/SKILL.md` (Step E.2 and its argument-hint note) and `lib/scripts/README.md` (the preference-helper table row and the "Known gap" section, now reworded as a positive statement of the enforcement) to stop describing the old gap as intentional. Removed a self-aware tripwire test in `test/bootstrap-config-skill.test.js` that pinned the pre-fix claim and explicitly asked to be deleted once the helper was fixed, replacing it with a test asserting the actual refusal. Verified: all 3 new tests pass, full suite 341/341.
 
 ## Related
 

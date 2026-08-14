@@ -1,6 +1,6 @@
 ---
 title: Wiki Index
-updated: 2026-07-30
+updated: 2026-08-14
 ---
 
 # Wiki Index — Home Map
@@ -27,6 +27,9 @@ The wiki is split into two domains with opposite organizing laws:
 - [Research: Deny rules vs. PreToolUse hooks](knowledge/sources/deny-rules-vs-hooks.md) — per-subcommand decomposition is real (bare-interpreter denies ship, pipe patterns never fire), and `permissions.ask` replaces a planned package-consent hook
 - [Research: Which Claude Code controls survive --dangerously-skip-permissions](knowledge/sources/bypass-mode-enforcement.md) — deny/ask/hooks/sandbox all enforce under bypass; what bypass destroys is the built-in protected-path guard (supersedes the sandbox-escape report on that point)
 - [Research: git exclude vs Claude Code @ autocomplete](knowledge/sources/git-exclude-at-autocomplete.md) — info/exclude blinds the @ picker (and rg); no git-side layout fixes it; the documented `fileSuggestion` custom command is the escape hatch (supersedes the info/exclude report's "Claude tools unaffected" claim)
+- [Obsidian and Typed Wiki Linking](knowledge/sources/obsidian-wiki-linking.md) — this repo's `rel::[[target]]` convention is Dataview's full-line inline-field syntax, not a bespoke invention, currently used with zero plugins installed
+- [Automating Obsidian and Plugin Setup in the Bootstrap Scripts](knowledge/sources/obsidian-setup-automation.md) — app + plugin install are both fully scriptable and fit the existing guarded/opt-in install pattern; /wiki-lint's graph view improves for free, /task-audit does not
+- [Research: Serena MCP — Project Scope vs. Local Scope](knowledge/sources/serena-mcp-scope.md) — confirms the existing local-scope choice against Claude Code's official scope docs; no code change indicated
 
 ### Concepts
 - [LLM Wiki Hot Cache](knowledge/concepts/llm-wiki-hot-cache.md) — session-handoff summary file pattern, converged on by multiple gist reimplementations
@@ -41,12 +44,14 @@ The wiki is split into two domains with opposite organizing laws:
 - [Per-Subcommand Decomposition](knowledge/concepts/per-subcommand-decomposition.md) — rules match each subcommand independently, so pipe-containing patterns can never fire and bare `Bash(sh)` can; no startup warning either way
 - [Consent Requires a Yes-Path (the `ask` Tier)](knowledge/concepts/consent-requires-a-yes-path.md) — deny has no yes-path; `permissions.ask` cannot be silenced by allow, bypass mode, a hook, or the sandbox (⚠ open contradiction: ask vs. hook for headless package consent)
 - [Control Survival Across Permission Modes](knowledge/concepts/permission-mode-control-survival.md) — what still enforces under `bypassPermissions`: deny/ask/hooks/sandbox yes, `allow` inert, built-in protected paths gone (⚠ carries the flagged contradiction with the sandbox-escape report)
+- [Typed Wiki Links](knowledge/concepts/typed-wiki-links.md) — `rel::[[target]]` is Dataview's full-line inline-field syntax; zero plugin dependency today; Dataview/Graph Link Types/Breadcrumbs are optional enhancement layers requiring no authoring changes
+- [MCP Server Scope Model (local / project / user)](knowledge/concepts/mcp-server-scope-model.md) — local > project > user precedence; project scope fits only config identical across teammates, machine-specific values (a path, a credential) belong at local scope
 
 ### Entities
 - People — [knowledge/entities/people/](knowledge/entities/people/): [Andrej Karpathy](knowledge/entities/people/andrej-karpathy.md)
 - Organisations — [knowledge/entities/organisations/](knowledge/entities/organisations/) — _(none yet)_
-- Tools — [knowledge/entities/tools/](knowledge/entities/tools/): [Serena](knowledge/entities/tools/serena.md), [Claude Code Auto Memory](knowledge/entities/tools/claude-code-auto-memory.md), [claude-obsidian](knowledge/entities/tools/claude-obsidian.md), [qmd](knowledge/entities/tools/qmd.md), [Hindsight](knowledge/entities/tools/hindsight.md), [Claude Code Permission System](knowledge/entities/tools/claude-code-permission-system.md), [Claude Code OS Sandbox](knowledge/entities/tools/claude-code-sandbox.md), [Claude Code @ File Picker (fileSuggestion)](knowledge/entities/tools/claude-code-file-picker.md)
-- Components — [knowledge/entities/components/](knowledge/entities/components/): [Serena Health-Tracking Hook](knowledge/entities/components/serena-health-tracking-hook.md), [Canonical Settings Deny List](knowledge/entities/components/settings-deny-list.md), [lib/hooks — Project-Managed Hook Scripts](knowledge/entities/components/bootstrap-claude-hooks.md)
+- Tools — [knowledge/entities/tools/](knowledge/entities/tools/): [Serena](knowledge/entities/tools/serena.md), [Claude Code Auto Memory](knowledge/entities/tools/claude-code-auto-memory.md), [claude-obsidian](knowledge/entities/tools/claude-obsidian.md), [qmd](knowledge/entities/tools/qmd.md), [Hindsight](knowledge/entities/tools/hindsight.md), [Claude Code Permission System](knowledge/entities/tools/claude-code-permission-system.md), [Claude Code OS Sandbox](knowledge/entities/tools/claude-code-sandbox.md), [Claude Code @ File Picker (fileSuggestion)](knowledge/entities/tools/claude-code-file-picker.md), [Obsidian](knowledge/entities/tools/obsidian.md), [Dataview](knowledge/entities/tools/dataview.md), [Graph Link Types](knowledge/entities/tools/graph-link-types.md), [Breadcrumbs (Obsidian plugin)](knowledge/entities/tools/breadcrumbs-plugin.md), [Wikilink Types (Obsidian plugin)](knowledge/entities/tools/wikilink-types-plugin.md)
+- Components — [knowledge/entities/components/](knowledge/entities/components/): [Serena Health-Tracking Hook](knowledge/entities/components/serena-health-tracking-hook.md), [Canonical Settings Deny List](knowledge/entities/components/settings-deny-list.md), [lib/hooks — Project-Managed Hook Scripts](knowledge/entities/components/bootstrap-claude-hooks.md), [Guarded, Opt-In, Sticky-Preference Install Pattern](knowledge/entities/components/bootstrap-guarded-install-pattern.md)
 
 ---
 

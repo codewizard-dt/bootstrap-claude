@@ -52,3 +52,10 @@ Terminal UAT files (`passed`, `skipped`, or `trashed`) moved here by `/wiki-arch
 | [[UAT-050]] | UAT: Document the helper, the four-state model, and the full key registry in lib/scripts/README.md | passed | 2026-08-07 |
 | [[UAT-051]] | UAT: Pin bootstrap-prefs.js and bootstrap-prefs-schema.json into test/npm-pack-contents.test.js | passed | 2026-08-07 |
 | [[UAT-052]] | UAT: End-to-end verification of the preference store against a scratch project | passed | 2026-08-07 |
+| [[UAT-055]] | UAT: Wire install-obsidian.sh into run_project_sync() | passed | 2026-08-13 |
+| [[UAT-058]] | UAT: Manually verify guarded Obsidian install end-to-end on at least one platform | passed | 2026-08-13 |
+| [[UAT-054]] | UAT: Add obsidian.installApp + obsidian.plugins keys to bootstrap-prefs-schema.json | passed | 2026-08-14 |
+| [[UAT-056]] | UAT: Add optional wiki/guides/ Dataview example-queries page | passed | 2026-08-14 |
+| [[UAT-057]] | UAT: Reconcile /task-audit's Depends-on/Blocks blockquote with rel::[[target]] | passed | 2026-08-14 |
+| [[UAT-059]] | UAT: Confirm setup/update stay non-fatal on Obsidian install failure and declining leaves everything untouched | passed | 2026-08-14 |
+| [[UAT-053]] | UAT: Add lib/scripts/install-obsidian.sh (app + plugin auto-install) | passed | 2026-08-14 |

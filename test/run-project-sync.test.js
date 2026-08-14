@@ -32,14 +32,17 @@ const { spawnSync } = require('node:child_process');
 const REPO = path.resolve(__dirname, '..');
 const LIB_SH = path.join(REPO, 'lib', 'scripts', 'lib.sh');
 
-// The exact sequence run_project_sync calls its six sub-scripts in, as of the
-// TASK-036 reorder. install-global.sh MUST precede install-mcps.sh — that is
-// the ordering half of the fix under test.
+// The exact sequence run_project_sync calls its sub-scripts in, as of the
+// TASK-036 reorder plus the TASK-055 Obsidian step. install-global.sh MUST
+// precede install-mcps.sh — that is the ordering half of the TASK-036 fix.
+// install-obsidian.sh MUST sit between merge-gitignore.sh and
+// build-mcp-guide.sh — that is the TASK-055 call-site contract.
 const STEP_ORDER = [
   'install-global.sh',
   'install-mcps.sh',
   'sync-wiki-scaffold.sh',
   'merge-gitignore.sh',
+  'install-obsidian.sh',
   'build-mcp-guide.sh',
   'bootstrap-serena.sh',
 ];
@@ -61,6 +64,11 @@ function buildScriptDir(exitCodes = {}) {
     const script = [
       '#!/usr/bin/env bash',
       `echo "${name}" >> "${dir}/order.log"`,
+      // One argument per line, for tests that need to assert on the exact
+      // flags a step was invoked with (e.g. install-obsidian.sh matching the
+      // install-mcps.sh call convention). Additive only — does not change
+      // order.log, so it cannot affect the pre-existing ordering assertions.
+      `printf '%s\\n' "$@" > "${dir}/${name}.args.log"`,
       code === 0 ? 'exit 0' : `echo "stub ${name} failing" >&2; exit ${code}`,
       '',
     ].join('\n');
@@ -69,6 +77,15 @@ function buildScriptDir(exitCodes = {}) {
     fs.chmodSync(file, 0o755);
   }
   return dir;
+}
+
+function readArgsLog(dir, name) {
+  const p = path.join(dir, `${name}.args.log`);
+  if (!fs.existsSync(p)) return [];
+  return fs
+    .readFileSync(p, 'utf8')
+    .split('\n')
+    .filter((l) => l !== '');
 }
 
 /**
@@ -211,6 +228,131 @@ test('a failure in a different step (sync-wiki-scaffold.sh) still aborts the fun
   assert.ok(
     !log.includes('bootstrap-serena.sh'),
     'bootstrap-serena.sh ran after an unguarded failure should have aborted the sequence first'
+  );
+
+  cleanup(scriptDir);
+  cleanup(projectDir);
+});
+
+// --- TASK-055: install-obsidian.sh call-site contract --------------------------
+//
+// Companion to UAT-055 and to TASK-059's manual verification of the runtime
+// failure/decline behavior of the real install-obsidian.sh script. These
+// tests cover the STATIC/STRUCTURAL contract only — the exact position of
+// the call inside run_project_sync(), the exact guard shape, the exact
+// invocation flags, and that the rest of the function is undisturbed. They
+// deliberately do not re-exercise the live non-fatal-failure or decline
+// behavior of the real script, which TASK-059 already verified end to end.
+
+test('install-obsidian.sh runs after merge-gitignore.sh and before build-mcp-guide.sh (TASK-055 call-site)', () => {
+  const scriptDir = buildScriptDir();
+  const projectDir = scratchDir();
+
+  const res = runProjectSync(scriptDir, projectDir);
+
+  assert.strictEqual(res.status, 0, `wrapper did not exit 0: ${res.stderr}`);
+  const log = readOrderLog(scriptDir);
+  const gitignoreIdx = log.indexOf('merge-gitignore.sh');
+  const obsidianIdx = log.indexOf('install-obsidian.sh');
+  const buildGuideIdx = log.indexOf('build-mcp-guide.sh');
+  assert.ok(gitignoreIdx !== -1 && obsidianIdx !== -1 && buildGuideIdx !== -1, `one of the three steps did not run: ${log}`);
+  assert.ok(
+    gitignoreIdx < obsidianIdx && obsidianIdx < buildGuideIdx,
+    `install-obsidian.sh must sit strictly between merge-gitignore.sh and build-mcp-guide.sh, got order: ${log}`
+  );
+
+  cleanup(scriptDir);
+  cleanup(projectDir);
+});
+
+test('install-obsidian.sh is invoked with --interactive --project-dir "<project_dir>" (matches the install-mcps.sh call convention)', () => {
+  const scriptDir = buildScriptDir();
+  const projectDir = scratchDir();
+
+  const res = runProjectSync(scriptDir, projectDir);
+
+  assert.strictEqual(res.status, 0, `wrapper did not exit 0: ${res.stderr}`);
+  const args = readArgsLog(scriptDir, 'install-obsidian.sh');
+  assert.deepStrictEqual(
+    args,
+    ['--interactive', '--project-dir', projectDir],
+    `install-obsidian.sh was not invoked with the expected flags, got: ${JSON.stringify(args)}`
+  );
+
+  cleanup(scriptDir);
+  cleanup(projectDir);
+});
+
+test('run_project_sync prints the "Checking Obsidian setup..." banner before invoking install-obsidian.sh', () => {
+  const scriptDir = buildScriptDir();
+  const projectDir = scratchDir();
+
+  const res = runProjectSync(scriptDir, projectDir);
+
+  assert.strictEqual(res.status, 0, `wrapper did not exit 0: ${res.stderr}`);
+  assert.ok(
+    res.stdout.includes('Checking Obsidian setup...'),
+    `expected banner missing from stdout: ${res.stdout}`
+  );
+  const bannerIdx = res.stdout.indexOf('Checking Obsidian setup...');
+  const guideIdx = res.stdout.indexOf('Building MCP tools guide...');
+  assert.ok(
+    bannerIdx !== -1 && guideIdx !== -1 && bannerIdx < guideIdx,
+    'the Obsidian banner must print before the MCP guide build banner'
+  );
+
+  cleanup(scriptDir);
+  cleanup(projectDir);
+});
+
+test('a failing install-obsidian.sh only warns — it does not abort run_project_sync', () => {
+  const scriptDir = buildScriptDir({ 'install-obsidian.sh': 1 });
+  const projectDir = scratchDir();
+
+  const res = runProjectSync(scriptDir, projectDir);
+
+  assert.strictEqual(
+    res.status,
+    0,
+    `a guarded install-obsidian.sh failure aborted the whole run under set -euo pipefail: ${res.stderr}`
+  );
+  assert.ok(res.stdout.includes('WRAPPER_EXIT_OK'), 'run_project_sync aborted the sourcing script');
+  assert.ok(
+    res.stderr.includes('Warning: Obsidian install failed — continuing; re-run update to retry.'),
+    `expected warning missing from stderr: ${res.stderr}`
+  );
+
+  cleanup(scriptDir);
+  cleanup(projectDir);
+});
+
+test('downstream steps still run in order after install-obsidian.sh fails', () => {
+  const scriptDir = buildScriptDir({ 'install-obsidian.sh': 1 });
+  const projectDir = scratchDir();
+
+  const res = runProjectSync(scriptDir, projectDir);
+
+  assert.strictEqual(res.status, 0, res.stderr);
+  assert.deepStrictEqual(
+    readOrderLog(scriptDir),
+    STEP_ORDER,
+    'a failed Obsidian install must not skip build-mcp-guide.sh or bootstrap-serena.sh'
+  );
+
+  cleanup(scriptDir);
+  cleanup(projectDir);
+});
+
+test('a successful install-obsidian.sh prints no warning (the guard only fires on real failure)', () => {
+  const scriptDir = buildScriptDir();
+  const projectDir = scratchDir();
+
+  const res = runProjectSync(scriptDir, projectDir);
+
+  assert.strictEqual(res.status, 0, res.stderr);
+  assert.ok(
+    !res.stderr.includes('Warning: Obsidian install failed'),
+    'the warning fired even though the stub install-obsidian.sh succeeded'
   );
 
   cleanup(scriptDir);

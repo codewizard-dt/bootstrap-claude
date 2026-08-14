@@ -1,6 +1,6 @@
 ---
 name: research
-description: Deep research on a topic using codebase analysis, library docs, and web search — by default also writes the report plus its primary sources to raw/research/<slug>/ (preference-gated by research.persistToRaw; findings are always delivered in the reply)
+description: Deep research on a topic using codebase analysis, library docs, and web search — by default also writes the report plus its primary sources to raw/research/<slug>/ (preference-gated by research.persistToRaw; findings are always delivered in the reply), and can auto-fold a saved report into wiki/ (preference-gated by research.autoIngest)
 category: researching
 model: claude-sonnet-5
 effort: high
@@ -242,18 +242,38 @@ Rules for this phase:
 
 ---
 
+## Phase 5b: Auto-Ingest Gate (only when Phase 5 actually wrote files)
+
+This gate governs whether the report just written under `raw/research/<slug>/` is immediately folded into `wiki/`, instead of leaving `/wiki-ingest raw/research/<slug>/index.md` as a manual follow-up. **Skip this phase entirely when Phase 5 wrote nothing** — a suppressed save (stored `false`, a per-run `--no-save`/`--no-persist`, or a declined `ask`) leaves no `raw/` file to ingest.
+
+Read the preference once, after Phase 5 completes:
+
+```bash
+node ~/.claude/bootstrap-prefs.js --get research.autoIngest --project . 2>/dev/null || echo unset
+```
+
+| Value | Behaviour |
+|-------|-----------|
+| `true` | Immediately follow the full procedure in `lib/skills/wiki-ingest/SKILL.md` against the file just written (`raw/research/<slug>/index.md`), non-interactively — skip Step 2's user-checkpoint pause (the report was just delivered in this same reply, so there is nothing new to confirm before proceeding) and go straight through writing/updating the summary page, entity/concept pages, and the `wiki/index.md` + `wiki/log.md` entries. |
+| `false` | Do nothing further. Keep suggesting `/wiki-ingest raw/research/<slug>/index.md` as a manual next step, per Phase 6. |
+| `ask` | Before ingesting, ask the user (AskUserQuestion) whether to fold this report into the wiki now. Honour the answer for **this run only** — never write it back to the store. |
+| `unset` | Do nothing further (today's behaviour — the schema default is `false`), and add one line: "research.autoIngest is unanswered — /research does not auto-ingest by default. Set it with: node ~/.claude/bootstrap-prefs.js --set research.autoIngest --value <true\|false\|ask> --global" |
+
+---
+
 ## Phase 6: Confirm & Suggest Next Steps
 
 **If the files were written**, tell the user:
 - The paths written (`raw/research/<slug>/index.md` and `raw/research/<slug>/sources.md`)
 - A 2–4 bullet summary of the recommendation
-- That the report is now a `raw/` ground-truth source: **"Run `/wiki-ingest raw/research/<slug>/index.md` to synthesize this research into the knowledge base."**
+- **If Phase 5b ingested the report**: say so, and name the wiki pages it created or updated — do not also suggest `/wiki-ingest`, it already ran.
+- **Otherwise**: that the report is now a `raw/` ground-truth source: **"Run `/wiki-ingest raw/research/<slug>/index.md` to synthesize this research into the knowledge base."**
 - Any follow-on `/task-add` or `/decision-create` suggested by the findings
 
 **If nothing was persisted** (stored `false`, a per-run `--no-save`/`--no-persist` override, or a declined `ask`), tell the user:
 - That no files were written, and which of the three reasons applies
 - The same 2–4 bullet summary of the recommendation
-- Skip the `/wiki-ingest` suggestion entirely — there is no `raw/` file to ingest
+- Skip the `/wiki-ingest` suggestion entirely — there is no `raw/` file to ingest, and Phase 5b never ran either
 - Any follow-on `/task-add` or `/decision-create` suggested by the findings
 
 ---
@@ -279,3 +299,4 @@ Rules for this phase:
 7) **Never overwrite `raw/` files**: if a target already exists, write `<name>-2.md` / `-3.md` instead, carrying only non-redundant new/changed data with a cross-reference to the prior file
 8) **No fabricated sources**: every row in `sources.md` is a source you actually consulted; mark unsupported claims as inferences rather than inventing citations
 9) **`raw/research/` is the only `raw/` path this skill may write to** — never modify or delete anything elsewhere under `raw/`
+10) **Only run Phase 5b when Phase 5 actually wrote files** — the `research.autoIngest` gate is meaningless (and must not run) against a suppressed save; when it does run with `true`, it hands off to `lib/skills/wiki-ingest/SKILL.md`'s own rules (atomic pages, contradiction callouts, index + log updates), which apply exactly as they do for a manually invoked `/wiki-ingest`

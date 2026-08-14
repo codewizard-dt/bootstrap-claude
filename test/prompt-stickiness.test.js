@@ -3089,14 +3089,14 @@ test('prefs_set: an illegal value surfaces the error, does not abort, and leaves
 // ===========================================================================
 //
 // Phase 2 wired `consumer: installer` keys, each asked in situ by the script
-// that owns it. This section owns the OTHER population: the five
-// `consumer: skill` keys, asked once as a batch by install-global.sh:156-249,
-// plus the step-6 copy at :145-153 that makes them readable from an arbitrary
-// project at all.
+// that owns it. This section owns the OTHER population: the six
+// `consumer: skill` keys, asked once as a batch by install-global.sh's
+// preferences pass, plus the step-6 copy earlier in the file that makes them
+// readable from an arbitrary project at all.
 //
 // THREE CLAIMS, EACH A TRAP THAT WAS REAL BEFORE IT WAS PINNED:
 //
-//   1. "UNANSWERED" CANNOT BE MEASURED WITH prefs_get. Four of these five keys
+//   1. "UNANSWERED" CANNOT BE MEASURED WITH prefs_get. Five of these six keys
 //      carry a NON-NULL schema default, and resolve() falls through to it
 //      (bootstrap-prefs.js:376-378), so prefs_get reports every one of them as
 //      settled on a machine that has never answered anything. A prefs_get-based
@@ -3122,6 +3122,7 @@ const SKILL_PREF_KEYS = [
   'gitCommit.versionBump',
   'gitCommit.autoPush',
   'research.persistToRaw',
+  'research.autoIngest',
   'uatGenerate.promoteTests',
   'gitignore.offerSectionUpdates',
 ];
@@ -3312,7 +3313,7 @@ test('install-global.sh e2e: step 6 installs the helper AND its schema in the la
   // bootstrap-prefs.js resolves it that way — a flattened copy would make every
   // skill's no---schema invocation silently lose validation AND defaults.
   withScratchEnv((S) => {
-    const r = runInstallGlobal(S, { input: 's\ns\ns\ns\ns\n' });
+    const r = runInstallGlobal(S, { input: 's\ns\ns\ns\ns\ns\n' });
     assert.equal(r.status, 0, `install failed:\nstdout:\n${r.stdout}\nstderr:\n${r.stderr}`);
 
     const helper = path.join(S.home, '.claude', 'bootstrap-prefs.js');
@@ -3346,7 +3347,7 @@ test('install-global.sh e2e: step 6 installs the helper AND its schema in the la
   });
 });
 
-test('install-global.sh e2e: a fresh interactive run settles all five keys, and each answer lands as its correct JSON type', () => {
+test('install-global.sh e2e: a fresh interactive run settles all six keys, and each answer lands as its correct JSON type', () => {
   withScratchEnv((S) => {
     // One distinct answer per key, deliberately covering all four storable
     // shapes: a string grammar, a boolean true, a boolean false, and `ask`.
@@ -3361,7 +3362,11 @@ test('install-global.sh e2e: a fresh interactive run settles all five keys, and 
     // promoteTests' grammar changed from true|false|ask to a location choice
     // that has no ask state. Without that move this test would silently stop
     // exercising the `ask` shape at all.
-    const r = runInstallGlobal(S, { input: 'n\ny\nn\nb\na\n' });
+    //
+    // research.autoIngest sits between persistToRaw and promoteTests — the same
+    // position it holds in install-global.sh's asking order — and is answered
+    // `y` (true) here, giving the boolean-true shape a second, independent key.
+    const r = runInstallGlobal(S, { input: 'n\ny\nn\ny\nb\na\n' });
     assert.equal(r.status, 0, `install failed:\nstdout:\n${r.stdout}\nstderr:\n${r.stderr}`);
 
     for (const key of SKILL_PREF_KEYS) {
@@ -3378,10 +3383,11 @@ test('install-global.sh e2e: a fresh interactive run settles all five keys, and 
         'gitCommit.versionBump': 'never',
         'gitCommit.autoPush': true,
         'research.persistToRaw': false,
+        'research.autoIngest': true,
         'uatGenerate.promoteTests': 'sibling',
         'gitignore.offerSectionUpdates': 'ask',
       },
-      'the five answers did not round-trip. Note the types: `false` must be a JSON boolean, since a stored ' +
+      'the six answers did not round-trip. Note the types: `false` must be a JSON boolean, since a stored ' +
         '"false" string is truthy in every shell test and reads back as a settled true'
     );
 
@@ -3402,22 +3408,25 @@ test('install-global.sh e2e: a re-run re-asks ONLY the unanswered key — stored
   // every line of run 2 is an answer that would visibly rewrite the store if any
   // settled question fired again.
   withScratchEnv((S) => {
-    // Run 1: answer four, SKIP the fifth. `s` records nothing, so
+    // Run 1: answer five, SKIP the sixth. `s` records nothing, so
     // gitignore.offerSectionUpdates stays genuinely unanswered.
     //
     // The run-1 set deliberately contains BOTH a stored `false` and a stored
     // `ask`, because those are the two shapes a naive "is it set?" check gets
     // wrong. `ask` sits on gitCommit.autoPush here — it used to sit on
     // uatGenerate.promoteTests, which no longer has an ask state now that its
-    // grammar answers WHERE tests go rather than whether to write them. `d` is
-    // that key's dedicated-folder option.
-    const r1 = runInstallGlobal(S, { input: 'a\na\nn\nd\ns\n' });
+    // grammar answers WHERE tests go rather than whether to write them. The
+    // second `n` is research.autoIngest, giving `false` a second independent
+    // key alongside research.persistToRaw. `d` is promoteTests' dedicated-folder
+    // option.
+    const r1 = runInstallGlobal(S, { input: 'a\na\nn\nn\nd\ns\n' });
     assert.equal(r1.status, 0, `run 1 failed:\nstdout:\n${r1.stdout}\nstderr:\n${r1.stderr}`);
 
     const afterRun1 = {
       'gitCommit.versionBump': 'auto',
       'gitCommit.autoPush': 'ask',
       'research.persistToRaw': false,
+      'research.autoIngest': false,
       'uatGenerate.promoteTests': 'dedicated',
     };
     assert.deepEqual(
@@ -3433,22 +3442,29 @@ test('install-global.sh e2e: a re-run re-asks ONLY the unanswered key — stored
     );
 
     // Run 2: POISON. Every line is `y`. If versionBump re-asked it would become
-    // `skip`-or-something-else; if autoPush/persistToRaw/promoteTests re-asked
-    // they would all become `true`.
-    const r2 = runInstallGlobal(S, { input: 'y\ny\ny\ny\ny\n' });
+    // `skip`-or-something-else; if autoPush/persistToRaw/autoIngest/promoteTests
+    // re-asked they would all become `true`.
+    const r2 = runInstallGlobal(S, { input: 'y\ny\ny\ny\ny\ny\n' });
     assert.equal(r2.status, 0, `run 2 failed:\nstdout:\n${r2.stdout}\nstderr:\n${r2.stderr}`);
 
     assert.deepEqual(
       readPrefs(S.home),
       { ...afterRun1, 'gitignore.offerSectionUpdates': true },
       'run 2 changed a settled answer. Exactly one key was unanswered, so exactly one key may change — a stored ' +
-        '`false` (research.persistToRaw) and a stored `ask` (gitCommit.autoPush) are SETTLED ANSWERS'
+        '`false` (research.persistToRaw, research.autoIngest) and a stored `ask` (gitCommit.autoPush) are ' +
+        'SETTLED ANSWERS'
     );
 
     // Not merely "the value survived": the settled questions must not have been
     // PRINTED either. A re-asked question the user answers identically is still
     // a re-asked question.
-    for (const key of ['gitCommit.versionBump', 'gitCommit.autoPush', 'research.persistToRaw', 'uatGenerate.promoteTests']) {
+    for (const key of [
+      'gitCommit.versionBump',
+      'gitCommit.autoPush',
+      'research.persistToRaw',
+      'research.autoIngest',
+      'uatGenerate.promoteTests',
+    ]) {
       assert.ok(
         !r2.stdout.includes(key),
         `${key} was mentioned again on the re-run — it is already settled and must be silent:\n${r2.stdout}`
@@ -3460,7 +3476,7 @@ test('install-global.sh e2e: a re-run re-asks ONLY the unanswered key — stored
     );
 
     // Run 3: everything is settled. The pass must ask nothing and say so.
-    const r3 = runInstallGlobal(S, { input: 'y\ny\ny\ny\ny\n' });
+    const r3 = runInstallGlobal(S, { input: 'y\ny\ny\ny\ny\ny\n' });
     assert.equal(r3.status, 0, `run 3 failed:\nstdout:\n${r3.stdout}\nstderr:\n${r3.stderr}`);
     assert.match(
       r3.stdout,
@@ -3488,7 +3504,7 @@ test('install-global.sh e2e: a NON-INTERACTIVE run asks nothing and writes no pr
   withScratchEnv((S) => {
     assertNoTtySeam(S);
 
-    const r = runInstallGlobal(S, { input: 'y\ny\ny\ny\ny\n', tty: false });
+    const r = runInstallGlobal(S, { input: 'y\ny\ny\ny\ny\ny\n', tty: false });
     assert.equal(r.status, 0, `install failed:\nstdout:\n${r.stdout}\nstderr:\n${r.stderr}`);
 
     assert.match(
@@ -3520,7 +3536,7 @@ test('install-global.sh e2e: a NON-INTERACTIVE run still installs the schema in 
   withScratchEnv((S) => {
     assertNoTtySeam(S);
 
-    const r = runInstallGlobal(S, { input: 'y\ny\ny\ny\ny\n', tty: false });
+    const r = runInstallGlobal(S, { input: 'y\ny\ny\ny\ny\ny\n', tty: false });
     assert.equal(r.status, 0, `install failed:\nstdout:\n${r.stdout}\nstderr:\n${r.stderr}`);
 
     const helper = path.join(S.home, '.claude', 'bootstrap-prefs.js');
@@ -3565,7 +3581,7 @@ test('install-global.sh e2e: gitCommit.versionBump offers auto/confirm/never and
   // `confirm` IS this key's ask state. Offering both would create two spellings
   // of one state, and the schema grammar deliberately omits `ask`.
   withScratchEnv((S) => {
-    const r = runInstallGlobal(S, { input: 'c\ns\ns\ns\ns\n' });
+    const r = runInstallGlobal(S, { input: 'c\ns\ns\ns\ns\ns\n' });
     assert.equal(r.status, 0, `install failed:\nstdout:\n${r.stdout}\nstderr:\n${r.stderr}`);
 
     // THE GRAMMAR IS ASSERTED AGAINST THE SCRIPT SOURCE, NOT THE CAPTURED

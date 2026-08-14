@@ -167,6 +167,12 @@ run_project_sync() {
   "$script_dir/merge-gitignore.sh" --interactive "$project_dir"
   echo ""
 
+  echo "Checking Obsidian setup..."
+  if ! "$script_dir/install-obsidian.sh" --interactive --project-dir "$project_dir"; then
+    echo "Warning: Obsidian install failed — continuing; re-run update to retry." >&2
+  fi
+  echo ""
+
   echo "Building MCP tools guide..."
   installed_mcps="$(detect_installed_mcps "$project_dir")"
   # Unquoted on purpose: word-split the space-separated names into arguments.
