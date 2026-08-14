@@ -310,6 +310,23 @@ test('--skip-mcps skips the MCP step entirely', () => {
     res.stdout.includes('Checking skill preferences (~/.claude/bootstrap-prefs.json)...'),
     'skill-preferences step was skipped by --skip-mcps'
   );
+  // BUG-0010 defect 2: the summary line must not claim "+ MCPs" on a run that
+  // skipped step 8 entirely — this is the most common invocation path (both
+  // setup-project.sh and update-project.sh call install-global.sh --skip-mcps),
+  // so an unconditional "+ MCPs" here would overstate what ran on every setup
+  // and every update, not just an edge case.
+  assert.ok(
+    res.stdout.includes(
+      'Global setup complete (hooks + skills + deny list + hooks wiring + file suggestion + preferences).'
+    ),
+    'summary line still claims "+ MCPs" under --skip-mcps'
+  );
+  assert.ok(
+    !res.stdout.includes(
+      'Global setup complete (hooks + skills + deny list + hooks wiring + file suggestion + preferences + MCPs).'
+    ),
+    'summary line should not include the MCPs-included variant under --skip-mcps'
+  );
 
   cleanup(tpl, home);
 });

@@ -501,6 +501,22 @@ function setLayer(L, layer, key, value) {
   return res;
 }
 
+// BUG-0009: --set now refuses to write a key into a layer its scope forbids
+// (--target is the one exempt escape hatch). Some fixtures need a scope-inert
+// key parked in the "wrong" layer on purpose — a hand-edited file, or a values
+// file written by a newer bootstrap, can still produce that state — so those
+// fixtures go through --target at the exact file the layer resolves to. This
+// still exercises the real write path (readWritableTarget -> data[key]=coerced
+// -> writeValues -> writeCompanion), so resolution and companion behaviour
+// stay covered; only the scope refusal itself is bypassed, deliberately.
+function setLayerViaTarget(L, layer, key, value) {
+  const file = layer === 'global' ? L.globalValues : L.projectValues;
+  const res = run(['--set', key, '--value', value, '--target', file], { env: L.env });
+  assert.strictEqual(res.status, 0, `--set ${key}=${value} (--target ${file}): ${res.stderr}`);
+  assert.ok(fs.existsSync(file), `the --target write did not land in ${file}`);
+  return res;
+}
+
 // A resolved read: no --global, so scope decides which files are walked.
 function getResolved(L, key) {
   const res = run(['--get', key, '--project', L.projectDir], { env: L.env });
@@ -648,11 +664,12 @@ test('scope `either`: a project `ask` overrides a global `true` (the settled ans
 
 test('scope `global`: a value parked in the project file is never consulted', () => {
   withLayers((L) => {
-    // Legal to write (--set enforces the value grammar, not the scope), and
-    // inert by design: a machine-wide answer must not be overridable per
-    // checkout, or one clone could silently re-enable an MCP install the user
-    // declined globally.
-    setLayer(L, 'project', GLOBAL_UNSET_KEY, 'true');
+    // --set now refuses this write directly (BUG-0009); construct the fixture
+    // via --target instead, which still exercises the real write path but
+    // bypasses the (deliberate, exempt) scope check. Inert by design either
+    // way: a machine-wide answer must not be overridable per checkout, or one
+    // clone could silently re-enable an MCP install the user declined globally.
+    setLayerViaTarget(L, 'project', GLOBAL_UNSET_KEY, 'true');
 
     assert.strictEqual(
       getResolved(L, GLOBAL_UNSET_KEY),
@@ -672,7 +689,10 @@ test('scope `global`: a value parked in the project file is never consulted', ()
 
 test('scope `project`: a value parked in the global file is never consulted', () => {
   withLayers((L) => {
-    setLayer(L, 'global', UNSET_KEY, 'true');
+    // --set now refuses this write directly (BUG-0009); see the sibling scope
+    // `global` test above for why --target is the right way to still
+    // construct this fixture.
+    setLayerViaTarget(L, 'global', UNSET_KEY, 'true');
 
     assert.strictEqual(
       getResolved(L, UNSET_KEY),
@@ -984,6 +1004,48 @@ test('--set with no layer selector exits 1 and writes nothing to either layer', 
 
     assert.strictEqual(fs.existsSync(L.globalValues), false, 'a selector-less --set fell back to the global layer');
     assert.strictEqual(fs.existsSync(L.projectValues), false, 'a selector-less --set fell back to the project layer');
+  });
+});
+
+test('--set of a global-scope key with --project exits 1 and writes nothing (BUG-0009)', () => {
+  // Before the fix, --set only validated the VALUE grammar, never the SCOPE —
+  // this write used to succeed, print an affirmative line, and land in a file
+  // resolve() never reads for a global-scope key, so the answer was inert but
+  // looked saved. --target remains the deliberate escape hatch (see
+  // setLayerViaTarget above) and is not exercised by this test.
+  withLayers((L) => {
+    const res = run(['--set', GLOBAL_UNSET_KEY, '--value', 'true', '--project', L.projectDir], { env: L.env });
+    assert.strictEqual(res.status, 1, `a global-scope key via --project must exit 1:\n${res.stderr}`);
+    assert.match(res.stderr, /^Error: /);
+    assert.ok(res.stderr.includes(GLOBAL_UNSET_KEY), `the rejection must name the key:\n${res.stderr}`);
+    assert.ok(res.stderr.includes('scope: global'), `the rejection must name the actual scope:\n${res.stderr}`);
+    assert.ok(res.stderr.includes('--global'), `the rejection must point at the correct selector:\n${res.stderr}`);
+    assert.strictEqual(fs.existsSync(L.projectValues), false, 'the rejected write still created the project values file');
+    assert.strictEqual(fs.existsSync(L.globalValues), false, 'the rejected write touched the global layer too');
+  });
+});
+
+test('--set of a project-scope key with --global exits 1 and writes nothing (BUG-0009)', () => {
+  // The mirror-image direction: a project-scope key answered machine-wide
+  // would silently apply to every checkout, which is exactly the leak the
+  // scope split exists to prevent.
+  withLayers((L) => {
+    const res = run(['--set', UNSET_KEY, '--value', 'true', '--global'], { env: L.env });
+    assert.strictEqual(res.status, 1, `a project-scope key via --global must exit 1:\n${res.stderr}`);
+    assert.match(res.stderr, /^Error: /);
+    assert.ok(res.stderr.includes(UNSET_KEY), `the rejection must name the key:\n${res.stderr}`);
+    assert.ok(res.stderr.includes('scope: project'), `the rejection must name the actual scope:\n${res.stderr}`);
+    assert.ok(res.stderr.includes('--project <dir>'), `the rejection must point at the correct selector:\n${res.stderr}`);
+    assert.strictEqual(fs.existsSync(L.globalValues), false, 'the rejected write still created the global values file');
+    assert.strictEqual(fs.existsSync(L.projectValues), false, 'the rejected write touched the project layer too');
+  });
+});
+
+test('--set of a global-scope key via --target is legal — the escape hatch is exempt from the scope check (BUG-0009)', () => {
+  withScratchTarget((target) => {
+    const res = run(['--set', GLOBAL_UNSET_KEY, '--value', 'true', '--target', target]);
+    assert.strictEqual(res.status, 0, `--target must remain exempt from the scope check:\n${res.stderr}`);
+    assert.strictEqual(readJson(target)[GLOBAL_UNSET_KEY], true);
   });
 });
 
@@ -1747,8 +1809,9 @@ test('the companion `## Unrecognized keys` section names BOTH populations, with 
   //   2. SCOPE-INERT — a key that IS in the schema, spelled correctly, holding a
   //      legal value, but whose `scope` means this layer never consults it. A
   //      global-scope answer parked in a project values file is the canonical
-  //      case (and one the tests above deliberately create: --set enforces the
-  //      value grammar, not the scope, so writing it is legal).
+  //      case (and one the tests above deliberately create via --target, since
+  //      BUG-0009 made plain --set refuse this write — the state itself is
+  //      still real, produced by a hand edit or an older/newer bootstrap).
   //
   // The second is why this section cannot just say "unknown key". The user
   // answered a real question, the answer is sitting in a real file, and it does
@@ -1758,7 +1821,7 @@ test('the companion `## Unrecognized keys` section names BOTH populations, with 
   // typo in a key that is spelled perfectly.
   withLayers((L) => {
     setLayer(L, 'project', UNSET_KEY, 'true'); // project scope — genuinely honoured here
-    setLayer(L, 'project', GLOBAL_UNSET_KEY, 'true'); // scope-inert in a project file
+    setLayerViaTarget(L, 'project', GLOBAL_UNSET_KEY, 'true'); // scope-inert in a project file
     setLayer(L, 'project', UNRECOGNIZED_KEY, 'true'); // no schema entry at all
 
     const text = readCompanion(L.projectValues);
@@ -2025,6 +2088,7 @@ const SKILL_KEYS = [
   'gitCommit.versionBump',
   'gitCommit.autoPush',
   'research.persistToRaw',
+  'research.autoIngest',
   'uatGenerate.promoteTests',
   'gitignore.offerSectionUpdates',
 ];
@@ -2384,6 +2448,58 @@ test('schema: `gitignore.review` does not appear — it was superseded by gitign
   );
 });
 
+test('schema: obsidian.installApp and obsidian.plugins carry their documented shape and sit between mcp.playwright and skills.pruneOrphans', () => {
+  // TASK-054. Both keys are consumer:"installer" with a closed true|false
+  // grammar and a null default, so the generic loop-based tests elsewhere in
+  // this file (required fields, scope/consumer enum, no non-null installer
+  // default, askedBy resolution, no-secret shape) already exercise them with
+  // zero changes needed here — this test pins the two facts those generic
+  // loops cannot see: the SPECIFIC scope each key was given, and WHERE the
+  // pair sits in the file. A scope swap (installApp as project, plugins as
+  // global) would still pass every generic check while asking the wrong
+  // question at the wrong layer — installApp is machine-wide software, so it
+  // must be global like mcp.playwright; plugins live inside this project's own
+  // .obsidian/, so it must be project like guides.*.
+  const schema = readJson(SCHEMA);
+
+  assert.deepStrictEqual(
+    {
+      scope: schema['obsidian.installApp'].scope,
+      consumer: schema['obsidian.installApp'].consumer,
+      values: schema['obsidian.installApp'].values,
+      default: schema['obsidian.installApp'].default,
+      askedBy: schema['obsidian.installApp'].askedBy,
+    },
+    { scope: 'global', consumer: 'installer', values: 'true | false', default: null, askedBy: 'install-obsidian.sh' },
+    'obsidian.installApp no longer matches its documented shape'
+  );
+  assert.deepStrictEqual(
+    {
+      scope: schema['obsidian.plugins'].scope,
+      consumer: schema['obsidian.plugins'].consumer,
+      values: schema['obsidian.plugins'].values,
+      default: schema['obsidian.plugins'].default,
+      askedBy: schema['obsidian.plugins'].askedBy,
+    },
+    { scope: 'project', consumer: 'installer', values: 'true | false', default: null, askedBy: 'install-obsidian.sh' },
+    'obsidian.plugins no longer matches its documented shape'
+  );
+
+  // Placement: TASK-054 step 1 records inserting both keys directly after
+  // mcp.playwright and before skills.pruneOrphans "where it reads naturally"
+  // alongside the other mcp.*/guides.* entries. Pinned as an ordered run of
+  // four consecutive keys so a later edit that separates the pair, or moves
+  // them elsewhere in the file, fails loudly instead of silently.
+  const keys = Object.keys(schema);
+  const run = keys.indexOf('mcp.playwright');
+  assert.notStrictEqual(run, -1, 'mcp.playwright vanished from the schema');
+  assert.deepStrictEqual(
+    keys.slice(run, run + 4),
+    ['mcp.playwright', 'obsidian.installApp', 'obsidian.plugins', 'skills.pruneOrphans'],
+    'the obsidian.* pair is no longer the four-key run mcp.playwright -> obsidian.installApp -> obsidian.plugins -> skills.pruneOrphans'
+  );
+});
+
 test('schema: no preference key can hold a secret — no secret-shaped names, no open grammars, and every API-key mention is a denial', () => {
   // WHY THIS IS NOT A KEYWORD SCAN. Two details legitimately discuss API keys
   // precisely IN ORDER to say the key is never stored (mcp.braveSearch,
@@ -2466,15 +2582,16 @@ test('schema: every askedBy names a real lib/scripts/ file or a real lib/skills/
   }
 });
 
-test('schema: the consumer:"skill" population is exactly the five behavior-changing keys', () => {
-  // COUNT AND MEMBERSHIP, both. These five are the keys that change what a
+test('schema: the consumer:"skill" population is exactly the six behavior-changing keys', () => {
+  // COUNT AND MEMBERSHIP, both. These six are the keys that change what a
   // slash command DOES at run time — whether /git-commit pushes, whether
-  // /research writes to raw/, whether /uat-generate promotes tests. They are
-  // read mid-session with no installer in the loop and no diff to review, so
-  // adding a sixth is a decision about the blast radius of the store itself,
-  // not a routine schema edit. Failing here is the intended prompt to make that
-  // decision deliberately; if the new key really belongs, add it to SKILL_KEYS
-  // and say why in the commit.
+  // /research writes to raw/, whether /research folds a saved report into the
+  // wiki, whether /uat-generate promotes tests. They are read mid-session with
+  // no installer in the loop and no diff to review, so adding a seventh is a
+  // decision about the blast radius of the store itself, not a routine schema
+  // edit. Failing here is the intended prompt to make that decision
+  // deliberately; if the new key really belongs, add it to SKILL_KEYS and say
+  // why in the commit.
   const skillKeys = schemaEntries()
     .filter(([, entry]) => entry.consumer === 'skill')
     .map(([key]) => key)
@@ -2525,7 +2642,7 @@ const CITATION_PINS = {
   'merge-gitignore.sh:376': 'Keep .serena/, raw/, wiki/ out of git on THIS machine',
   // A data declaration, not a prompt: the list that generates the guides.* keys.
   'sync-wiki-scaffold.sh:81': 'OPTIONAL_GUIDES=',
-  'lib.sh:387': 'Scope for $name',
+  'lib.sh:393': 'Scope for $name',
   'install-global.sh:70': 'Delete these',
 };
 
@@ -3248,18 +3365,19 @@ const SKILL_CONSUMERS = {
   'gitCommit.versionBump': 'lib/skills/git-commit/SKILL.md',
   'gitCommit.autoPush': 'lib/skills/git-commit/SKILL.md',
   'research.persistToRaw': 'lib/skills/research/SKILL.md',
+  'research.autoIngest': 'lib/skills/research/SKILL.md',
   'uatGenerate.promoteTests': 'lib/skills/uat-generate/SKILL.md',
 };
 
 test('consumer: skill — every consuming skill reads its key with --project . and degrades to `unset`', () => {
   // TWO CLAIMS IN ONE LINE, both of which have a silent failure mode.
   //
-  //   --project .   All five keys are `scope: either`. Dropping the flag reads
+  //   --project .   All six keys are `scope: either`. Dropping the flag reads
   //                 the MACHINE-WIDE answer even inside a repo that overrode it,
   //                 so a project-level decline is ignored and nothing reports it.
   //   || echo unset A failed read (no bootstrap install, or no node on PATH)
   //                 must degrade to `unset`, which is the compatibility-safe
-  //                 state for all five. Without the fallback the gate reads an
+  //                 state for all six. Without the fallback the gate reads an
   //                 empty string and every downstream comparison silently
   //                 matches nothing.
   for (const [key, rel] of Object.entries(SKILL_CONSUMERS)) {

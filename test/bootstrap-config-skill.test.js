@@ -281,27 +281,17 @@ test('bootstrap-config: `unset` and `null` are refused as values, with the point
 });
 
 // ---------------------------------------------------------------------------
-// The claim about --set NOT enforcing scope
+// --set now enforces scope itself (BUG-0009) — the skill's Step E.2 layer
+// offer is a UX nicety on top of that, not the only guard. The tripwire that
+// used to pin the pre-fix claim ("--set does not enforce scope") was deleted
+// here, per its own instruction, once the helper was fixed and the skill text
+// updated to match.
 // ---------------------------------------------------------------------------
 
-test('bootstrap-config: the skill\'s claim that --set does not enforce scope is still accurate', () => {
-  // THE SKILL'S LAYER OFFER IS THE ONLY GUARD, and it says so at Step E.2. That
-  // sentence is load-bearing prose: it is the justification for why the skill
-  // must compute the legal layers itself instead of letting the helper reject a
-  // bad combination.
-  //
-  // PINNED IN BOTH DIRECTIONS ON PURPOSE. If someone later teaches --set to
-  // enforce scope (the right fix), this test fails and points at the skill text
-  // that has just become wrong. A one-directional test would let the prose rot.
-  const text = skillText();
-  assert.ok(
-    /`--set` does not enforce scope/.test(text),
-    'the skill no longer states that --set does not enforce scope — if the helper was fixed, remove this test ' +
-      'along with the claim; if it was not, restore the claim, because the layer offer is the only guard'
-  );
-
+test('bootstrap-config: --set genuinely refuses a global-scope key written into a project layer (BUG-0009)', () => {
   // mcp.braveSearch is scope: global. Writing it into a PROJECT file is exactly
-  // the inert state the skill exists to prevent.
+  // the inert state the skill's Step E.2 exists to avoid offering — now backed
+  // by the helper's own refusal, not just the skill's layer choice.
   const schema = schemaObj();
   assert.equal(schema['mcp.braveSearch'].scope, 'global', 'mcp.braveSearch is no longer a global-scope key');
 
@@ -316,41 +306,12 @@ test('bootstrap-config: the skill\'s claim that --set does not enforce scope is 
     );
     assert.equal(
       wrote.status,
-      0,
-      'the helper now REJECTS a global-scope key written into a project layer. That is an improvement — but ' +
-        'the skill still claims otherwise at Step E.2, so update the skill text and delete this test'
+      1,
+      'the helper accepted a global-scope key written into a project layer — BUG-0009 regressed'
     );
-
-    // It landed on disk...
-    const values = JSON.parse(fs.readFileSync(path.join(proj, '.claude', 'bootstrap-prefs.json'), 'utf8'));
-    assert.equal(values['mcp.braveSearch'], true, 'the write did not land in the project values file');
-
-    // ...and is completely inert: resolution is scope-constrained, so the key
-    // reads back as `unset` despite being stored.
-    const read = spawnSync(
-      process.execPath,
-      [HELPER, '--get', 'mcp.braveSearch', '--project', proj],
-      { encoding: 'utf8', env }
-    );
-    assert.equal(
-      read.stdout.trim(),
-      'unset',
-      'a global-scope key stored in a project file resolved to a value — resolution is supposed to be ' +
-        'scope-constrained, and if it is not, the layer offer stops being the only guard'
-    );
-
-    // The generated companion is the ONLY surface that flags it, which is the
-    // precise reason the skill must guard the layer offer up front.
-    const companion = fs.readFileSync(path.join(proj, '.claude', 'bootstrap-prefs.README.md'), 'utf8');
-    assert.match(
-      companion,
-      /Unrecognized keys/,
-      'the companion no longer carries an Unrecognized keys section'
-    );
-    assert.match(
-      companion,
-      /`mcp\.braveSearch`[^\n]*scope is `global`[^\n]*never consults it/,
-      'the companion no longer explains WHY the inert key has no effect'
+    assert.ok(
+      !fs.existsSync(path.join(proj, '.claude', 'bootstrap-prefs.json')),
+      'a rejected --set still created the project values file'
     );
   } finally {
     fs.rmSync(home, { recursive: true, force: true });

@@ -22,7 +22,7 @@ Bootstrap remembers your answers to installer and skill prompts in two flat JSON
 `argument-hint: [view | edit | reset] [--global | --project]`
 
 - A mode word (`view` / `edit` / `reset`) preselects the mode and skips the Step C question. Steps A and B still run, and the Step B2 summary is still printed first — a mode word skips a question, never the state read.
-- `--global` / `--project` preselects the layer for reads and pins the write layer, subject to the per-key `scope` check in Step E. A pinned layer that the chosen key's `scope` forbids is refused, not silently redirected.
+- `--global` / `--project` preselects the layer for reads and pins the write layer. A pinned layer that the chosen key's `scope` forbids is refused by the helper itself (BUG-0009), not silently redirected — Step E offers only permitted layers so the refusal is rarely hit in practice.
 - No arguments = the full interactive flow.
 
 ---
@@ -106,7 +106,7 @@ Skip this question entirely when a mode word was supplied as an argument — but
 5. When the chosen key has `consumer: skill`, print this heavier banner:
    > This is a **skill preference**. Changing it changes what a slash command actually does the next time it runs — not merely whether the installer asks you a question.
 
-   Name the affected command from the entry's `askedBy` / `summary` — e.g. `gitCommit.versionBump` changes what `/git-commit` does on every commit. The `consumer: skill` population is `gitCommit.versionBump`, `gitCommit.autoPush`, `research.persistToRaw`, `uatGenerate.promoteTests`, and `gitignore.offerSectionUpdates`. Every other key is `consumer: installer` and gets the lighter framing: it only affects whether a setup/update script prompts you.
+   Name the affected command from the entry's `askedBy` / `summary` — e.g. `gitCommit.versionBump` changes what `/git-commit` does on every commit. The `consumer: skill` population is `gitCommit.versionBump`, `gitCommit.autoPush`, `research.persistToRaw`, `research.autoIngest`, `uatGenerate.promoteTests`, and `gitignore.offerSectionUpdates`. Every other key is `consumer: installer` and gets the lighter framing: it only affects whether a setup/update script prompts you.
 
 ## Step E — Choose the value and the layer (edit mode)
 
@@ -118,7 +118,7 @@ Skip this question entirely when a mode word was supplied as an argument — but
    - `scope: global` → the global layer only.
    - `scope: either` → ask which, explaining that **project wins over global, per key**.
 
-   Never offer a layer the key's `scope` makes inert. The helper's `--set` does not enforce scope — it will happily write a `global`-scope key into a project file, where nothing ever reads it and the generated companion files it under "Unrecognized keys" with the reason that this layer never consults it. This step is the guard against creating that situation.
+   Never offer a layer the key's `scope` makes inert. The helper's `--set` itself now refuses a write into a layer the key's `scope` forbids (exit 1, nothing written — BUG-0009) — attempting to write a `global`-scope key into a project file is rejected rather than silently accepted and later filed under "Unrecognized keys" with a never-consulted reason. This step exists so the user is never offered a choice that would hit that refusal, not because the helper depends on it.
 3. If `scope` requires the project layer but no project directory was resolved in Step A, abort that edit with an explanation. Do not fall back to the global layer.
 4. Confirm with one final `AskUserQuestion` (`Yes, apply` / `No, cancel`) showing the exact command about to run:
    ```

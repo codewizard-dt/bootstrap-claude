@@ -28,7 +28,7 @@ All scripts use `set -euo pipefail`. Every script that touches a target project 
 | `merge-gitignore.sh` | `setup-project.sh`, `update-project.sh` | Fully interactive `.gitignore` merge — **nothing is ever added without asking**. The packaged template's titled sections are offered one by one (`Add/update .gitignore section '<title>' (N new line(s))? [y/N]`); sections with nothing new are skipped silently. Non-interactive runs (or no tty) change nothing at all. Never touches existing project content. Also offers (git repos only) to keep `.serena/`/`raw/`/`wiki/` out of git via **`.git/info/exclude`** — never `.gitignore`, which would blind Serena on the wiki (see `wiki/knowledge/concepts/git-ignore-tool-visibility.md`); per-machine and idempotent. `info/exclude` *is* honored by ripgrep-class walkers and the `@` file picker, so the excluded paths are written under a `# bootstrap wiki & agent state (machine-local)` sentinel that the `fileSuggestion` picker installed by `install-global.sh` reads back to restore `@`-autocomplete. |
 | `merge-settings-deny.js` | `install-global.sh` | Zero-dependency Node script that merges the canonical permission deny list (`templates/settings-deny.json` — `Bash(...)` command patterns plus `Edit(...)`/`Read(...)` file-tool patterns) into `~/.claude/settings.json` `permissions.deny`. Entries are opaque strings, so any rule form the permission system accepts merges unchanged. Additive union only: missing entries are appended, user entries are never removed or reordered, all other settings keys pass through untouched. Atomic write, preserves existing indentation, and always exits 0 (warns + skips on unparseable or unexpected file shapes so an install never aborts over a settings merge). `--target`/`--source` flags exist as test seams. A second mode, `--set-key <name> --set-value <json>`, merges a single top-level settings key instead of the deny list (used to register `fileSuggestion`): absent → set; already deep-equal → no-op; present but different → one-line warning and skip, never a clobber. Supplying `--set-key` skips the deny merge entirely; a malformed `--set-value` exits 1, since that is a call-site bug rather than a user's file. |
 | `merge-settings-hooks.js` | `install-global.sh` | Zero-dependency Node sibling of `merge-settings-deny.js` (deliberately not a new mode of it — different, block-and-entry-aware semantics) that merges the canonical hook wiring (`templates/settings-hooks.json`) into the `hooks` key of `~/.claude/settings.json` with a "template owns its blocks" model: repo-owned entries (a `command` under `~/.claude/hooks/` whose basename appears in the template) are created or updated in place; matcher drift on a pure-owned block is adopted (a matcher rename ships without duplicating the block); user/foreign blocks and entries are never modified, reordered, or removed; a repo hook found relocated into a mixed block is warned about but not duplicated; no empty placeholder blocks are ever written. Always exits 0 (warns + skips on unparseable or unexpected file shapes so an install never aborts over a settings merge). `--target`/`--source` flags exist as test seams. |
-| `bootstrap-prefs.js` | `install-global.sh`, `install-mcps.sh`, `sync-wiki-scaffold.sh`, `merge-gitignore.sh`, `update-project.sh` (all through the `prefs_*` / `prompt_*_sticky` wrappers in `lib.sh`), and the `/bootstrap-config` skill | Zero-dependency Node reader/writer for the preference store — the one binary every consumer goes through, so no prompt site keeps its own copy of a key's value list. Five operations: `--get` (a resolving read; always exits 0, so no call site needs `\|\| true`), `--set`, `--unset`, `--list`, and `--section-key <title>` (turns a `.gitignore` banner title into its `gitignore.section.<slug>` key, so the slug rule has exactly one implementation and is Unicode-aware). `--set`/`--unset` require **exactly one** layer selector (`--global` / `--project <dir>` / `--target <path>`) and will not guess — a misdirected write is unrecoverable in a way a misdirected read is not; `--get` resolves across layers by default for the mirror-image reason. Values are validated against the schema's `values` grammar (an illegal value exits 1 — a caller bug must never land in the file and read back as `unset`); writes are atomic and reuse the file's existing indentation; and every successful `--set`/`--unset` regenerates the `bootstrap-prefs.README.md` companion beside the values file. See [Preference helper notes](#preference-helper-notes). |
+| `bootstrap-prefs.js` | `install-global.sh`, `install-mcps.sh`, `sync-wiki-scaffold.sh`, `merge-gitignore.sh`, `update-project.sh` (all through the `prefs_*` / `prompt_*_sticky` wrappers in `lib.sh`), and the `/bootstrap-config` skill | Zero-dependency Node reader/writer for the preference store — the one binary every consumer goes through, so no prompt site keeps its own copy of a key's value list. Five operations: `--get` (a resolving read; always exits 0, so no call site needs `\|\| true`), `--set`, `--unset`, `--list`, and `--section-key <title>` (turns a `.gitignore` banner title into its `gitignore.section.<slug>` key, so the slug rule has exactly one implementation and is Unicode-aware). `--set`/`--unset` require **exactly one** layer selector (`--global` / `--project <dir>` / `--target <path>`) and will not guess — a misdirected write is unrecoverable in a way a misdirected read is not; `--get` resolves across layers by default for the mirror-image reason. Values are validated against the schema's `values` grammar (an illegal value exits 1 — a caller bug must never land in the file and read back as `unset`), and `--set` also refuses to write into a layer the key's `scope` forbids (`--target` stays exempt); writes are atomic and reuse the file's existing indentation; and every successful `--set`/`--unset` regenerates the `bootstrap-prefs.README.md` companion beside the values file. See [Preference helper notes](#preference-helper-notes). |
 
 ## Standalone infra scripts (not wired to the CLI)
 
@@ -244,16 +244,22 @@ records only whether to install the server. Treat this as a rule when adding a
 key: if the answer to a question is a credential, the question does not belong in
 this store.
 
-### Known gap: `--set` enforces a key's grammar but not its scope
+### `--set` enforces a key's grammar AND its scope
 
-`--set` validates the *value* against the schema's `values` string, but does not
-check that the chosen layer is one the key's `scope` permits. So a `global`-scope
-key can be written into a project values file, where `resolve()` will never
-consult it — the write succeeds, prints a success line, and has no effect. Filed
-as [`BUG-0009`](../../wiki/work/bugs/BUG-0009-set-writes-scope-inert-key-silently.md);
-known, not intended. Today the *only* surface that reveals it is the generated
-companion's `## Unrecognized keys` section, which lists such a key with
-`scope is ... — this layer never consults it, so it has no effect here`.
+`--set` validates the *value* against the schema's `values` string, and also
+checks that the chosen layer is one the key's `scope` permits — writing a
+`global`-scope key into a project values file (or vice versa) exits `1` with
+nothing written, naming the actual scope and the layer that would be
+consulted instead. `--target <path>` remains the deliberate, exempt escape
+hatch: it always bypasses the scope check, since it is an explicit
+single-file operation rather than a resolved layer. Fixed as
+[`BUG-0009`](../../wiki/work/bugs/archive/BUG-0009-set-writes-scope-inert-key-silently.md)
+(previously: the write silently succeeded and printed an affirmative line
+while landing in a layer `resolve()` never walks). A scope-inert key can
+still exist — via `--target`, a hand edit, or a values file written by a
+newer bootstrap — and the generated companion's `## Unrecognized keys`
+section still explains it the same way: `scope is ... — this layer never
+consults it, so it has no effect here`.
 
 ## Preference-schema notes
 
@@ -261,7 +267,7 @@ The shape contract for `templates/bootstrap-prefs-schema.json`. JSON cannot carr
 comments, so the file itself must stay bare — no `$comment` header, no explanatory
 keys — and everything a reader or a new consumer needs to know about its shape
 lives here instead. What each individual key *does* is a separate question, and
-it is answered by [The key registry — all 19 entries](#the-key-registry--all-19-entries)
+it is answered by [The key registry — all 21 entries](#the-key-registry--all-21-entries)
 at the end of this section.
 
 ### Flat key → entry, and eight fields
@@ -361,7 +367,7 @@ real `lib/scripts/` file or one real `lib/skills/<name>/SKILL.md`, so
 `"install-global.sh, /git-commit"` fails the suite by construction. Where a
 run-time prompt exists, it is documented in the key's `detail`.
 
-### The key registry — all 19 entries
+### The key registry — all 22 entries
 
 Every key in `templates/bootstrap-prefs-schema.json`, grouped by `consumer` —
 `installer` first, then `skill` — which is the same grouping and the same order
@@ -370,7 +376,7 @@ schema's `default` field; `unset` in that column means `default: null`, i.e. the
 key resolves to `unset` until it is answered. This table is transcribed from the
 JSON; if the two ever disagree, the JSON is right and this table is a bug.
 
-#### `consumer: installer` — 14 entries, read by the setup/update scripts
+#### `consumer: installer` — 16 entries, read by the setup/update scripts
 
 | Key | Scope | Consumer | Values | Default | Asked by | What it does |
 |-----|-------|----------|--------|---------|----------|--------------|
@@ -387,6 +393,8 @@ JSON; if the two ever disagree, the JSON is right and this table is a bug.
 | `mcp.context7` | global | installer | `true \| false` | `unset` | `install-mcps.sh` | Install the Context7 MCP for library documentation lookups |
 | `mcp.context7Scope` | global | installer | `user \| project` | `unset` | `lib.sh` | Registration scope for the Context7 MCP |
 | `mcp.playwright` | global | installer | `true \| false` | `unset` | `install-mcps.sh` | Install the Playwright MCP for browser automation and UI testing |
+| `obsidian.installApp` | global | installer | `true \| false` | `unset` | `install-obsidian.sh` | Install the Obsidian desktop app via the native package manager |
+| `obsidian.plugins` | project | installer | `true \| false` | `unset` | `install-obsidian.sh` | Install the bundled Obsidian plugin set (Dataview, Graph Link Types, Breadcrumbs) |
 | `skills.pruneOrphans` | global | installer | `true \| false` | `unset` | `install-global.sh` | Delete stale skill folders in `~/.claude/skills/` left by the wiki rename |
 
 The two **(pattern)** rows carry `"dynamic": true` and are key *families*, not
@@ -397,17 +405,18 @@ Unicode-aware slug rule for `gitignore.section.*` are in
 above; `gitignore.section.*`'s deliberate one-value grammar is in
 [the section after it](#gitignoresection-has-a-one-value-grammar-on-purpose).
 
-#### `consumer: skill` — 5 entries, read by slash commands at run time
+#### `consumer: skill` — 6 entries, read by slash commands at run time
 
 | Key | Scope | Consumer | Values | Default | Asked by | What it does |
 |-----|-------|----------|--------|---------|----------|--------------|
 | `gitCommit.versionBump` | either | skill | `auto \| confirm \| never` | `auto` | `install-global.sh` | How `/git-commit` handles the version bump before committing |
 | `gitCommit.autoPush` | either | skill | `true \| false \| ask` | `false` | `install-global.sh` | Whether `/git-commit` pushes after a successful commit |
 | `research.persistToRaw` | either | skill | `true \| false \| ask` | `true` | `install-global.sh` | Whether `/research` writes its report and sources to `raw/research/` |
+| `research.autoIngest` | either | skill | `true \| false \| ask` | `false` | `install-global.sh` | Whether `/research` automatically wiki-ingests its saved report |
 | `uatGenerate.promoteTests` | either | skill | `sibling \| never \| dedicated` | `dedicated` | `install-global.sh` | Where `/uat-generate` writes the unit tests it promotes out of UAT cases |
 | `gitignore.offerSectionUpdates` | either | skill | `true \| false \| ask` | `true` | `install-global.sh` | Master gate for the `.gitignore` template section review pass |
 
-These five are the entire `scope: either` population and the entire
+These six are the entire `scope: either` population and the entire
 `consumer: skill` population — the two sets coincide, because a key that changes
 what a slash command does is exactly the kind of key a user may want to answer
 once machine-wide and then override in one checkout.

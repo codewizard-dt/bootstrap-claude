@@ -197,7 +197,7 @@ settle_skill_pref() {
   case "$answer" in
     yes)  prefs_set "$key" --global true ;  echo "    $key = true" ;;
     no)   prefs_set "$key" --global false ; echo "    $key = false" ;;
-    ask)  prefs_set "$key" --global ask ;   echo "    $key = ask (you will be prompted every run; the answer is never stored)" ;;
+    ask)  prefs_set "$key" --global ask ;   echo "    $key = ask (the skill will prompt you each time it runs; that per-run answer is never stored)" ;;
     *)    echo "    $key left unanswered — today's behavior is unchanged, and you will be asked again next sync." ;;
   esac
   PREFS_ASKED=$(( PREFS_ASKED + 1 ))
@@ -232,6 +232,8 @@ else
     "Should /git-commit push the current branch after committing? (Default no — this turns a local action into a published one. It never creates a branch either way.)"
   settle_skill_pref research.persistToRaw \
     "Should /research save its report and sources to raw/research/ by default? (Findings always appear in the reply; this governs the file write only, and you can still decline any single report.)"
+  settle_skill_pref research.autoIngest \
+    "Should /research automatically fold a saved report into wiki/ (/wiki-ingest) instead of just suggesting the command? (Only runs when a report was actually saved.)"
   # uatGenerate.promoteTests is the second key that cannot go through
   # settle_skill_pref: its grammar is sibling|never|dedicated (plus the
   # parameterized dedicated:<path>), not true|false|ask.
@@ -302,4 +304,15 @@ if [ "$SKIP_MCPS" = false ]; then
   echo ""
 fi
 
-echo "Global setup complete (hooks + skills + deny list + hooks wiring + file suggestion + preferences + MCPs)."
+# "preferences" stays unconditional regardless of SKIP_MCPS: step 6 always
+# installs the helper on every pass, whether or not anything was actually
+# asked (a non-tty run still installs it, it just settles no answers) — see
+# BUG-0010. "MCPs" is the one token gated on what actually ran, since step 8
+# is skipped entirely under --skip-mcps and claiming it otherwise overstates
+# the summary's own job (evidence of what ran) on the most common invocation
+# path — both setup-project.sh and update-project.sh call this with --skip-mcps.
+if [ "$SKIP_MCPS" = false ]; then
+  echo "Global setup complete (hooks + skills + deny list + hooks wiring + file suggestion + preferences + MCPs)."
+else
+  echo "Global setup complete (hooks + skills + deny list + hooks wiring + file suggestion + preferences)."
+fi
