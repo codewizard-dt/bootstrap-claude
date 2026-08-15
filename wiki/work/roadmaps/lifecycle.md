@@ -28,5 +28,5 @@ Active files are **never moved** after creation; state lives in the `status:` fr
 active ──▶ done
 ```
 
-- **active** — at least one unchecked item remains. Items are added with `/roadmap-add`; task-linked items auto-check when their task completes.
+- **active** — at least one unchecked item remains. Items are added by editing the roadmap file directly, at creation via `/roadmap-create`, or via `/task-add --roadmap ROADMAP-NNN` (auto-links a new task); task-linked items auto-check when their task completes.
 - **done** — every checklist item is checked. Completion is implicit; flip `status` to `done` when the last box is ticked.

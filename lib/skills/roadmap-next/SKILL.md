@@ -1,9 +1,9 @@
 ---
 name: roadmap-next
-description: Point at the first unchecked item(s) in a roadmap; create task files for inline placeholders; group items into parallelizable waves; auto-archive fully-checked roadmaps
+description: Point at the first unchecked item(s) in a single roadmap; create task files for inline placeholders; group items into parallelizable waves; auto-archive when fully checked. Requires a roadmap argument — run /roadmap-assess first to see status and priority across all active roadmaps.
 category: researching
 model: claude-haiku-4-5-20251001
-argument-hint: "[path to roadmap file, NNN-slug, or number] (optional)"
+argument-hint: <path to roadmap file, NNN-slug, or number>
 disable-model-invocation: false
 user-invocable: true
 ---
@@ -11,17 +11,31 @@ user-invocable: true
 
 # Next Step
 
-Surface unchecked roadmap items grouped into parallelizable waves and tell the user how to act. When a roadmap has all items checked, flip its status to `done` and move it to `archive/`.
+Surface unchecked items in a single roadmap, grouped into parallelizable waves, and tell the user how to act. When the roadmap has all items checked, flip its status to `done` and move it to `archive/`.
 
 **Roadmap Input**: $ARGUMENTS
 
-## Step 0: Mode
-- `$ARGUMENTS` non-empty → **Single-Roadmap Mode** (resolve one file, Step 1S).
-- `$ARGUMENTS` empty → **Scan Mode** (collect across all roadmaps, Step 1M).
+## Step 0: Require an argument
+
+This skill operates on exactly one roadmap — it no longer scans across all roadmaps. If `$ARGUMENTS` is empty, **stop** and report:
+
+> `/roadmap-next` requires a roadmap (path, `NNN-slug`, or number). Run `/roadmap-assess` to see a prioritized status update across all active roadmaps, then re-run `/roadmap-next <ROADMAP-NNN>` on the one you want to work.
+
+## Step 1: Resolve the file (`find_file`/`list_dir`, never bash)
+
+| Input | Action |
+|-------|--------|
+| File path | confirm exists (`find_file`); missing → `Roadmap file not found: <path>` + STOP |
+| `NNN-slug` | match in `wiki/work/roadmaps/`; none → `No roadmap matching '<input>' found…` + STOP |
+| Number (`1`/`001`) | `list_dir`, match zero-padded prefix; ambiguous → list + `AskUserQuestion`; none → `No roadmap with number '<input>' found.` + STOP |
+
+## Step 2: Parse → upgrade inline items → parallelism analysis
+
+Run the three shared procedures below, in order, on the resolved file.
 
 ---
 
-## Shared procedures (used by both modes)
+## Shared procedures (also used by `/roadmap-assess`)
 
 ### Parse a roadmap
 `Read` the file (markdown). Extract: **phases** (`## Phase N: <name>` in order), **items** (`- [ ]` unchecked / `- [x]` checked), **status** (`- **Status**: active | done`), and the `roadmap_id` (`- **ID**: ROADMAP-NNN` front matter or filename prefix, e.g. `003-billing.md` → `ROADMAP-003`). Per item capture: `phase` (nearest preceding heading, or `(no phase)`), `checked`, `text`, `kind` (`task-link` if body starts `[[TASK-NNN`, else `inline`), `task_id` (from `[[TASK-NNN: title]]`), `task_path` (`find_file` `TASK-NNN-*` in `wiki/work/tasks/` — matches active or archived). Compute `total`, `done`. Collect unchecked items into `candidate_items`, **capped at 9 total**.
@@ -55,19 +69,7 @@ After upgrades, for each item: `Read` its `task_path`, find `## Dependencies` / 
 
 ---
 
-## Single-Roadmap Mode
-
-### Step 1S: Resolve the file (`find_file`/`list_dir`, never bash)
-| Input | Action |
-|-------|--------|
-| File path | confirm exists (`find_file`); missing → `Roadmap file not found: <path>` + STOP |
-| `NNN-slug` | match in `wiki/work/roadmaps/`; none → `No roadmap matching '<input>' found…` + STOP |
-| Number (`1`/`001`) | `list_dir`, match zero-padded prefix; ambiguous → list + `AskUserQuestion`; none → `No roadmap with number '<input>' found.` + STOP |
-
-### Step 2S–2.7S: Parse → upgrade inline items → parallelism analysis
-Run the three shared procedures on the resolved file.
-
-### Step 3S: Report
+## Step 3: Report
 - **All checked** (`done == total`, `total > 0`) → run the shared archive procedure, then report: `Progress: <total>/<total> — all done!` / `Status → done. Archived → wiki/work/roadmaps/archive/<filename>.`
 - **Unchecked items remain** → progress line + one table per non-empty wave (every item is a task-link post-upgrade):
   ```
@@ -88,40 +90,7 @@ Run the three shared procedures on the resolved file.
   - `pending-uat` with `uat_path` resolved → `` `/uat-walk <uat_path>` `` — annotate the Item cell with a trailing `⏳ awaiting UAT`
   - `pending-uat` with no `uat_path` → `` `/uat-generate <task_path>` `` — annotate the Item cell with a trailing `⏳ awaiting UAT (no tests yet)`
   - `task_path` not found → `` `/tackle <task_path>` `` with ` (file not found)` appended, regardless of status (can't read a status that isn't there)
-- **Zero items** → `Roadmap has no checklist items yet. Add some with /roadmap-add <ROADMAP-NNN> <item>.`
-
----
-
-## Scan Mode (no argument)
-
-### Step 1M: Discover roadmaps
-`list_dir` `wiki/work/roadmaps/` for `.md` files **directly** in it (not `archive/`); sort ascending by filename; skip `lifecycle.md`, `index.md`, `README.md`. None → STOP: `No roadmaps found in wiki/work/roadmaps/. Use /roadmap-create <topic> to draft one.`
-
-### Step 2M: Collect + auto-archive
-For each roadmap in sorted order: parse it (shared). If fully complete (`total > 0`, `done == total`) → run the shared archive procedure, record the filename in `archived_files`, add **no** items, continue. Otherwise append its unchecked items to the shared `candidate_items` (each also carrying `roadmap_file`, `roadmap_title` = `# <Title>` or filename, `roadmap_id`). **Stop collecting at 9 items total** — skip reading further files.
-
-### Step 2.5M–2.7M: Upgrade inline items → parallelism analysis
-Run the shared upgrade + parallelism procedures over the full `candidate_items` (may span roadmaps; cross-roadmap items with no shared deps are naturally parallel).
-
-### Step 3M: Report
-- If `archived_files` non-empty, prepend:
-  ```
-  Archived to wiki/work/roadmaps/archive/:
-    • <filename> — all items checked
-  ```
-- If `candidate_items` empty after scanning → `All roadmap items are checked off. Nothing left to do.`
-- Otherwise one table per non-empty wave (with a `Roadmap` column), plus a footer:
-  ```
-  **Wave 1** — ready now (run these in parallel):
-  | # | Roadmap | Phase | Item | Action |
-  |---|---------|-------|------|--------|
-  | 1 | ROADMAP-NNN · Title | Phase X: name | TASK-NNN: item title | `/tackle <task_path>` |
-
-  **Wave 2** — start after Wave 1 completes: …
-
-  Showing <shown_count> of <total_unchecked_scanned> unchecked item(s) across <files_scanned> roadmap(s).
-  ```
-  `total_unchecked_scanned` = all unchecked found before the 9-cap; `files_scanned` = files actually read. Same wave rules as Single mode (non-empty only, `(file not found)`, no `Manual` case), including the same **Action cell by `task_status`** rule (`pending-uat` → `/uat-walk`/`/uat-generate` with the `⏳ awaiting UAT` annotation instead of `/tackle`).
+- **Zero items** → `Roadmap has no checklist items yet. Edit the roadmap file directly to add items, or link a new task to it with /task-add --roadmap <ROADMAP-NNN> <description>.`
 
 ---
 

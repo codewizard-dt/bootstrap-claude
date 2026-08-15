@@ -22,8 +22,8 @@ argument-hint: <preserve from original if present>
 
 ## Category Field
 
-- **researching** — gathers/analyzes information; deliverable is a report, answer, or diagnosis; read-mostly. (`research`, `research-company`, `company-align`, `gap-assess`, `security-audit`, `debug-logs`, `eval-gap`, `task-audit`, `flashcard`, `wiki-query`, `wiki-lint`, `wiki-ingest`, `primer`, `decision-next`, `roadmap-next`)
-- **planning** — creates or maintains planning artifacts and their lifecycle bookkeeping. (`port-feature`, `extract-feature`, `decision-create`, `decision-finalize`, `decision-walkthrough`, `req-create`, `req-finalize`, `req-update`, `req-retire`, `req-extract-decisions`, `roadmap-create`, `roadmap-add`, `task-add`, `task-update`, `task-trash`, `uat-generate`, `uat-skip`, `bug-file`, `bug-triage`)
+- **researching** — gathers/analyzes information; deliverable is a report, answer, or diagnosis; read-mostly. (`research`, `research-company`, `company-align`, `gap-assess`, `security-audit`, `debug-logs`, `eval-gap`, `task-audit`, `flashcard`, `wiki-query`, `wiki-lint`, `wiki-ingest`, `primer`, `decision-next`, `roadmap-next`, `roadmap-assess`)
+- **planning** — creates or maintains planning artifacts and their lifecycle bookkeeping. (`port-feature`, `extract-feature`, `decision-create`, `decision-finalize`, `decision-walkthrough`, `req-create`, `req-finalize`, `req-update`, `req-retire`, `req-extract-decisions`, `roadmap-create`, `task-add`, `task-update`, `task-trash`, `uat-generate`, `uat-skip`, `bug-file`, `bug-triage`)
 - **executing** — changes code/docs/config, runs or verifies the system, or produces final deliverables. (`req-compile`, `power-mode`, `uat-auto-plus`, `now`, `tackle`, `uat-walk`, `uat-auto`, `eval-create`, `eval-run`, `lint`, `bug-close`, `simplify`, `update-docs`, `serena-config`, `git-commit`, `frontend-taste`, `demo`, `elevator-pitch`, `project-readme`, `marp-slideshow`, `mermaid-flowchart`, `anti-slop`)
 - **wiki** — wiki-maintenance operations. Only three skills use it: `wiki-archive`, `wiki-rotate-log`, `wiki-tidy`. Note the asymmetry: the other wiki skills (`wiki-query`, `wiki-lint`, `wiki-ingest`) are filed as **researching**, not `wiki`.
 
@@ -35,7 +35,7 @@ Model is chosen by reasoning depth, not category — each category spans all thr
 |---|---|---|
 | **Deep reasoning / autonomous** | `claude-opus-5` | `decision-create`, `extract-feature`, `gap-assess`, `port-feature`, `req-compile`, `req-extract-decisions`, `security-audit` (7 total) |
 | **Default** (well-specified work needing judgment) | `claude-sonnet-5` | everything not listed in the other two tiers |
-| **Mechanical / bookkeeping** | `claude-haiku-4-5-20251001` | `decision-next`, `git-commit`, `primer`, `req-retire`, `roadmap-add`, `roadmap-next`, `serena-config`, `task-trash`, `uat-skip` (9 total) |
+| **Mechanical / bookkeeping** | `claude-haiku-4-5-20251001` | `decision-next`, `git-commit`, `primer`, `req-retire`, `roadmap-next`, `serena-config`, `task-trash`, `uat-skip` (8 total) |
 
 **Watch the deep tier — it shrank.** `research`, `research-company`, `company-align`, `power-mode`, and `uat-auto-plus` were once top-tier and now run on `claude-sonnet-5`. Do not "restore" them to opus from an older reading of this table.
 

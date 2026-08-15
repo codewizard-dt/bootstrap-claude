@@ -104,8 +104,8 @@ Follow the root `README.md` to configure a new project, or use the npm package:
 | `/tackle <path>` | Execute outlined task file step-by-step with subagent delegation |
 | `/task-add <desc>` | Create structured task in `wiki/work/tasks/`. Optional flags: `--decision DEC-NNNN#DM` (auto-link to an accepted decision); `--roadmap ROADMAP-NNN` (auto-append the new task to a roadmap) |
 | `/roadmap-create <topic>` | Create an execution-plan roadmap in `wiki/work/roadmaps/` via short Socratic Q&A — captures goal, phases, and a hybrid (task-link OR inline) checklist |
-| `/roadmap-add <ROADMAP-NNN> <item>` | Append a new item (task link or inline) to an existing roadmap, optionally under a named phase |
-| `/roadmap-next [file]` | Point at the first unchecked item(s) in a roadmap grouped into parallelizable waves; flips completed roadmaps to `status: done` and prompts `/wiki-archive` |
+| `/roadmap-assess` | Survey all active roadmaps together — cross-roadmap dependencies, prioritized list, and a status update for each |
+| `/roadmap-next <roadmap>` | Point at the first unchecked item(s) in one roadmap (path, `NNN-slug`, or number — required) grouped into parallelizable waves; flips a completed roadmap to `status: done` and archives it |
 | `/req-create <idea>` | Create a lean requirement in `wiki/work/requirements/` via Socratic Q&A capturing problem, personas, user stories, success metrics, and non-goals |
 | `/req-finalize <file>` | Run completeness audit on a draft requirement, resolve gaps via Q&A, and flip `status` from `draft` to `approved` |
 | `/req-extract-decisions <file>` | Extract Architecturally Significant Requirements from an approved requirement, cross-check existing decisions, and propose Decision Group candidates for `/decision-create` |

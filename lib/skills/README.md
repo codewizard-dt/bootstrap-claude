@@ -40,8 +40,8 @@ Most skills operate on the LLM Wiki (`wiki/`, `raw/`) described in the root `CLA
 | Skill | Purpose |
 |-------|---------|
 | `roadmap-create` | Create an execution-plan roadmap via short Socratic Q&A — goal, phases, hybrid task-link/inline checklist |
-| `roadmap-add` | Append a new item to an existing roadmap, optionally under a named phase |
-| `roadmap-next` | Point at the first unchecked roadmap item(s), grouped into parallelizable waves; auto-archive fully-checked roadmaps |
+| `roadmap-assess` | Survey all active roadmaps together — cross-roadmap dependencies, prioritized list, status update per roadmap |
+| `roadmap-next` | Point at the first unchecked item(s) in a single roadmap (argument required), grouped into parallelizable waves; auto-archive when fully checked |
 
 ## Tasks
 

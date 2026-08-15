@@ -86,7 +86,7 @@ Then **per-phase**, in a single follow-up `AskUserQuestion` round (one question 
 
 | # | Elicitation | Quality bar |
 |---|-------------|-------------|
-| 5 | **Phase N items** | For each phase, the user names (a) any existing tasks (`TASK-NNN` or slug fragments) that belong in this phase, and (b) any inline placeholder items. Items may be empty if the user wants to fill in later via `/roadmap-add` — but **at least one phase must contain at least one item** (a roadmap with zero items is not a roadmap) |
+| 5 | **Phase N items** | For each phase, the user names (a) any existing tasks (`TASK-NNN` or slug fragments) that belong in this phase, and (b) any inline placeholder items. Items may be empty if the user wants to fill in later by editing the roadmap file directly or via `/task-add --roadmap ROADMAP-NNN` — but **at least one phase must contain at least one item** (a roadmap with zero items is not a roadmap) |
 
 When the user supplies a task reference:
 
@@ -191,7 +191,7 @@ Print a tabular summary:
 | Index updated | yes (1 row added) |
 | Suggested next steps | `/roadmap-next wiki/work/roadmaps/NNN-slug.md` — surfaces the first item and creates task files for any inline placeholders  •  `/task-add --roadmap ROADMAP-NNN <description>` — file a new task auto-linked to this roadmap |
 
-If any phase was left empty by design (user plans to fill via `/roadmap-add`), note it in a separate **Gaps** section so the user can address it before execution begins.
+If any phase was left empty by design (user plans to fill it in later by editing the roadmap file directly or via `/task-add --roadmap ROADMAP-NNN`), note it in a separate **Gaps** section so the user can address it before execution begins.
 
 If the roadmap contains any inline placeholder items (items without a task-link), include a **Placeholders** section listing them:
 
