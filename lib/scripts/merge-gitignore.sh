@@ -242,71 +242,107 @@ elif [ "$review_sections" -eq 1 ]; then
   echo ".gitignore: no changes made in $PROJECT_DIR"
 fi
 
-# Machine-local git exclusion for bootstrap agent state. These dirs must NEVER
-# go into .gitignore: Serena (ignore_all_files_in_gitignore: true) and Claude
-# Code's Grep mirror .gitignore and would go blind on the wiki. .git/info/exclude
-# has identical semantics for git, is never committed (a per-machine choice,
-# offered per-machine), and is invisible to Serena — its GitignoreParser reads
-# only files named ".gitignore", so the dirs stay navigable. It is NOT invisible
-# to every tool: ripgrep-class walkers and Claude Code's @ file picker do honor
-# info/exclude. That is why install-global.sh installs ~/.claude/file-suggestion.sh
-# and registers it as the fileSuggestion picker — it re-includes exactly the paths
-# listed under the sentinel written below.
+# Machine-local git exclusion for bootstrap agent state and preference files.
+# These dirs must NEVER go into .gitignore: Serena (ignore_all_files_in_gitignore:
+# true) and Claude Code's Grep mirror .gitignore and would go blind on the wiki.
+# .git/info/exclude has identical semantics for git, is never committed (a
+# per-machine choice, offered per-machine), and is invisible to Serena — its
+# GitignoreParser reads only files named ".gitignore", so the dirs stay
+# navigable. It is NOT invisible to every tool: ripgrep-class walkers and Claude
+# Code's @ file picker do honor info/exclude. That is why install-global.sh
+# installs ~/.claude/file-suggestion.sh and registers it as the fileSuggestion
+# picker — it re-includes exactly the paths listed under the sentinel below.
+#
+# ONE sentinel, shared by both mechanisms below (wiki/agent-state dirs and the
+# bootstrap-prefs files), so file-suggestion.sh's single hardcoded SENTINEL
+# always matches regardless of which mechanism ran, in which order, or which
+# options got picked. Generic text — not "wiki", not "preferences" — because
+# it's read back only by name, never by content.
 GIT_EXCLUDE="$PROJECT_DIR/.git/info/exclude"
-EXCLUDE_SENTINEL="# bootstrap wiki & agent state (machine-local)"
+EXCLUDE_SENTINEL="# bootstrap machine-local (autocomplete-visible)"
 
-# Canonical form is what file-suggestion.sh can actually parse: the sentinel
-# line, immediately followed by .serena/, raw/, wiki/ in that order, each of the
-# four appearing exactly once, and the block terminated by a "#" comment or EOF.
-# A path sitting ABOVE the sentinel is still excluded by git but invisible to the
-# picker, so appending only the absent paths is not enough — we normalize.
-exclude_is_canonical() {
-  [ -f "$1" ] || return 1
-  awk -v sentinel="$EXCLUDE_SENTINEL" '
-    { line[NR] = $0 }
-    $0 == sentinel { sent++; at = NR }
-    $0 == ".serena/" { a++ }
-    $0 == "raw/" { b++ }
-    $0 == "wiki/" { c++ }
-    END {
-      if (sent != 1 || a != 1 || b != 1 || c != 1) exit 1
-      if (line[at + 1] != ".serena/" || line[at + 2] != "raw/" || line[at + 3] != "wiki/") exit 1
-      if (at + 3 < NR && line[at + 4] !~ /^[[:space:]]*#/) exit 1
-      exit 0
+# The sentinel text this mechanism used before the two blocks were unified.
+# Scrubbed on sight by exclude_ensure_paths so upgrading an existing project
+# (like one that only ever answered the prefs.gitTracking question) cleans up
+# the stale header automatically instead of leaving two competing sentinels.
+LEGACY_PREFS_SENTINEL="# bootstrap preferences (machine-local)"
+
+# Every path bootstrap ever excludes here, in the fixed order they're packed
+# into the block when present. Each is independently optional — the block can
+# hold anywhere from zero of these (the proactive empty case) to all five.
+KNOWN_EXCLUDE_PATHS=(".serena/" "raw/" "wiki/" ".claude/bootstrap-prefs.json" ".claude/bootstrap-prefs.README.md")
+
+# Set by exclude_ensure_paths after every call: 1 if the file's content changed,
+# 0 if it was already exactly the desired shape (byte-identical, left untouched
+# — mtime and permissions included). Callers use this to decide whether a
+# repair/no-op message is worth printing.
+EXCLUDE_CHANGED=0
+
+# A user's own entry sitting INSIDE the sentinel block that isn't one of
+# KNOWN_EXCLUDE_PATHS. exclude_ensure_paths re-appends our block at the bottom
+# and leaves such an entry above it: git still excludes it, but the picker stops
+# re-including it, so say so rather than change the user's view of their own
+# file silently.
+exclude_stranded() {
+  [ -f "$1" ] || return 0
+  # Space-joined, not newline-joined: BSD awk (macOS's default /usr/bin/awk)
+  # rejects a `-v` value containing an embedded newline ("newline in string").
+  # None of KNOWN_EXCLUDE_PATHS' fixed entries contain a space, so this is safe.
+  awk -v sentinel="$EXCLUDE_SENTINEL" -v known="$(printf '%s ' "${KNOWN_EXCLUDE_PATHS[@]}")" '
+    BEGIN { kc = split(known, klines, " ") }
+    $0 == sentinel { in_block = 1; next }
+    in_block && /^[[:space:]]*#/ { in_block = 0 }
+    in_block && $0 !~ /^[[:space:]]*$/ {
+      is_known = 0
+      for (i = 1; i <= kc; i++) if ($0 == klines[i]) { is_known = 1; break }
+      if (!is_known) print "    " $0
     }
   ' "$1"
 }
 
-# A user's own entry sitting INSIDE the sentinel block. Normalizing re-appends
-# our block at the bottom and leaves such an entry above it: git still excludes
-# it, but the picker stops re-including it, so say so rather than change the
-# user's view of their own file silently.
-exclude_stranded() {
-  [ -f "$1" ] || return 0
-  awk -v sentinel="$EXCLUDE_SENTINEL" '
-    $0 == sentinel { in_block = 1; next }
-    in_block && /^[[:space:]]*#/ { in_block = 0 }
-    in_block && $0 !~ /^[[:space:]]*$/ \
-      && $0 != ".serena/" && $0 != "raw/" && $0 != "wiki/" { print "    " $0 }
-  ' "$1"
-}
-
-# Scrub every occurrence of the sentinel and of the three exact whole-line paths
-# from anywhere in the file, then re-append the canonical block at the bottom.
-# Every other line survives verbatim and in its original order (this file may
-# hold the user's own exclusions); only a blank run the scrub itself created is
-# collapsed, and the result ends with exactly one newline.
-exclude_normalize() {
-  local file="$1" src="$1" tmp mode=""
+# exclude_ensure_paths <file> [path...]: idempotently ensure the sentinel is
+# present in <file> exactly once, immediately followed by every
+# KNOWN_EXCLUDE_PATHS entry that is either already anywhere in the file (so a
+# prior run's, or the other mechanism's, entries survive) or passed as an
+# argument here — packed in KNOWN_EXCLUDE_PATHS order, terminated by a "#"
+# comment or EOF. Everything else in the file survives verbatim and in its
+# original relative order (this file may hold the user's own exclusions); the
+# legacy pre-unification header is scrubbed on sight. A file already in exactly
+# this shape is left byte-identical (EXCLUDE_CHANGED=0) so repeated/no-op calls
+# never show up as a diff.
+exclude_ensure_paths() {
+  local file="$1"; shift
+  local src="$file" tmp mode="" p a
+  local want=()
   [ -f "$src" ] || src=/dev/null
+
+  for p in "${KNOWN_EXCLUDE_PATHS[@]}"; do
+    if [ -f "$src" ] && grep -qFx -- "$p" "$src"; then
+      want+=("$p")
+      continue
+    fi
+    for a in "$@"; do
+      if [ "$a" = "$p" ]; then want+=("$p"); break; fi
+    done
+  done
+
   if [ -f "$file" ]; then
     mode=$(stat -f '%Lp' "$file" 2>/dev/null || stat -c '%a' "$file" 2>/dev/null || true)
   fi
   mkdir -p "$(dirname "$file")" || return 1
   tmp=$(mktemp "$(dirname "$file")/.bootstrap-exclude.XXXXXX") || return 1
-  awk -v sentinel="$EXCLUDE_SENTINEL" '
-    BEGIN { n = 0; prev_blank = 1; dropped = 0 }
-    $0 == sentinel || $0 == ".serena/" || $0 == "raw/" || $0 == "wiki/" { dropped = 1; next }
+  # Space-joined, not newline-joined: BSD awk (macOS's default /usr/bin/awk)
+  # rejects a `-v` value containing an embedded newline ("newline in string").
+  # `want` only ever holds entries from the fixed, space-free KNOWN_EXCLUDE_PATHS.
+  awk -v sentinel="$EXCLUDE_SENTINEL" -v legacy="$LEGACY_PREFS_SENTINEL" \
+      -v wanted="$(printf '%s ' ${want[@]+"${want[@]}"})" '
+    BEGIN { n = 0; prev_blank = 1; dropped = 0; wc = split(wanted, wlines, " ") }
+    $0 == sentinel || $0 == legacy { dropped = 1; next }
+    {
+      is_known = 0
+      for (i = 1; i <= wc; i++) if (wlines[i] != "" && $0 == wlines[i]) { is_known = 1; break }
+    }
+    is_known { dropped = 1; next }
     {
       if ($0 ~ /^[[:space:]]*$/) {
         if (prev_blank && dropped) next
@@ -322,23 +358,29 @@ exclude_normalize() {
       if (n == 1 && keep[1] ~ /^[[:space:]]*$/) n = 0
       for (i = 1; i <= n; i++) print keep[i]
       print sentinel
-      print ".serena/"
-      print "raw/"
-      print "wiki/"
+      for (i = 1; i <= wc; i++) if (wlines[i] != "") print wlines[i]
     }
   ' "$src" > "$tmp" || { rm -f "$tmp"; return 1; }
+
+  if [ -f "$file" ] && cmp -s "$file" "$tmp"; then
+    rm -f "$tmp"
+    EXCLUDE_CHANGED=0
+    return 0
+  fi
   mv -f "$tmp" "$file" || { rm -f "$tmp"; return 1; }
   if [ -n "$mode" ]; then chmod "$mode" "$file" 2>/dev/null || true; fi
+  EXCLUDE_CHANGED=1
   return 0
 }
 
 # Normalize and report. Never fatal: this runs under `set -euo pipefail` from
 # run_project_sync and must not abort the user's setup.
 exclude_apply() {
+  local file="$1"; shift
   local stranded
-  stranded=$(exclude_stranded "$GIT_EXCLUDE")
-  if ! exclude_normalize "$GIT_EXCLUDE"; then
-    echo "  Warning: could not update $GIT_EXCLUDE — left unchanged."
+  stranded=$(exclude_stranded "$file")
+  if ! exclude_ensure_paths "$file" "$@"; then
+    echo "  Warning: could not update $file — left unchanged."
     return 1
   fi
   if [ -n "$stranded" ]; then
@@ -349,7 +391,30 @@ exclude_apply() {
   return 0
 }
 
+# Guarantees the shared sentinel exists even if nothing is excluded yet, so any
+# bootstrap feature — this run or a future one — always finds the same anchor
+# regardless of which of the prompts below get accepted or declined. A bare
+# comment line excludes nothing, so writing it needs no consent prompt. Stays
+# quiet unless this call is what introduces the sentinel for the very first
+# time on a file with no bootstrap-managed paths yet — otherwise the branches
+# below describe whatever they changed themselves.
+exclude_ensure_sentinel() {
+  local file="$1" had_sentinel=false had_known=false p
+  if [ -f "$file" ]; then
+    grep -qFx -- "$EXCLUDE_SENTINEL" "$file" 2>/dev/null && had_sentinel=true
+    for p in "${KNOWN_EXCLUDE_PATHS[@]}"; do
+      grep -qFx -- "$p" "$file" 2>/dev/null && { had_known=true; break; }
+    done
+  fi
+  exclude_apply "$file" || return 0
+  if [ "$EXCLUDE_CHANGED" -eq 1 ] && [ "$had_sentinel" = false ] && [ "$had_known" = false ]; then
+    echo "  .git/info/exclude: added shared bootstrap sentinel (machine-local; nothing excluded yet)"
+  fi
+}
+
 if [ -d "$PROJECT_DIR/.git" ]; then
+  exclude_ensure_sentinel "$GIT_EXCLUDE"
+
   exclude_missing=0
   exclude_added=""
   for p in ".serena/" "raw/" "wiki/"; do
@@ -360,21 +425,20 @@ if [ -d "$PROJECT_DIR/.git" ]; then
     exclude_added="${exclude_added}  + ${p} (.git/info/exclude)"$'\n'
   done
 
-  if exclude_is_canonical "$GIT_EXCLUDE"; then
-    : # already canonical — leave the file byte-identical
-  elif [ "$exclude_missing" -gt 0 ]; then
+  if [ "$exclude_missing" -gt 0 ]; then
     # Accepting newly hides paths from git, so this stays a consent prompt.
     #
     # `gitignore.infoExclude` is declines-only: a decline records `false` and
     # suppresses the re-offer, an accept records NOTHING, because accepting
-    # changes the world and `exclude_is_canonical` above already makes it
-    # sticky. Keep this key distinct from `gitignore.offerSectionUpdates` (the
-    # .gitignore section pass) and `prefs.gitTracking` (the preference files
-    # themselves) — declining one must never disable another.
+    # changes the world and exclude_ensure_paths's byte-identical no-op above
+    # already makes it sticky. Keep this key distinct from
+    # `gitignore.offerSectionUpdates` (the .gitignore section pass) and
+    # `prefs.gitTracking` (the preference files themselves) — declining one must
+    # never disable another.
     if [ "$(prefs_get gitignore.infoExclude "$PROJECT_DIR")" = "false" ]; then
       echo "  .git/info/exclude: skipped (remembered answer gitignore.infoExclude=false — change with /bootstrap-config)."
-    elif prompt_yn "  Keep .serena/, raw/, wiki/ out of git on THIS machine (.git/info/exclude — not shared with the team; visible to Serena; @-autocomplete restored via the installed fileSuggestion script)? [y/N]: "; then
-      if exclude_apply; then
+    elif prompt_yn "  Add .serena/, raw/, and wiki/ to git's local ignore list (.git/info/exclude, this machine only)? [y/N]: "; then
+      if exclude_apply "$GIT_EXCLUDE" ".serena/" "raw/" "wiki/"; then
         printf '%s' "$exclude_added"
         echo "  Note: this protects only this clone — teammates opt in by running 'npx @codewizard-dt/bootstrap update' themselves."
       fi
@@ -386,7 +450,9 @@ if [ -d "$PROJECT_DIR/.git" ]; then
     # not change, only the picker's view of it. A pure repair, so no prompt —
     # deliberately regardless of the stored `gitignore.infoExclude` value, since
     # a decline refuses newly hiding paths, not repairing a sentinel.
-    if exclude_apply; then
+    # exclude_apply is a byte-identical no-op when the block is already
+    # canonical, so EXCLUDE_CHANGED gates the message.
+    if exclude_apply "$GIT_EXCLUDE" ".serena/" "raw/" "wiki/" && [ "$EXCLUDE_CHANGED" -eq 1 ]; then
       echo "  .git/info/exclude: reordered .serena/, raw/, wiki/ under the bootstrap sentinel (git unchanged; restores @-autocomplete)"
     fi
   fi
@@ -466,42 +532,33 @@ if has_tty; then
         echo "  .git/info/exclude: $PROJECT_DIR is not a git repository — nothing to exclude; the preference files stay visible to git."
       else
         prefs_written=0
+        prefs_added=""
         for p in "$PREFS_VALUES_PATH" "$PREFS_README_PATH"; do
           if [ -f "$GIT_EXCLUDE" ] && grep -qFx -- "$p" "$GIT_EXCLUDE"; then
             continue
           fi
-          if [ "$prefs_written" -eq 0 ]; then
-            mkdir -p "$(dirname "$GIT_EXCLUDE")"
-            if [ -s "$GIT_EXCLUDE" ] && [ -n "$(tail -c1 "$GIT_EXCLUDE")" ]; then
-              printf '\n' >> "$GIT_EXCLUDE"
-            fi
-            # Their OWN "#" header, never bare. Two things depend on it: the
-            # block above may already have normalized the sentinel block to the
-            # bottom of this file, and a "#" line directly after wiki/ is exactly
-            # what exclude_is_canonical accepts as the block terminator; and
-            # exclude_stranded stops scanning at the first "#", so our entries
-            # are never reported as stranded inside the bootstrap block.
-            printf '# bootstrap preferences (machine-local)\n' >> "$GIT_EXCLUDE"
-          fi
-          printf '%s\n' "$p" >> "$GIT_EXCLUDE"
-          echo "  + $p (.git/info/exclude)"
           prefs_written=$((prefs_written + 1))
+          prefs_added="${prefs_added}  + ${p} (.git/info/exclude)"$'\n'
         done
-        if [ "$prefs_written" -eq 0 ]; then
-          echo "  .git/info/exclude: already excludes the bootstrap preference files."
-        else
-          echo "  Note: this hides them on THIS machine only — teammates are unaffected."
-        fi
-        # Verify rather than trust: a file left non-canonical is silently
-        # rewritten by exclude_normalize on every future run. Repair ONLY when
-        # the sentinel is already present — exclude_apply would otherwise create
-        # the block and hide .serena/, raw/, wiki/ from a user who just declined
-        # exactly that above. A later normalize pass leaves our lines intact,
-        # because its scrub only removes the sentinel and those three paths.
-        if [ -f "$GIT_EXCLUDE" ] \
-          && grep -qFx -- "$EXCLUDE_SENTINEL" "$GIT_EXCLUDE" \
-          && ! exclude_is_canonical "$GIT_EXCLUDE"; then
-          exclude_apply || true
+        # Same shared sentinel and merge function the wiki-dirs block above
+        # uses — both mechanisms converge on one block so file-suggestion.sh's
+        # single hardcoded SENTINEL always matches, regardless of which of the
+        # two ran first or which options were chosen. exclude_ensure_paths only
+        # adds paths it's asked for (or that were already present), so this
+        # never force-adds .serena/, raw/, or wiki/ for a user who declined
+        # that separately — and it scrubs the legacy pre-unification header on
+        # sight if this project still has it.
+        if exclude_apply "$GIT_EXCLUDE" "$PREFS_VALUES_PATH" "$PREFS_README_PATH"; then
+          if [ "$prefs_written" -eq 0 ]; then
+            if [ "$EXCLUDE_CHANGED" -eq 1 ]; then
+              echo "  .git/info/exclude: already excludes the bootstrap preference files (repositioned under the shared bootstrap sentinel)."
+            else
+              echo "  .git/info/exclude: already excludes the bootstrap preference files."
+            fi
+          else
+            printf '%s' "$prefs_added"
+            echo "  Note: this hides them on THIS machine only — teammates are unaffected."
+          fi
         fi
       fi
       ;;

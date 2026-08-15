@@ -216,6 +216,17 @@ prompt_yn() {
   fi
   case "$reply" in
     [yY]*) return 0 ;;
+    "")
+      # A bare Enter press honors whichever default the prompt text itself
+      # displays. Every prompt in this codebase already signals its default
+      # via bracket capitalization ("[Y/n]" vs "[y/N]") — this just makes an
+      # empty reply match what the user was shown, instead of every empty
+      # reply silently meaning "no" regardless of what the brackets promised.
+      case "$prompt" in
+        *"[Y/n]"*) return 0 ;;
+        *) return 1 ;;
+      esac
+      ;;
     *) return 1 ;;
   esac
 }

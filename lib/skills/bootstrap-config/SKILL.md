@@ -29,9 +29,15 @@ Bootstrap remembers your answers to installer and skill prompts in two flat JSON
 
 ## Step A — Locate the helper, the schema, and the layers
 
-1. Resolve the helper path. Prefer `lib/scripts/bootstrap-prefs.js` relative to the current project root; if the current project is not this repo, fall back to the installed copy that ships with the bootstrap package. If neither exists, abort with this exact message and stop:
+1. Resolve the helper path. There are exactly two valid locations — never search anywhere else, and never search under a project's own `lib/scripts/` (that path exists only inside the bootstrap-claude source repo checkout itself, never in a project that merely installed it):
+   - **If the current project is this bootstrap-claude repo itself** (dev checkout — `lib/scripts/bootstrap-prefs.js` exists relative to the project root): use that repo-local copy.
+   - **Otherwise (any installed/target project, the common case):** the helper lives at the fixed, project-independent path `~/.claude/bootstrap-prefs.js`, installed there by `install-global.sh` precisely so it's reachable from arbitrary projects. Use that path directly — do not `ls`/`find` for it first.
+   - If neither location has the file, abort with this exact message and stop:
    > No bootstrap preference helper found. Run `npx @codewizard-dt/bootstrap update` (or `./lib/scripts/install-global.sh --skip-mcps`) to install it, then re-run `/bootstrap-config`.
-2. Resolve the schema path: `lib/scripts/templates/bootstrap-prefs-schema.json`, sitting next to the helper. The helper already defaults to exactly that path, so pass `--schema <path>` **only** when a non-default schema was located.
+2. Resolve the schema path — it is **not** beside the helper when installed:
+   - Repo-local case: `lib/scripts/templates/bootstrap-prefs-schema.json`.
+   - Installed case: `~/.claude/templates/bootstrap-prefs-schema.json`. (The helper resolves the schema as `<its own dir>/templates/...`, and the installer deliberately places it there — see `install-global.sh`'s step 6 comment.)
+   The helper already defaults to the path matching its own location, so pass `--schema <path>` **only** when a non-default schema was located.
 3. Determine `PROJECT_DIR` — the current working directory when inside a git repo / project, otherwise none. Record whether each layer's file exists:
    - project layer: `<PROJECT_DIR>/.claude/bootstrap-prefs.json`
    - global layer: `~/.claude/bootstrap-prefs.json`

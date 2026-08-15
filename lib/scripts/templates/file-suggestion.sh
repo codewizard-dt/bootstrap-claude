@@ -7,9 +7,16 @@
 # .git/info/exclude (and recent versions suggest only git-tracked files), so the
 # machine-local excludes written by merge-gitignore.sh blind @-autocomplete on
 # .serena/, raw/, and wiki/. This script re-includes exactly the paths listed
-# under the bootstrap sentinel in .git/info/exclude — a user's other deliberately
-# hidden entries stay hidden, and a project with no sentinel block gets plain
-# `rg --files` behaviour.
+# under the ONE shared bootstrap sentinel in .git/info/exclude — a user's other
+# deliberately hidden entries stay hidden, and a project with no sentinel block
+# gets plain `rg --files` behaviour. merge-gitignore.sh writes every
+# machine-local exclusion it manages (wiki/agent-state dirs AND the
+# bootstrap-prefs files) under this same sentinel, regardless of which of its
+# prompts got answered or in what order — but re-inclusion below only ever
+# checks `-d`, so of those, only the directories (.serena/, raw/, wiki/) come
+# back in suggestions; the bootstrap-prefs files are plain files and are
+# silently skipped, staying git-excluded but @-invisible. That's intentional,
+# not a bug.
 #
 # Contract (community-verified; not fully spelled out in the settings docs):
 #   stdin   JSON object with a "query" field
@@ -23,7 +30,7 @@
 # stdout only, and stray stderr is visible noise on every keystroke.
 exec 2>/dev/null
 
-SENTINEL='# bootstrap wiki & agent state (machine-local)'
+SENTINEL='# bootstrap machine-local (autocomplete-visible)'
 MAX_RESULTS=15
 
 # --- query -------------------------------------------------------------------
@@ -58,7 +65,8 @@ list_base() {
 
 # --- sentinel-scoped re-inclusion -------------------------------------------
 # Emit the lines between the bootstrap sentinel comment and the next comment
-# line (or EOF) in .git/info/exclude — expected values are .serena/, raw/, wiki/.
+# line (or EOF) in .git/info/exclude — expected values are .serena/, raw/,
+# wiki/, and (skipped below by the `-d` check) the two bootstrap-prefs files.
 sentinel_entries() {
   [ -f .git/info/exclude ] || return 0
   awk -v sentinel="$SENTINEL" '

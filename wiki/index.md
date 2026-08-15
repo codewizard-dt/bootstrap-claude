@@ -1,6 +1,6 @@
 ---
 title: Wiki Index
-updated: 2026-08-14
+updated: 2026-08-15
 ---
 
 # Wiki Index — Home Map
@@ -30,6 +30,7 @@ The wiki is split into two domains with opposite organizing laws:
 - [Obsidian and Typed Wiki Linking](knowledge/sources/obsidian-wiki-linking.md) — this repo's `rel::[[target]]` convention is Dataview's full-line inline-field syntax, not a bespoke invention, currently used with zero plugins installed
 - [Automating Obsidian and Plugin Setup in the Bootstrap Scripts](knowledge/sources/obsidian-setup-automation.md) — app + plugin install are both fully scriptable and fit the existing guarded/opt-in install pattern; /wiki-lint's graph view improves for free, /task-audit does not
 - [Research: Serena MCP — Project Scope vs. Local Scope](knowledge/sources/serena-mcp-scope.md) — confirms the existing local-scope choice against Claude Code's official scope docs; no code change indicated
+- [Obsidian Graph View Styling, Productivity Patterns, and Shippable Wiki Defaults](knowledge/sources/obsidian-graph-defaults.md) — graph.json colorGroups is native/zero-plugin; this repo's known wiki taxonomy makes a hand-authored color template more precise than auto-detecting plugins like Graph Styler
 
 ### Concepts
 - [LLM Wiki Hot Cache](knowledge/concepts/llm-wiki-hot-cache.md) — session-handoff summary file pattern, converged on by multiple gist reimplementations
@@ -46,11 +47,12 @@ The wiki is split into two domains with opposite organizing laws:
 - [Control Survival Across Permission Modes](knowledge/concepts/permission-mode-control-survival.md) — what still enforces under `bypassPermissions`: deny/ask/hooks/sandbox yes, `allow` inert, built-in protected paths gone (⚠ carries the flagged contradiction with the sandbox-escape report)
 - [Typed Wiki Links](knowledge/concepts/typed-wiki-links.md) — `rel::[[target]]` is Dataview's full-line inline-field syntax; zero plugin dependency today; Dataview/Graph Link Types/Breadcrumbs are optional enhancement layers requiring no authoring changes
 - [MCP Server Scope Model (local / project / user)](knowledge/concepts/mcp-server-scope-model.md) — local > project > user precedence; project scope fits only config identical across teammates, machine-specific values (a path, a credential) belong at local scope
+- [Obsidian Graph View Styling (native colorGroups vs. plugins)](knowledge/concepts/obsidian-graph-view-styling.md) — .obsidian/graph.json colorGroups needs zero plugins; path:/tag:/file: query syntax; hand-authored template vs. auto-detecting plugin tradeoff
 
 ### Entities
 - People — [knowledge/entities/people/](knowledge/entities/people/): [Andrej Karpathy](knowledge/entities/people/andrej-karpathy.md)
 - Organisations — [knowledge/entities/organisations/](knowledge/entities/organisations/) — _(none yet)_
-- Tools — [knowledge/entities/tools/](knowledge/entities/tools/): [Serena](knowledge/entities/tools/serena.md), [Claude Code Auto Memory](knowledge/entities/tools/claude-code-auto-memory.md), [claude-obsidian](knowledge/entities/tools/claude-obsidian.md), [qmd](knowledge/entities/tools/qmd.md), [Hindsight](knowledge/entities/tools/hindsight.md), [Claude Code Permission System](knowledge/entities/tools/claude-code-permission-system.md), [Claude Code OS Sandbox](knowledge/entities/tools/claude-code-sandbox.md), [Claude Code @ File Picker (fileSuggestion)](knowledge/entities/tools/claude-code-file-picker.md), [Obsidian](knowledge/entities/tools/obsidian.md), [Dataview](knowledge/entities/tools/dataview.md), [Graph Link Types](knowledge/entities/tools/graph-link-types.md), [Breadcrumbs (Obsidian plugin)](knowledge/entities/tools/breadcrumbs-plugin.md), [Wikilink Types (Obsidian plugin)](knowledge/entities/tools/wikilink-types-plugin.md)
+- Tools — [knowledge/entities/tools/](knowledge/entities/tools/): [Serena](knowledge/entities/tools/serena.md), [Claude Code Auto Memory](knowledge/entities/tools/claude-code-auto-memory.md), [claude-obsidian](knowledge/entities/tools/claude-obsidian.md), [qmd](knowledge/entities/tools/qmd.md), [Hindsight](knowledge/entities/tools/hindsight.md), [Claude Code Permission System](knowledge/entities/tools/claude-code-permission-system.md), [Claude Code OS Sandbox](knowledge/entities/tools/claude-code-sandbox.md), [Claude Code @ File Picker (fileSuggestion)](knowledge/entities/tools/claude-code-file-picker.md), [Obsidian](knowledge/entities/tools/obsidian.md), [Dataview](knowledge/entities/tools/dataview.md), [Graph Link Types](knowledge/entities/tools/graph-link-types.md), [Breadcrumbs (Obsidian plugin)](knowledge/entities/tools/breadcrumbs-plugin.md), [Wikilink Types (Obsidian plugin)](knowledge/entities/tools/wikilink-types-plugin.md), [Graph Styler](knowledge/entities/tools/graph-styler.md), [Auto Tag Graph Colors](knowledge/entities/tools/auto-tag-graph-colors.md)
 - Components — [knowledge/entities/components/](knowledge/entities/components/): [Serena Health-Tracking Hook](knowledge/entities/components/serena-health-tracking-hook.md), [Canonical Settings Deny List](knowledge/entities/components/settings-deny-list.md), [lib/hooks — Project-Managed Hook Scripts](knowledge/entities/components/bootstrap-claude-hooks.md), [Guarded, Opt-In, Sticky-Preference Install Pattern](knowledge/entities/components/bootstrap-guarded-install-pattern.md)
 
 ---

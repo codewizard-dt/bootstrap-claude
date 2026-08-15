@@ -25,7 +25,7 @@ const { spawnSync } = require('node:child_process');
 
 const REPO = path.resolve(__dirname, '..');
 const PICKER = path.join(REPO, 'lib', 'scripts', 'templates', 'file-suggestion.sh');
-const SENTINEL = '# bootstrap wiki & agent state (machine-local)';
+const SENTINEL = '# bootstrap machine-local (autocomplete-visible)';
 const CANONICAL = [SENTINEL, '.serena/', 'raw/', 'wiki/'].join('\n') + '\n';
 
 // Every fixture path contains "hot", so a single query exercises all of them at once

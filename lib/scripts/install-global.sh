@@ -27,7 +27,9 @@ GLOBAL_HOOKS_DIR="$HOME/.claude/hooks"
 if [ -d "$TEMPLATE_DIR/lib/hooks" ]; then
   echo "Installing hooks globally (~/.claude/hooks/)..."
   mkdir -p "$GLOBAL_HOOKS_DIR"
-  rsync -av --exclude='.DS_Store' "$TEMPLATE_DIR/lib/hooks/" "$GLOBAL_HOOKS_DIR/"
+  # Content-based comparison + minimal per-file report — see sync-wiki-scaffold.sh's
+  # RSYNC_FLAGS comment for why plain -av re-lists every file on every run.
+  rsync -a --checksum --omit-dir-times --out-format='  + %n' --exclude='.DS_Store' "$TEMPLATE_DIR/lib/hooks/" "$GLOBAL_HOOKS_DIR/"
   echo ""
 else
   echo "Warning: $TEMPLATE_DIR/lib/hooks not found — hook scripts NOT installed" >&2
@@ -40,7 +42,7 @@ echo "Installing skills globally (~/.claude/skills/)..."
 mkdir -p "$GLOBAL_SKILLS_DIR"
 
 # Rsync skills from the template to ~/.claude/skills/
-rsync -av --exclude='.DS_Store' "$TEMPLATE_DIR/lib/skills/" "$GLOBAL_SKILLS_DIR/"
+rsync -a --checksum --omit-dir-times --out-format='  + %n' --exclude='.DS_Store' "$TEMPLATE_DIR/lib/skills/" "$GLOBAL_SKILLS_DIR/"
 
 # Detect stale skill folders from the wiki rename
 ORPHAN_FOUND=()

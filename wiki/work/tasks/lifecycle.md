@@ -15,7 +15,7 @@ Active files are **never moved** after creation; state lives in the `status:` fr
 |-----|----------|-------|
 | `id` | yes | `TASK-NNN` |
 | `title` | yes | task title |
-| `status` | yes | `todo \| in-progress \| pending-uat \| done \| trashed` |
+| `status` | yes | `todo \| in-progress \| done \| trashed` |
 | `created` / `updated` | yes | `YYYY-MM-DD` |
 | `depends_on` | no | `TASK-NNN` IDs that must finish first |
 | `blocks` | no | `TASK-NNN` IDs this one gates |
@@ -26,14 +26,13 @@ Active files are **never moved** after creation; state lives in the `status:` fr
 ## Status transitions
 
 ```
-todo ──▶ in-progress ──▶ pending-uat ──▶ done
-  │            │               │
-  └────────────┴───────────────┴──▶ trashed
+todo ──▶ in-progress ──▶ done
+  │            │
+  └────────────┴──▶ trashed
 ```
 
 - **todo** — created by `/task-add`; not yet started.
-- **in-progress** — being executed (`/tackle`); at least one `## Steps` checkbox still unchecked. `/tackle` runs **static gates only** (typecheck, `bash -n`, lint, unit tests); runtime/E2E verification is the UAT phase.
-- **pending-uat** — implementation finished (every `## Steps` checkbox checked); set by `/tackle` right before its UAT-generation gate. UAT has not yet passed or been skipped. `/roadmap-next` surfaces tasks in this state with a `/uat-walk`/`/uat-auto` action instead of `/tackle` — there's nothing left to implement, only to verify.
+- **in-progress** — being executed (`/tackle`). `/tackle` runs **static gates only** (typecheck, `bash -n`, lint, unit tests); runtime/E2E verification is the UAT phase.
 - **done** — implementation complete and its UAT passed (`/uat-walk` / `/uat-auto`) or was explicitly skipped (`/uat-skip`).
 - **trashed** — terminal; abandoned via `/task-trash` with the reason recorded in the file. The matching UAT is trashed alongside.
 

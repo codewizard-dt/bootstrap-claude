@@ -726,6 +726,40 @@ test('prompt_yn_sticky: an unanswered key prompts, honours the reply, and record
   }
 });
 
+test('prompt_yn (via prompt_yn_sticky): a bare Enter honours the bracket default the prompt text displays', () => {
+  // Every prompt in this codebase signals its default via bracket
+  // capitalization — "[Y/n]" or "[y/N]" — but until this fix, an empty reply
+  // ALWAYS meant "no" regardless of what the brackets promised, silently
+  // declining a "[Y/n]" prompt on a bare Enter. Two keys, two bracket
+  // spellings, same empty reply: the code (not just the label) must differ.
+  for (const [prompt, expectedCode, expectedStored] of [
+    [`  ${PROMPT_MARKER} Install the thing? [Y/n]: `, 0, true],
+    [`  ${PROMPT_MARKER} Install the thing? [y/N]: `, 1, false],
+  ]) {
+    withScratchEnv((S) => {
+      const r = runShell(stickySnippet(YN_KEY, '--global', prompt), {
+        env: S.env,
+        tty: true,
+        input: '\n',
+      });
+
+      assert.equal(r.status, 0, r.stderr);
+      assert.equal(
+        returnCode(r),
+        expectedCode,
+        `a bare Enter against ${JSON.stringify(prompt)} returned the wrong code — the bracket default was not honoured`
+      );
+
+      const stored = readPrefs(S.home);
+      assert.deepEqual(
+        stored,
+        { [YN_KEY]: expectedStored },
+        `a bare Enter against ${JSON.stringify(prompt)} recorded the wrong value`
+      );
+    });
+  }
+});
+
 test('prompt_yn_sticky: an unrecognized stored value warns on stderr and falls back to prompting', () => {
   // Not "silently treat it as a decline". A stored value the current grammar has
   // no branch for (menu reordered, grammar narrowed under an old answer) must
@@ -1578,6 +1612,13 @@ const SECTION_REMEMBERED = /^ {2}\.gitignore section '(.+)': skipped \(remembere
 const PREFS_VALUES_PATH = '.claude/bootstrap-prefs.json';
 const PREFS_README_PATH = '.claude/bootstrap-prefs.README.md';
 
+// The one sentinel merge-gitignore.sh:262 shares between the wiki/agent-state
+// dirs and the bootstrap-prefs files. Written proactively — every interactive
+// run against a git repo ensures this line exists in .git/info/exclude even
+// when every exclude-affecting prompt is declined, so a fresh scratch repo's
+// FIRST run is what creates it, not a later accepted prompt.
+const GIT_EXCLUDE_SENTINEL = '# bootstrap machine-local (autocomplete-visible)';
+
 /**
  * The template's sections, parsed the same way merge-gitignore.sh:50-65 parses
  * them, so the offered set and the prompt count are DERIVED rather than pinned.
@@ -1929,7 +1970,7 @@ test('merge-gitignore.sh e2e: every prompt is answered from scripted stdin, in o
     // The accepted .git/info/exclude answer: the sentinel block exists and holds
     // the three paths, which is the ONLY externally visible effect of that `y`.
     const gitExclude = path.join(S.projectDir, '.git', 'info', 'exclude');
-    for (const p of ['# bootstrap wiki & agent state (machine-local)', '.serena/', 'raw/', 'wiki/']) {
+    for (const p of ['# bootstrap machine-local (autocomplete-visible)', '.serena/', 'raw/', 'wiki/']) {
       assert.ok(hasExactLine(gitExclude, p), `${JSON.stringify(p)} is missing from .git/info/exclude — the accepted prompt did nothing`);
     }
     assert.notDeepEqual(fingerprintFiles([gitExclude]), excludeBefore, '.git/info/exclude was not touched at all');
@@ -2109,7 +2150,6 @@ test('merge-gitignore.sh e2e: prefs.gitTracking — each option routes the two p
       const offered = offeredSections();
       const gitignore = path.join(S.projectDir, '.gitignore');
       const gitExclude = path.join(S.projectDir, '.git', 'info', 'exclude');
-      const excludeAfterInit = fingerprintFiles([gitExclude]);
 
       const r = runMergeGitignore(
         S,
@@ -2130,14 +2170,26 @@ test('merge-gitignore.sh e2e: prefs.gitTracking — each option routes the two p
         assert.ok(hasExactLine(gitignore, '# bootstrap preferences (remembered installer answers)'), '[gitignore] the header line is missing');
         assert.ok(!inExclude, '[gitignore] the prefs paths also reached .git/info/exclude');
         assert.ok(!hasExactLine(gitExclude, PREFS_VALUES_PATH), '[gitignore] the values path leaked into .git/info/exclude');
-        assert.deepEqual(
-          fingerprintFiles([gitExclude]),
-          excludeAfterInit,
-          '[gitignore] .git/info/exclude was modified — option 1 must touch .gitignore only'
+        // Option 1 must touch .gitignore only — but the shared sentinel is now
+        // written proactively regardless of any prompt answer, so a scratch repo's
+        // FIRST run (this one) is what creates it, on top of whatever `git init`
+        // itself seeds into .git/info/exclude (its own C-project boilerplate
+        // comments). The check is "sentinel present, nothing bootstrap-managed
+        // under it" rather than exact whole-file content, which would be pinned
+        // to git's template and break on an unrelated git version bump.
+        assert.ok(
+          hasExactLine(gitExclude, GIT_EXCLUDE_SENTINEL),
+          '[gitignore] the proactively-written shared sentinel is missing from .git/info/exclude'
         );
+        for (const p of ['.serena/', 'raw/', 'wiki/', PREFS_VALUES_PATH, PREFS_README_PATH]) {
+          assert.ok(
+            !hasExactLine(gitExclude, p),
+            `[gitignore] ${p} reached .git/info/exclude — option 1 must touch .gitignore only`
+          );
+        }
       } else if (where === 'exclude') {
         assert.ok(inExclude, '[exclude] both prefs paths should be in .git/info/exclude');
-        assert.ok(hasExactLine(gitExclude, '# bootstrap preferences (machine-local)'), '[exclude] the header line is missing');
+        assert.ok(hasExactLine(gitExclude, GIT_EXCLUDE_SENTINEL), '[exclude] the shared sentinel header line is missing');
         assert.ok(
           !fs.existsSync(gitignore),
           '[exclude] a .gitignore was created — every section was declined and option 2 must not write one'
@@ -2149,7 +2201,14 @@ test('merge-gitignore.sh e2e: prefs.gitTracking — each option routes the two p
         );
         assert.ok(!inExclude, '[neither] the prefs paths reached .git/info/exclude');
         assert.ok(!hasExactLine(gitExclude, PREFS_VALUES_PATH), '[neither] the values path leaked into .git/info/exclude');
-        assert.deepEqual(fingerprintFiles([gitExclude]), excludeAfterInit, '[neither] .git/info/exclude was modified');
+        // Same proactive-sentinel reasoning as the `gitignore` branch above.
+        assert.ok(
+          hasExactLine(gitExclude, GIT_EXCLUDE_SENTINEL),
+          '[neither] the proactively-written shared sentinel is missing from .git/info/exclude'
+        );
+        for (const p of ['.serena/', 'raw/', 'wiki/', PREFS_VALUES_PATH, PREFS_README_PATH]) {
+          assert.ok(!hasExactLine(gitExclude, p), `[neither] ${p} reached .git/info/exclude`);
+        }
       }
 
       // NOT RE-ASKED. Poison stdin again: if the menu fired, a `y` is neither a
@@ -2178,6 +2237,44 @@ test('merge-gitignore.sh e2e: prefs.gitTracking — each option routes the two p
       );
     });
   }
+});
+
+test('merge-gitignore.sh e2e: a project with only the legacy prefs-exclude sentinel converges onto the shared sentinel once the wiki-dirs prompt also runs', () => {
+  // THE EXACT BUG REPORTED: a project that only ever went through the
+  // prefs.gitTracking `[2] exclude` path (and never accepted the wiki-dirs
+  // prompt) ends up with the OLD, separately-named
+  // `# bootstrap preferences (machine-local)` header and none of .serena/,
+  // raw/, wiki/ under it — so file-suggestion.sh's single hardcoded SENTINEL
+  // never matches that header and @-autocomplete never re-includes anything.
+  // Seed exactly that legacy shape by hand (simulating an existing project from
+  // before the two mechanisms were unified), then run the current
+  // merge-gitignore.sh and confirm BOTH mechanisms converge onto one block.
+  withGitScratch((S) => {
+    const gitExclude = path.join(S.projectDir, '.git', 'info', 'exclude');
+    fs.mkdirSync(path.dirname(gitExclude), { recursive: true });
+    fs.writeFileSync(gitExclude, ['# bootstrap preferences (machine-local)', PREFS_VALUES_PATH, PREFS_README_PATH, ''].join('\n'));
+
+    const offered = offeredSections();
+    const r = runMergeGitignore(
+      S,
+      S.projectDir,
+      answerScript(offered, { accept: () => false, infoExclude: true, gitTracking: 2 })
+    );
+    assert.equal(r.status, 0, `the run did not exit 0:\nstdout:\n${r.stdout}\nstderr:\n${r.stderr}`);
+
+    assert.ok(
+      !hasExactLine(gitExclude, '# bootstrap preferences (machine-local)'),
+      'the legacy pre-unification sentinel header was not scrubbed'
+    );
+    const sentinelCount = fileLines(gitExclude).filter((l) => l === GIT_EXCLUDE_SENTINEL).length;
+    assert.equal(sentinelCount, 1, `the shared sentinel must appear exactly once after convergence, found ${sentinelCount}`);
+    for (const p of ['.serena/', 'raw/', 'wiki/', PREFS_VALUES_PATH, PREFS_README_PATH]) {
+      assert.ok(
+        hasExactLine(gitExclude, p),
+        `${p} is missing after convergence — the wiki-dirs and prefs-exclude mechanisms did not merge into one block`
+      );
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 id: git-ignore-tool-visibility
 title: Git-Ignore Tool Visibility
 aliases: [info-exclude escape hatch, gitignore blinds agent tools]
-updated: 2026-07-29
+updated: 2026-08-15
 sources:
   - ../../raw/research/gitignored-wiki-tool-visibility/index.md
   - ../../raw/research/git-exclude-at-autocomplete/index.md
@@ -18,4 +18,4 @@ tags: [gitignore, agent-tooling, pattern]
 
 > **Contradiction (resolved):** this page previously claimed `info/exclude` "keeps the paths tool-visible … visible to (most) agents", per [gitignored-wiki-tool-visibility](../sources/gitignored-wiki-tool-visibility.md), which had left the ripgrep interaction unverified. [git-exclude-at-autocomplete](../sources/git-exclude-at-autocomplete.md) verified the opposite for ripgrep-class tools and the `@` picker (rg guide + local experiment + upstream issues); the claim is now narrowed to Serena. supersedes::[[gitignored-wiki-tool-visibility]]
 
-Decision rule distilled: **`.gitignore` = ignored by git AND by agents; `.git/info/exclude` = ignored by git, visible to Serena but NOT to ripgrep-class tools or the `@` picker; git-side mechanisms cannot buy back picker visibility — the `fileSuggestion` custom-command setting can** (it replaces the built-in picker's indexing entirely). In this repo's tooling, the "Bootstrap wiki & agent state" exclusion (`.serena/`, `raw/`, `wiki/`) ships as an interactive `info/exclude` offer, never as `.gitignore` entries, paired with a `fileSuggestion` script that re-includes the sentinel-scoped excluded paths. derived_from::[[gitignored-wiki-tool-visibility]] derived_from::[[git-exclude-at-autocomplete]]
+Decision rule distilled: **`.gitignore` = ignored by git AND by agents; `.git/info/exclude` = ignored by git, visible to Serena but NOT to ripgrep-class tools or the `@` picker; git-side mechanisms cannot buy back picker visibility — the `fileSuggestion` custom-command setting can** (it replaces the built-in picker's indexing entirely). In this repo's tooling, machine-local exclusion — the wiki/agent-state dirs (`.serena/`, `raw/`, `wiki/`) AND the `.claude/bootstrap-prefs.*` files — ships as an interactive `info/exclude` offer, never as `.gitignore` entries, and both are written under ONE shared, generic sentinel (not named after either — see [Claude Code @ File Picker (fileSuggestion)](../entities/tools/claude-code-file-picker.md)) so a single `fileSuggestion` script re-includes the sentinel-scoped directories regardless of which of the two prompts ran first. derived_from::[[gitignored-wiki-tool-visibility]] derived_from::[[git-exclude-at-autocomplete]]

@@ -47,8 +47,8 @@
   "gitignore.infoExclude": {
     "scope": "project",
     "consumer": "installer",
-    "summary": "Keep .serena/, raw/, and wiki/ out of git on this machine via .git/info/exclude",
-    "detail": "Asked by merge-gitignore.sh:376 when one or more of .serena/, raw/, wiki/ are not yet excluded. true writes them under the bootstrap sentinel in .git/info/exclude — machine-local, never committed, and unlike .gitignore it does not blind Serena or ripgrep-class walkers; the installed fileSuggestion script restores @-autocomplete for those paths. false leaves git tracking them here; teammates opt in separately by running update themselves. This is INDEPENDENT of the .gitignore section pass governed by gitignore.offerSectionUpdates: declining or disabling sections never disables the info/exclude mechanism, and a pure sentinel repair (all three already excluded elsewhere in the file) runs with no prompt at all regardless of this key. See also prefs.gitTracking, which decides how git treats the preferences file itself — a different question from these three directories.",
+    "summary": "Add .serena/, raw/, and wiki/ to git's local ignore list via .git/info/exclude",
+    "detail": "Asked by merge-gitignore.sh:440 when one or more of .serena/, raw/, wiki/ are not yet excluded. true writes them under the bootstrap sentinel in .git/info/exclude — machine-local, never committed, and unlike .gitignore it does not blind Serena or ripgrep-class walkers; the installed fileSuggestion script restores @-autocomplete for those paths. false leaves git tracking them here; teammates opt in separately by running update themselves. This is INDEPENDENT of the .gitignore section pass governed by gitignore.offerSectionUpdates: declining or disabling sections never disables the info/exclude mechanism, and a pure sentinel repair (all three already excluded elsewhere in the file) runs with no prompt at all regardless of this key. See also prefs.gitTracking, which decides how git treats the preferences file itself — a different question from these three directories.",
     "values": "true | false",
     "default": null,
     "askedBy": "merge-gitignore.sh"
@@ -66,7 +66,7 @@
     "scope": "project",
     "consumer": "installer",
     "summary": "Install a specific optional guide into wiki/guides/",
-    "detail": "One key per entry in sync-wiki-scaffold.sh's OPTIONAL_GUIDES list (sync-wiki-scaffold.sh:81), keyed by the exact entry text including any extension — today that is guides.evals-framework.md and guides.type-checking-templates. true delivers the guide into wiki/guides/ on every run; false keeps it out and suppresses the per-run prompt. A guide already present in wiki/guides/ (or in the legacy .docs/guides/) is refreshed regardless of this key — existing opt-in wins, because the file on disk is the stronger signal than a stored answer. The required guide tier is never gated by these keys.",
+    "detail": "One key per entry in sync-wiki-scaffold.sh's OPTIONAL_GUIDES list (sync-wiki-scaffold.sh:88), keyed by the exact entry text including any extension — today that is guides.evals-framework.md and guides.type-checking-templates. true delivers the guide into wiki/guides/ on every run; false keeps it out and suppresses the per-run prompt. A guide already present in wiki/guides/ (or in the legacy .docs/guides/) is refreshed regardless of this key — existing opt-in wins, because the file on disk is the stronger signal than a stored answer. The required guide tier is never gated by these keys.",
     "values": "true | false",
     "default": null,
     "askedBy": "sync-wiki-scaffold.sh",
@@ -104,7 +104,7 @@
     "scope": "global",
     "consumer": "installer",
     "summary": "Registration scope for the Context7 MCP",
-    "detail": "Asked by prompt_scope in lib.sh:393 ('Scope for context7 — [u]ser (default) or [p]roject?'). prompt_scope emits exactly two answers, 'user' and 'project' — it has no local-scope branch, and any reply that does not begin with p or P falls through to user. 'user' registers Context7 once for every project on this machine; 'project' writes the registration into the current project's shareable .mcp.json.",
+    "detail": "Asked by prompt_scope in lib.sh:404 ('Scope for context7 — [u]ser (default) or [p]roject?'). prompt_scope emits exactly two answers, 'user' and 'project' — it has no local-scope branch, and any reply that does not begin with p or P falls through to user. 'user' registers Context7 once for every project on this machine; 'project' writes the registration into the current project's shareable .mcp.json.",
     "values": "user | project",
     "default": null,
     "askedBy": "lib.sh"
@@ -140,7 +140,7 @@
     "scope": "global",
     "consumer": "installer",
     "summary": "Delete stale skill folders in ~/.claude/skills/ left by the wiki rename",
-    "detail": "Asked by install-global.sh:70 when any renamed-away skill folder (the adr-* and prd-* families) is still present in ~/.claude/skills/. true removes those folders with rm -rf; false keeps them, and they continue to appear as duplicate slash commands alongside their renamed replacements. The list of orphan names is fixed in the script — this key does not decide which folders qualify, only whether the deletion runs.",
+    "detail": "Asked by install-global.sh:72 when any renamed-away skill folder (the adr-* and prd-* families) is still present in ~/.claude/skills/. true removes those folders with rm -rf; false keeps them, and they continue to appear as duplicate slash commands alongside their renamed replacements. The list of orphan names is fixed in the script — this key does not decide which folders qualify, only whether the deletion runs.",
     "values": "true | false",
     "default": null,
     "askedBy": "install-global.sh"

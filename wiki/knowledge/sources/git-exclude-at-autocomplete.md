@@ -2,7 +2,7 @@
 id: git-exclude-at-autocomplete
 title: "Research: git exclude vs Claude Code @ autocomplete"
 aliases: [fileSuggestion research, at-autocomplete research]
-updated: 2026-07-29
+updated: 2026-08-15
 sources:
   - ../../../raw/research/git-exclude-at-autocomplete/index.md
 confidence: extracted
@@ -17,4 +17,6 @@ Follow-up to derived_from::[[gitignored-wiki-tool-visibility]]: the adopted `.gi
 
 **The escape hatch is on the Claude Code side**: the officially documented relates_to::[[claude-code-file-picker]] `fileSuggestion` setting replaces the built-in picker with a custom command (stdin JSON `{"query": ...}`, `CLAUDE_PROJECT_DIR` env, newline-separated paths on stdout, restart required). A custom command bypasses **all** ignore/tracked-only filtering — the script decides what is suggestible.
 
-**Recommendation**: keep `.git/info/exclude` exactly as shipped and add a bootstrap-installed `fileSuggestion` script — `rg --files` plus `rg --files --no-ignore <dir>` for paths listed under the bootstrap sentinel (`# bootstrap wiki & agent state (machine-local)`) in `.git/info/exclude`, so a user's *other* deliberately-hidden entries stay hidden and non-bootstrap projects get built-in-equivalent behavior. Register via a settings merge in `install-global.sh` (never clobbering an existing user `fileSuggestion`), and correct the over-broad "invisible to the tools" claims in `merge-gitignore.sh`, the gitignore template note, and contradicts::[[git-ignore-tool-visibility]] (the concept's decision rule needed narrowing to Serena).
+**Recommendation**: keep `.git/info/exclude` exactly as shipped and add a bootstrap-installed `fileSuggestion` script — `rg --files` plus `rg --files --no-ignore <dir>` for paths listed under the bootstrap sentinel in `.git/info/exclude`, so a user's *other* deliberately-hidden entries stay hidden and non-bootstrap projects get built-in-equivalent behavior. Register via a settings merge in `install-global.sh` (never clobbering an existing user `fileSuggestion`), and correct the over-broad "invisible to the tools" claims in `merge-gitignore.sh`, the gitignore template note, and contradicts::[[git-ignore-tool-visibility]] (the concept's decision rule needed narrowing to Serena).
+
+> **Update (2026-08-15):** `merge-gitignore.sh` turned out to write a SECOND, separately-hand-rolled sentinel (`# bootstrap preferences (machine-local)`, for `.claude/bootstrap-prefs.json`/`.README.md`) that `fileSuggestion` never read — a real bug on any project where the two prompts got answered in different orders, since `fileSuggestion`'s hardcoded `SENTINEL` only ever matched the wiki-dirs header. Fixed by unifying both onto one generic, shared sentinel — `# bootstrap machine-local (autocomplete-visible)` — that both mechanisms write into and that `fileSuggestion.sh` reads back regardless of which prompt ran first. The sentinel line is now also written proactively (a bare comment excludes nothing, so it needs no consent prompt), so the anchor exists even on a project where every exclude prompt was declined. `fileSuggestion.sh` still only re-includes *directories* under the sentinel — the `.claude/bootstrap-prefs.*` files sit under it too (git-excluded) but stay `@`-invisible, unchanged from before.

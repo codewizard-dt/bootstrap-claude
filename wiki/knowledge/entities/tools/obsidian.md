@@ -2,10 +2,12 @@
 id: obsidian
 title: Obsidian
 aliases: [Obsidian.md]
-updated: 2026-08-13
+updated: 2026-08-15
 sources:
   - ../../../../raw/research/obsidian-wiki-linking/index.md
   - ../../../../raw/research/obsidian-wiki-linking/sources.md
+  - ../../../../raw/research/obsidian-graph-defaults/index.md
+  - ../../../../raw/research/obsidian-graph-defaults/sources.md
 confidence: extracted
 tags: [obsidian, wiki-conventions, markdown, note-taking]
 ---
@@ -16,4 +18,6 @@ Obsidian.md is the local-first markdown note-taking app this repo's `raw/llm-wik
 
 **Disambiguation:** this page is about the Obsidian.md application itself. Do not confuse it with `[[claude-obsidian]]`, an unrelated third-party AI-wiki reimplementation project (`github.com/AgriciDaniel/claude-obsidian`) that merely shares the word "Obsidian" in its name — it is a productized reimplementation of the LLM Wiki pattern, not the Obsidian app.
 
-**Automated install (`derived_from::[[obsidian-setup-automation]]`).** The app itself installs headlessly via native package managers, one command per OS, all silent/non-interactive-capable: `brew install --cask obsidian` (macOS), `winget install -e --id Obsidian.Obsidian` (Windows — its winget manifest declares `InstallModes: [silent]`), `flatpak install flathub md.obsidian.Obsidian` (Linux — the officially verified, auto-updating path, preferred over `.deb`/AppImage/Snap for a script since those don't self-update). This repo's proposed `lib/scripts/install-obsidian.sh` would gate this behind a global-scope sticky preference (`obsidian.installApp`), reusing `uses::[[bootstrap-guarded-install-pattern]]` rather than inventing new install machinery.
+**Automated install (`derived_from::[[obsidian-setup-automation]]`).** The app itself installs headlessly via native package managers, one command per OS, all silent/non-interactive-capable: `brew install --cask obsidian` (macOS), `winget install -e --id Obsidian.Obsidian` (Windows — its winget manifest declares `InstallModes: [silent]`), `flatpak install flathub md.obsidian.Obsidian` (Linux — the officially verified, auto-updating path, preferred over `.deb`/AppImage/Snap for a script since those don't self-update). `lib/scripts/install-obsidian.sh` gates this behind a global-scope sticky preference (`obsidian.installApp`) and gates its three recommended plugins (`uses::[[dataview]]`, `uses::[[graph-link-types]]`, `uses::[[breadcrumbs-plugin]]`) behind a project-scope one (`obsidian.plugins`), reusing `uses::[[bootstrap-guarded-install-pattern]]` rather than inventing new install machinery.
+
+**Graph view color grouping needs no plugin at all (`derived_from::[[obsidian-graph-defaults]]`).** `.obsidian/graph.json`'s `colorGroups` array is native Obsidian JSON — see `relates_to::[[obsidian-graph-view-styling]]` for the schema and query syntax. Because this repo's wiki taxonomy (`wiki/knowledge/*`, `wiki/work/*`, `raw/`) is identical across every project scaffolded by `sync-wiki-scaffold.sh`, a hand-authored `colorGroups` template keyed to those exact paths is a candidate zero-dependency default for `install-obsidian.sh` to write (write-if-absent, so a user's own customization is never clobbered) — more precise for this specific taxonomy than the auto-detecting alternatives `relates_to::[[graph-styler]]` and `relates_to::[[auto-tag-graph-colors]]`, which remain reasonable optional opt-ins for content beyond the wiki scaffold. Not yet implemented in this repo.

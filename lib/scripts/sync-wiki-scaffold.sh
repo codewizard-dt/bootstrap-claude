@@ -45,19 +45,26 @@ mkdir -p \
   "$PROJECT_DIR/wiki/work/bugs" \
   "$PROJECT_DIR/wiki/guides"
 
+# rsync flags shared by every call below: content-based comparison (not
+# mtime — each `npx` run extracts a fresh package copy with new mtimes, which
+# would otherwise make every file look "changed" on every run), no directory
+# mtime writes (same reason, applied to directories), and a minimal one-line
+# report per file actually transferred instead of the full recursive listing.
+RSYNC_FLAGS=(-a --checksum --omit-dir-times --out-format='  + %n')
+
 # 2. COPY-ONCE: index.md, log.md, hot.md, .gitkeep files — project-owned after creation, never overwrite
 #    Exclude conventions.md and lifecycle.md (those are always-refresh, handled in step 3).
-rsync -av --ignore-existing \
+rsync "${RSYNC_FLAGS[@]}" --ignore-existing \
   --exclude 'conventions.md' \
   --exclude 'lifecycle.md' \
   --exclude 'dashboard.html' \
   "$TEMPLATES/" "$PROJECT_DIR/wiki/"
 
 # 3. ALWAYS-REFRESH: spec docs (conventions.md, lifecycle.md) and dashboard.html that remain template-owned; always overwrite
-rsync -av "$TEMPLATES/conventions.md" "$PROJECT_DIR/wiki/conventions.md"
-rsync -av "$TEMPLATES/dashboard.html" "$PROJECT_DIR/wiki/dashboard.html"
+rsync "${RSYNC_FLAGS[@]}" "$TEMPLATES/conventions.md" "$PROJECT_DIR/wiki/conventions.md"
+rsync "${RSYNC_FLAGS[@]}" "$TEMPLATES/dashboard.html" "$PROJECT_DIR/wiki/dashboard.html"
 for fam in requirements decisions roadmaps tasks uat bugs; do
-  rsync -av "$TEMPLATES/work/$fam/lifecycle.md" "$PROJECT_DIR/wiki/work/$fam/lifecycle.md"
+  rsync "${RSYNC_FLAGS[@]}" "$TEMPLATES/work/$fam/lifecycle.md" "$PROJECT_DIR/wiki/work/$fam/lifecycle.md"
 done
 
 # 4. GUIDES: tiered delivery into target wiki/guides/ (template-owned
@@ -83,9 +90,9 @@ OPTIONAL_GUIDES="evals-framework.md type-checking-templates"
 deliver_guide() {
   # $1 = guide name (file or dir under GUIDES_SRC)
   if [ -d "$GUIDES_SRC/$1" ]; then
-    rsync -av "$GUIDES_SRC/$1/" "$GUIDES_DST/$1/"
+    rsync "${RSYNC_FLAGS[@]}" "$GUIDES_SRC/$1/" "$GUIDES_DST/$1/"
   else
-    rsync -av "$GUIDES_SRC/$1" "$GUIDES_DST/"
+    rsync "${RSYNC_FLAGS[@]}" "$GUIDES_SRC/$1" "$GUIDES_DST/"
   fi
 }
 

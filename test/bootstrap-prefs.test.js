@@ -2639,11 +2639,11 @@ const CITATION_PINS = {
   // moved with it and the entry's detail needs rereading, not just renumbering.
   'merge-gitignore.sh:11': "NOTHING is ever added to a project's .gitignore without asking",
   'merge-gitignore.sh:171': 'Review .gitignore updates?',
-  'merge-gitignore.sh:376': 'Keep .serena/, raw/, wiki/ out of git on THIS machine',
+  'merge-gitignore.sh:440': "Add .serena/, raw/, and wiki/ to git's local ignore list",
   // A data declaration, not a prompt: the list that generates the guides.* keys.
-  'sync-wiki-scaffold.sh:81': 'OPTIONAL_GUIDES=',
-  'lib.sh:393': 'Scope for $name',
-  'install-global.sh:70': 'Delete these',
+  'sync-wiki-scaffold.sh:88': 'OPTIONAL_GUIDES=',
+  'lib.sh:404': 'Scope for $name',
+  'install-global.sh:72': 'Delete these',
 };
 
 test('schema: every script:line citation in a detail still points at the line it claims', () => {

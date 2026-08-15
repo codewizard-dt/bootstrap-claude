@@ -75,7 +75,7 @@ fi
 # the topology the scaffolded CI implements. Landed before the Claude run so
 # it survives a timeout.
 mkdir -p "$PROJECT_DIR/wiki/guides"
-rsync -av "$GUIDE" "$PROJECT_DIR/wiki/guides/deployment-strategy.md"
+rsync -a --checksum --out-format='  + %n' "$GUIDE" "$PROJECT_DIR/wiki/guides/deployment-strategy.md"
 
 TASK="$(sed "s|__PROJECT_DIR__|$PROJECT_DIR|g" "$TEMPLATE")"
 
