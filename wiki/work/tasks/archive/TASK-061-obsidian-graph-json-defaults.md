@@ -1,5 +1,6 @@
 ---
 id: TASK-061
+aliases: [TASK-061]
 title: "Ship a default .obsidian/graph.json template into install-obsidian.sh"
 status: done
 created: 2026-08-15

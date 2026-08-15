@@ -1,5 +1,6 @@
 ---
 id: TASK-013
+aliases: [TASK-013]
 title: "Build dashboard.html self-contained live dashboard client"
 status: done
 created: 2026-07-06

@@ -1,5 +1,6 @@
 ---
 id: ROADMAP-005
+aliases: [ROADMAP-005]
 title: Preference store — ask once, remember, and stop skills acting without consent
 status: done
 created: 2026-08-06

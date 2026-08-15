@@ -1,5 +1,6 @@
 ---
 id: UAT-040
+aliases: [UAT-040]
 title: "UAT: Canonical preference key registry — bootstrap-prefs-schema.json"
 status: passed
 task: TASK-040

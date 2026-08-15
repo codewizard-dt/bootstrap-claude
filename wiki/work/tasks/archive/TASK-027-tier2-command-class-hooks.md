@@ -1,5 +1,6 @@
 ---
 id: TASK-027
+aliases: [TASK-027]
 title: "Tier-2 PreToolUse hooks — gate command classes deny rules cannot express"
 status: done
 created: 2026-07-29

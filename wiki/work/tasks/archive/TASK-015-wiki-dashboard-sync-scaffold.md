@@ -1,5 +1,6 @@
 ---
 id: TASK-015
+aliases: [TASK-015]
 title: "Sync dashboard.html into projects as an always-refresh scaffold file"
 status: done
 created: 2026-07-06

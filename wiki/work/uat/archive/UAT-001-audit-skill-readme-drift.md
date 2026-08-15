@@ -1,5 +1,6 @@
 ---
 id: UAT-001
+aliases: [UAT-001]
 title: "UAT: Audit lib/skills for stale README.md-style family-index references"
 status: skipped
 task: TASK-001

@@ -1,5 +1,6 @@
 ---
 id: UAT-003
+aliases: [UAT-003]
 title: "UAT: Fix roadmap-create and other skills drifting from the index.md/lifecycle.md convention"
 status: skipped
 task: TASK-003

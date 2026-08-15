@@ -1,5 +1,6 @@
 ---
 id: ROADMAP-007
+aliases: [ROADMAP-007]
 title: Obsidian Graph View Defaults & Dataview Query Examples
 status: done
 created: 2026-08-15

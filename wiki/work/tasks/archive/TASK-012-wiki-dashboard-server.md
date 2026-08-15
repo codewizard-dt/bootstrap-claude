@@ -1,5 +1,6 @@
 ---
 id: TASK-012
+aliases: [TASK-012]
 title: "Build wiki-dashboard-server.js zero-dependency static file server"
 status: done
 created: 2026-07-06

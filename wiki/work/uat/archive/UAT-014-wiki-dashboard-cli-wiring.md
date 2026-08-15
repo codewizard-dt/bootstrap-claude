@@ -1,5 +1,6 @@
 ---
 id: UAT-014
+aliases: [UAT-014]
 title: "UAT: Wire dashboard command into bin/cli.js"
 status: passed
 task: TASK-014

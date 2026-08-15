@@ -1,5 +1,6 @@
 ---
 id: TASK-038
+aliases: [TASK-038]
 title: "Fake-HOME end-to-end verification of resilient hook install + hooks wiring, and the minor release"
 status: done
 created: 2026-07-31

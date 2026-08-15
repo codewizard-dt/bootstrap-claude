@@ -99,6 +99,7 @@ Create `wiki/work/tasks/TASK-NNN-slug.md` using the `Write` tool.
 ```yaml
 ---
 id: TASK-NNN
+aliases: [TASK-NNN]
 title: "<task title>"
 status: todo
 created: YYYY-MM-DD

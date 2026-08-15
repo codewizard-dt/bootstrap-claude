@@ -1,5 +1,6 @@
 ---
 id: UAT-016
+aliases: [UAT-016]
 title: "UAT: Document the dashboard command in README.md, lib/scripts/README.md, and CLAUDE.md"
 status: passed
 task: TASK-016

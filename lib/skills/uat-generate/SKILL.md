@@ -147,6 +147,7 @@ Create the UAT file with this structure:
 ```markdown
 ---
 id: UAT-NNN
+aliases: [UAT-NNN]
 title: "UAT: [Task Title]"
 status: pending
 task: TASK-NNN

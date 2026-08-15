@@ -133,6 +133,7 @@ Use `Write` to create `wiki/work/roadmaps/NNN-slug.md` following the field table
 | Field | Value at creation time |
 |-------|------------------------|
 | `Status` | `active` |
+| `aliases` | `[ROADMAP-NNN]` — mirrors the file's own `id:` value |
 | `Created` | Today's date (derive at runtime — use the conversation environment's `currentDate`, otherwise `date +%Y-%m-%d`) |
 | `Last updated` | Same as `Created` |
 | `Owner` | From Step 3 #3 |

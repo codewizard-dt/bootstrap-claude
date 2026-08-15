@@ -1,5 +1,6 @@
 ---
 id: TASK-023
+aliases: [TASK-023]
 title: "playwright → native launchd LaunchAgent HTTP server (darwin), stdio fallback elsewhere"
 status: done
 created: 2026-07-28

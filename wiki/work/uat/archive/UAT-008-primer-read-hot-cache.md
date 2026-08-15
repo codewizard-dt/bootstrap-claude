@@ -1,5 +1,6 @@
 ---
 id: UAT-008
+aliases: [UAT-008]
 title: "UAT: Update /primer to read wiki/hot.md first, before Serena memories"
 status: skipped
 task: TASK-008

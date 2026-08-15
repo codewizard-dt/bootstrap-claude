@@ -1,5 +1,6 @@
 ---
 id: TASK-003
+aliases: [TASK-003]
 title: "Fix roadmap-create and other skills drifting from the index.md/lifecycle.md convention"
 status: done
 created: 2026-07-06

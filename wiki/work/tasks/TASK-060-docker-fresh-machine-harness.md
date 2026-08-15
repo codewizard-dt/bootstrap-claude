@@ -1,5 +1,6 @@
 ---
 id: TASK-060
+aliases: [TASK-060]
 title: "Docker fresh-machine test harness for setup/update"
 status: todo
 created: 2026-08-15

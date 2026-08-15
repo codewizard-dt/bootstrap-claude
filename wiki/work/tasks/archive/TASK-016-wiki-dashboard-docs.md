@@ -1,5 +1,6 @@
 ---
 id: TASK-016
+aliases: [TASK-016]
 title: "Document the dashboard command in README.md, lib/scripts/README.md, and CLAUDE.md"
 status: done
 created: 2026-07-06

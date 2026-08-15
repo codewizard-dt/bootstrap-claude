@@ -1,5 +1,6 @@
 ---
 id: TASK-046
+aliases: [TASK-046]
 title: "merge-gitignore.sh — prefs.gitTracking three-way prompt and declines-only wiring"
 status: done
 created: 2026-08-06

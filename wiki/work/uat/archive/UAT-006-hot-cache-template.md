@@ -5,6 +5,8 @@ status: passed
 task: TASK-006
 created: 2026-07-06
 updated: 2026-07-06
+aliases:
+  - UAT-006
 ---
 
 # UAT-006 — UAT: Add `wiki/hot.md` template to `lib/scripts/templates/wiki/`

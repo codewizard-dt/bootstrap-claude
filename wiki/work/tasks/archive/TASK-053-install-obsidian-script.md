@@ -1,5 +1,6 @@
 ---
 id: TASK-053
+aliases: [TASK-053]
 title: "Add lib/scripts/install-obsidian.sh (app + plugin auto-install)"
 status: done
 created: 2026-08-13

@@ -1,5 +1,6 @@
 ---
 id: TASK-056
+aliases: [TASK-056]
 title: "Add optional wiki/guides/ Dataview example-queries page"
 status: done
 created: 2026-08-13

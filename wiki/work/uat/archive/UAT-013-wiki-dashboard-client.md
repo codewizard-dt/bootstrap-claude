@@ -1,5 +1,6 @@
 ---
 id: UAT-013
+aliases: [UAT-013]
 title: "UAT: Build dashboard.html self-contained live dashboard client"
 status: skipped
 task: TASK-013

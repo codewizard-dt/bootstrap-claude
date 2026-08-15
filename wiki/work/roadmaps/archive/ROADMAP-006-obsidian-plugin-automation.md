@@ -1,5 +1,6 @@
 ---
 id: ROADMAP-006
+aliases: [ROADMAP-006]
 title: Automate Obsidian + Plugin Setup
 status: done
 created: 2026-08-13

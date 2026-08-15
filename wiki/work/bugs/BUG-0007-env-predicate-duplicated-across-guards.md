@@ -1,5 +1,6 @@
 ---
 id: BUG-0007
+aliases: [BUG-0007]
 title: isBlockedEnvFile is duplicated byte-for-byte across two .env guards
 status: open
 severity: medium

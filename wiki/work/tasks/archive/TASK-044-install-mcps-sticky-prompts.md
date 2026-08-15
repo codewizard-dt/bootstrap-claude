@@ -1,5 +1,6 @@
 ---
 id: TASK-044
+aliases: [TASK-044]
 title: "Wire the install-mcps.sh prompt sites to the preference store"
 status: done
 created: 2026-08-06

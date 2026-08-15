@@ -1,9 +1,14 @@
+---
+title: Tasks Archive
+---
+
 # Tasks Archive
 
 Terminal task files (`done` or `trashed`) moved here by `/wiki-archive` to reduce directory clutter. **Append-only** — archived items never move again.
 
 | ID | Title | Final Status | Archived |
 |----|-------|--------------|----------|
+| [[TASK-064]] | Backfill aliases: [<ID>] onto every existing work-item file's frontmatter | done | 2026-08-15 |
 | [[TASK-006]] | Add wiki/hot.md template to lib/scripts/templates/wiki/ | done | 2026-07-06 |
 | [[TASK-009]] | Activate confidence: extracted\|inferred\|ambiguous in wiki/conventions.md | done | 2026-07-06 |
 | [[TASK-004]] | Add Auto Memory vs. wiki division-of-responsibility note to CLAUDE.md | done | 2026-07-06 |
@@ -62,3 +67,5 @@ Terminal task files (`done` or `trashed`) moved here by `/wiki-archive` to reduc
 | [[TASK-059]] | Confirm setup/update stay non-fatal on Obsidian install failure and declining leaves everything untouched | done | 2026-08-14 |
 | [[TASK-053]] | Add lib/scripts/install-obsidian.sh (app + plugin auto-install) | done | 2026-08-14 |
 | [[TASK-061]] | Ship a default .obsidian/graph.json template into install-obsidian.sh | done | 2026-08-15 |
+| [[TASK-065]] | Add aliases: [<ID>] to work-item frontmatter templates | done | 2026-08-15 |
+| [[TASK-063]] | Bundle the Alias Linker plugin into install-obsidian.sh's plugin bundle | done | 2026-08-15 |

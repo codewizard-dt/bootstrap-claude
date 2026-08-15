@@ -1,5 +1,6 @@
 ---
 id: BUG-0005
+aliases: [BUG-0005]
 title: mv-absolute-path-block resolves the project root from process.cwd() instead of data.cwd
 status: open
 severity: medium

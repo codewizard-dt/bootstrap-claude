@@ -2515,6 +2515,40 @@ test('schema: obsidian.installApp, obsidian.plugins, and obsidian.graphDefaults 
   );
 });
 
+test('schema: obsidian.plugins summary/detail document Alias Linker as the 5th bundled plugin, its missing Dataview dependency, and its experimental status (TASK-063)', () => {
+  // The shape test above (scope/consumer/values/default/askedBy) never reads
+  // summary/detail at all, so a dropped "Alias Linker" mention or a stale
+  // "four" left behind in either field would pass every other check in this
+  // file silently. TASK-063 step 2 requires specific facts to land in prose:
+  // the plugin's name, that it is not a Dataview dependent (unlike Graph
+  // Link Types/Breadcrumbs), and its self-described "experimental" status as
+  // the reason it stays bundled under the single consent gate.
+  const schema = readJson(SCHEMA);
+  const entry = schema['obsidian.plugins'];
+
+  assert.strictEqual(
+    entry.summary,
+    'Install the bundled Obsidian plugin set (Dataview, Graph Link Types, Breadcrumbs, Front Matter Title, Alias Linker)',
+    'obsidian.plugins summary no longer names all five plugins'
+  );
+  assert.match(
+    entry.detail,
+    /all five recommended community plugins/,
+    'detail lost the "all five recommended community plugins" wording'
+  );
+  assert.match(entry.detail, /all five plugin folders/, 'detail lost the "all five plugin folders" wording');
+  assert.match(
+    entry.detail,
+    /Alias Linker likewise has no Dataview dependency/,
+    'detail lost the no-Dataview-dependency explanation for Alias Linker'
+  );
+  assert.match(
+    entry.detail,
+    /self-described 'experimental' upstream/,
+    "detail lost the \"experimental\" upstream callout for Alias Linker"
+  );
+});
+
 test('schema: no preference key can hold a secret — no secret-shaped names, no open grammars, and every API-key mention is a denial', () => {
   // WHY THIS IS NOT A KEYWORD SCAN. Two details legitimately discuss API keys
   // precisely IN ORDER to say the key is never stored (mcp.braveSearch,
@@ -2657,7 +2691,7 @@ const CITATION_PINS = {
   'merge-gitignore.sh:440': "Add .serena/, raw/, and wiki/ to git's local ignore list",
   // A data declaration, not a prompt: the list that generates the guides.* keys.
   'sync-wiki-scaffold.sh:88': 'OPTIONAL_GUIDES=',
-  'lib.sh:404': 'Scope for $name',
+  'lib.sh:410': 'Scope for $name',
   'install-global.sh:72': 'Delete these',
 };
 

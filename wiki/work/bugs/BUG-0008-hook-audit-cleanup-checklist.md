@@ -1,5 +1,6 @@
 ---
 id: BUG-0008
+aliases: [BUG-0008]
 title: Hook-audit cleanup — cosmetic, dead-code, and latent defects found during TASK-039
 status: open
 severity: low

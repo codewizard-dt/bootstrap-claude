@@ -1,5 +1,6 @@
 ---
 id: TASK-047
+aliases: [TASK-047]
 title: "test/prompt-stickiness.test.js — sticky-prompt coverage and the bijection un-skip"
 status: done
 created: 2026-08-06

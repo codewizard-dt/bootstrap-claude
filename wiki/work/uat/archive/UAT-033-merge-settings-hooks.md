@@ -1,5 +1,6 @@
 ---
 id: UAT-033
+aliases: [UAT-033]
 title: "UAT: Build lib/scripts/merge-settings-hooks.js — \"template owns its blocks\" hooks-wiring merge"
 status: passed
 task: TASK-033

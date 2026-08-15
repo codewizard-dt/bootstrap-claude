@@ -1,5 +1,6 @@
 ---
 id: UAT-004
+aliases: [UAT-004]
 title: "UAT: Add Auto Memory vs. wiki division-of-responsibility note to CLAUDE.md"
 status: passed
 task: TASK-004

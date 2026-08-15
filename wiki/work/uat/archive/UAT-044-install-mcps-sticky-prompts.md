@@ -1,5 +1,6 @@
 ---
 id: UAT-044
+aliases: [UAT-044]
 title: "UAT: Wire the install-mcps.sh prompt sites to the preference store"
 status: passed
 task: TASK-044

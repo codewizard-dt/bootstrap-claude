@@ -1,5 +1,6 @@
 ---
 id: TASK-041
+aliases: [TASK-041]
 title: "bootstrap-prefs.js — four-state preference helper"
 status: done
 created: 2026-08-06

@@ -1,5 +1,6 @@
 ---
 id: UAT-029
+aliases: [UAT-029]
 title: "UAT: Ship fileSuggestion @-autocomplete restoration for info/exclude'd wiki dirs"
 status: passed
 task: TASK-029

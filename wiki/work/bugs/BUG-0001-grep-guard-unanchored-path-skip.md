@@ -1,5 +1,6 @@
 ---
 id: BUG-0001
+aliases: [BUG-0001]
 title: Grep guard skips Serena enforcement for paths that merely contain a non-code directory name
 status: open
 severity: high

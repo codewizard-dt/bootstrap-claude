@@ -1,5 +1,6 @@
 ---
 id: UAT-026
+aliases: [UAT-026]
 title: "UAT: Audit and harden the canonical settings deny list"
 status: passed
 task: TASK-026

@@ -1,5 +1,6 @@
 ---
 id: UAT-011
+aliases: [UAT-011]
 title: "UAT: Update /wiki-lint to flag knowledge pages with weak or unset confidence provenance"
 status: skipped
 task: TASK-011

@@ -1,5 +1,6 @@
 ---
 id: BUG-0009
+aliases: [BUG-0009]
 title: --set reports success writing a key into a layer that never reads it
 status: verified
 severity: medium

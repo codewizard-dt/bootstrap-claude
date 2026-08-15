@@ -1,5 +1,6 @@
 ---
 id: UAT-028
+aliases: [UAT-028]
 title: "UAT: Rework interpreter-indirection-guard from blanket deny to recursive re-evaluation"
 status: passed
 task: TASK-028

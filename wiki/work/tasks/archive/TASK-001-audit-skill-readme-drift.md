@@ -1,5 +1,6 @@
 ---
 id: TASK-001
+aliases: [TASK-001]
 title: "Audit lib/skills for stale README.md-style family-index references"
 status: done
 created: 2026-07-06

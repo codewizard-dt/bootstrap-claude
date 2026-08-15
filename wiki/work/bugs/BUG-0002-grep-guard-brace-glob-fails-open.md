@@ -1,5 +1,6 @@
 ---
 id: BUG-0002
+aliases: [BUG-0002]
 title: Grep guard fails open on a brace glob mixing code and non-code extensions
 status: open
 severity: high

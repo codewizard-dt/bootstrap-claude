@@ -1,5 +1,6 @@
 ---
 id: UAT-010
+aliases: [UAT-010]
 title: "UAT: Update /wiki-ingest to populate the confidence field on new/updated knowledge pages"
 status: skipped
 task: TASK-010

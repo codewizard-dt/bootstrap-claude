@@ -1,5 +1,6 @@
 ---
 id: UAT-053
+aliases: [UAT-053]
 title: "UAT: Add lib/scripts/install-obsidian.sh (app + plugin auto-install)"
 status: passed
 task: TASK-053

@@ -1,5 +1,6 @@
 ---
 id: UAT-020
+aliases: [UAT-020]
 title: "UAT: Convert brave-search MCP setup to a single global Docker container"
 status: skipped
 task: TASK-020

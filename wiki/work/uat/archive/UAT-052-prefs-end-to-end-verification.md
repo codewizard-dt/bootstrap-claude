@@ -1,5 +1,6 @@
 ---
 id: UAT-052
+aliases: [UAT-052]
 title: "UAT: End-to-end verification of the preference store against a scratch project"
 status: passed
 task: TASK-052

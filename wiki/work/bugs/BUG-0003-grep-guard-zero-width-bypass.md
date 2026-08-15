@@ -1,5 +1,6 @@
 ---
 id: BUG-0003
+aliases: [BUG-0003]
 title: Zero-width character bypass is open on the Grep surface
 status: open
 severity: high

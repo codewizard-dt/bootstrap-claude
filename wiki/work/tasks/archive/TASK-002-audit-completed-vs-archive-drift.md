@@ -1,5 +1,6 @@
 ---
 id: TASK-002
+aliases: [TASK-002]
 title: "Audit lifecycle.md files and skill templates for stale wiki/work/<family>/completed references"
 status: done
 created: 2026-07-06

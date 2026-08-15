@@ -1,5 +1,6 @@
 ---
 id: TASK-011
+aliases: [TASK-011]
 title: "Update /wiki-lint to flag knowledge pages with weak or unset confidence provenance"
 status: done
 created: 2026-07-06

@@ -1,5 +1,6 @@
 ---
 id: TASK-014
+aliases: [TASK-014]
 title: "Wire dashboard command into bin/cli.js"
 status: done
 created: 2026-07-06

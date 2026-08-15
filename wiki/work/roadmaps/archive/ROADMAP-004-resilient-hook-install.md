@@ -1,5 +1,6 @@
 ---
 id: ROADMAP-004
+aliases: [ROADMAP-004]
 title: Resilient hook install + automated settings.json hooks wiring
 status: done
 created: 2026-07-31

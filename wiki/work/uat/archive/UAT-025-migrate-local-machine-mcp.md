@@ -1,5 +1,6 @@
 ---
 id: UAT-025
+aliases: [UAT-025]
 title: "UAT: Migrate this machine's MCP registrations to the single-process design (Skipped)"
 task: wiki/work/tasks/TASK-025-migrate-local-machine-mcp.md
 status: skipped

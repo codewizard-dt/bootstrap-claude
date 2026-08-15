@@ -1,5 +1,6 @@
 ---
 id: UAT-061
+aliases: [UAT-061]
 title: "UAT: Ship a default .obsidian/graph.json template into install-obsidian.sh"
 status: passed
 task: TASK-061

@@ -1,5 +1,6 @@
 ---
 id: UAT-022
+aliases: [UAT-022]
 title: "UAT: brave-search → single HTTP-mode Docker container (supersedes TASK-020 exec-wrapper)"
 status: passed
 task: TASK-022

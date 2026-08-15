@@ -1,5 +1,6 @@
 ---
 id: TASK-035
+aliases: [TASK-035]
 title: "Reorder install-global.sh — local steps first, MCPs last and guarded, invoke hooks-wiring merge"
 status: done
 created: 2026-07-31

@@ -1,5 +1,6 @@
 ---
 id: UAT-045
+aliases: [UAT-045]
 title: "UAT: Wire the sync-wiki-scaffold.sh, install-global.sh, and update-project.sh prompt sites"
 status: passed
 task: TASK-045

@@ -1,5 +1,6 @@
 ---
 id: UAT-027
+aliases: [UAT-027]
 title: "UAT: Tier-2 PreToolUse hooks — gate command classes deny rules cannot express"
 status: passed
 task: TASK-027

@@ -1,5 +1,6 @@
 ---
 id: TASK-036
+aliases: [TASK-036]
 title: "Reorder and guard run_project_sync in lib.sh so MCP failures can't abort hook install or wiki sync"
 status: done
 created: 2026-07-31

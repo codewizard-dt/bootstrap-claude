@@ -1,9 +1,14 @@
+---
+title: Roadmaps Archive
+---
+
 # Roadmaps Archive
 
 Terminal roadmap files (`done`) moved here by `/wiki-archive` to reduce directory clutter. **Append-only** — archived items never move again.
 
 | ID | Title | Final Status | Archived |
 |----|-------|--------------|----------|
+| [[ROADMAP-008]] | Fix Obsidian Wikilink Resolution for Work-Item IDs | done | 2026-08-15 |
 | [[ROADMAP-002]] | Live HTML dashboard for wiki/work families | done | 2026-07-06 |
 | [[ROADMAP-003]] | Single-process (shared HTTP) MCP servers for the bootstrap | done | 2026-07-29 |
 | [[ROADMAP-004]] | Resilient hook install + automated settings.json hooks wiring | done | 2026-07-31 |

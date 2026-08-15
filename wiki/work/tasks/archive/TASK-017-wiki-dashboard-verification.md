@@ -1,5 +1,6 @@
 ---
 id: TASK-017
+aliases: [TASK-017]
 title: "Manually verify dashboard liveness and edge cases"
 status: done
 created: 2026-07-06

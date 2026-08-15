@@ -1,5 +1,6 @@
 ---
 id: TASK-054
+aliases: [TASK-054]
 title: "Add obsidian.installApp + obsidian.plugins keys to bootstrap-prefs-schema.json"
 status: done
 created: 2026-08-13

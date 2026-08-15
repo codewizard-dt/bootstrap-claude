@@ -1,5 +1,6 @@
 ---
 id: TASK-033
+aliases: [TASK-033]
 title: "Build lib/scripts/merge-settings-hooks.js — \"template owns its blocks\" hooks-wiring merge"
 status: done
 created: 2026-07-31

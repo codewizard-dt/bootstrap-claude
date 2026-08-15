@@ -26,6 +26,24 @@ PLUGIN_GRAPH_LINK_TYPES="natefrisch01/Graph-Link-Types"
 # Breadcrumbs — verify SkepticMystic/breadcrumbs is still the maintained fork
 # at install time (vs. a community fork) before relying on this constant.
 PLUGIN_BREADCRUMBS="SkepticMystic/breadcrumbs"
+# Displays a note's frontmatter `title` (matching this repo's own convention
+# on every index.md and knowledge page) in place of the bare filename across
+# the file explorer, tabs, search, and — the reason it's bundled here — the
+# graph view. Installed/enabled like the other three, but
+# its own per-surface toggles (Explorer, Graph, etc.) default OFF inside the
+# plugin's own settings and are NOT scripted here: its internal data.json
+# settings schema is undocumented/unversioned, so hardcoding it would be the
+# same class of silent-failure risk BUG-0011 already taught this file to
+# avoid. See the one-time manual step noted alongside the install below.
+PLUGIN_FRONT_MATTER_TITLE="snezhig/obsidian-front-matter-title"
+# Patches Obsidian's link-lookup step with an alias fallback (tries real
+# filename resolution first, then a note's `aliases:` frontmatter) — the
+# plugin half of ROADMAP-008's wikilink-resolution fix; the `aliases:`
+# frontmatter half is scripted elsewhere. Self-described "experimental" in
+# its own manifest.json and less widely used than the other four bundled
+# plugins — verify johannrichard/alias-linker is still maintained at
+# install time before relying on this constant.
+PLUGIN_ALIAS_LINKER="johannrichard/alias-linker"
 
 _install_obsidian_app() {
   local os
@@ -285,7 +303,7 @@ if [ -z "$PROJECT_DIR" ]; then
 else
   install_plugins=false
   if [ "$INTERACTIVE" = true ]; then
-    if prompt_yn_sticky obsidian.plugins "$PROJECT_DIR" "Install recommended Obsidian plugins (Dataview, Graph Link Types, Breadcrumbs) into this project's vault config? [Y/n]: "; then
+    if prompt_yn_sticky obsidian.plugins "$PROJECT_DIR" "Install recommended Obsidian plugins (Dataview, Graph Link Types, Breadcrumbs, Front Matter Title, Alias Linker) into this project's vault config? [Y/n]: "; then
       install_plugins=true
     fi
   else
@@ -299,7 +317,7 @@ else
   fi
 
   if [ "$install_plugins" = true ]; then
-    for plugin_repo in "$PLUGIN_DATAVIEW" "$PLUGIN_GRAPH_LINK_TYPES" "$PLUGIN_BREADCRUMBS"; do
+    for plugin_repo in "$PLUGIN_DATAVIEW" "$PLUGIN_GRAPH_LINK_TYPES" "$PLUGIN_BREADCRUMBS" "$PLUGIN_FRONT_MATTER_TITLE" "$PLUGIN_ALIAS_LINKER"; do
       plugin_id="$(_install_obsidian_plugin "$PROJECT_DIR" "$plugin_repo")" || plugin_id=""
       if [ -n "$plugin_id" ]; then
         _enable_obsidian_plugin "$PROJECT_DIR" "$plugin_id" || true
@@ -307,6 +325,7 @@ else
       # Empty $plugin_id means _install_obsidian_plugin already warned
       # internally — just move on to the next plugin.
     done
+    echo "  NOTE: Front Matter Title is installed and enabled, but its per-surface display toggles default OFF inside its own settings — open Settings -> Front Matter Title in Obsidian and enable 'Graph' (and 'Explorer' if wanted) once to see frontmatter titles instead of filenames."
   else
     echo "  Skipping Obsidian plugin install."
   fi
@@ -325,7 +344,7 @@ if [ -z "$PROJECT_DIR" ]; then
   echo "  WARNING: no --project-dir given — skipping Obsidian graph defaults install."
 else
   if [ "$INTERACTIVE" = true ]; then
-    if prompt_yn_sticky obsidian.graphDefaults "$PROJECT_DIR" "Install default graph-view styling (.obsidian/graph.json — colors wiki/knowledge and wiki/work/* by family, scopes the graph to path:wiki)? [Y/n]: "; then
+    if prompt_yn_sticky obsidian.graphDefaults "$PROJECT_DIR" "Install default graph-view styling (.obsidian/graph.json — colors wiki/knowledge and wiki/work/* by family, scopes the graph to wiki/knowledge and wiki/work only)? [Y/n]: "; then
       _install_obsidian_graph_defaults "$PROJECT_DIR"
     else
       echo "  Skipping Obsidian graph defaults install."

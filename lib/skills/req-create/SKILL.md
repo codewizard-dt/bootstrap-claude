@@ -74,6 +74,7 @@ After confirmation, `Write` `wiki/work/requirements/REQ-NNN-slug.md`.
 ```yaml
 ---
 id: REQ-NNN
+aliases: [REQ-NNN]
 type: requirement
 status: draft
 created: YYYY-MM-DD

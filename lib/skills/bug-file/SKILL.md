@@ -87,6 +87,7 @@ Use `Write` to create `wiki/work/bugs/NNNN-<slug>.md`, following the frontmatter
 - `linked_task:` — `"[[TASK-NNN]]"` if a task was mentioned (normalized from either `TASK-NNN` or `[[TASK-NNN]]` input); `"—"` otherwise
 - `Reported`: today's date (`YYYY-MM-DD`)
 - `Last updated`: today's date
+- `aliases: [BUG-NNNN]` — mirrors this file's own id: field so Obsidian's wikilink resolver can find it by short ID (ROADMAP-008)
 - Leave `Root Cause Analysis`, `Resolution`, and `Related` sections present but empty (the templated placeholder line under each `>` quote is fine)
 
 ### Step 7: Update the Bug Index

@@ -1,5 +1,5 @@
 {
-  "search": "path:wiki",
+  "search": "(path:wiki/knowledge OR path:wiki/work) -path:lifecycle.md",
   "colorGroups": [
     {"query": "path:wiki/knowledge/sources", "color": {"a": 1, "rgb": 9484520}},
     {"query": "path:wiki/knowledge/concepts", "color": {"a": 1, "rgb": 5935062}},

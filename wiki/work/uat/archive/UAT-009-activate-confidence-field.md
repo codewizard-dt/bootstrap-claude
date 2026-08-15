@@ -1,5 +1,6 @@
 ---
 id: UAT-009
+aliases: [UAT-009]
 title: "UAT: Activate confidence: extracted|inferred|ambiguous in wiki/conventions.md"
 status: skipped
 task: TASK-009

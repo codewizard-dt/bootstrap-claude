@@ -1,5 +1,6 @@
 ---
 id: TASK-010
+aliases: [TASK-010]
 title: "Update /wiki-ingest to populate the confidence field on new/updated knowledge pages"
 status: done
 created: 2026-07-06

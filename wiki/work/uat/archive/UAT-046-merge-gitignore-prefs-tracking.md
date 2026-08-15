@@ -1,5 +1,6 @@
 ---
 id: UAT-046
+aliases: [UAT-046]
 title: "UAT: merge-gitignore.sh — prefs.gitTracking three-way prompt and declines-only wiring"
 status: passed
 task: TASK-046

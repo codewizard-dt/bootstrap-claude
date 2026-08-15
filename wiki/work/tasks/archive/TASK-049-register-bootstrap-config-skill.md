@@ -1,5 +1,6 @@
 ---
 id: TASK-049
+aliases: [TASK-049]
 title: "Register /bootstrap-config in lib/skills/README.md and the CLAUDE.md Custom Commands table"
 status: done
 created: 2026-08-07

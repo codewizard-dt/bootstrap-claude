@@ -1,5 +1,6 @@
 ---
 id: TASK-057
+aliases: [TASK-057]
 title: "Reconcile /task-audit's Depends-on/Blocks blockquote with rel::[[target]]"
 status: done
 created: 2026-08-13

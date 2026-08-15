@@ -1,5 +1,6 @@
 ---
 id: UAT-059
+aliases: [UAT-059]
 title: "UAT: Confirm setup/update stay non-fatal on Obsidian install failure and declining leaves everything untouched"
 status: passed
 task: TASK-059

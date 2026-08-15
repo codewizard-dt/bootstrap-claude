@@ -1,5 +1,6 @@
 ---
 id: UAT-039
+aliases: [UAT-039]
 title: "UAT: Add extensive inline comments to the hook scripts"
 status: pending
 task: TASK-039

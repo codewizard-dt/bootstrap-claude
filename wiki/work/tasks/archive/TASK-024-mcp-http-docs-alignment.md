@@ -1,5 +1,6 @@
 ---
 id: TASK-024
+aliases: [TASK-024]
 title: "Docs & guide alignment for single-process HTTP MCP servers"
 status: done
 created: 2026-07-28

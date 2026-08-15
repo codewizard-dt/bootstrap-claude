@@ -1,5 +1,6 @@
 ---
 id: TASK-040
+aliases: [TASK-040]
 title: "Canonical preference key registry — bootstrap-prefs-schema.json"
 status: done
 created: 2026-08-06

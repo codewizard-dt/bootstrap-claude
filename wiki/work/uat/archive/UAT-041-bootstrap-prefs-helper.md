@@ -1,5 +1,6 @@
 ---
 id: UAT-041
+aliases: [UAT-041]
 title: "UAT: bootstrap-prefs.js — four-state preference helper"
 status: passed
 task: TASK-041

@@ -1,5 +1,6 @@
 ---
 id: UAT-017
+aliases: [UAT-017]
 title: "UAT: Manually verify dashboard liveness and edge cases"
 status: passed
 task: TASK-017

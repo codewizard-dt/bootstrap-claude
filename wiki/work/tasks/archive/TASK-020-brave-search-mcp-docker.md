@@ -1,5 +1,6 @@
 ---
 id: TASK-020
+aliases: [TASK-020]
 title: "Convert brave-search MCP setup to a single global Docker container (persistent named container + per-session exec)"
 status: done
 created: 2026-07-27

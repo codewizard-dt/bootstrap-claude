@@ -1,5 +1,6 @@
 ---
 id: TASK-022
+aliases: [TASK-022]
 title: "brave-search → single HTTP-mode Docker container (supersedes TASK-020 exec-wrapper)"
 status: done
 created: 2026-07-28

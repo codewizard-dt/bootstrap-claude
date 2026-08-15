@@ -1,5 +1,6 @@
 ---
 id: BUG-0004
+aliases: [BUG-0004]
 title: serena-pre-delegation emits decision 'warn', which may be an unrecognized no-op
 status: open
 severity: medium

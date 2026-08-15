@@ -1,5 +1,6 @@
 ---
 id: TASK-005
+aliases: [TASK-005]
 title: "Add Optional tooling pointer (qmd, Hindsight) to CLAUDE.md"
 status: done
 created: 2026-07-06

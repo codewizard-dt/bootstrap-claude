@@ -1,5 +1,6 @@
 ---
 id: TASK-048
+aliases: [TASK-048]
 title: "/bootstrap-config skill — view, edit, and reset stored preferences"
 status: done
 created: 2026-08-07

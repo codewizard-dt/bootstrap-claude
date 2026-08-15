@@ -1,5 +1,6 @@
 ---
 id: TASK-042
+aliases: [TASK-042]
 title: "test/bootstrap-prefs.test.js — four-state and schema-bijection coverage"
 status: done
 created: 2026-08-06

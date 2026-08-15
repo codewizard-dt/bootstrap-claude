@@ -1,5 +1,6 @@
 ---
 id: UAT-036
+aliases: [UAT-036]
 title: "UAT: Reorder and guard run_project_sync in lib.sh so MCP failures can't abort hook install or wiki sync"
 status: passed
 task: TASK-036

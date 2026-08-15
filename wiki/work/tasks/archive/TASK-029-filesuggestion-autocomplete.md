@@ -1,5 +1,6 @@
 ---
 id: TASK-029
+aliases: [TASK-029]
 title: "Ship fileSuggestion @-autocomplete restoration for info/exclude'd wiki dirs"
 status: done
 created: 2026-07-29

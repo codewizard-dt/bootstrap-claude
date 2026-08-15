@@ -1,5 +1,6 @@
 ---
 id: ROADMAP-003
+aliases: [ROADMAP-003]
 title: "Single-process (shared HTTP) MCP servers for the bootstrap"
 status: done
 created: 2026-07-28

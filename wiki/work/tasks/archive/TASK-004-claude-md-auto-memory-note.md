@@ -1,5 +1,6 @@
 ---
 id: TASK-004
+aliases: [TASK-004]
 title: "Add Auto Memory vs. wiki division-of-responsibility note to CLAUDE.md"
 status: done
 created: 2026-07-06

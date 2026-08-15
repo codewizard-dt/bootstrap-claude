@@ -1,5 +1,6 @@
 ---
 id: UAT-032
+aliases: [UAT-032]
 title: "UAT: Extract canonical hooks wiring into settings-hooks.json"
 status: passed
 task: TASK-032

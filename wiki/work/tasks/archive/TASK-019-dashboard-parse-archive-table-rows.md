@@ -1,5 +1,6 @@
 ---
 id: TASK-019
+aliases: [TASK-019]
 title: "Teach dashboard parseIndexMarkdown to parse archive/index.md table rows so Archived counts are correct"
 status: done
 created: 2026-07-06

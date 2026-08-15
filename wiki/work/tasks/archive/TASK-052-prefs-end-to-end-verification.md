@@ -1,5 +1,6 @@
 ---
 id: TASK-052
+aliases: [TASK-052]
 title: "End-to-end verification of the preference store against a scratch project"
 status: done
 created: 2026-08-07

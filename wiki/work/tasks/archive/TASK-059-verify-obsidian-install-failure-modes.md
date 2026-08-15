@@ -1,5 +1,6 @@
 ---
 id: TASK-059
+aliases: [TASK-059]
 title: "Confirm setup/update stay non-fatal on Obsidian install failure and declining leaves everything untouched"
 status: done
 created: 2026-08-13

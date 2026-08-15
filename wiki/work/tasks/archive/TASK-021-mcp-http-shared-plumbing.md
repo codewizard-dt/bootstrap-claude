@@ -1,5 +1,6 @@
 ---
 id: TASK-021
+aliases: [TASK-021]
 title: "Shared plumbing for single-process HTTP MCP servers (constants, helpers, upgrade detection)"
 status: done
 created: 2026-07-28

@@ -1,5 +1,6 @@
 ---
 id: UAT-048
+aliases: [UAT-048]
 title: "UAT: /bootstrap-config skill — view, edit, and reset stored preferences"
 status: passed
 task: TASK-048

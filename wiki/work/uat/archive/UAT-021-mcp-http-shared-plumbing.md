@@ -1,5 +1,6 @@
 ---
 id: UAT-021
+aliases: [UAT-021]
 title: "UAT: Shared plumbing for single-process HTTP MCP servers (constants, helpers, upgrade detection)"
 status: passed
 task: TASK-021

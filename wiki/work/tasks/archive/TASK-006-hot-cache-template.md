@@ -1,5 +1,6 @@
 ---
 id: TASK-006
+aliases: [TASK-006]
 title: "Add wiki/hot.md template to lib/scripts/templates/wiki/"
 status: done
 created: 2026-07-06

@@ -1,5 +1,6 @@
 ---
 id: BUG-0006
+aliases: [BUG-0006]
 title: mv-absolute-path-block splits segments on ; && || but not |
 status: open
 severity: low

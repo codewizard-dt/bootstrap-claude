@@ -1,5 +1,6 @@
 ---
 id: TASK-025
+aliases: [TASK-025]
 title: "Migrate this machine's MCP registrations to the single-process design (runtime UAT)"
 status: done
 created: 2026-07-28

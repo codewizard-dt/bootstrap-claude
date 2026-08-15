@@ -1,5 +1,6 @@
 ---
 id: TASK-037
+aliases: [TASK-037]
 title: "Document automated hooks wiring — lib/hooks/README.md is no longer a manual-paste instruction sheet"
 status: done
 created: 2026-07-31

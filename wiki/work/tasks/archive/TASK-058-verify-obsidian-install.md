@@ -1,5 +1,6 @@
 ---
 id: TASK-058
+aliases: [TASK-058]
 title: "Manually verify guarded Obsidian install end-to-end on at least one platform"
 status: done
 created: 2026-08-13

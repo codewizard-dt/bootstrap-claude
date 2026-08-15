@@ -1,5 +1,6 @@
 ---
 id: BUG-0010
+aliases: [BUG-0010]
 title: install-global.sh output overstates what happened — two message-only defects
 status: verified
 severity: low

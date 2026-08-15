@@ -1,5 +1,6 @@
 ---
 id: TASK-050
+aliases: [TASK-050]
 title: "Document the helper, the four-state model, and the full key registry in lib/scripts/README.md"
 status: done
 created: 2026-08-07

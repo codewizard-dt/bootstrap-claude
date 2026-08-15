@@ -1,5 +1,6 @@
 ---
 id: TASK-034
+aliases: [TASK-034]
 title: "Add test/settings-hooks.test.js — template invariants and merge behavior coverage"
 status: done
 created: 2026-07-31

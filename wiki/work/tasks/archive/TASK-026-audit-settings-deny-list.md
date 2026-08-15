@@ -1,5 +1,6 @@
 ---
 id: TASK-026
+aliases: [TASK-026]
 title: "Audit and harden the canonical settings deny list"
 status: done
 created: 2026-07-29

@@ -1,5 +1,6 @@
 ---
 id: UAT-056
+aliases: [UAT-056]
 title: "UAT: Add optional wiki/guides/ Dataview example-queries page"
 status: passed
 task: TASK-056

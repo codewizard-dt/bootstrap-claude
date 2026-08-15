@@ -1,5 +1,6 @@
 ---
 id: TASK-055
+aliases: [TASK-055]
 title: "Wire install-obsidian.sh into run_project_sync()"
 status: done
 created: 2026-08-13

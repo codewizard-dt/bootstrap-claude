@@ -1,5 +1,6 @@
 ---
 id: TASK-009
+aliases: [TASK-009]
 title: "Activate confidence: extracted|inferred|ambiguous in wiki/conventions.md"
 status: done
 created: 2026-07-06

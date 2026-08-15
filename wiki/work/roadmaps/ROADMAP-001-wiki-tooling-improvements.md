@@ -1,5 +1,6 @@
 ---
 id: ROADMAP-001
+aliases: [ROADMAP-001]
 title: Improve wiki tooling based on 2026-07-06 research
 status: active
 created: 2026-07-06

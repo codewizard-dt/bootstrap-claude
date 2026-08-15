@@ -1,5 +1,6 @@
 ---
 id: UAT-034
+aliases: [UAT-034]
 title: "UAT: Add test/settings-hooks.test.js — template invariants and merge behavior coverage"
 status: passed
 task: TASK-034

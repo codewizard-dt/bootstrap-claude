@@ -1,5 +1,6 @@
 ---
 id: UAT-055
+aliases: [UAT-055]
 title: "UAT: Wire install-obsidian.sh into run_project_sync()"
 status: passed
 task: TASK-055

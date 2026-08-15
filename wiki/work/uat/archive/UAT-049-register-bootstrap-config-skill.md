@@ -1,5 +1,6 @@
 ---
 id: UAT-049
+aliases: [UAT-049]
 title: "UAT: Register /bootstrap-config in lib/skills/README.md and the CLAUDE.md Custom Commands table"
 status: passed
 task: TASK-049

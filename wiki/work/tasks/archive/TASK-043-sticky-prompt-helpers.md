@@ -1,5 +1,6 @@
 ---
 id: TASK-043
+aliases: [TASK-043]
 title: "Sticky prompt helpers in lib.sh — prompt_yn_sticky, prompt_choice_sticky, BOOTSTRAP_ASSUME_TTY"
 status: done
 created: 2026-08-06

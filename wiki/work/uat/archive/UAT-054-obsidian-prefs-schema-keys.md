@@ -1,5 +1,6 @@
 ---
 id: UAT-054
+aliases: [UAT-054]
 title: "UAT: Add obsidian.installApp + obsidian.plugins keys to bootstrap-prefs-schema.json"
 status: passed
 task: TASK-054

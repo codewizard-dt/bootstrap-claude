@@ -1,5 +1,6 @@
 ---
 id: UAT-002
+aliases: [UAT-002]
 title: "UAT: Audit lifecycle.md files and skill templates for stale completed/ references"
 status: skipped
 task: TASK-002

@@ -1,5 +1,6 @@
 ---
 id: UAT-043
+aliases: [UAT-043]
 title: "UAT: Sticky prompt helpers in lib.sh — prompt_yn_sticky, prompt_choice_sticky, BOOTSTRAP_ASSUME_TTY"
 status: passed
 task: TASK-043

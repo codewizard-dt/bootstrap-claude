@@ -142,10 +142,12 @@ detect_installed_mcps() {
 # install-global.sh --skip-mcps), then attempt the interactive MCP install
 # (guarded — a failure only warns and continues, it does not abort the rest
 # of the sync), sync the wiki scaffold (tiered guide delivery — --interactive
-# enables the optional-guide prompts), merge the .gitignore, build the
-# MCP-tools guide for the detected MCPs, then bootstrap Serena's project.yml.
-# Prints the same section headers and blank-line separators the two scripts
-# printed inline.
+# enables the optional-guide prompts), merge the .gitignore, backfill
+# aliases: onto any wiki/work/ file that has drifted without one (unguarded —
+# backfill-wiki-aliases.js always exits 0 on its own, same contract as
+# merge-settings-deny.js/merge-settings-hooks.js), build the MCP-tools guide
+# for the detected MCPs, then bootstrap Serena's project.yml. Prints the same
+# section headers and blank-line separators the two scripts printed inline.
 # ---------------------------------------------------------------------------
 run_project_sync() {
   local project_dir script_dir installed_mcps
@@ -165,6 +167,10 @@ run_project_sync() {
   echo "Syncing wiki scaffold..."
   "$script_dir/sync-wiki-scaffold.sh" --interactive "$project_dir"
   "$script_dir/merge-gitignore.sh" --interactive "$project_dir"
+  echo ""
+
+  echo "Backfilling wiki work-item aliases..."
+  node "$script_dir/backfill-wiki-aliases.js" "$project_dir"
   echo ""
 
   echo "Checking Obsidian setup..."

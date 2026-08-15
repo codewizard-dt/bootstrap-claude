@@ -1,5 +1,6 @@
 ---
 id: UAT-058
+aliases: [UAT-058]
 title: "UAT: Manually verify guarded Obsidian install end-to-end on at least one platform"
 status: passed
 task: TASK-058

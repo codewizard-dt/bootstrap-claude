@@ -1,5 +1,6 @@
 ---
 id: TASK-028
+aliases: [TASK-028]
 title: "Rework interpreter-indirection-guard from blanket deny to recursive re-evaluation"
 status: done
 created: 2026-07-29

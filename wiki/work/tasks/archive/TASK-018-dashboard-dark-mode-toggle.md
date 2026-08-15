@@ -1,5 +1,6 @@
 ---
 id: TASK-018
+aliases: [TASK-018]
 title: "Upgrade dashboard.html dark mode to a full explicit-override toggle"
 status: done
 created: 2026-07-06

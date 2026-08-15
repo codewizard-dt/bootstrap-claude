@@ -1,5 +1,6 @@
 ---
 id: UAT-007
+aliases: [UAT-007]
 title: "UAT: Update /wiki-ingest (and other wiki-writing skills) to refresh wiki/hot.md"
 status: passed
 task: TASK-007

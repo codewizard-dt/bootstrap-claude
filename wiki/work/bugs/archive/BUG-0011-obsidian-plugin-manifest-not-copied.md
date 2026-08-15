@@ -1,5 +1,6 @@
 ---
 id: BUG-0011
+aliases: [BUG-0011]
 title: install-obsidian.sh never writes manifest.json into the installed plugin directory
 status: verified
 severity: high

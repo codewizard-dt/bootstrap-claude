@@ -1,5 +1,6 @@
 ---
 id: UAT-038
+aliases: [UAT-038]
 title: "UAT: Fake-HOME end-to-end verification of resilient hook install + hooks wiring, and the minor release"
 status: passed
 task: TASK-038

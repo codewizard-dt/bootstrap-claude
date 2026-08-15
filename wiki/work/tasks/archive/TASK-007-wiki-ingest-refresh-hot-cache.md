@@ -1,5 +1,6 @@
 ---
 id: TASK-007
+aliases: [TASK-007]
 title: "Update /wiki-ingest (and other wiki-writing skills) to refresh wiki/hot.md"
 status: done
 created: 2026-07-06

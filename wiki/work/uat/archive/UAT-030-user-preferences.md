@@ -1,5 +1,6 @@
 ---
 id: UAT-030
+aliases: [UAT-030]
 title: "UAT: User preferences: stop skills doing consequential things without consent"
 status: passed
 task: TASK-030

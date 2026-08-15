@@ -1,5 +1,6 @@
 ---
 id: UAT-024
+aliases: [UAT-024]
 title: "UAT: Docs & guide alignment for single-process HTTP MCP servers"
 status: passed
 task: TASK-024

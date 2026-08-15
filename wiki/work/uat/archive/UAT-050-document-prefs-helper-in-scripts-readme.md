@@ -1,5 +1,6 @@
 ---
 id: UAT-050
+aliases: [UAT-050]
 title: "UAT: Document the helper, the four-state model, and the full key registry in lib/scripts/README.md"
 status: passed
 task: TASK-050

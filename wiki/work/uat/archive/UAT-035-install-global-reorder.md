@@ -1,5 +1,6 @@
 ---
 id: UAT-035
+aliases: [UAT-035]
 title: "UAT: Reorder install-global.sh — local steps first, MCPs last and guarded, invoke hooks-wiring merge"
 status: passed
 task: TASK-035

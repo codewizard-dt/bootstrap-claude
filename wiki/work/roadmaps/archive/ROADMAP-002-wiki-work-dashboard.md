@@ -1,5 +1,6 @@
 ---
 id: ROADMAP-002
+aliases: [ROADMAP-002]
 title: Live HTML dashboard for wiki/work families
 status: done
 created: 2026-07-06

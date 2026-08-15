@@ -1,5 +1,6 @@
 ---
 id: TASK-008
+aliases: [TASK-008]
 title: "Update /primer to read wiki/hot.md first, before Serena memories"
 status: done
 created: 2026-07-06

@@ -1,5 +1,6 @@
 ---
 id: UAT-042
+aliases: [UAT-042]
 title: "UAT: test/bootstrap-prefs.test.js — four-state and schema-bijection coverage"
 status: passed
 task: TASK-042

@@ -1,5 +1,6 @@
 ---
 id: TASK-039
+aliases: [TASK-039]
 title: "Add extensive inline comments to the hook scripts"
 status: pending-uat
 created: 2026-08-06

@@ -1,5 +1,6 @@
 ---
 id: UAT-015
+aliases: [UAT-015]
 title: "UAT: Sync dashboard.html into projects as an always-refresh scaffold file"
 status: passed
 task: TASK-015

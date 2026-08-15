@@ -1,5 +1,6 @@
 ---
 id: TASK-030
+aliases: [TASK-030]
 title: "User preferences: stop skills doing consequential things without consent"
 status: done
 created: 2026-07-30

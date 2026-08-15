@@ -1,5 +1,6 @@
 ---
 id: UAT-005
+aliases: [UAT-005]
 title: "UAT: Add Optional tooling pointer (qmd, Hindsight) to CLAUDE.md"
 status: passed
 task: TASK-005

@@ -1,5 +1,6 @@
 ---
 id: TASK-032
+aliases: [TASK-032]
 title: "Extract canonical hooks wiring from lib/hooks/README.md into lib/scripts/templates/settings-hooks.json"
 status: done
 created: 2026-07-31

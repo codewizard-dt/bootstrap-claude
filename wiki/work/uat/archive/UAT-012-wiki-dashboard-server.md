@@ -1,5 +1,6 @@
 ---
 id: UAT-012
+aliases: [UAT-012]
 title: "UAT: Build wiki-dashboard-server.js zero-dependency static file server"
 status: passed
 task: TASK-012

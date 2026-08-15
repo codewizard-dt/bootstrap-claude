@@ -1,5 +1,6 @@
 ---
 id: UAT-047
+aliases: [UAT-047]
 title: "UAT: test/prompt-stickiness.test.js — sticky-prompt coverage and the bijection un-skip"
 status: passed
 task: TASK-047

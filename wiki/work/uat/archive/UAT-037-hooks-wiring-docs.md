@@ -1,5 +1,6 @@
 ---
 id: UAT-037
+aliases: [UAT-037]
 title: "UAT: Document automated hooks wiring — lib/hooks/README.md is no longer a manual-paste instruction sheet"
 status: passed
 task: TASK-037

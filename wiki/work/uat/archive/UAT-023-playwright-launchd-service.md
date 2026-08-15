@@ -1,5 +1,6 @@
 ---
 id: UAT-023
+aliases: [UAT-023]
 title: "UAT: playwright → native launchd LaunchAgent HTTP server (darwin), stdio fallback elsewhere"
 status: passed
 task: TASK-023

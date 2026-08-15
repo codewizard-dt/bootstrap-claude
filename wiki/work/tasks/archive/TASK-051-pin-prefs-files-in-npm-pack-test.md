@@ -1,5 +1,6 @@
 ---
 id: TASK-051
+aliases: [TASK-051]
 title: "Pin bootstrap-prefs.js and bootstrap-prefs-schema.json into test/npm-pack-contents.test.js"
 status: done
 created: 2026-08-07

@@ -1,5 +1,6 @@
 ---
 id: TASK-045
+aliases: [TASK-045]
 title: "Wire the sync-wiki-scaffold.sh, install-global.sh, and update-project.sh prompt sites"
 status: done
 created: 2026-08-06

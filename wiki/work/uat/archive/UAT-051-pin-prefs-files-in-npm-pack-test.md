@@ -1,5 +1,6 @@
 ---
 id: UAT-051
+aliases: [UAT-051]
 title: "UAT: Pin bootstrap-prefs.js and bootstrap-prefs-schema.json into test/npm-pack-contents.test.js"
 status: passed
 task: TASK-051

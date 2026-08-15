@@ -2,12 +2,14 @@
 id: serena
 title: Serena
 aliases: [Serena MCP, oraios/serena]
-updated: 2026-08-14
+updated: 2026-08-15
 sources:
   - ../../../../raw/research/gitignored-wiki-tool-visibility/index.md
   - ../../../../raw/research/serena-mcp-disconnect/index.md
   - ../../../../raw/research/agent-sandbox-escape-vectors/index.md
   - ../../../../raw/research/serena-mcp-scope/index.md
+  - ../../../../raw/research/mcp-one-process-per-user/index.md
+  - ../../../../raw/research/serena-single-instance-transport/index.md
 confidence: extracted
 tags: [mcp, lsp, code-navigation, security]
 ---
@@ -20,7 +22,9 @@ LSP-backed MCP server (oraios/serena) providing semantic code navigation, symbol
 
 **Open lead, not yet verified** (derived_from::[[mcp-scope-performance-behavior]], 2026-08-15): Claude Code documents `${CLAUDE_PROJECT_DIR:-.}`-style variable expansion in `.mcp.json` entries, which — if it works with the `--project` flag position specifically — could make a project-scope Serena entry portable after all, contradicting the "no portability mechanism exists" framing in derived_from::[[serena-mcp-scope]]. No test has been run; local scope remains the recommendation until one is.
 
-**Each concurrent session spawns its own Serena process** (derived_from::[[mcp-one-process-per-user]], 2026-08-15): Serena is registered as a **stdio** server, and stdio is spec-defined as one subprocess per client — see relates_to::[[mcp-stdio-one-process-per-session]]. Three Claude Code windows/sessions open against the same project therefore run three independent `uvx ... serena start-mcp-server` processes, not a shared one; local scope only controls which project's config is used, not process sharing. No daemon-sharing mechanism exists for Serena today, and none is on a documented roadmap. The only way another MCP server in this repo avoids this (brave-search, Playwright on macOS) is by being registered over **HTTP** against a persistent shared process instead of stdio — an option Serena does not currently offer.
+**Each concurrent session spawns its own Serena process — as currently registered** (derived_from::[[mcp-one-process-per-user]], 2026-08-15): Serena is registered as a **stdio** server, and stdio is spec-defined as one subprocess per client — see relates_to::[[mcp-stdio-one-process-per-session]]. Three Claude Code windows/sessions open against the same project therefore run three independent `uvx ... serena start-mcp-server` processes today, not a shared one; local scope only controls which project's config is used, not process sharing.
+
+> **Contradiction (corrected same day):** the line above originally read "No daemon-sharing mechanism exists for Serena today, and none is on a documented roadmap." That was **wrong** — derived_from::[[serena-single-instance-transport]] (2026-08-15 deep-dive) found Serena *does* support this via `--transport streamable-http`: starting one Serena process in HTTP mode and pointing every client at the same endpoint is the official, maintainer-endorsed fix, confirmed when maintainer `opcode81` closed GitHub issue [oraios/serena#1235](https://github.com/oraios/serena/issues/1235) — which describes this exact three-concurrent-window scenario — by pointing at the existing ["Multiple agents accessing a single Serena instance"](https://oraios.github.io/serena/02-usage/040_workflow.html#multiple-agents-accessing-a-single-serena-instance) doc section. **The catch**: an HTTP-mode Serena instance is stateful and supports only **one active project at a time**, so this only collapses sessions of the *same* project into one process — it doesn't help across genuinely different projects. Serena also has no built-in auto-start/auto-stop lifecycle for this (a community `flock`+PID-file wrapper script exists but is third-party/unofficial). **Not currently adopted in this repo** — the status-quo stdio default remains the recommendation (see derived_from::[[serena-single-instance-transport]] for the full trade-off analysis); this callout exists purely to correct the prior factual claim, not to signal a pending change.
 
 **Ignore semantics** (source-verified 2026-07-30): with `ignore_all_files_in_gitignore: true` (bootstrap default in `.serena/project.yml`), `serena.project.Project` builds its ignore specs from `GitignoreParser(project_root)`, whose `_iter_gitignore_files` discovers **only files literally named `.gitignore`** (`src/serena/util/file_system.py:176`). Consequences:
 - Anything gitignored is invisible to `search_for_pattern`, `find_file`, and symbol indexing — **never gitignore `wiki/`, `raw/`, or `.serena/`**; use `.git/info/exclude` for machine-local git exclusion instead (Serena never reads it). relates_to::[[git-ignore-tool-visibility]]

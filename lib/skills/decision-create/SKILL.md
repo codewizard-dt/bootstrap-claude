@@ -81,6 +81,11 @@ Group members may share evidence sources (Shared Context), but each block needs 
 Write to `wiki/work/decisions/DEC-NNNN-<group-slug>.md` using this template. **Tables only, mermaid for flows** — mandatory in every block.
 
 ````markdown
+---
+id: DEC-NNNN
+aliases: [DEC-NNNN]
+---
+
 # DEC-NNNN: <Decision-Group Title>
 
 > Decision Group covering <area-1>, <area-2>, <area-3>.

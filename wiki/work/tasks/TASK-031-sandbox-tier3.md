@@ -1,5 +1,6 @@
 ---
 id: TASK-031
+aliases: [TASK-031]
 title: "Tier 3: adopt /sandbox to close the script-file write path to settings.json"
 status: todo
 created: 2026-07-30

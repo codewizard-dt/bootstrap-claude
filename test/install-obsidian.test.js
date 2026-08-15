@@ -554,7 +554,7 @@ test('install-obsidian.sh: Linux + a failing `flatpak install` warns and continu
 // no curl stub needed, since the graph defaults path never touches the network.
 // =================================================================================
 
-test('install-obsidian.sh: a fresh vault (no pre-existing .obsidian/graph.json) gets the file written with exactly 9 colorGroups and "search": "path:wiki"', () => {
+test('install-obsidian.sh: a fresh vault (no pre-existing .obsidian/graph.json) gets the file written with exactly 9 colorGroups and the knowledge+work-only search scope', () => {
   const home = scratchDir('install-obsidian-home-');
   const projectDir = scratchDir('install-obsidian-project-');
   const env = curatedEnv(home, path.join(scratchDir('install-obsidian-bin-'), 'bin'));
@@ -568,7 +568,11 @@ test('install-obsidian.sh: a fresh vault (no pre-existing .obsidian/graph.json) 
   assert.equal(res.status, 0, res.stderr);
   assert.ok(fs.existsSync(graphJsonPath(projectDir)), 'graph.json was not written into a fresh vault');
   const graph = JSON.parse(fs.readFileSync(graphJsonPath(projectDir), 'utf8'));
-  assert.strictEqual(graph.search, 'path:wiki', 'graph.json must scope the graph to path:wiki');
+  assert.strictEqual(
+    graph.search,
+    '(path:wiki/knowledge OR path:wiki/work) -path:lifecycle.md',
+    'graph.json must scope the graph to wiki/knowledge and wiki/work only, excluding lifecycle.md'
+  );
   assert.ok(Array.isArray(graph.colorGroups), 'graph.json colorGroups must be an array');
   assert.strictEqual(graph.colorGroups.length, 9, 'expected exactly 9 colorGroups entries (3 knowledge + 6 work families)');
 
@@ -670,7 +674,11 @@ test('lib/scripts/templates/obsidian/graph.json: colorGroups carry the exact que
     ['path:wiki/work/uat', 0xb85c3e],
   ];
 
-  assert.strictEqual(graph.search, 'path:wiki', 'template search filter must scope the graph to path:wiki');
+  assert.strictEqual(
+    graph.search,
+    '(path:wiki/knowledge OR path:wiki/work) -path:lifecycle.md',
+    'template search filter must scope the graph to wiki/knowledge and wiki/work only, excluding lifecycle.md'
+  );
   assert.strictEqual(graph.colorGroups.length, 9, 'expected exactly 9 colorGroups entries');
 
   for (const [query, rgb] of expected) {
@@ -686,5 +694,130 @@ test('lib/scripts/templates/obsidian/graph.json: colorGroups carry the exact que
   assert.ok(
     !graph.colorGroups.some((g) => typeof g.query === 'string' && g.query.startsWith('path:raw')),
     'colorGroups must not include an entry for raw/ — the path:wiki search filter already excludes it from the graph'
+  );
+});
+
+// =================================================================================
+// Front Matter Title plugin bundling: the shared curl stub used by the tests
+// above (pluginFetchEnv/CURL_STUB) answers every releases/latest call
+// identically regardless of which repo was requested, so it can't distinguish
+// five real plugin repos from one another — it only ever proves "a" plugin
+// got installed, not that all five constants actually made it into the
+// for-loop. This test builds a repo-aware stub instead, so a regression that
+// silently drops PLUGIN_FRONT_MATTER_TITLE from the loop (or gives it the
+// wrong repo slug/id) fails loudly here rather than passing every other case.
+// =================================================================================
+
+test('install-obsidian.sh: the plugin bundle installs and enables all five plugins (Dataview, Graph Link Types, Breadcrumbs, Front Matter Title, Alias Linker) with distinct ids, and prints the Front Matter Title manual-toggle note', () => {
+  const home = scratchDir('install-obsidian-home-');
+  const projectDir = scratchDir('install-obsidian-project-');
+  const scratch = scratchDir('install-obsidian-assets-');
+  const binDir = path.join(scratch, 'bin');
+  const assetsDir = path.join(scratch, 'assets');
+  fs.mkdirSync(assetsDir, { recursive: true });
+
+  const repoToId = {
+    'blacksmithgu/obsidian-dataview': 'dataview',
+    'natefrisch01/Graph-Link-Types': 'graph-link-types',
+    'SkepticMystic/breadcrumbs': 'breadcrumbs',
+    'snezhig/obsidian-front-matter-title': 'obsidian-front-matter-title-plugin',
+    'johannrichard/alias-linker': 'alias-linker',
+  };
+
+  for (const [repo, id] of Object.entries(repoToId)) {
+    const safe = repo.replace(/\//g, '_');
+    writeJson(assetsDir, `${safe}-release.json`, {
+      assets: [
+        { name: 'manifest.json', browser_download_url: `https://stub.test/stub:manifest:${safe}` },
+        { name: 'main.js', browser_download_url: `https://stub.test/stub:main:${safe}` },
+      ],
+    });
+    writeJson(assetsDir, `${safe}-manifest.json`, { id, name: id, version: '1.0.0' });
+    fs.writeFileSync(path.join(assetsDir, `${safe}-main.js`), 'console.log("stub");\n');
+  }
+
+  const safeNames = Object.keys(repoToId).map((repo) => repo.replace(/\//g, '_'));
+  const curlStub = [
+    '#!/usr/bin/env bash',
+    'outfile=""',
+    'url=""',
+    'args=("$@")',
+    'n=${#args[@]}',
+    'for ((i=0;i<n;i++)); do',
+    '  if [ "${args[$i]}" = "-o" ]; then outfile="${args[$((i+1))]}"; fi',
+    'done',
+    'for a in "${args[@]}"; do',
+    '  case "$a" in',
+    '    -*) continue ;;',
+    '    "$outfile") continue ;;',
+    '    *) url="$a"; break ;;',
+    '  esac',
+    'done',
+    `assets_dir=${JSON.stringify(assetsDir)}`,
+    'case "$url" in',
+    ...Object.keys(repoToId).map((repo) => `  */repos/${repo}/releases/latest) cp "$assets_dir/${repo.replace(/\//g, '_')}-release.json" "$outfile" ;;`),
+    ...safeNames.map((safe) => `  *stub:manifest:${safe}) cp "$assets_dir/${safe}-manifest.json" "$outfile" ;;`),
+    ...safeNames.map((safe) => `  *stub:main:${safe}) cp "$assets_dir/${safe}-main.js" "$outfile" ;;`),
+    '  *) echo "curl stub: unrecognized url: $url" >&2; exit 1 ;;',
+    'esac',
+    '',
+  ].join('\n');
+  writeBin(binDir, 'curl', curlStub);
+
+  const env = curatedEnv(home, binDir);
+  seedGlobalPref(env, 'obsidian.installApp', 'false');
+  seedProjectPref(env, projectDir, 'obsidian.graphDefaults', 'false');
+
+  const res = run(['--project-dir', projectDir], { env });
+
+  assert.equal(res.status, 0, res.stderr);
+  const enabled = readCommunityPlugins(projectDir);
+  assert.deepStrictEqual(
+    new Set(enabled),
+    new Set(Object.values(repoToId)),
+    `expected all five plugin ids enabled, got: ${JSON.stringify(enabled)}`
+  );
+  assert.strictEqual(enabled.length, 5, 'expected exactly five enabled ids, no duplicates');
+  assert.ok(
+    res.stdout.includes(
+      "open Settings -> Front Matter Title in Obsidian and enable 'Graph' (and 'Explorer' if wanted) once to see frontmatter titles instead of filenames"
+    ),
+    `missing the Front Matter Title manual-toggle note:\n${res.stdout}`
+  );
+
+  cleanup(home, projectDir, scratch);
+});
+
+test('install-obsidian.sh: PLUGIN_ALIAS_LINKER is wired into the constant, the 5-plugin loop, and the interactive prompt text (TASK-063)', () => {
+  // The five-plugin end-to-end test above proves the *runtime effect*
+  // (alias-linker gets installed/enabled), but it takes the non-interactive
+  // path, so it never observes the interactive prompt string at all — bash's
+  // `read -p` only ever displays its prompt when stdin is a real terminal,
+  // which this repo's piped-input TTY simulation (BOOTSTRAP_ASSUME_TTY=1 +
+  // piped replies) cannot provide, so that string is otherwise unobservable
+  // from a spawned-process test. This is a source-text regression guard for
+  // the three literal-text requirements TASK-063 step 1 called for.
+  const src = fs.readFileSync(INSTALL_OBSIDIAN, 'utf8');
+
+  assert.ok(
+    src.includes('PLUGIN_ALIAS_LINKER="johannrichard/alias-linker"'),
+    'PLUGIN_ALIAS_LINKER constant is missing or its repo slug changed'
+  );
+  assert.match(
+    src,
+    /verify johannrichard\/alias-linker is still maintained/,
+    'the experimental/trust-risk inline comment next to PLUGIN_ALIAS_LINKER is missing'
+  );
+  assert.ok(
+    src.includes(
+      'for plugin_repo in "$PLUGIN_DATAVIEW" "$PLUGIN_GRAPH_LINK_TYPES" "$PLUGIN_BREADCRUMBS" "$PLUGIN_FRONT_MATTER_TITLE" "$PLUGIN_ALIAS_LINKER"; do'
+    ),
+    'PLUGIN_ALIAS_LINKER is missing from the 5-element plugin-bundle loop'
+  );
+  assert.ok(
+    src.includes(
+      "Install recommended Obsidian plugins (Dataview, Graph Link Types, Breadcrumbs, Front Matter Title, Alias Linker) into this project's vault config? [Y/n]: "
+    ),
+    'the interactive prompt string no longer names all five plugins'
   );
 });
