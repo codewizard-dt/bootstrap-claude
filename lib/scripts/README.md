@@ -367,7 +367,7 @@ real `lib/scripts/` file or one real `lib/skills/<name>/SKILL.md`, so
 `"install-global.sh, /git-commit"` fails the suite by construction. Where a
 run-time prompt exists, it is documented in the key's `detail`.
 
-### The key registry — all 22 entries
+### The key registry — all 23 entries
 
 Every key in `templates/bootstrap-prefs-schema.json`, grouped by `consumer` —
 `installer` first, then `skill` — which is the same grouping and the same order
@@ -376,7 +376,7 @@ schema's `default` field; `unset` in that column means `default: null`, i.e. the
 key resolves to `unset` until it is answered. This table is transcribed from the
 JSON; if the two ever disagree, the JSON is right and this table is a bug.
 
-#### `consumer: installer` — 16 entries, read by the setup/update scripts
+#### `consumer: installer` — 17 entries, read by the setup/update scripts
 
 | Key | Scope | Consumer | Values | Default | Asked by | What it does |
 |-----|-------|----------|--------|---------|----------|--------------|
@@ -395,6 +395,7 @@ JSON; if the two ever disagree, the JSON is right and this table is a bug.
 | `mcp.playwright` | global | installer | `true \| false` | `unset` | `install-mcps.sh` | Install the Playwright MCP for browser automation and UI testing |
 | `obsidian.installApp` | global | installer | `true \| false` | `unset` | `install-obsidian.sh` | Install the Obsidian desktop app via the native package manager |
 | `obsidian.plugins` | project | installer | `true \| false` | `unset` | `install-obsidian.sh` | Install the bundled Obsidian plugin set (Dataview, Graph Link Types, Breadcrumbs) |
+| `obsidian.graphDefaults` | project | installer | `true \| false` | `unset` | `install-obsidian.sh` | Install default graph-view styling (`.obsidian/graph.json`) |
 | `skills.pruneOrphans` | global | installer | `true \| false` | `unset` | `install-global.sh` | Delete stale skill folders in `~/.claude/skills/` left by the wiki rename |
 
 The two **(pattern)** rows carry `"dynamic": true` and are key *families*, not

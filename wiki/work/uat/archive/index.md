@@ -59,3 +59,4 @@ Terminal UAT files (`passed`, `skipped`, or `trashed`) moved here by `/wiki-arch
 | [[UAT-057]] | UAT: Reconcile /task-audit's Depends-on/Blocks blockquote with rel::[[target]] | passed | 2026-08-14 |
 | [[UAT-059]] | UAT: Confirm setup/update stay non-fatal on Obsidian install failure and declining leaves everything untouched | passed | 2026-08-14 |
 | [[UAT-053]] | UAT: Add lib/scripts/install-obsidian.sh (app + plugin auto-install) | passed | 2026-08-14 |
+| [[UAT-061]] | UAT: Ship a default .obsidian/graph.json template into install-obsidian.sh | passed | 2026-08-15 |

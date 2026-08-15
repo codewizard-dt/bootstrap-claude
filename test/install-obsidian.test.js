@@ -102,6 +102,10 @@ function readCommunityPlugins(projectDir) {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
 }
 
+function graphJsonPath(projectDir) {
+  return path.join(projectDir, '.obsidian', 'graph.json');
+}
+
 // --- curl stub for the plugin-fetch tests --------------------------------------
 //
 // Real calls this stub must answer:
@@ -236,6 +240,10 @@ test('install-obsidian.sh: non-interactive + stored obsidian.plugins=false at th
   const env = curatedEnv(home, binDir);
   seedGlobalPref(env, 'obsidian.installApp', 'false'); // keep the app half out of scope for this case
   seedProjectPref(env, projectDir, 'obsidian.plugins', 'false');
+  // TASK-061: obsidian.graphDefaults defaults to proceeding when unset, and its
+  // gate would otherwise create .obsidian/ (for graph.json) on its own — keep it
+  // out of scope too so this test stays isolated to plugin-install behavior.
+  seedProjectPref(env, projectDir, 'obsidian.graphDefaults', 'false');
 
   const res = run(['--project-dir', projectDir], { env });
 
@@ -467,30 +475,37 @@ test('install-obsidian.sh: a malformed (non-array) community-plugins.json warns 
 // these two cases make both claims mechanically repeatable. See UAT-059.
 // =================================================================================
 
-test('install-obsidian.sh --interactive: declining both prompts leaves .obsidian/ untouched and never installs', () => {
+test('install-obsidian.sh --interactive: declining all three prompts leaves .obsidian/ untouched and never installs', () => {
   const home = scratchDir('install-obsidian-home-');
   const projectDir = scratchDir('install-obsidian-project-');
   const binDir = path.join(scratchDir('install-obsidian-bin-'), 'bin');
-  // BOOTSTRAP_ASSUME_TTY=1 + piped `n\nn\n` is the repo's established
+  // BOOTSTRAP_ASSUME_TTY=1 + piped `n\nn\nn\n` is the repo's established
   // non-interactive simulation of an interactive decline
   // (test/prompt-stickiness.test.js), applied here so the real
   // prompt_yn_sticky path is what's under test, not the prefs_get mirror.
+  // TASK-061 added a third interactive prompt (graph defaults), so three
+  // declines are piped in, one per prompt: app install, plugin install, then
+  // graph defaults.
   const env = { ...curatedEnv(home, binDir), BOOTSTRAP_ASSUME_TTY: '1' };
 
   const obsidianDir = path.join(projectDir, '.obsidian');
   assert.ok(!fs.existsSync(obsidianDir), 'scratch project dir already had a .obsidian/ before the run');
 
-  const res = run(['--interactive', '--project-dir', projectDir], { env, input: 'n\nn\n' });
+  const res = run(['--interactive', '--project-dir', projectDir], { env, input: 'n\nn\nn\n' });
 
-  assert.equal(res.status, 0, `declining both prompts must not abort the script: ${res.stderr}`);
+  assert.equal(res.status, 0, `declining all three prompts must not abort the script: ${res.stderr}`);
   assert.ok(res.stdout.includes('Skipping Obsidian app install.'), `app-install decline message missing:\n${res.stdout}`);
   assert.ok(
     res.stdout.includes('Skipping Obsidian plugin install.'),
     `plugin-install decline message missing:\n${res.stdout}`
   );
   assert.ok(
+    res.stdout.includes('Skipping Obsidian graph defaults install.'),
+    `graph-defaults decline message missing:\n${res.stdout}`
+  );
+  assert.ok(
     !fs.existsSync(obsidianDir),
-    'a .obsidian/ directory was created despite declining the plugin-install prompt — a decline must leave no partial writes'
+    'a .obsidian/ directory was created despite declining every prompt — a decline must leave no partial writes'
   );
 
   cleanup(home, projectDir, path.dirname(binDir));
@@ -528,4 +543,148 @@ test('install-obsidian.sh: Linux + a failing `flatpak install` warns and continu
     `missing the failed-install WARNING:\n${res.stdout}`
   );
   cleanup(home, path.dirname(binDir));
+});
+
+// =================================================================================
+// TASK-061: .obsidian/graph.json defaults — write-if-absent install of the
+// graph-view styling template, and its own non-interactive prefs gate
+// (obsidian.graphDefaults), mirroring the obsidian.plugins coverage above.
+// Every case here keeps obsidian.installApp and obsidian.plugins out of scope
+// via a stored `false` so only _install_obsidian_graph_defaults is under test —
+// no curl stub needed, since the graph defaults path never touches the network.
+// =================================================================================
+
+test('install-obsidian.sh: a fresh vault (no pre-existing .obsidian/graph.json) gets the file written with exactly 9 colorGroups and "search": "path:wiki"', () => {
+  const home = scratchDir('install-obsidian-home-');
+  const projectDir = scratchDir('install-obsidian-project-');
+  const env = curatedEnv(home, path.join(scratchDir('install-obsidian-bin-'), 'bin'));
+  seedGlobalPref(env, 'obsidian.installApp', 'false');
+  seedProjectPref(env, projectDir, 'obsidian.plugins', 'false');
+
+  assert.ok(!fs.existsSync(graphJsonPath(projectDir)), 'scratch project dir already had a graph.json before the run');
+
+  const res = run(['--project-dir', projectDir], { env });
+
+  assert.equal(res.status, 0, res.stderr);
+  assert.ok(fs.existsSync(graphJsonPath(projectDir)), 'graph.json was not written into a fresh vault');
+  const graph = JSON.parse(fs.readFileSync(graphJsonPath(projectDir), 'utf8'));
+  assert.strictEqual(graph.search, 'path:wiki', 'graph.json must scope the graph to path:wiki');
+  assert.ok(Array.isArray(graph.colorGroups), 'graph.json colorGroups must be an array');
+  assert.strictEqual(graph.colorGroups.length, 9, 'expected exactly 9 colorGroups entries (3 knowledge + 6 work families)');
+
+  cleanup(home, projectDir);
+});
+
+test('install-obsidian.sh: an existing .obsidian/graph.json is left byte-for-byte unchanged (write-if-absent)', () => {
+  const home = scratchDir('install-obsidian-home-');
+  const projectDir = scratchDir('install-obsidian-project-');
+  const env = curatedEnv(home, path.join(scratchDir('install-obsidian-bin-'), 'bin'));
+  seedGlobalPref(env, 'obsidian.installApp', 'false');
+  seedProjectPref(env, projectDir, 'obsidian.plugins', 'false');
+
+  const obsidianDir = path.join(projectDir, '.obsidian');
+  fs.mkdirSync(obsidianDir, { recursive: true });
+  const customized = '{"this is":"the user\'s own customization","search":"path:something-else"}';
+  fs.writeFileSync(graphJsonPath(projectDir), customized);
+
+  const res = run(['--project-dir', projectDir], { env });
+
+  assert.equal(res.status, 0, res.stderr);
+  assert.ok(
+    res.stdout.includes('.obsidian/graph.json already present — leaving your customization in place, skipping.'),
+    `missing the already-present skip message:\n${res.stdout}`
+  );
+  assert.strictEqual(
+    fs.readFileSync(graphJsonPath(projectDir), 'utf8'),
+    customized,
+    'an existing graph.json was overwritten instead of being left in place'
+  );
+
+  cleanup(home, projectDir);
+});
+
+test('install-obsidian.sh: non-interactive + stored obsidian.graphDefaults=false at the project selector skips the graph defaults install', () => {
+  const home = scratchDir('install-obsidian-home-');
+  const projectDir = scratchDir('install-obsidian-project-');
+  const env = curatedEnv(home, path.join(scratchDir('install-obsidian-bin-'), 'bin'));
+  seedGlobalPref(env, 'obsidian.installApp', 'false'); // keep the app half out of scope for this case
+  seedProjectPref(env, projectDir, 'obsidian.plugins', 'false'); // keep the plugin half out of scope too
+  seedProjectPref(env, projectDir, 'obsidian.graphDefaults', 'false');
+
+  const res = run(['--project-dir', projectDir], { env });
+
+  assert.equal(res.status, 0, res.stderr);
+  assert.ok(
+    res.stdout.includes('obsidian.graphDefaults: skipped (remembered decline — change with /bootstrap-config)'),
+    `missing remembered-decline message:\n${res.stdout}`
+  );
+  assert.ok(
+    !fs.existsSync(graphJsonPath(projectDir)),
+    '_install_obsidian_graph_defaults ran (wrote graph.json) despite a stored `false`'
+  );
+
+  cleanup(home, projectDir);
+});
+
+test('install-obsidian.sh: non-interactive with NO stored obsidian.graphDefaults preference proceeds with the graph defaults install (unset does not divert, only an explicit false does)', () => {
+  const home = scratchDir('install-obsidian-home-');
+  const projectDir = scratchDir('install-obsidian-project-');
+  const env = curatedEnv(home, path.join(scratchDir('install-obsidian-bin-'), 'bin'));
+  seedGlobalPref(env, 'obsidian.installApp', 'false');
+  seedProjectPref(env, projectDir, 'obsidian.plugins', 'false');
+  // obsidian.graphDefaults intentionally left unset
+
+  const res = run(['--project-dir', projectDir], { env });
+
+  assert.equal(res.status, 0, res.stderr);
+  assert.ok(
+    fs.existsSync(graphJsonPath(projectDir)),
+    `graph.json was not written even though no preference was stored:\n${res.stdout}`
+  );
+
+  cleanup(home, projectDir);
+});
+
+
+test('lib/scripts/templates/obsidian/graph.json: colorGroups carry the exact query + rgb pairs documented in TASK-061, and no group targets raw/', () => {
+  // TASK-061's Approach table pins nine exact {path, hex} pairs, each with an
+  // rgb integer that must be computed via parseInt(hex, 16) — not guessed.
+  // The installer-level tests above only assert colorGroups.length === 9 and
+  // the top-level search filter; they never checked which nine paths/colors
+  // landed in the array, so a swapped hue, a transposed digit in an rgb
+  // integer, or an accidental raw/ entry would still pass those. This reads
+  // the static template file directly (no installer run needed — it is a
+  // pure data-shape assertion) and pins the full table.
+  const templatePath = path.join(REPO, 'lib', 'scripts', 'templates', 'obsidian', 'graph.json');
+  const graph = JSON.parse(fs.readFileSync(templatePath, 'utf8'));
+
+  const expected = [
+    ['path:wiki/knowledge/sources', 0x90b8e8],
+    ['path:wiki/knowledge/concepts', 0x5a8fd6],
+    ['path:wiki/knowledge/entities', 0x2f5fa8],
+    ['path:wiki/work/tasks', 0xf2b84b],
+    ['path:wiki/work/bugs', 0xe2703a],
+    ['path:wiki/work/decisions', 0xd4914b],
+    ['path:wiki/work/roadmaps', 0xc9762e],
+    ['path:wiki/work/requirements', 0xe8975c],
+    ['path:wiki/work/uat', 0xb85c3e],
+  ];
+
+  assert.strictEqual(graph.search, 'path:wiki', 'template search filter must scope the graph to path:wiki');
+  assert.strictEqual(graph.colorGroups.length, 9, 'expected exactly 9 colorGroups entries');
+
+  for (const [query, rgb] of expected) {
+    const entry = graph.colorGroups.find((g) => g.query === query);
+    assert.ok(entry, `no colorGroups entry found for query "${query}"`);
+    assert.deepStrictEqual(
+      entry.color,
+      { a: 1, rgb },
+      `colorGroups entry for "${query}" has the wrong color (expected {a:1, rgb:${rgb}})`
+    );
+  }
+
+  assert.ok(
+    !graph.colorGroups.some((g) => typeof g.query === 'string' && g.query.startsWith('path:raw')),
+    'colorGroups must not include an entry for raw/ — the path:wiki search filter already excludes it from the graph'
+  );
 });

@@ -227,6 +227,25 @@ _enable_obsidian_plugin() {
   ' "$vault_dir" "$id" || true
 }
 
+_install_obsidian_graph_defaults() {
+  local vault_dir="$1"
+
+  if ! mkdir -p "$vault_dir/.obsidian"; then
+    echo "  WARNING: failed to create $vault_dir/.obsidian — skipping graph defaults." >&2
+    return
+  fi
+
+  if [ -f "$vault_dir/.obsidian/graph.json" ]; then
+    echo "  .obsidian/graph.json already present — leaving your customization in place, skipping."
+    return 0
+  fi
+
+  if ! cp "$SCRIPT_DIR/templates/obsidian/graph.json" "$vault_dir/.obsidian/graph.json"; then
+    echo "  WARNING: failed to install graph defaults — skipping." >&2
+    return
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # App install gate
 #
@@ -290,5 +309,34 @@ else
     done
   else
     echo "  Skipping Obsidian plugin install."
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# Graph defaults install gate
+#
+# obsidian.graphDefaults is a project-scoped key — the vault root is $PROJECT_DIR,
+# so its prompt_yn_sticky/prefs_get selector is "$PROJECT_DIR" itself (never
+# --global), per the selector-consistency rule documented on prompt_yn_sticky
+# in lib.sh. No $PROJECT_DIR means no vault to install into, so skip outright
+# rather than guessing a location.
+# ---------------------------------------------------------------------------
+if [ -z "$PROJECT_DIR" ]; then
+  echo "  WARNING: no --project-dir given — skipping Obsidian graph defaults install."
+else
+  if [ "$INTERACTIVE" = true ]; then
+    if prompt_yn_sticky obsidian.graphDefaults "$PROJECT_DIR" "Install default graph-view styling (.obsidian/graph.json — colors wiki/knowledge and wiki/work/* by family, scopes the graph to path:wiki)? [Y/n]: "; then
+      _install_obsidian_graph_defaults "$PROJECT_DIR"
+    else
+      echo "  Skipping Obsidian graph defaults install."
+    fi
+  else
+    # Same non-interactive mirroring as the app-install gate above, applied
+    # to the project-scoped key: only a stored `false` skips.
+    if [ "$(prefs_get obsidian.graphDefaults "$PROJECT_DIR")" = "false" ]; then
+      echo "  obsidian.graphDefaults: skipped (remembered decline — change with /bootstrap-config)"
+    else
+      _install_obsidian_graph_defaults "$PROJECT_DIR"
+    fi
   fi
 fi

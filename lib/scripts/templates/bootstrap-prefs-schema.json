@@ -136,6 +136,15 @@
     "default": null,
     "askedBy": "install-obsidian.sh"
   },
+  "obsidian.graphDefaults": {
+    "scope": "project",
+    "consumer": "installer",
+    "summary": "Install default graph-view styling (.obsidian/graph.json)",
+    "detail": "Asked by install-obsidian.sh. true installs and refreshes .obsidian/graph.json with default graph-view styling if the file is absent; false means the installer stops offering it until the key is changed or removed via /bootstrap-config. This preference is independent of obsidian.plugins — accepting or declining one has no effect on the other. The file lives inside this project's own .obsidian/ directory, which is why this key is project scope, matching obsidian.plugins's scope choice.",
+    "values": "true | false",
+    "default": null,
+    "askedBy": "install-obsidian.sh"
+  },
   "skills.pruneOrphans": {
     "scope": "global",
     "consumer": "installer",

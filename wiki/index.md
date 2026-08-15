@@ -31,6 +31,8 @@ The wiki is split into two domains with opposite organizing laws:
 - [Automating Obsidian and Plugin Setup in the Bootstrap Scripts](knowledge/sources/obsidian-setup-automation.md) — app + plugin install are both fully scriptable and fit the existing guarded/opt-in install pattern; /wiki-lint's graph view improves for free, /task-audit does not
 - [Research: Serena MCP — Project Scope vs. Local Scope](knowledge/sources/serena-mcp-scope.md) — confirms the existing local-scope choice against Claude Code's official scope docs; no code change indicated
 - [Obsidian Graph View Styling, Productivity Patterns, and Shippable Wiki Defaults](knowledge/sources/obsidian-graph-defaults.md) — graph.json colorGroups is native/zero-plugin; this repo's known wiki taxonomy makes a hand-authored color template more precise than auto-detecting plugins like Graph Styler
+- [Research: .mcp.json vs ~/.claude.json — implications, performance, and behavior](knowledge/sources/mcp-scope-performance-behavior.md) — no performance difference exists (transport, not scope, drives it); real differences are precedence, headless-vs-interactive approval prompts, and workspace trust; found a contradiction on prior "no path-portability mechanism" claim
+- [Research: Why User-Scoped MCPs Spawn One Process Per Session](knowledge/sources/mcp-one-process-per-user.md) — stdio's 1-client:1-subprocess is an MCP protocol property, not a scope or Claude Code setting; N sessions × M stdio servers = N×M processes; only an HTTP-registered shared server avoids it
 
 ### Concepts
 - [LLM Wiki Hot Cache](knowledge/concepts/llm-wiki-hot-cache.md) — session-handoff summary file pattern, converged on by multiple gist reimplementations
@@ -48,6 +50,8 @@ The wiki is split into two domains with opposite organizing laws:
 - [Typed Wiki Links](knowledge/concepts/typed-wiki-links.md) — `rel::[[target]]` is Dataview's full-line inline-field syntax; zero plugin dependency today; Dataview/Graph Link Types/Breadcrumbs are optional enhancement layers requiring no authoring changes
 - [MCP Server Scope Model (local / project / user)](knowledge/concepts/mcp-server-scope-model.md) — local > project > user precedence; project scope fits only config identical across teammates, machine-specific values (a path, a credential) belong at local scope
 - [Obsidian Graph View Styling (native colorGroups vs. plugins)](knowledge/concepts/obsidian-graph-view-styling.md) — .obsidian/graph.json colorGroups needs zero plugins; path:/tag:/file: query syntax; hand-authored template vs. auto-detecting plugin tradeoff
+- [claude mcp add Can Hardcode Secrets Into a Placeholder-Based .mcp.json](knowledge/concepts/mcp-add-secret-hardcoding-bug.md) — confirmed, unfixed (closed "not planned") CLI bug: re-running `claude mcp add` resolves and writes literal secrets over `${VAR}` placeholders
+- [Stdio MCP Servers Spawn One Process Per Client Session](knowledge/concepts/mcp-stdio-one-process-per-session.md) — protocol-level 1-client:1-subprocess; no scope or setting collapses concurrent-session process count; only HTTP registration against a shared long-lived server does
 
 ### Entities
 - People — [knowledge/entities/people/](knowledge/entities/people/): [Andrej Karpathy](knowledge/entities/people/andrej-karpathy.md)

@@ -1,0 +1,23 @@
+{
+  "search": "path:wiki",
+  "colorGroups": [
+    {"query": "path:wiki/knowledge/sources", "color": {"a": 1, "rgb": 9484520}},
+    {"query": "path:wiki/knowledge/concepts", "color": {"a": 1, "rgb": 5935062}},
+    {"query": "path:wiki/knowledge/entities", "color": {"a": 1, "rgb": 3104680}},
+    {"query": "path:wiki/work/tasks", "color": {"a": 1, "rgb": 15906891}},
+    {"query": "path:wiki/work/bugs", "color": {"a": 1, "rgb": 14839866}},
+    {"query": "path:wiki/work/decisions", "color": {"a": 1, "rgb": 13930827}},
+    {"query": "path:wiki/work/roadmaps", "color": {"a": 1, "rgb": 13202990}},
+    {"query": "path:wiki/work/requirements", "color": {"a": 1, "rgb": 15243100}},
+    {"query": "path:wiki/work/uat", "color": {"a": 1, "rgb": 12082238}}
+  ],
+  "collapse-filter": false,
+  "showTags": true,
+  "showAttachments": false,
+  "hideUnresolved": false,
+  "showOrphans": true,
+  "collapse-color-groups": false,
+  "collapse-display": false,
+  "showArrow": false,
+  "collapse-forces": false
+}

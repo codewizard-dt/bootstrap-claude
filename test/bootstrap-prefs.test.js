@@ -2448,18 +2448,19 @@ test('schema: `gitignore.review` does not appear — it was superseded by gitign
   );
 });
 
-test('schema: obsidian.installApp and obsidian.plugins carry their documented shape and sit between mcp.playwright and skills.pruneOrphans', () => {
-  // TASK-054. Both keys are consumer:"installer" with a closed true|false
-  // grammar and a null default, so the generic loop-based tests elsewhere in
-  // this file (required fields, scope/consumer enum, no non-null installer
-  // default, askedBy resolution, no-secret shape) already exercise them with
-  // zero changes needed here — this test pins the two facts those generic
-  // loops cannot see: the SPECIFIC scope each key was given, and WHERE the
-  // pair sits in the file. A scope swap (installApp as project, plugins as
+test('schema: obsidian.installApp, obsidian.plugins, and obsidian.graphDefaults carry their documented shape and sit between mcp.playwright and skills.pruneOrphans', () => {
+  // TASK-054 (installApp/plugins) + TASK-061 (graphDefaults). All three keys
+  // are consumer:"installer" with a closed true|false grammar and a null
+  // default, so the generic loop-based tests elsewhere in this file (required
+  // fields, scope/consumer enum, no non-null installer default, askedBy
+  // resolution, no-secret shape) already exercise them with zero changes
+  // needed here — this test pins the facts those generic loops cannot see:
+  // the SPECIFIC scope each key was given, and WHERE the trio sits in the
+  // file. A scope swap (installApp as project, plugins/graphDefaults as
   // global) would still pass every generic check while asking the wrong
   // question at the wrong layer — installApp is machine-wide software, so it
-  // must be global like mcp.playwright; plugins live inside this project's own
-  // .obsidian/, so it must be project like guides.*.
+  // must be global like mcp.playwright; plugins and graphDefaults live inside
+  // this project's own .obsidian/, so both must be project like guides.*.
   const schema = readJson(SCHEMA);
 
   assert.deepStrictEqual(
@@ -2484,19 +2485,33 @@ test('schema: obsidian.installApp and obsidian.plugins carry their documented sh
     { scope: 'project', consumer: 'installer', values: 'true | false', default: null, askedBy: 'install-obsidian.sh' },
     'obsidian.plugins no longer matches its documented shape'
   );
+  assert.deepStrictEqual(
+    {
+      scope: schema['obsidian.graphDefaults'].scope,
+      consumer: schema['obsidian.graphDefaults'].consumer,
+      values: schema['obsidian.graphDefaults'].values,
+      default: schema['obsidian.graphDefaults'].default,
+      askedBy: schema['obsidian.graphDefaults'].askedBy,
+    },
+    { scope: 'project', consumer: 'installer', values: 'true | false', default: null, askedBy: 'install-obsidian.sh' },
+    'obsidian.graphDefaults no longer matches its documented shape'
+  );
 
-  // Placement: TASK-054 step 1 records inserting both keys directly after
-  // mcp.playwright and before skills.pruneOrphans "where it reads naturally"
-  // alongside the other mcp.*/guides.* entries. Pinned as an ordered run of
-  // four consecutive keys so a later edit that separates the pair, or moves
+  // Placement: TASK-054 step 1 records inserting the installApp/plugins pair
+  // directly after mcp.playwright and before skills.pruneOrphans "where it
+  // reads naturally" alongside the other mcp.*/guides.* entries; TASK-061
+  // then inserted graphDefaults immediately after its sibling obsidian.plugins,
+  // keeping the whole family contiguous. Pinned as an ordered run of five
+  // consecutive keys so a later edit that separates any of them, or moves
   // them elsewhere in the file, fails loudly instead of silently.
   const keys = Object.keys(schema);
   const run = keys.indexOf('mcp.playwright');
   assert.notStrictEqual(run, -1, 'mcp.playwright vanished from the schema');
   assert.deepStrictEqual(
-    keys.slice(run, run + 4),
-    ['mcp.playwright', 'obsidian.installApp', 'obsidian.plugins', 'skills.pruneOrphans'],
-    'the obsidian.* pair is no longer the four-key run mcp.playwright -> obsidian.installApp -> obsidian.plugins -> skills.pruneOrphans'
+    keys.slice(run, run + 5),
+    ['mcp.playwright', 'obsidian.installApp', 'obsidian.plugins', 'obsidian.graphDefaults', 'skills.pruneOrphans'],
+    'the obsidian.* family is no longer the five-key run mcp.playwright -> obsidian.installApp -> ' +
+      'obsidian.plugins -> obsidian.graphDefaults -> skills.pruneOrphans'
   );
 });
 

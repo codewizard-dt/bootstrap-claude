@@ -10,4 +10,3 @@ Lists **only active** roadmaps (`active`). When a roadmap completes (`done`), de
 Entry format: `- [ROADMAP-NNN — Title](ROADMAP-NNN-slug.md) — one-line summary · N/M items checked`
 
 - [ROADMAP-001 — Improve wiki tooling based on 2026-07-06 research](ROADMAP-001-wiki-tooling-improvements.md) — hot cache, provenance tagging, Auto Memory/wiki boundary, plus a skill-drift audit · 11/12 items checked (Phase 4 advisory locking deliberately deferred)
-- [ROADMAP-007 — Obsidian Graph View Defaults & Dataview Query Examples](ROADMAP-007-obsidian-graph-view-defaults.md) — default .obsidian/graph.json colorGroups + path:wiki search filter in install-obsidian.sh, plus example Dataview query blocks in family index.md templates · 0/2 items checked

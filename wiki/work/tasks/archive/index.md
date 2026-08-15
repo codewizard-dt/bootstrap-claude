@@ -61,3 +61,4 @@ Terminal task files (`done` or `trashed`) moved here by `/wiki-archive` to reduc
 | [[TASK-057]] | Reconcile /task-audit's Depends-on/Blocks blockquote with rel::[[target]] | done | 2026-08-14 |
 | [[TASK-059]] | Confirm setup/update stay non-fatal on Obsidian install failure and declining leaves everything untouched | done | 2026-08-14 |
 | [[TASK-053]] | Add lib/scripts/install-obsidian.sh (app + plugin auto-install) | done | 2026-08-14 |
+| [[TASK-061]] | Ship a default .obsidian/graph.json template into install-obsidian.sh | done | 2026-08-15 |
