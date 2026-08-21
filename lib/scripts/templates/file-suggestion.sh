@@ -68,12 +68,14 @@ list_base() {
 # line (or EOF) in .git/info/exclude — expected values are .serena/, raw/,
 # wiki/, and (skipped below by the `-d` check) the two bootstrap-prefs files.
 sentinel_entries() {
-  [ -f .git/info/exclude ] || return 0
+  common_dir=$(git rev-parse --git-common-dir 2>/dev/null) || return 0
+  exclude_file="$common_dir/info/exclude"
+  [ -f "$exclude_file" ] || return 0
   awk -v sentinel="$SENTINEL" '
     $0 == sentinel { in_block = 1; next }
     in_block && /^[[:space:]]*#/ { in_block = 0 }
     in_block { print }
-  ' .git/info/exclude
+  ' "$exclude_file"
 }
 
 list_reincluded() {
@@ -87,9 +89,9 @@ list_reincluded() {
     [ -d "$dir" ] || continue
 
     if have_rg; then
-      rg --files --no-ignore "$dir"
+      rg --files --no-ignore --follow "$dir"
     else
-      find "$dir" -type f | sed 's|^\./||'
+      find -L "$dir" -type f | sed 's|^\./||'
     fi
   done
 }

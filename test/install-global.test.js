@@ -212,6 +212,53 @@ test('fresh run merges deny list, hooks wiring, and fileSuggestion into settings
   cleanup(tpl, home);
 });
 
+// --- template refresh: a stale installed file-suggestion.sh is overwritten ------
+
+// TASK-066: file-suggestion.sh is template-owned and unconditionally re-copied
+// on every run (no existence/copy-once guard) — this is what lets a template
+// fix (e.g. the git-worktree/symlink fix) propagate to every existing
+// installation via a plain `update`/`setup`/`install`, with no extra wiring.
+// Pin that down directly: seed a stale copy that predates the fix, run
+// install-global.sh, and assert the installed file is now byte-identical to
+// the live template — not just "changed" or "contains --follow".
+test('a stale installed file-suggestion.sh is refreshed to match the live template byte-for-byte', () => {
+  const tpl = buildTemplate();
+  const home = scratchDir();
+
+  const claudeDir = path.join(home, '.claude');
+  fs.mkdirSync(claudeDir, { recursive: true });
+  const installedPath = path.join(claudeDir, 'file-suggestion.sh');
+  const liveTemplatePath = path.join(REAL_SCRIPTS, 'templates', 'file-suggestion.sh');
+  const liveTemplate = fs.readFileSync(liveTemplatePath, 'utf8');
+
+  // A stale pre-fix copy: strip the --follow flag this task added to
+  // list_reincluded()'s rg call, so the seeded file is provably different
+  // from the live template's content (not just older by mtime).
+  const staleContent = liveTemplate.replace(
+    'rg --files --no-ignore --follow "$dir"',
+    'rg --files --no-ignore "$dir"'
+  );
+  assert.notStrictEqual(
+    staleContent,
+    liveTemplate,
+    'fixture setup bug: staleContent must differ from the live template or this test proves nothing'
+  );
+  fs.writeFileSync(installedPath, staleContent);
+  fs.chmodSync(installedPath, 0o755);
+
+  const res = runInstall(tpl, home, ['--skip-mcps']);
+  assert.strictEqual(res.status, 0, `install-global.sh did not exit 0: ${res.stderr}`);
+
+  const installedAfter = fs.readFileSync(installedPath, 'utf8');
+  assert.strictEqual(
+    installedAfter,
+    liveTemplate,
+    'installed ~/.claude/file-suggestion.sh was not refreshed to byte-match lib/scripts/templates/file-suggestion.sh'
+  );
+
+  cleanup(tpl, home);
+});
+
 // --- missing lib/hooks: warn on stderr, continue --------------------------------
 
 test('missing lib/hooks warns on stderr and the script still completes', () => {

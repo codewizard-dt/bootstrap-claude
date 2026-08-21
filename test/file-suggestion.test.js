@@ -85,6 +85,81 @@ function cleanup(dir) {
   fs.rmSync(dir, { recursive: true, force: true });
 }
 
+// A linked worktree's .git is a `gitdir: <path>` pointer FILE, not a directory —
+// its own info/exclude does not exist. The real, shared exclude file lives in the
+// main checkout's common git dir. mkWorktree() builds a main checkout (via mkRepo)
+// plus a linked `git worktree add` checkout of it, so tests can run the picker from
+// either side. `worktreeFiles` are written directly under the worktree path (not
+// committed — the sentinel dirs are untracked, so a worktree's own working copy of
+// them has to be created the same way mkRepo() creates them for the main checkout).
+function mkWorktree({ exclude = CANONICAL, mainFiles = FIXTURE_FILES, worktreeFiles = FIXTURE_FILES } = {}) {
+  const main = mkRepo({ exclude, files: mainFiles });
+  const worktree = scratchDir();
+  const add = spawnSync('git', ['worktree', 'add', worktree, '-b', 'wt-branch'], {
+    cwd: main,
+    encoding: 'utf8',
+  });
+  assert.strictEqual(add.status, 0, `git worktree add failed: ${add.stderr}`);
+  for (const rel of worktreeFiles) {
+    const abs = path.join(worktree, rel);
+    fs.mkdirSync(path.dirname(abs), { recursive: true });
+    fs.writeFileSync(abs, `${rel}\n`);
+  }
+  return { main, worktree };
+}
+
+function cleanupWorktree({ main, worktree }) {
+  // Both are throwaway dirs under os.tmpdir(); plain rmSync is sufficient (no other
+  // test or process shares this main checkout's git metadata).
+  cleanup(worktree);
+  cleanup(main);
+}
+
+// Regression proof that the TASK-066 fix actually matters: derive a "pre-fix" copy
+// of the LIVE template by reverting only its two hunks, rather than hand-maintaining
+// a separate stale copy of the old logic. If the surrounding code has since changed
+// shape, the `assert.notStrictEqual` below fails loudly (telling a future maintainer
+// to re-derive the revert) instead of silently testing nothing. The real, committed
+// lib/scripts/templates/file-suggestion.sh is never touched.
+function revertFix(bug) {
+  const original = fs.readFileSync(PICKER, 'utf8');
+  let out = original;
+
+  if (bug === 'bug1' || bug === 'both') {
+    const fixed = `  common_dir=$(git rev-parse --git-common-dir 2>/dev/null) || return 0
+  exclude_file="$common_dir/info/exclude"
+  [ -f "$exclude_file" ] || return 0
+  awk -v sentinel="$SENTINEL" '
+    $0 == sentinel { in_block = 1; next }
+    in_block && /^[[:space:]]*#/ { in_block = 0 }
+    in_block { print }
+  ' "$exclude_file"`;
+    const preFix = `  [ -f .git/info/exclude ] || return 0
+  awk -v sentinel="$SENTINEL" '
+    $0 == sentinel { in_block = 1; next }
+    in_block && /^[[:space:]]*#/ { in_block = 0 }
+    in_block { print }
+  ' .git/info/exclude`;
+    const reverted = out.replace(fixed, preFix);
+    assert.notStrictEqual(reverted, out, 'sentinel_entries() has drifted — update the bug1 revert pattern in this test');
+    out = reverted;
+  }
+
+  if (bug === 'bug2' || bug === 'both') {
+    const reverted = out
+      .replace('rg --files --no-ignore --follow "$dir"', 'rg --files --no-ignore "$dir"')
+      .replace('find -L "$dir" -type f', 'find "$dir" -type f');
+    assert.notStrictEqual(reverted, out, 'list_reincluded() has drifted — update the bug2 revert pattern in this test');
+    out = reverted;
+  }
+
+  const dir = scratchDir();
+  const scratchPicker = path.join(dir, 'file-suggestion-prefix.sh');
+  fs.writeFileSync(scratchPicker, out);
+  fs.chmodSync(scratchPicker, 0o755);
+  return scratchPicker;
+}
+
 // --- the core mechanism -------------------------------------------------------
 
 test('canonical sentinel block: the excluded wiki dirs are re-included in results', () => {
@@ -390,6 +465,96 @@ test('with rg unavailable, the git ls-files fallback reproduces the same re-incl
   }
 
   cleanup(dir);
+});
+
+// --- git worktrees (TASK-066) --------------------------------------------------
+
+test('a linked git worktree resolves the shared .git/info/exclude via --git-common-dir, so sentinel re-inclusion still fires', () => {
+  const { main, worktree } = mkWorktree();
+  const res = pick(worktree, 'hot');
+
+  assert.strictEqual(res.status, 0, res.stderr);
+  assert.ok(res.lines.includes('wiki/hot.md'), `wiki/hot.md missing from: ${res.lines}`);
+  assert.ok(res.lines.includes('raw/hotraw.md'), `raw/hotraw.md missing from: ${res.lines}`);
+  assert.ok(res.lines.includes('.serena/hotcache.txt'), `.serena/hotcache.txt missing from: ${res.lines}`);
+  assert.ok(res.lines.includes('src/hotsrc.txt'), `src/hotsrc.txt missing from: ${res.lines}`);
+
+  cleanupWorktree({ main, worktree });
+});
+
+test('BUG REPRO — pre-fix hardcoded .git/info/exclude path is blind from a linked git worktree', () => {
+  // Verified by hand against this exact scenario: a linked worktree's `.git` is a
+  // `gitdir: <path>` pointer FILE, so `[ -f .git/info/exclude ]` (relative to the
+  // worktree cwd) never resolves, and sentinel_entries() silently returns nothing —
+  // the picker degrades to a plain listing with the sentinel dirs invisible, exactly
+  // as if there were no sentinel block at all (see "BUG REPRO A" above).
+  const { main, worktree } = mkWorktree();
+  const broken = revertFix('bug1');
+
+  const res = pick(worktree, 'hot', { cmd: broken });
+  assert.strictEqual(res.status, 0, res.stderr);
+  // secret/secret-hotel.txt is not under the sentinel (CANONICAL never excludes
+  // it), so it comes through the ordinary base listing either way — only the
+  // sentinel-scoped re-inclusion (wiki/, raw/, .serena/) is what's under test here.
+  assert.deepStrictEqual(
+    res.lines.sort(),
+    ['secret/secret-hotel.txt', 'src/hotsrc.txt'],
+    'pre-fix sentinel_entries() should find nothing from a linked worktree — it is looking for ' +
+      '.git/info/exclude relative to the worktree, which does not exist'
+  );
+
+  cleanup(path.dirname(broken));
+  cleanupWorktree({ main, worktree });
+});
+
+test('a symlinked sentinel dir inside a linked worktree is still traversed for suggestions', () => {
+  // wiki/ itself is a symlink here (not one of mkWorktree's plain worktreeFiles),
+  // pointing at a separate real directory holding the fixture file.
+  const worktreeFiles = FIXTURE_FILES.filter((f) => !f.startsWith('wiki/'));
+  const { main, worktree } = mkWorktree({ worktreeFiles });
+  const target = scratchDir();
+  fs.writeFileSync(path.join(target, 'linkedhot.md'), 'linkedhot\n');
+  fs.symlinkSync(target, path.join(worktree, 'wiki'));
+
+  const res = pick(worktree, 'hot');
+  assert.strictEqual(res.status, 0, res.stderr);
+  assert.ok(res.lines.includes('wiki/linkedhot.md'), `symlinked wiki/ contents missing from: ${res.lines}`);
+
+  cleanup(target);
+  cleanupWorktree({ main, worktree });
+});
+
+test('BUG REPRO — pre-fix find fallback (no -L) cannot see a symlinked sentinel dir', () => {
+  // Verified by hand: when rg is present, it already dereferences a symlink passed
+  // directly as its OWN command-line argument (as `list_reincluded()` does — `dir`
+  // is exactly the sentinel entry), so `--follow` makes no observable difference for
+  // this exact shape via rg. `-L` on the FIND FALLBACK is what changes behaviour —
+  // plain `find wiki -type f` on a symlinked `wiki/` prints nothing, `find -L wiki
+  // -type f` prints the contents — so this repro forces that fallback (PATH stripped
+  // of rg, same technique as the "non-git directory falls through to find" test
+  // above) to get a deterministic, hand-verified before/after.
+  const worktreeFiles = FIXTURE_FILES.filter((f) => !f.startsWith('wiki/'));
+  const { main, worktree } = mkWorktree({ worktreeFiles });
+  const target = scratchDir();
+  fs.writeFileSync(path.join(target, 'linkedhot.md'), 'linkedhot\n');
+  fs.symlinkSync(target, path.join(worktree, 'wiki'));
+  const restrictedPath = { PATH: '/usr/bin:/bin' };
+
+  const fixed = pick(worktree, 'hot', { env: restrictedPath });
+  assert.strictEqual(fixed.status, 0, fixed.stderr);
+  assert.ok(fixed.lines.includes('wiki/linkedhot.md'), `find -L fallback missed the symlink: ${fixed.lines}`);
+
+  const broken = revertFix('bug2');
+  const res = pick(worktree, 'hot', { cmd: broken, env: restrictedPath });
+  assert.strictEqual(res.status, 0, res.stderr);
+  assert.ok(
+    !res.lines.includes('wiki/linkedhot.md'),
+    `pre-fix find (no -L) unexpectedly saw the symlinked dir: ${res.lines}`
+  );
+
+  cleanup(target);
+  cleanup(path.dirname(broken));
+  cleanupWorktree({ main, worktree });
 });
 
 // --- the installed artifact ---------------------------------------------------

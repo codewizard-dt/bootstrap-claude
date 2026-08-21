@@ -54,6 +54,7 @@ The wiki is split into two domains with opposite organizing laws:
 - [Obsidian Graph View Styling (native colorGroups vs. plugins)](knowledge/concepts/obsidian-graph-view-styling.md) — .obsidian/graph.json colorGroups needs zero plugins; path:/tag:/file: query syntax; hand-authored template vs. auto-detecting plugin tradeoff
 - [claude mcp add Can Hardcode Secrets Into a Placeholder-Based .mcp.json](knowledge/concepts/mcp-add-secret-hardcoding-bug.md) — confirmed, unfixed (closed "not planned") CLI bug: re-running `claude mcp add` resolves and writes literal secrets over `${VAR}` placeholders
 - [Stdio MCP Servers Spawn One Process Per Client Session](knowledge/concepts/mcp-stdio-one-process-per-session.md) — protocol-level 1-client:1-subprocess; no scope or setting collapses concurrent-session process count; only HTTP registration against a shared long-lived server does
+- [fileSuggestion's @ Autocomplete Gap in Git Worktrees (Symlinked wiki/raw)](knowledge/concepts/file-suggestion-worktree-symlink-gap.md) — `file-suggestion.sh`'s naive `.git/info/exclude` check breaks under worktree `gitdir:` indirection, and its re-inclusion `rg` calls lack `--follow`, so symlinked `wiki/`/`raw/` never get suggested in a worktree
 
 ### Entities
 - People — [knowledge/entities/people/](knowledge/entities/people/): [Andrej Karpathy](knowledge/entities/people/andrej-karpathy.md)
