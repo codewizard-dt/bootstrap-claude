@@ -245,23 +245,198 @@ _enable_obsidian_plugin() {
   ' "$vault_dir" "$id" || true
 }
 
+# _graph_defaults_node <template> <graph_file> <fingerprint_file> <mode> <decisions_json>
+# Shared plan/apply logic: plan lists diverged keys needing a decision (no writes); apply resolves them via <decisions_json> and writes graph.json + fingerprint sidecar (changed files only). Template keys come from the packaged template's own Object.keys(), never hardcoded.
+_graph_defaults_node() {
+  node -e '
+    const fs = require("fs");
+    const crypto = require("crypto");
+
+    const [templatePath, graphFile, fingerprintFile, mode, decisionsRaw] = process.argv.slice(1);
+
+    const hashOf = (v) => crypto.createHash("sha256").update(JSON.stringify(v)).digest("hex");
+
+    let template;
+    try {
+      template = JSON.parse(fs.readFileSync(templatePath, "utf8"));
+    } catch (e) {
+      console.error("  WARNING: could not read/parse the packaged graph.json template — skipping graph defaults.");
+      process.exit(0);
+    }
+    const templateKeys = Object.keys(template);
+
+    let existing = {};
+    if (fs.existsSync(graphFile)) {
+      try {
+        existing = JSON.parse(fs.readFileSync(graphFile, "utf8"));
+      } catch (e) {
+        console.error("  WARNING: could not parse existing graph.json — treating it as empty.");
+        existing = {};
+      }
+    }
+
+    let fingerprint = {};
+    if (fs.existsSync(fingerprintFile)) {
+      try {
+        const raw = JSON.parse(fs.readFileSync(fingerprintFile, "utf8"));
+        if (raw && typeof raw === "object" && !Array.isArray(raw)) fingerprint = raw;
+        else throw new Error("unexpected shape");
+      } catch (e) {
+        console.error("  WARNING: could not parse .graph-defaults-fingerprint.json — treating it as empty.");
+        fingerprint = {};
+      }
+    }
+
+    let decisions = {};
+    if (decisionsRaw) {
+      try {
+        decisions = JSON.parse(decisionsRaw);
+      } catch (e) {
+        decisions = {};
+      }
+    }
+
+    const merged = Object.assign({}, existing);
+    const newFingerprint = {};
+    const pending = [];
+    const added = [];
+    const refreshed = [];
+    const unchanged = [];
+    const kept = [];
+
+    for (const key of templateKeys) {
+      const templateValue = template[key];
+      const templateHash = hashOf(templateValue);
+      const hasKey = Object.prototype.hasOwnProperty.call(existing, key);
+      const fp = fingerprint[key] && typeof fingerprint[key] === "object" ? fingerprint[key] : {};
+
+      if (!hasKey) {
+        // Case 1: key absent from the existing file.
+        merged[key] = templateValue;
+        newFingerprint[key] = { offeredHash: templateHash };
+        added.push(key);
+        continue;
+      }
+
+      const fileHash = hashOf(existing[key]);
+
+      if (fp.offeredHash && fileHash === fp.offeredHash) {
+        // Case 2: file still holds exactly what we last delivered.
+        merged[key] = templateValue;
+        newFingerprint[key] = { offeredHash: templateHash };
+        (fileHash === templateHash ? unchanged : refreshed).push(key);
+        continue;
+      }
+
+      if (!fp.offeredHash && fileHash === templateHash) {
+        // Case 3, unmodified branch: no sidecar yet, but the file already
+        // matches todays template — bootstrap the fingerprint silently.
+        merged[key] = templateValue;
+        newFingerprint[key] = { offeredHash: templateHash };
+        unchanged.push(key);
+        continue;
+      }
+
+      // Case 4 (including the bootstrapped-diverged branch of case 3): the
+      // file has diverged from what we last offered.
+      if (fp.declinedHash && templateHash === fp.declinedHash) {
+        // Already declined exactly this template value — stay sticky.
+        merged[key] = existing[key];
+        newFingerprint[key] = fp;
+        kept.push(key);
+        continue;
+      }
+
+      if (mode === "plan") {
+        pending.push(key);
+        continue;
+      }
+
+      if (Object.prototype.hasOwnProperty.call(decisions, key)) {
+        if (decisions[key] === true) {
+          merged[key] = templateValue;
+          newFingerprint[key] = { offeredHash: templateHash };
+          refreshed.push(key);
+        } else {
+          merged[key] = existing[key];
+          newFingerprint[key] = Object.assign({}, fp, { declinedHash: templateHash });
+          kept.push(key);
+        }
+      } else {
+        // Non-interactive, or a plan-only pass with no decision supplied:
+        // leave the file untouched and record nothing, so a later
+        // interactive run still offers this key.
+        merged[key] = existing[key];
+        if (fp.offeredHash) newFingerprint[key] = { offeredHash: fp.offeredHash };
+        kept.push(key);
+      }
+    }
+
+    if (mode === "plan") {
+      for (const key of pending) console.log(key);
+      process.exit(0);
+    }
+
+    const graphStr = JSON.stringify(merged, null, 2) + "\n";
+    const fingerprintStr = JSON.stringify(newFingerprint, null, 2) + "\n";
+    const existingGraphStr = fs.existsSync(graphFile) ? fs.readFileSync(graphFile, "utf8") : null;
+    const existingFingerprintStr = fs.existsSync(fingerprintFile) ? fs.readFileSync(fingerprintFile, "utf8") : null;
+
+    if (graphStr !== existingGraphStr) {
+      const tmp = graphFile + ".tmp-" + process.pid;
+      fs.writeFileSync(tmp, graphStr);
+      fs.renameSync(tmp, graphFile);
+    }
+    if (fingerprintStr !== existingFingerprintStr) {
+      const tmp = fingerprintFile + ".tmp-" + process.pid;
+      fs.writeFileSync(tmp, fingerprintStr);
+      fs.renameSync(tmp, fingerprintFile);
+    }
+
+    const parts = [];
+    if (added.length) parts.push(added.length + " added");
+    if (refreshed.length) parts.push(refreshed.length + " refreshed");
+    if (unchanged.length) parts.push(unchanged.length + " unchanged");
+    if (kept.length) parts.push(kept.length + " kept (your customization)");
+    console.log("  graph.json: " + (parts.length ? parts.join(", ") : "no changes") + ".");
+  ' "$1" "$2" "$3" "$4" "$5"
+}
+
+# _install_obsidian_graph_defaults <vault_dir>
+# Per-key sticky refresh (TASK-067) via a fingerprint sidecar, replacing the old whole-file write-if-absent check — never silently clobbers a genuinely user-diverged key. See _graph_defaults_node for the decision table.
 _install_obsidian_graph_defaults() {
   local vault_dir="$1"
+  local template="$SCRIPT_DIR/templates/obsidian/graph.json"
+  local graph_file="$vault_dir/.obsidian/graph.json"
+  local fingerprint_file="$vault_dir/.obsidian/.graph-defaults-fingerprint.json"
 
   if ! mkdir -p "$vault_dir/.obsidian"; then
     echo "  WARNING: failed to create $vault_dir/.obsidian — skipping graph defaults." >&2
     return
   fi
 
-  if [ -f "$vault_dir/.obsidian/graph.json" ]; then
-    echo "  .obsidian/graph.json already present — leaving your customization in place, skipping."
-    return 0
+  local decisions="{}"
+  if [ "$INTERACTIVE" = true ]; then
+    local pending=() key
+    while IFS= read -r key; do
+      [ -n "$key" ] && pending+=("$key")
+    done < <(_graph_defaults_node "$template" "$graph_file" "$fingerprint_file" plan "{}")
+
+    if [ "${#pending[@]}" -gt 0 ]; then
+      local parts=() answer
+      for key in "${pending[@]}"; do
+        if prompt_yn "  graph.json key '$key' differs from your saved customization — update to the new default? [y/N]: "; then
+          answer=true
+        else
+          answer=false
+        fi
+        parts+=("\"$key\":$answer")
+      done
+      decisions="{$(IFS=,; echo "${parts[*]}")}"
+    fi
   fi
 
-  if ! cp "$SCRIPT_DIR/templates/obsidian/graph.json" "$vault_dir/.obsidian/graph.json"; then
-    echo "  WARNING: failed to install graph defaults — skipping." >&2
-    return
-  fi
+  _graph_defaults_node "$template" "$graph_file" "$fingerprint_file" apply "$decisions"
 }
 
 # ---------------------------------------------------------------------------

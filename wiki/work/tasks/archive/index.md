@@ -70,3 +70,6 @@ Terminal task files (`done` or `trashed`) moved here by `/wiki-archive` to reduc
 | [[TASK-061]] | Ship a default .obsidian/graph.json template into install-obsidian.sh | done | 2026-08-15 |
 | [[TASK-065]] | Add aliases: [<ID>] to work-item frontmatter templates | done | 2026-08-15 |
 | [[TASK-063]] | Bundle the Alias Linker plugin into install-obsidian.sh's plugin bundle | done | 2026-08-15 |
+| [[TASK-068]] | Resolve the correct setup/update invocation entrypoint for the Docker harness's run.sh | done | 2026-08-22 |
+| [[TASK-069]] | Confirm current Node LTS to pin as the Docker harness's ARG NODE_VERSION | done | 2026-08-22 |
+| [[TASK-070]] | Decide whether the Docker harness needs an accept-path test lane | done | 2026-08-22 |

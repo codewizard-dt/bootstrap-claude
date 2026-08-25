@@ -31,7 +31,25 @@ Before committing, run the `/lint` workflow to catch and fix any diagnostics:
 2. If any fixes were applied, they will be included in the commit automatically
 3. If any issues were skipped (unfixable), warn the user before proceeding
 
-## Step 2: Assess Changes
+## Step 2: Condense Verbose Inline Comments
+
+Scan every line this commit **adds or modifies** for comments more verbose than necessary, and rewrite them to the shortest form that keeps the essential point — ideally one line.
+
+**Scope: diff-only, not whole-file.** Run `git diff HEAD` and look only at `+` lines. A comment already sitting untouched elsewhere in a file is out of scope — never touch a comment this commit did not add or modify.
+
+**Never touch — leave exactly as-is:**
+- **Structured documentation comments**, in any language: JSDoc/TSDoc (`/** ... */`, especially with `@param`/`@returns`/`@throws`/`@example`), Python docstrings (`"""..."""`/`'''...'''` directly under a `def`/`class`), Rust doc comments (`///`, `//!`), Go doc comments (the block directly above an exported declaration, starting with that declaration's own name), Java/C# Javadoc/XMLDoc blocks. These document an API's contract, not implementation rationale — condensing them destroys structure a doc generator or IDE tooltip depends on.
+- **Repo-documented comment exceptions.** Before editing a file, check whether the target repo's own `CLAUDE.md` (nearest one up the directory tree) explicitly carves out a comment-density exception for that file or directory (e.g. this repo's own `CLAUDE.md`: `lib/hooks/*.js` carries inline rationale comments "by deliberate exception... do not strip them"). Skip any file covered by such an exception entirely.
+- Comments already a single concise line.
+
+**Condense everything else:**
+- If a comment restates what the code already makes obvious (the *what*) with no *why* — delete it entirely. Matches this repo's own default: "if removing the comment wouldn't confuse a future reader, don't write it."
+- If it explains a genuinely non-obvious *why* (a workaround, a hidden constraint, a subtle invariant) but spans more lines or words than necessary, rewrite it to the single shortest sentence that preserves that reason.
+- Preserve the comment's position (same line for a trailing comment, same location for a block comment) and its language's comment syntax — only the wording and line count change.
+
+Use `Edit` per file for every change — never `sed`/`awk`/shell rewrites.
+
+## Step 3: Assess Changes
 
 **Always run all three commands fresh.** Do not rely on session context, prior output, or anything produced earlier in the conversation — those reflect only a subset of what may have changed. The commit message must be based on the complete current working-tree state.
 
@@ -41,7 +59,7 @@ Run all three in parallel:
 - `git diff HEAD` — see exact diffs for ALL staged and unstaged changes
 - `git log --oneline -10` — see recent commit history for context
 
-## Step 3: Summarize Changes and Recommend Semver Bump
+## Step 4: Summarize Changes and Recommend Semver Bump
 
 Before touching any files or committing, output a summary block like this:
 
@@ -64,9 +82,9 @@ Use these semver rules to determine the bump:
 | **minor** | New features or capabilities that are backward-compatible; new commands, skills, config options, or APIs added without breaking existing ones |
 | **major** | Breaking changes — removed or renamed commands/APIs/config keys, changed behavior that callers must update for, deleted files that others depend on |
 
-Print the summary. What happens next is decided by `gitCommit.versionBump` from Step 0 — see the table in Step 4. **Do not ask for confirmation here**; the only value that asks is `confirm`, and it asks in Step 4 where the manifest list is known.
+Print the summary. What happens next is decided by `gitCommit.versionBump` from Step 0 — see the table in Step 5. **Do not ask for confirmation here**; the only value that asks is `confirm`, and it asks in Step 5 where the manifest list is known.
 
-## Step 4: Bump Version in Project Files
+## Step 5: Bump Version in Project Files
 
 ### Gate: `gitCommit.versionBump`
 
@@ -77,7 +95,7 @@ Its grammar is `auto | confirm | never` — there is deliberately **no `ask` val
 | `auto` | Today's behavior. Detect every manifest and apply the bump to all of them, no confirmation. | **written** |
 | `confirm` — approved | Bump exactly as `auto` does. | **written** |
 | `confirm` — declined | Edit no manifest. | **omitted** |
-| `never` | Touch **no** version file at all. Skip straight to Step 5. | **omitted** |
+| `never` | Touch **no** version file at all. Skip straight to Step 6. | **omitted** |
 | `unset` | Behave exactly as `auto` — that is today's behavior and an unanswered key must never change it. | **written** |
 
 `confirm` prints the suggested bump **and the full list of manifest files that would change**, then asks once with `AskUserQuestion` before editing anything. Ask **every run** and **never persist the answer** — the standing choice is "keep asking me", so recording a reply would destroy it.
@@ -97,7 +115,7 @@ Report lines, each at most once per run:
 
 Anything else stored under this key is a value from a newer bootstrap that this skill has no branch for: treat it as `unset`, and say which value you did not recognize.
 
-For `auto`, `confirm`-approved, and `unset`, continue below. For `never` and `confirm`-declined, go to Step 5.
+For `auto`, `confirm`-approved, and `unset`, continue below. For `never` and `confirm`-declined, go to Step 6.
 
 Find and update version numbers in project files.
 
@@ -118,7 +136,7 @@ Filter results:
 
 **There is no "root only" rule.** A manifest anywhere in the tree counts. Monorepo layouts with no root-level manifest are normal — update every package found.
 
-If **no files with a version field** are found anywhere in the repo, skip this step entirely and proceed to Step 5.
+If **no files with a version field** are found anywhere in the repo, skip this step entirely and proceed to Step 6.
 
 ### Bumping rules
 
@@ -134,7 +152,7 @@ Pre-release tags (e.g. `1.0.0-beta.1`) — strip the pre-release suffix and appl
 
 Edit **every file** that contains a version using the Edit tool — do not stop at one. Then include all version-bump edits in the commit automatically (no separate commit needed).
 
-## Step 5: Commit
+## Step 6: Commit
 
 ### ⛔ Never create a branch — commit on the current branch
 
@@ -144,7 +162,7 @@ Edit **every file** that contains a version using the Edit tool — do not stop 
 - **ALWAYS use the `git-commit` bash alias.** Never use `git add` or `git commit` directly.
 - Always commit ALL files unless they are in `.gitignore`
 - Consider an appropriate commit message, let's call it `$message`
-- Prefix the subject with the bump type in brackets — `[patch]`, `[minor]`, or `[major]` — **only if Step 4 actually bumped a version**. If it did not (`never`, `confirm`-declined, or no manifest in the repo), the subject starts with the description and carries no bracket prefix
+- Prefix the subject with the bump type in brackets — `[patch]`, `[minor]`, or `[major]` — **only if Step 5 actually bumped a version**. If it did not (`never`, `confirm`-declined, or no manifest in the repo), the subject starts with the description and carries no bracket prefix
 - Run: `git-commit "$message"`
 
 ### ⛔ No agent attribution — the user is the sole author
@@ -166,7 +184,7 @@ git-commit "[patch] Single-line subject describing the change"
 git-commit "Single-line subject describing the change"
 ```
 
-That's it. One pair of double quotes. One line. One argument. The only difference between the two forms is whether Step 4 bumped a version.
+That's it. One pair of double quotes. One line. One argument. The only difference between the two forms is whether Step 5 bumped a version.
 
 **❌ Forbidden — every one of these patterns triggers an approval prompt:**
 
@@ -225,13 +243,13 @@ If the change feels too complex to summarize in one line, **make the subject mor
 - ✅ `Allow standard tools for markdown editing; ban bash exploration commands` (no bump this run — the subject still carries its weight)
 - ❌ `Update commands` (too vague — and vague is vague with or without a prefix)
 - ❌ `[patch] Fix bug` (too vague)
-- ❌ `[patch] Fix the login redirect` **when Step 4 bumped nothing** (the prefix is false)
+- ❌ `[patch] Fix the login redirect` **when Step 5 bumped nothing** (the prefix is false)
 
 Detailed reasoning, before/after examples, and rationale belong in **PR descriptions**, not in commit message bodies. The commit subject is the index entry; the PR is the encyclopedia.
 
-## Step 6: Push (gated on `gitCommit.autoPush`)
+## Step 7: Push (gated on `gitCommit.autoPush`)
 
-Runs only after the commit in Step 5 succeeded. A failed commit means there is nothing to push.
+Runs only after the commit in Step 6 succeeded. A failed commit means there is nothing to push.
 
 | Value | What to do |
 |-------|------------|
@@ -242,14 +260,14 @@ Runs only after the commit in Step 5 succeeded. A failed commit means there is n
 
 ### ⛔ The push is the plainest possible push
 
-- **The Step 5 branch rule is unchanged and still absolute.** Never run `git branch`, `git checkout -b`, or `git switch -c`. Pushing an existing branch is all this step ever does.
+- **The Step 6 branch rule is unchanged and still absolute.** Never run `git branch`, `git checkout -b`, or `git switch -c`. Pushing an existing branch is all this step ever does.
 - Never pass `--force`, `--force-with-lease`, `--set-upstream`/`-u`, `--all`, or `--tags`, and never name a different remote or refspec. Plain `git push`.
 - If the push fails for any reason — no upstream configured, no remote, rejected non-fast-forward, no credentials — **stop and report it**. The commit already succeeded and is safe; do not retry with extra flags, do not set an upstream, and do not attempt to reconcile with a pull or rebase.
 
-## Step 7: Final report
+## Step 8: Final report
 
 One short report at the end. Include, in this order:
 
 1. The commit subject that was written.
-2. Any of the once-only preference notes from Steps 4 and 6 that apply. Each appears **at most once per run**, here — not inline, and not repeated per file.
+2. Any of the once-only preference notes from Steps 5 and 7 that apply. Each appears **at most once per run**, here — not inline, and not repeated per file.
 3. The push outcome (pushed / not pushed and why / push failed and how).

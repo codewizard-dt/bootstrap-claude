@@ -68,3 +68,6 @@ Terminal UAT files (`passed`, `skipped`, or `trashed`) moved here by `/wiki-arch
 | [[UAT-061]]                                    | UAT: Ship a default .obsidian/graph.json template into install-obsidian.sh                                     | passed       | 2026-08-15 |
 | [[UAT-065]]                                    | UAT: Add aliases: [<ID>] to work-item frontmatter templates                                                     | passed       | 2026-08-15 |
 | [[UAT-063]]                                    | UAT: Bundle the Alias Linker plugin into install-obsidian.sh's plugin bundle                                    | passed       | 2026-08-15 |
+| [[UAT-074-docker-harness-invocation-entrypoint\|UAT-074]] | UAT: Resolve the correct setup/update invocation entrypoint for the Docker harness's run.sh | skipped | 2026-08-22 |
+| [[UAT-075-docker-harness-node-lts-pin\|UAT-075]] | UAT: Confirm current Node LTS to pin as the Docker harness's ARG NODE_VERSION | skipped | 2026-08-22 |
+| [[UAT-076-docker-harness-accept-path-decision\|UAT-076]] | UAT: Decide whether the Docker harness needs an accept-path test lane | skipped | 2026-08-22 |

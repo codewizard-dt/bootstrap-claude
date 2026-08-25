@@ -39,6 +39,7 @@ These are **not** referenced by `bin/cli.js` or by any other script — they're 
 |--------|---------|
 | `setup-runner.sh` | Generalized GitHub Actions self-hosted runner installer. Run as root on a target droplet: `RUNNER_TOKEN=<token> REPO_URL=<url> bash setup-runner.sh`. Registers the runner, installs it as a service, and configures GHCR login. |
 | `startup.sh` | One-shot droplet bootstrap: updates apt, installs zsh/curl/make, and installs Docker + the Compose plugin from Docker's official apt repo. Typically run once before `setup-runner.sh` on a fresh VM. |
+| [`test/docker/fresh-machine/`](../../test/docker/fresh-machine/README.md) | Docker-based harness that emulates running `setup`/`update` on a completely fresh machine with no prior Claude Code infrastructure. `./run.sh [shell\|setup\|update]`. |
 
 ## `templates/`
 

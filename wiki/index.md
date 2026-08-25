@@ -35,6 +35,7 @@ The wiki is split into two domains with opposite organizing laws:
 - [Research: Why User-Scoped MCPs Spawn One Process Per Session](knowledge/sources/mcp-one-process-per-user.md) — stdio's 1-client:1-subprocess is an MCP protocol property, not a scope or Claude Code setting; N sessions × M stdio servers = N×M processes; only an HTTP-registered shared server avoids it
 - [Research: Serena Transport Options and Preventing Multiple Concurrent Processes](knowledge/sources/serena-single-instance-transport.md) — Serena ships streamable-http alongside stdio; maintainer-endorsed fix for duplicate same-project instances (GitHub #1235, closed same-day); limited to one active project per HTTP instance; not adopted here
 - [Why TASK-NNN-Style Links Don't Resolve, and How to Fix It](knowledge/sources/obsidian-alias-link-resolution.md) — Obsidian's click-resolver matches filenames only, never frontmatter (confirmed intentional, not even native aliases:); Alias Linker plugin + an aliases: backfill fixes every existing link with zero text changes
+- [Docker-Based Fresh-Machine Test Harness for CLI Installer Scripts](knowledge/sources/docker-fresh-machine-test-harness.md) — Docker over a VM confirmed; `bin/cli.js` silently ignores the scratch path for `setup`/`update`; non-interactive mode is a hard "no" for every prompt; idempotency = run twice and diff; CI needs no Docker-in-Docker
 
 ### Concepts
 - [LLM Wiki Hot Cache](knowledge/concepts/llm-wiki-hot-cache.md) — session-handoff summary file pattern, converged on by multiple gist reimplementations

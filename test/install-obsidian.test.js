@@ -25,6 +25,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -104,6 +105,27 @@ function readCommunityPlugins(projectDir) {
 
 function graphJsonPath(projectDir) {
   return path.join(projectDir, '.obsidian', 'graph.json');
+}
+
+// --- TASK-067 per-key graph-defaults fingerprint helpers -----------------------
+
+function fingerprintJsonPath(projectDir) {
+  return path.join(projectDir, '.obsidian', '.graph-defaults-fingerprint.json');
+}
+
+function readJsonIfExists(p) {
+  return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : null;
+}
+
+// Matches _graph_defaults_node's hashOf exactly: sha256 over JSON.stringify(value).
+function sha256Of(value) {
+  return crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
+}
+
+const GRAPH_TEMPLATE_PATH = path.join(REPO, 'lib', 'scripts', 'templates', 'obsidian', 'graph.json');
+
+function loadGraphTemplate() {
+  return JSON.parse(fs.readFileSync(GRAPH_TEMPLATE_PATH, 'utf8'));
 }
 
 // --- curl stub for the plugin-fetch tests --------------------------------------
@@ -546,15 +568,10 @@ test('install-obsidian.sh: Linux + a failing `flatpak install` warns and continu
 });
 
 // =================================================================================
-// TASK-061: .obsidian/graph.json defaults — write-if-absent install of the
-// graph-view styling template, and its own non-interactive prefs gate
-// (obsidian.graphDefaults), mirroring the obsidian.plugins coverage above.
-// Every case here keeps obsidian.installApp and obsidian.plugins out of scope
-// via a stored `false` so only _install_obsidian_graph_defaults is under test —
-// no curl stub needed, since the graph defaults path never touches the network.
+// TASK-061/067: .obsidian/graph.json per-key sticky refresh — obsidian.installApp/obsidian.plugins stay out of scope (stored false), no curl stub needed since this path never touches the network.
 // =================================================================================
 
-test('install-obsidian.sh: a fresh vault (no pre-existing .obsidian/graph.json) gets the file written with exactly 9 colorGroups and the knowledge+work-only search scope', () => {
+test('install-obsidian.sh: a fresh vault (no pre-existing graph.json or sidecar) gets the file written with exactly 9 colorGroups, the knowledge+work-only search scope, and a sidecar recording offeredHash for every template key', () => {
   const home = scratchDir('install-obsidian-home-');
   const projectDir = scratchDir('install-obsidian-project-');
   const env = curatedEnv(home, path.join(scratchDir('install-obsidian-bin-'), 'bin'));
@@ -562,6 +579,7 @@ test('install-obsidian.sh: a fresh vault (no pre-existing .obsidian/graph.json) 
   seedProjectPref(env, projectDir, 'obsidian.plugins', 'false');
 
   assert.ok(!fs.existsSync(graphJsonPath(projectDir)), 'scratch project dir already had a graph.json before the run');
+  assert.ok(!fs.existsSync(fingerprintJsonPath(projectDir)), 'scratch project dir already had a fingerprint sidecar before the run');
 
   const res = run(['--project-dir', projectDir], { env });
 
@@ -576,32 +594,319 @@ test('install-obsidian.sh: a fresh vault (no pre-existing .obsidian/graph.json) 
   assert.ok(Array.isArray(graph.colorGroups), 'graph.json colorGroups must be an array');
   assert.strictEqual(graph.colorGroups.length, 9, 'expected exactly 9 colorGroups entries (3 knowledge + 6 work families)');
 
+  const template = loadGraphTemplate();
+  const fp = readJsonIfExists(fingerprintJsonPath(projectDir));
+  assert.ok(fp, 'fingerprint sidecar was not written for a fresh vault install');
+  for (const key of Object.keys(template)) {
+    assert.ok(
+      fp[key] && fp[key].offeredHash === sha256Of(template[key]),
+      `sidecar missing/incorrect offeredHash for key '${key}' on a fresh install`
+    );
+    assert.ok(!fp[key].declinedHash, `a fresh install must never record a declinedHash for key '${key}'`);
+  }
+
   cleanup(home, projectDir);
 });
 
-test('install-obsidian.sh: an existing .obsidian/graph.json is left byte-for-byte unchanged (write-if-absent)', () => {
+test('install-obsidian.sh: an existing graph.json that exactly matches the template with no sidecar present self-heals silently — sidecar gets created, no prompt, file unchanged', () => {
   const home = scratchDir('install-obsidian-home-');
   const projectDir = scratchDir('install-obsidian-project-');
   const env = curatedEnv(home, path.join(scratchDir('install-obsidian-bin-'), 'bin'));
   seedGlobalPref(env, 'obsidian.installApp', 'false');
   seedProjectPref(env, projectDir, 'obsidian.plugins', 'false');
 
+  const template = loadGraphTemplate();
   const obsidianDir = path.join(projectDir, '.obsidian');
   fs.mkdirSync(obsidianDir, { recursive: true });
-  const customized = '{"this is":"the user\'s own customization","search":"path:something-else"}';
-  fs.writeFileSync(graphJsonPath(projectDir), customized);
+  // Simulates a pre-TASK-067 install: file matches the template, but no sidecar exists yet.
+  const matchingContent = JSON.stringify(template, null, 2) + '\n';
+  fs.writeFileSync(graphJsonPath(projectDir), matchingContent);
+  assert.ok(!fs.existsSync(fingerprintJsonPath(projectDir)), 'sidecar already existed before the run');
 
   const res = run(['--project-dir', projectDir], { env });
 
   assert.equal(res.status, 0, res.stderr);
   assert.ok(
-    res.stdout.includes('.obsidian/graph.json already present — leaving your customization in place, skipping.'),
-    `missing the already-present skip message:\n${res.stdout}`
+    !/differs from your saved customization/.test(res.stdout),
+    `an already-matching file must never trigger a per-key prompt:\n${res.stdout}`
   );
   assert.strictEqual(
     fs.readFileSync(graphJsonPath(projectDir), 'utf8'),
-    customized,
-    'an existing graph.json was overwritten instead of being left in place'
+    matchingContent,
+    'graph.json bytes changed even though the file already matched the template'
+  );
+
+  const fp = readJsonIfExists(fingerprintJsonPath(projectDir));
+  assert.ok(fp, 'sidecar fingerprint file was not created on self-heal');
+  for (const key of Object.keys(template)) {
+    assert.ok(
+      fp[key] && fp[key].offeredHash === sha256Of(template[key]),
+      `sidecar missing/incorrect offeredHash for key '${key}' on self-heal`
+    );
+    assert.ok(!fp[key].declinedHash, `sidecar unexpectedly recorded a declinedHash for untouched key '${key}'`);
+  }
+
+  cleanup(home, projectDir);
+});
+
+test('install-obsidian.sh --interactive: a diverged key with no offeredHash recorded prompts for that key only, and answering y applies the new template value and clears any declinedHash', () => {
+  const home = scratchDir('install-obsidian-home-');
+  const projectDir = scratchDir('install-obsidian-project-');
+  const binDir = path.join(scratchDir('install-obsidian-bin-'), 'bin');
+  const env = { ...curatedEnv(home, binDir), BOOTSTRAP_ASSUME_TTY: '1' };
+  seedGlobalPref(env, 'obsidian.installApp', 'false');
+  seedProjectPref(env, projectDir, 'obsidian.plugins', 'false');
+
+  const template = loadGraphTemplate();
+  const obsidianDir = path.join(projectDir, '.obsidian');
+  fs.mkdirSync(obsidianDir, { recursive: true });
+
+  const customColorGroups = [{ query: 'path:the-users-own-grouping', color: { a: 1, rgb: 123456 } }];
+  const existing = { ...template, colorGroups: customColorGroups };
+  fs.writeFileSync(graphJsonPath(projectDir), JSON.stringify(existing, null, 2) + '\n');
+
+  const fingerprint = {};
+  for (const key of Object.keys(template)) {
+    if (key === 'colorGroups') continue; // no offeredHash recorded yet for the diverged key
+    fingerprint[key] = { offeredHash: sha256Of(template[key]) };
+  }
+  fs.writeFileSync(fingerprintJsonPath(projectDir), JSON.stringify(fingerprint, null, 2) + '\n');
+
+  // First 'y' is the sticky install-graph-defaults prompt, second is the per-key colorGroups prompt.
+  const res = run(['--interactive', '--project-dir', projectDir], { env, input: 'y\ny\n' });
+
+  assert.equal(res.status, 0, res.stderr);
+  const graph = JSON.parse(fs.readFileSync(graphJsonPath(projectDir), 'utf8'));
+  assert.deepStrictEqual(
+    graph.colorGroups,
+    template.colorGroups,
+    'colorGroups was not updated to the new template value after answering y'
+  );
+
+  const fp = readJsonIfExists(fingerprintJsonPath(projectDir));
+  assert.strictEqual(
+    fp.colorGroups.offeredHash,
+    sha256Of(template.colorGroups),
+    'offeredHash for colorGroups was not set to the newly-applied template value'
+  );
+  assert.ok(!fp.colorGroups.declinedHash, 'declinedHash should be cleared after accepting the new value');
+
+  cleanup(home, projectDir, path.dirname(binDir));
+});
+
+test('install-obsidian.sh --interactive: a diverged key with no offeredHash recorded prompts for that key only, and answering n leaves it untouched and records a declinedHash', () => {
+  const home = scratchDir('install-obsidian-home-');
+  const projectDir = scratchDir('install-obsidian-project-');
+  const binDir = path.join(scratchDir('install-obsidian-bin-'), 'bin');
+  const env = { ...curatedEnv(home, binDir), BOOTSTRAP_ASSUME_TTY: '1' };
+  seedGlobalPref(env, 'obsidian.installApp', 'false');
+  seedProjectPref(env, projectDir, 'obsidian.plugins', 'false');
+
+  const template = loadGraphTemplate();
+  const obsidianDir = path.join(projectDir, '.obsidian');
+  fs.mkdirSync(obsidianDir, { recursive: true });
+
+  const customColorGroups = [{ query: 'path:the-users-own-grouping', color: { a: 1, rgb: 123456 } }];
+  const existing = { ...template, colorGroups: customColorGroups };
+  fs.writeFileSync(graphJsonPath(projectDir), JSON.stringify(existing, null, 2) + '\n');
+
+  const fingerprint = {};
+  for (const key of Object.keys(template)) {
+    if (key === 'colorGroups') continue; // no offeredHash recorded yet for the diverged key
+    fingerprint[key] = { offeredHash: sha256Of(template[key]) };
+  }
+  fs.writeFileSync(fingerprintJsonPath(projectDir), JSON.stringify(fingerprint, null, 2) + '\n');
+
+  const res = run(['--interactive', '--project-dir', projectDir], { env, input: 'y\nn\n' });
+
+  assert.equal(res.status, 0, res.stderr);
+  const graph = JSON.parse(fs.readFileSync(graphJsonPath(projectDir), 'utf8'));
+  assert.deepStrictEqual(graph.colorGroups, customColorGroups, 'a declined key was overwritten instead of being left in place');
+
+  const fp = readJsonIfExists(fingerprintJsonPath(projectDir));
+  assert.strictEqual(
+    fp.colorGroups.declinedHash,
+    sha256Of(template.colorGroups),
+    'declinedHash was not recorded for the declined template value'
+  );
+  assert.ok(!fp.colorGroups.offeredHash, 'offeredHash must not be touched by a decline — only declinedHash');
+
+  cleanup(home, projectDir, path.dirname(binDir));
+});
+
+test('install-obsidian.sh --interactive: the same diverged key run again after a decline, template value unchanged, stays sticky — no prompt, file still holds the user value', () => {
+  const home = scratchDir('install-obsidian-home-');
+  const projectDir = scratchDir('install-obsidian-project-');
+  const binDir = path.join(scratchDir('install-obsidian-bin-'), 'bin');
+  const env = { ...curatedEnv(home, binDir), BOOTSTRAP_ASSUME_TTY: '1' };
+  seedGlobalPref(env, 'obsidian.installApp', 'false');
+  seedProjectPref(env, projectDir, 'obsidian.plugins', 'false');
+
+  const template = loadGraphTemplate();
+  const obsidianDir = path.join(projectDir, '.obsidian');
+  fs.mkdirSync(obsidianDir, { recursive: true });
+
+  const customColorGroups = [{ query: 'path:the-users-own-grouping', color: { a: 1, rgb: 123456 } }];
+  const existing = { ...template, colorGroups: customColorGroups };
+  fs.writeFileSync(graphJsonPath(projectDir), JSON.stringify(existing, null, 2) + '\n');
+
+  const fingerprint = {};
+  for (const key of Object.keys(template)) {
+    if (key === 'colorGroups') {
+      fingerprint[key] = { declinedHash: sha256Of(template.colorGroups) }; // already declined this exact value
+    } else {
+      fingerprint[key] = { offeredHash: sha256Of(template[key]) };
+    }
+  }
+  fs.writeFileSync(fingerprintJsonPath(projectDir), JSON.stringify(fingerprint, null, 2) + '\n');
+
+  // Spare 'y' queued: would wrongly flip colorGroups if the sticky decline were broken.
+  const res = run(['--interactive', '--project-dir', projectDir], { env, input: 'y\ny\n' });
+
+  assert.equal(res.status, 0, res.stderr);
+  const graph = JSON.parse(fs.readFileSync(graphJsonPath(projectDir), 'utf8'));
+  assert.deepStrictEqual(
+    graph.colorGroups,
+    customColorGroups,
+    'a sticky-declined key changed even though its template value is unchanged since the decline'
+  );
+
+  const fp = readJsonIfExists(fingerprintJsonPath(projectDir));
+  assert.strictEqual(
+    fp.colorGroups.declinedHash,
+    sha256Of(template.colorGroups),
+    'declinedHash should remain recorded for the still-declined key'
+  );
+  assert.ok(!fp.colorGroups.offeredHash, 'a sticky-declined key should not gain an offeredHash without the user accepting it');
+
+  cleanup(home, projectDir, path.dirname(binDir));
+});
+
+test('install-obsidian.sh: a key whose file value still matches a stale offeredHash is silently refreshed to the new template value when the template has since changed, with no prompt', () => {
+  const home = scratchDir('install-obsidian-home-');
+  const projectDir = scratchDir('install-obsidian-project-');
+  const env = curatedEnv(home, path.join(scratchDir('install-obsidian-bin-'), 'bin'));
+  seedGlobalPref(env, 'obsidian.installApp', 'false');
+  seedProjectPref(env, projectDir, 'obsidian.plugins', 'false');
+
+  const template = loadGraphTemplate();
+  const obsidianDir = path.join(projectDir, '.obsidian');
+  fs.mkdirSync(obsidianDir, { recursive: true });
+
+  // showTags: file matches an older offeredHash, but the template has since changed.
+  const oldDeliveredShowTags = !template.showTags;
+  const existing = { ...template, showTags: oldDeliveredShowTags };
+  fs.writeFileSync(graphJsonPath(projectDir), JSON.stringify(existing, null, 2) + '\n');
+
+  const fingerprint = {};
+  for (const key of Object.keys(template)) {
+    const deliveredValue = key === 'showTags' ? oldDeliveredShowTags : template[key];
+    fingerprint[key] = { offeredHash: sha256Of(deliveredValue) };
+  }
+  fs.writeFileSync(fingerprintJsonPath(projectDir), JSON.stringify(fingerprint, null, 2) + '\n');
+
+  const res = run(['--project-dir', projectDir], { env });
+
+  assert.equal(res.status, 0, res.stderr);
+  assert.ok(
+    !/differs from your saved customization/.test(res.stdout),
+    `a stale-but-untouched key must be silently refreshed, never prompted:\n${res.stdout}`
+  );
+  const graph = JSON.parse(fs.readFileSync(graphJsonPath(projectDir), 'utf8'));
+  assert.strictEqual(graph.showTags, template.showTags, 'showTags was not refreshed to the current template value');
+
+  const fp = readJsonIfExists(fingerprintJsonPath(projectDir));
+  assert.strictEqual(
+    fp.showTags.offeredHash,
+    sha256Of(template.showTags),
+    'offeredHash for showTags was not updated to the new template value'
+  );
+
+  cleanup(home, projectDir);
+});
+
+test('install-obsidian.sh: a non-interactive run against a diverged key leaves it untouched and records no declinedHash, so a later interactive run still offers it', () => {
+  const home = scratchDir('install-obsidian-home-');
+  const projectDir = scratchDir('install-obsidian-project-');
+  const env = curatedEnv(home, path.join(scratchDir('install-obsidian-bin-'), 'bin'));
+  seedGlobalPref(env, 'obsidian.installApp', 'false');
+  seedProjectPref(env, projectDir, 'obsidian.plugins', 'false');
+
+  const template = loadGraphTemplate();
+  const obsidianDir = path.join(projectDir, '.obsidian');
+  fs.mkdirSync(obsidianDir, { recursive: true });
+
+  const customColorGroups = [{ query: 'path:the-users-own-grouping', color: { a: 1, rgb: 123456 } }];
+  const existing = { ...template, colorGroups: customColorGroups };
+  fs.writeFileSync(graphJsonPath(projectDir), JSON.stringify(existing, null, 2) + '\n');
+
+  const fingerprint = {};
+  for (const key of Object.keys(template)) {
+    if (key === 'colorGroups') continue; // no fingerprint yet for the diverged key
+    fingerprint[key] = { offeredHash: sha256Of(template[key]) };
+  }
+  fs.writeFileSync(fingerprintJsonPath(projectDir), JSON.stringify(fingerprint, null, 2) + '\n');
+
+  const first = run(['--project-dir', projectDir], { env });
+  assert.equal(first.status, 0, first.stderr);
+
+  let graph = JSON.parse(fs.readFileSync(graphJsonPath(projectDir), 'utf8'));
+  assert.deepStrictEqual(graph.colorGroups, customColorGroups, 'a non-interactive run must never touch a diverged key');
+
+  const fpAfterFirst = readJsonIfExists(fingerprintJsonPath(projectDir));
+  assert.ok(
+    !fpAfterFirst.colorGroups,
+    'a non-interactive run must not record any fingerprint entry for a diverged key it left untouched'
+  );
+
+  // A later interactive run must still offer this key (no declinedHash was recorded).
+  const second = run(['--interactive', '--project-dir', projectDir], {
+    env: { ...env, BOOTSTRAP_ASSUME_TTY: '1' },
+    input: 'y\ny\n',
+  });
+  assert.equal(second.status, 0, second.stderr);
+
+  graph = JSON.parse(fs.readFileSync(graphJsonPath(projectDir), 'utf8'));
+  assert.deepStrictEqual(
+    graph.colorGroups,
+    template.colorGroups,
+    'the later interactive run did not still offer the previously non-interactively-skipped key'
+  );
+
+  cleanup(home, projectDir);
+});
+
+test('install-obsidian.sh: a non-templated key the user added (e.g. a force/layout key this template never defines) is always preserved untouched and never appears in the sidecar', () => {
+  const home = scratchDir('install-obsidian-home-');
+  const projectDir = scratchDir('install-obsidian-project-');
+  const env = curatedEnv(home, path.join(scratchDir('install-obsidian-bin-'), 'bin'));
+  seedGlobalPref(env, 'obsidian.installApp', 'false');
+  seedProjectPref(env, projectDir, 'obsidian.plugins', 'false');
+
+  const template = loadGraphTemplate();
+  const obsidianDir = path.join(projectDir, '.obsidian');
+  fs.mkdirSync(obsidianDir, { recursive: true });
+
+  // centerStrength is a force/layout key the template never defines — must stay untouched, untracked.
+  const existing = { ...template, centerStrength: 500 };
+  fs.writeFileSync(graphJsonPath(projectDir), JSON.stringify(existing, null, 2) + '\n');
+
+  const fingerprint = {};
+  for (const key of Object.keys(template)) {
+    fingerprint[key] = { offeredHash: sha256Of(template[key]) };
+  }
+  fs.writeFileSync(fingerprintJsonPath(projectDir), JSON.stringify(fingerprint, null, 2) + '\n');
+
+  const res = run(['--project-dir', projectDir], { env });
+
+  assert.equal(res.status, 0, res.stderr);
+  const graph = JSON.parse(fs.readFileSync(graphJsonPath(projectDir), 'utf8'));
+  assert.strictEqual(graph.centerStrength, 500, 'a non-templated key was modified or dropped');
+
+  const fp = readJsonIfExists(fingerprintJsonPath(projectDir));
+  assert.ok(
+    !Object.prototype.hasOwnProperty.call(fp, 'centerStrength'),
+    'a non-templated key must never appear in the fingerprint sidecar'
   );
 
   cleanup(home, projectDir);

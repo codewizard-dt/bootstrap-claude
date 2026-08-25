@@ -1,0 +1,26 @@
+name: Docker Fresh-Machine Harness
+
+on:
+  pull_request:
+    paths:
+      - "test/docker/fresh-machine/**"
+      - "lib/scripts/**"
+
+jobs:
+  fresh-machine:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Build fresh-machine image
+        run: docker build -t bootstrap-claude-fresh-machine test/docker/fresh-machine
+
+      - name: Run setup mode
+        run: ./test/docker/fresh-machine/run.sh setup
+
+      - name: Run update mode
+        run: ./test/docker/fresh-machine/run.sh update
+
+      # TASK-071 (stale mode) and TASK-072 (idempotency check) are still `status: todo` —
+      # add their run.sh modes as additional steps here once those tasks land.
