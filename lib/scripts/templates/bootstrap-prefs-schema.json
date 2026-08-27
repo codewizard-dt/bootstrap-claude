@@ -172,6 +172,15 @@
     "default": false,
     "askedBy": "install-global.sh"
   },
+  "gitCommit.lint": {
+    "scope": "either",
+    "consumer": "skill",
+    "summary": "Whether /git-commit runs the /lint fix-cycle before committing",
+    "detail": "true runs the full /lint workflow (all cycles until clean or issues are skipped) before assessing changes; false (and unset) skip it entirely — this is an opt-in, not an opt-out, so a fresh install never lints without the user having said yes. There is deliberately no 'ask' value: /git-commit never prompts about this per run, it only reads the stored answer.",
+    "values": "true | false",
+    "default": false,
+    "askedBy": "install-global.sh"
+  },
   "research.persistToRaw": {
     "scope": "either",
     "consumer": "skill",

@@ -2087,6 +2087,7 @@ const DYNAMIC_KEYS = ['guides.*', 'gitignore.section.*'];
 const SKILL_KEYS = [
   'gitCommit.versionBump',
   'gitCommit.autoPush',
+  'gitCommit.lint',
   'research.persistToRaw',
   'research.autoIngest',
   'uatGenerate.promoteTests',
@@ -2631,16 +2632,18 @@ test('schema: every askedBy names a real lib/scripts/ file or a real lib/skills/
   }
 });
 
-test('schema: the consumer:"skill" population is exactly the six behavior-changing keys', () => {
-  // COUNT AND MEMBERSHIP, both. These six are the keys that change what a
+test('schema: the consumer:"skill" population is exactly the seven behavior-changing keys', () => {
+  // COUNT AND MEMBERSHIP, both. These seven are the keys that change what a
   // slash command DOES at run time — whether /git-commit pushes, whether
-  // /research writes to raw/, whether /research folds a saved report into the
-  // wiki, whether /uat-generate promotes tests. They are read mid-session with
-  // no installer in the loop and no diff to review, so adding a seventh is a
-  // decision about the blast radius of the store itself, not a routine schema
-  // edit. Failing here is the intended prompt to make that decision
-  // deliberately; if the new key really belongs, add it to SKILL_KEYS and say
-  // why in the commit.
+  // /git-commit lints, whether /research writes to raw/, whether /research
+  // folds a saved report into the wiki, whether /uat-generate promotes tests.
+  // They are read mid-session with no installer in the loop and no diff to
+  // review, so adding another is a decision about the blast radius of the
+  // store itself, not a routine schema edit. Failing here is the intended
+  // prompt to make that decision deliberately; if the new key really belongs,
+  // add it to SKILL_KEYS and say why in the commit.
+  //
+  // gitCommit.lint added deliberately: opt-in lint gate for /git-commit, per explicit user direction.
   const skillKeys = schemaEntries()
     .filter(([, entry]) => entry.consumer === 'skill')
     .map(([key]) => key)

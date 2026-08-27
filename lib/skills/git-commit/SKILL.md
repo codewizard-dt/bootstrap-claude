@@ -10,26 +10,43 @@ user-invocable: true
 
 # git-commit
 
-## Step 0: Read the two preferences that govern this skill
+## Step 0: Verify working directory, then read the three preferences that govern this skill
 
-Two stored preferences change what this command does. Read **both, once, before Step 1** — never mid-run, and never once per file:
+### Precondition: current directory must be the repo root
+
+Before anything else, confirm the working directory is the repository root — every later step (`git status`/`git diff HEAD`, manifest Detection, the `--project .` preference reads below, and `git-commit`'s own `git add .`) assumes it. Running from a subdirectory would silently stage, diff, or bump only that subtree instead of the whole repo.
+
+```bash
+cd "$(git rev-parse --show-toplevel)"
+```
+
+If this fails (not inside a git repo at all), **STOP** and report: `/git-commit must run inside a git repository — no repo root found from the current directory.` Otherwise the working directory is now the repo root; proceed for the rest of this run without re-checking.
+
+**Worktree-safe by construction**: `--show-toplevel` resolves to the current *worktree's own* root when run from inside a linked worktree, not the main checkout's — exactly the directory this run should operate in, so no worktree-specific branch is needed here. (Contrast with `--git-dir`/`--git-common-dir`, which resolve to the *shared* `.git` location across all worktrees — the right tool when code needs the common git directory instead, as in `file-suggestion.sh`'s worktree fix, but the wrong one here.)
+
+### Read the three preferences that govern this skill
+
+Three stored preferences change what this command does. Read **all three, once, before Step 1** — never mid-run, and never once per file:
 
 ```bash
 node ~/.claude/bootstrap-prefs.js --get gitCommit.versionBump --project . 2>/dev/null || echo unset
 node ~/.claude/bootstrap-prefs.js --get gitCommit.autoPush --project . 2>/dev/null || echo unset
+node ~/.claude/bootstrap-prefs.js --get gitCommit.lint --project . 2>/dev/null || echo unset
 ```
 
-`--project .` is required. Both keys are `scope: either`, so the answer resolves **project file → global file → schema default**; dropping the flag would read the machine-wide answer even in a repo that overrides it. If either command fails — bootstrap was never installed globally, or `node` is not on PATH — treat that answer as `unset`.
+`--project .` is required. All three keys are `scope: either`, so the answer resolves **project file → global file → schema default**; dropping the flag would read the machine-wide answer even in a repo that overrides it. If any command fails — bootstrap was never installed globally, or `node` is not on PATH — treat that answer as `unset`.
 
-`unset` means *nobody has ever been asked*. It always keeps today's behavior; it never invents one. Mention an `unset` key **once**, in the final report, never as a mid-run interruption.
+`unset` means *nobody has ever been asked*. For `gitCommit.versionBump` and `gitCommit.autoPush` this keeps today's behavior; it never invents one. `gitCommit.lint` is the deliberate exception: it is opt-in by explicit design, so `unset` (and `false`) both mean **do not lint** — a fresh install must never lint before the user has said yes. Mention an `unset` key **once**, in the final report, never as a mid-run interruption.
 
-## Step 1: Run Lint Fix Cycles
+## Step 1: Run Lint Fix Cycles (gated on `gitCommit.lint`)
 
-Before committing, run the `/lint` workflow to catch and fix any diagnostics:
+`gitCommit.lint` is `true | false`, default `false`, no `ask` value — read once in Step 0, never re-checked mid-run.
 
-1. Execute the full `/lint` command (all cycles until clean or issues are skipped)
-2. If any fixes were applied, they will be included in the commit automatically
-3. If any issues were skipped (unfixable), warn the user before proceeding
+- **`true`**: run the `/lint` workflow to catch and fix any diagnostics:
+  1. Execute the full `/lint` command (all cycles until clean or issues are skipped)
+  2. If any fixes were applied, they will be included in the commit automatically
+  3. If any issues were skipped (unfixable), warn the user before proceeding
+- **`false` or `unset`**: skip this step entirely — do not invoke `/lint`. Note once in the final report when `unset`: `gitCommit.lint is unanswered — /git-commit does not lint by default. Set it with: node ~/.claude/bootstrap-prefs.js --set gitCommit.lint --value true --global` (or `false`).
 
 ## Step 2: Condense Verbose Inline Comments
 
@@ -59,9 +76,26 @@ Run all three in parallel:
 - `git diff HEAD` — see exact diffs for ALL staged and unstaged changes
 - `git log --oneline -10` — see recent commit history for context
 
-## Step 4: Summarize Changes and Recommend Semver Bump
+## Step 4: Summarize Changes, and Recommend a Semver Bump Only If It Will Be Used
 
-Before touching any files or committing, output a summary block like this:
+`gitCommit.versionBump` was already read in Step 0 — branch on it now, **before** doing any bump classification, so a `never` project never pays for reasoning it can't use.
+
+### If `gitCommit.versionBump` is `never`
+
+No manifest will be touched and no prefix will be written (Step 5 skips straight through). Determining PATCH/MINOR/MAJOR would be pure wasted effort — skip the semver table entirely and print only:
+
+---
+
+**Changes being committed:**
+- <bullet list of what changed and why, derived from the diff>
+
+---
+
+Then go directly to Step 6 (Commit) with a bare, unprefixed subject.
+
+### Otherwise (`auto`, `confirm`, or `unset`)
+
+The bump classification is actually needed — either to write the prefix (`auto`/`unset`) or to ask about it (`confirm`, in Step 5). Output the full summary block:
 
 ---
 
@@ -82,7 +116,7 @@ Use these semver rules to determine the bump:
 | **minor** | New features or capabilities that are backward-compatible; new commands, skills, config options, or APIs added without breaking existing ones |
 | **major** | Breaking changes — removed or renamed commands/APIs/config keys, changed behavior that callers must update for, deleted files that others depend on |
 
-Print the summary. What happens next is decided by `gitCommit.versionBump` from Step 0 — see the table in Step 5. **Do not ask for confirmation here**; the only value that asks is `confirm`, and it asks in Step 5 where the manifest list is known.
+Print the summary. What happens next is decided by the same `gitCommit.versionBump` value — see the table in Step 5. **Do not ask for confirmation here**; the only value that asks is `confirm`, and it asks in Step 5 where the manifest list is known.
 
 ## Step 5: Bump Version in Project Files
 
@@ -269,5 +303,5 @@ Runs only after the commit in Step 6 succeeded. A failed commit means there is n
 One short report at the end. Include, in this order:
 
 1. The commit subject that was written.
-2. Any of the once-only preference notes from Steps 5 and 7 that apply. Each appears **at most once per run**, here — not inline, and not repeated per file.
+2. Any of the once-only preference notes from Steps 1, 5, and 7 that apply. Each appears **at most once per run**, here — not inline, and not repeated per file.
 3. The push outcome (pushed / not pushed and why / push failed and how).

@@ -3218,6 +3218,7 @@ test('prefs_set: an illegal value surfaces the error, does not abort, and leaves
 const SKILL_PREF_KEYS = [
   'gitCommit.versionBump',
   'gitCommit.autoPush',
+  'gitCommit.lint',
   'research.persistToRaw',
   'research.autoIngest',
   'uatGenerate.promoteTests',
@@ -3444,7 +3445,7 @@ test('install-global.sh e2e: step 6 installs the helper AND its schema in the la
   });
 });
 
-test('install-global.sh e2e: a fresh interactive run settles all six keys, and each answer lands as its correct JSON type', () => {
+test('install-global.sh e2e: a fresh interactive run settles all seven keys, and each answer lands as its correct JSON type', () => {
   withScratchEnv((S) => {
     // One distinct answer per key, deliberately covering all four storable
     // shapes: a string grammar, a boolean true, a boolean false, and `ask`.
@@ -3460,10 +3461,12 @@ test('install-global.sh e2e: a fresh interactive run settles all six keys, and e
     // that has no ask state. Without that move this test would silently stop
     // exercising the `ask` shape at all.
     //
+    // gitCommit.lint sits between autoPush and persistToRaw (its asking-order position); no `ask` value, so it's answered `y` (true).
+    //
     // research.autoIngest sits between persistToRaw and promoteTests — the same
     // position it holds in install-global.sh's asking order — and is answered
     // `y` (true) here, giving the boolean-true shape a second, independent key.
-    const r = runInstallGlobal(S, { input: 'n\ny\nn\ny\nb\na\n' });
+    const r = runInstallGlobal(S, { input: 'n\ny\ny\nn\ny\nb\na\n' });
     assert.equal(r.status, 0, `install failed:\nstdout:\n${r.stdout}\nstderr:\n${r.stderr}`);
 
     for (const key of SKILL_PREF_KEYS) {
@@ -3479,12 +3482,13 @@ test('install-global.sh e2e: a fresh interactive run settles all six keys, and e
       {
         'gitCommit.versionBump': 'never',
         'gitCommit.autoPush': true,
+        'gitCommit.lint': true,
         'research.persistToRaw': false,
         'research.autoIngest': true,
         'uatGenerate.promoteTests': 'sibling',
         'gitignore.offerSectionUpdates': 'ask',
       },
-      'the six answers did not round-trip. Note the types: `false` must be a JSON boolean, since a stored ' +
+      'the seven answers did not round-trip. Note the types: `false` must be a JSON boolean, since a stored ' +
         '"false" string is truthy in every shell test and reads back as a settled true'
     );
 
@@ -3505,7 +3509,7 @@ test('install-global.sh e2e: a re-run re-asks ONLY the unanswered key — stored
   // every line of run 2 is an answer that would visibly rewrite the store if any
   // settled question fired again.
   withScratchEnv((S) => {
-    // Run 1: answer five, SKIP the sixth. `s` records nothing, so
+    // Run 1: answer six, SKIP the seventh. `s` records nothing, so
     // gitignore.offerSectionUpdates stays genuinely unanswered.
     //
     // The run-1 set deliberately contains BOTH a stored `false` and a stored
@@ -3515,13 +3519,14 @@ test('install-global.sh e2e: a re-run re-asks ONLY the unanswered key — stored
     // grammar answers WHERE tests go rather than whether to write them. The
     // second `n` is research.autoIngest, giving `false` a second independent
     // key alongside research.persistToRaw. `d` is promoteTests' dedicated-folder
-    // option.
-    const r1 = runInstallGlobal(S, { input: 'a\na\nn\nn\nd\ns\n' });
+    // option. gitCommit.lint (asking-order position, no `ask` value) is answered `y` (true).
+    const r1 = runInstallGlobal(S, { input: 'a\na\ny\nn\nn\nd\ns\n' });
     assert.equal(r1.status, 0, `run 1 failed:\nstdout:\n${r1.stdout}\nstderr:\n${r1.stderr}`);
 
     const afterRun1 = {
       'gitCommit.versionBump': 'auto',
       'gitCommit.autoPush': 'ask',
+      'gitCommit.lint': true,
       'research.persistToRaw': false,
       'research.autoIngest': false,
       'uatGenerate.promoteTests': 'dedicated',
@@ -3558,6 +3563,7 @@ test('install-global.sh e2e: a re-run re-asks ONLY the unanswered key — stored
     for (const key of [
       'gitCommit.versionBump',
       'gitCommit.autoPush',
+      'gitCommit.lint',
       'research.persistToRaw',
       'research.autoIngest',
       'uatGenerate.promoteTests',

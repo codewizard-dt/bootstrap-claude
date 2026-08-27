@@ -173,7 +173,7 @@ echo ""
 #    mechanism exists to remove.
 #
 #    GLOBAL SCOPE. install-global.sh takes no project path, so it cannot know
-#    which checkout the user means. All five keys are `scope: either`, so the
+#    which checkout the user means. All seven keys are `scope: either`, so the
 #    answer recorded here is the machine-wide default and a project file can
 #    still override it per checkout later.
 #
@@ -183,7 +183,7 @@ echo ""
 #    One CI run must never bake a permanent answer into a user's store.
 PREFS_ASKED=0
 
-# <key> <question> — the yes/no/ask shape shared by four of the five keys.
+# <key> <question> — the yes/no/ask shape shared by four of the seven keys.
 # `skip` is the resolved value for a bare Enter or EOF and records nothing, so
 # an accidental keystroke leaves the question open instead of settling it.
 settle_skill_pref() {
@@ -232,6 +232,18 @@ else
 
   settle_skill_pref gitCommit.autoPush \
     "Should /git-commit push the current branch after committing? (Default no — this turns a local action into a published one. It never creates a branch either way.)"
+  # gitCommit.lint's grammar is true|false only (no `ask`), so it can't use settle_skill_pref's generic yes/no/ask/skip shape.
+  if ! prefs_stored_global gitCommit.lint; then
+    echo ""
+    echo "  Should /git-commit run the /lint fix-cycle before committing? (Default no — linting is opt-in, so a fresh install never lints without you saying yes.)"
+    LINT_ANSWER="$(prompt_letter_choice skip "    [y]es / [n]o / [s]kip for now: " yes no skip)"
+    case "$LINT_ANSWER" in
+      yes)  prefs_set gitCommit.lint --global true ;  echo "    gitCommit.lint = true" ;;
+      no)   prefs_set gitCommit.lint --global false ; echo "    gitCommit.lint = false" ;;
+      *)    echo "    gitCommit.lint left unanswered — today's behavior (no lint) is unchanged, and you will be asked again next sync." ;;
+    esac
+    PREFS_ASKED=$(( PREFS_ASKED + 1 ))
+  fi
   settle_skill_pref research.persistToRaw \
     "Should /research save its report and sources to raw/research/ by default? (Findings always appear in the reply; this governs the file write only, and you can still decline any single report.)"
   settle_skill_pref research.autoIngest \
