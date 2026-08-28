@@ -181,6 +181,15 @@
     "default": false,
     "askedBy": "install-global.sh"
   },
+  "packageInstall.consent": {
+    "scope": "project",
+    "consumer": "skill",
+    "summary": "Whether package-install-consent.js allows package-manager installs for this project",
+    "detail": "package-install-consent.js is a PreToolUse hook that today denies every package-manager install command (npm install, pip install, uvx --from, etc.) unconditionally. false (and unset, the default) keeps denying exactly as today — no behavior change for a project that has not opted in. 'ask' makes the hook emit permissionDecision: \"defer\", handing the decision back to Claude Code's own native permission prompt instead of denying outright — this is safe even under headless/bypass runs because Claude Code's own permission system is the one deciding, not this hook blocking. true makes the hook emit permissionDecision: \"allow\" outright, skipping any prompt at all.",
+    "values": "true | false | ask",
+    "default": false,
+    "askedBy": "/bootstrap-config"
+  },
   "research.persistToRaw": {
     "scope": "either",
     "consumer": "skill",

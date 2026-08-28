@@ -26,7 +26,7 @@ The only Claude Code mechanism that contains a compromised Bash **subprocess** a
 
 **Apple Events are blocked by default** on macOS — `open`, `osascript`, and browser-auth flows fail with error `-600` unless `allowAppleEvents: true` (settable at user/managed/CLI scope only; project settings are ignored). The docs warn that enabling it *"removes code-execution isolation"*.
 
-**Credential protection.** `sandbox.credentials.files` / `.envVars` support `deny` and `mask`; `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` strips Anthropic/cloud credentials from *all* subprocesses and also forces filesystem isolation on.
+**Credential protection.** `sandbox.credentials.files` / `.envVars` support `deny` and `mask`; `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` strips Anthropic/cloud credentials from *all* subprocesses and also forces filesystem isolation on. For how the primary login credential itself is stored (Keychain vs. `~/.claude/.credentials.json`) and how to authenticate a *separate* environment without copying it, see relates_to::[[claude-code-authentication]].
 
 **Escape hatches to know about**, because they silently re-open everything and should be pinned at user or managed scope: `dangerouslyDisableSandbox` retry (disable via `allowUnsandboxedCommands: false`), `filesystem.disabled: true` (turns off write protection including settings and profile protection — user/managed only, a project cannot set it), `allowAppleEvents`, `excludedCommands`, and `allowUnixSockets` (exposing `docker.sock` is equivalent to full host access).
 

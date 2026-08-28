@@ -2092,6 +2092,7 @@ const SKILL_KEYS = [
   'research.autoIngest',
   'uatGenerate.promoteTests',
   'gitignore.offerSectionUpdates',
+  'packageInstall.consent',
 ];
 
 function schemaEntries() {
@@ -2632,11 +2633,12 @@ test('schema: every askedBy names a real lib/scripts/ file or a real lib/skills/
   }
 });
 
-test('schema: the consumer:"skill" population is exactly the seven behavior-changing keys', () => {
-  // COUNT AND MEMBERSHIP, both. These seven are the keys that change what a
-  // slash command DOES at run time — whether /git-commit pushes, whether
-  // /git-commit lints, whether /research writes to raw/, whether /research
-  // folds a saved report into the wiki, whether /uat-generate promotes tests.
+test('schema: the consumer:"skill" population is exactly the eight behavior-changing keys', () => {
+  // COUNT AND MEMBERSHIP, both. These eight are the keys that change what a
+  // slash command or hook DOES at run time — whether /git-commit pushes,
+  // whether /git-commit lints, whether /research writes to raw/, whether
+  // /research folds a saved report into the wiki, whether /uat-generate
+  // promotes tests, whether package-install-consent.js allows an install.
   // They are read mid-session with no installer in the loop and no diff to
   // review, so adding another is a decision about the blast radius of the
   // store itself, not a routine schema edit. Failing here is the intended
@@ -2644,6 +2646,8 @@ test('schema: the consumer:"skill" population is exactly the seven behavior-chan
   // add it to SKILL_KEYS and say why in the commit.
   //
   // gitCommit.lint added deliberately: opt-in lint gate for /git-commit, per explicit user direction.
+  // packageInstall.consent added deliberately: TASK-075's opt-out for package-install-consent.js's
+  // unconditional deny, per the package-install-consent-gating research recommendation.
   const skillKeys = schemaEntries()
     .filter(([, entry]) => entry.consumer === 'skill')
     .map(([key]) => key)
@@ -2807,17 +2811,19 @@ test('schema: the three git-adjacent keys cross-reference each other in their de
 // THIS TEST IS BUILT TO ACTUALLY FAIL. The failure mode that would make the
 // whole section worthless is an extractor that silently matches nothing: it
 // would report "every found key resolves" against an empty set and pass forever
-// while real drift accumulated. So extraction is two NAMED FUNCTIONS —
+// while real drift accumulated. So extraction is THREE NAMED FUNCTIONS —
 // extractPrefKeys for a direct `bootstrap-prefs.js --get/--set/--unset <key>`
 // invocation, extractWrapperKeys for the lib.sh sticky-prompt wrapper forms
 // Phase 2 actually uses (prompt_yn_sticky, prompt_choice_sticky, prompt_scope,
-// prefs_get, prefs_set, register_optional_mcp) — each tested directly against
-// its own fixture of known-good and known-bad forms, and merged by
-// foundPrefKeys() so both scan directions below see both shapes through one
-// call. The fixture tests are the load-bearing ones; the scans are what they
-// protect.
+// prefs_get, prefs_set, register_optional_mcp), and extractHookKeys for the
+// lib/hooks/*.js array-literal invocation form (TASK-075's
+// packageInstallConsent()) — each tested directly against its own fixture of
+// known-good and known-bad forms, and merged by foundPrefKeys() so every scan
+// direction below sees all three shapes through one call. The fixture tests
+// are the load-bearing ones; the scans are what they protect.
 
 const SCRIPTS_DIR = path.join(REPO, 'lib', 'scripts');
+const HOOKS_DIR = path.join(REPO, 'lib', 'hooks');
 const SKILLS_DIR = path.join(REPO, 'lib', 'skills');
 
 // A key LITERAL: dotted segments of alphanumerics and dashes. Looser than the
@@ -3007,6 +3013,28 @@ function extractWrapperKeys(text) {
   return keys;
 }
 
+// THE HOOK EXTRACTOR. lib/hooks/*.js hooks consult the store via a bare JS
+// array literal (execFileSync(..., [PREFS_SCRIPT, '--get', '<key>', ...])),
+// not a shell command line — neither of the other two extractors' shapes
+// matches that, so without this one a hook-only key would be invisible to
+// the bijection scans and falsely flagged as schema/script drift. Scoped
+// like extractPrefKeys (requires the literal filename "bootstrap-prefs.js")
+// so an unrelated array elsewhere can't match; an unquoted (variable) key is
+// silently skipped, same as the other extractors.
+const HOOK_PREF_OP = /(['"])--(get|set|unset)\1\s*,\s*(?:'([^'\n]*)'|"([^"\n]*)")/g;
+
+function extractHookKeys(text) {
+  const keys = [];
+  if (!text.includes(PREF_SCRIPT)) return keys;
+  HOOK_PREF_OP.lastIndex = 0;
+  let m;
+  while ((m = HOOK_PREF_OP.exec(text)) !== null) {
+    const operand = m[3] !== undefined ? m[3] : m[4];
+    if (operand !== undefined && PREF_KEY_LITERAL.test(operand)) keys.push(operand);
+  }
+  return keys;
+}
+
 // Recursive walk, in the test rather than in a shell: the scan has to see nested
 // skill directories (lib/skills/<name>/SKILL.md) and any future subdirectory of
 // lib/scripts/.
@@ -3021,15 +3049,17 @@ function walkFiles(dir, ext) {
   return out;
 }
 
-// Both call-site populations, with a non-empty assertion at every use: an empty
-// file list is the other way this section could pass vacuously, and it would
-// look identical to "no call sites yet".
+// Three call-site populations, with a non-empty assertion at every use: an
+// empty file list is the other way this section could pass vacuously, and it
+// would look identical to "no call sites yet".
 function callSiteFiles() {
   const scripts = walkFiles(SCRIPTS_DIR, '.sh');
   const skills = walkFiles(SKILLS_DIR, '.md');
+  const hooks = walkFiles(HOOKS_DIR, '.js');
   assert.ok(scripts.length > 0, `no .sh files found under ${SCRIPTS_DIR} — the walker is broken, not the repo`);
   assert.ok(skills.length > 0, `no .md files found under ${SKILLS_DIR} — the walker is broken, not the repo`);
-  return [...scripts, ...skills];
+  assert.ok(hooks.length > 0, `no .js files found under ${HOOKS_DIR} — the walker is broken, not the repo`);
+  return [...scripts, ...skills, ...hooks];
 }
 
 function foundPrefKeys() {
@@ -3039,11 +3069,16 @@ function foundPrefKeys() {
     for (const key of extractPrefKeys(text)) {
       found.push({ key, file: path.relative(REPO, file) });
     }
-    // Both extractors run over the same file text: the direct form and the
-    // wrapper form are textually disjoint (one requires the literal filename
-    // "bootstrap-prefs.js", the other a wrapper function name), so a single
-    // call site is never double-counted by both.
+    // All three extractors run over the same file text: the direct form, the
+    // wrapper form, and the hook array-literal form are textually disjoint
+    // (one requires the literal filename "bootstrap-prefs.js" as a shell
+    // token, one a wrapper function name, one the same filename literal
+    // inside a JS array), so a single call site is never double-counted by
+    // more than one.
     for (const key of extractWrapperKeys(text)) {
+      found.push({ key, file: path.relative(REPO, file) });
+    }
+    for (const key of extractHookKeys(text)) {
       found.push({ key, file: path.relative(REPO, file) });
     }
   }
@@ -3225,6 +3260,62 @@ test(
     // A crash here would abort the scan mid-file and take the real keys with
     // it, same requirement as extractPrefKeys.
     assert.doesNotThrow(() => extractWrapperKeys('prompt_yn_sticky "${a[$b]}" "$(compute_selector)" "$prompt"'));
+  }
+);
+
+// Real shape lifted verbatim from lib/hooks/package-install-consent.js's
+// packageInstallConsent() (TASK-075) — the array-literal form, not an
+// invented approximation.
+const HOOK_FIXTURE = [
+  "const PREFS_SCRIPT = path.join(os.homedir(), '.claude', 'bootstrap-prefs.js');",
+  '',
+  '// --- known-good: single- and double-quoted flag/value pairs, and a',
+  '// line-continued array literal ---',
+  "execFileSync(process.execPath, [PREFS_SCRIPT, '--get', 'packageInstall.consent', '--project', cwd]);",
+  'execFileSync(process.execPath, [PREFS_SCRIPT,',
+  "  '--set', 'gitCommit.autoPush', '--value', 'true', '--global']);",
+  'execFileSync(process.execPath, [PREFS_SCRIPT, "--unset", "mcp.serena", "--global"]);',
+  '',
+  '// --- known-bad: mentions the helper, yields no key literal ---',
+  "execFileSync(process.execPath, [PREFS_SCRIPT, '--list', '--project', cwd]);", // no key-taking op
+  "execFileSync(process.execPath, ['bootstrap-prefs.js', '--get', key, '--project', cwd]);", // variable operand
+  '// see ~/.claude/bootstrap-prefs.js for the four-state model', // a bare prose mention
+].join('\n');
+
+const HOOK_FIXTURE_EXPECTED = ['packageInstall.consent', 'gitCommit.autoPush', 'mcp.serena'];
+
+test(
+  'extractHookKeys pulls the key literal out of the hook array-literal invocation form, and nothing out of the rest',
+  () => {
+    assert.deepStrictEqual(
+      extractHookKeys(HOOK_FIXTURE),
+      HOOK_FIXTURE_EXPECTED,
+      'the hook extractor missed a real invocation form, or invented a key from one of the known-bad lines'
+    );
+
+    const nothing = [
+      ['--list with no key operand', "execFileSync(x, ['bootstrap-prefs.js', '--list', '--project', cwd]);"],
+      ['a variable operand', "execFileSync(x, ['bootstrap-prefs.js', '--get', key, '--project', cwd]);"],
+      ['a prose mention', '// see ~/.claude/bootstrap-prefs.js for the four-state model'],
+      ['empty text', ''],
+    ];
+    for (const [label, line] of nothing) {
+      assert.deepStrictEqual(extractHookKeys(line), [], `${label}: the extractor emitted a bogus key from "${line}"`);
+    }
+
+    // No mention of the helper anywhere: an identically-shaped array literal
+    // naming a DIFFERENT script must contribute nothing.
+    assert.deepStrictEqual(
+      extractHookKeys("execFileSync(x, ['/some/other-script.js', '--get', 'gitCommit.autoPush']);"),
+      [],
+      'the extractor matched --get on a script that is not bootstrap-prefs.js'
+    );
+
+    // A crash here would abort the scan mid-file and take the real keys with
+    // it, same requirement as the other two extractors.
+    assert.doesNotThrow(() =>
+      extractHookKeys("execFileSync(x, ['bootstrap-prefs.js', '--get', `${a}`, '--global']);")
+    );
   }
 );
 

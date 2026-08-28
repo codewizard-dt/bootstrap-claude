@@ -112,7 +112,7 @@ Skip this question entirely when a mode word was supplied as an argument — but
 5. When the chosen key has `consumer: skill`, print this heavier banner:
    > This is a **skill preference**. Changing it changes what a slash command actually does the next time it runs — not merely whether the installer asks you a question.
 
-   Name the affected command from the entry's `askedBy` / `summary` — e.g. `gitCommit.versionBump` changes what `/git-commit` does on every commit. The `consumer: skill` population is `gitCommit.versionBump`, `gitCommit.autoPush`, `gitCommit.lint`, `research.persistToRaw`, `research.autoIngest`, `uatGenerate.promoteTests`, and `gitignore.offerSectionUpdates`. Every other key is `consumer: installer` and gets the lighter framing: it only affects whether a setup/update script prompts you.
+   Name the affected command from the entry's `askedBy` / `summary` — e.g. `gitCommit.versionBump` changes what `/git-commit` does on every commit. The `consumer: skill` population is `gitCommit.versionBump`, `gitCommit.autoPush`, `gitCommit.lint`, `packageInstall.consent`, `research.persistToRaw`, `research.autoIngest`, `uatGenerate.promoteTests`, and `gitignore.offerSectionUpdates`. Every other key is `consumer: installer` and gets the lighter framing: it only affects whether a setup/update script prompts you.
 
 ## Step E — Choose the value and the layer (edit mode)
 

@@ -1,9 +1,10 @@
 ---
 id: docker-fresh-machine-test-harness
 title: Docker-Based Fresh-Machine Test Harness for CLI Installer Scripts
-updated: 2026-08-22
+updated: 2026-08-27
 sources:
   - ../../../raw/research/docker-fresh-machine-test-harness/index.md
+  - ../../../raw/research/docker-harness-version-upgrade-testing/index.md
 confidence: extracted
 tags: [docker, testing, tooling, task-060]
 ---
@@ -18,4 +19,7 @@ Research backing TASK-060 (Docker fresh-machine test harness for `setup`/`update
 
 See the full report — `raw/research/docker-fresh-machine-test-harness/index.md` — for the Solution/Recommendation breakdown by phase (research / implementation / testing), and `sources.md` for citations.
 
+**Follow-up (2026-08-27): "brand new" is fully covered, "old version → new version" is only mechanically covered.** `run.sh setup` genuinely tests a fresh install end-to-end. `run.sh stale` proves the *script chain* (old `setup-project.sh` → current `update-project.sh`) runs without erroring, but seeds nothing into the scratch wiki first — it upgrades an empty project, never a used one with real tasks/roadmaps accumulated under an older schema. Worse, the harness's single fixed `OLD_REF` (`c33808d`) turns out to be the exact commit that *introduces* the one migration this repo currently ships (the `aliases:` backfill, derived_from::[[TASK-064]]) — so `stale` mode structurally cannot exercise "upgrading a wiki from before that migration existed," even though this repo's own oldest task (`TASK-001`, created 2026-07-06) predates it by five weeks. A realistic test needs hand-authored fixture task/roadmap files in the **pre-migration shape** (no `aliases:` line) injected into the scratch dir between the old setup and the current update — no such fixture mechanism exists yet anywhere in the test suite. See derived_from::[[docker-harness-version-upgrade-testing]] for the manual recipe (usable today via `run.sh shell`) and the recommended `seed-fixtures/` extension for repeatable coverage.
+
 relates_to::[[TASK-060]]
+relates_to::[[TASK-076]]

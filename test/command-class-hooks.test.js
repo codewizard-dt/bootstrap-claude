@@ -686,6 +686,192 @@ test('package gate: documented gaps stay exactly where they are', () => {
 });
 
 // ───────────────────────────────────────────────────────────────────────────
+// package-install-consent.js: packageInstall.consent preference gating (TASK-075)
+// ───────────────────────────────────────────────────────────────────────────
+//
+// The PACKAGE tests above use the inherited HOME, so they can't prove the
+// preference branches (they'd only exercise a real stored answer by luck).
+// Everything below builds its own scratch HOME with a real installed
+// bootstrap-prefs.js (install-global.sh:147-150's layout) plus a scratch
+// PROJECT dir holding the answer under test, exercising the real
+// execFileSync(...bootstrap-prefs.js --get...) subprocess end to end without
+// ever touching the developer's real ~/.claude/ store.
+
+const REAL_SCRIPTS = path.join(REPO, 'lib', 'scripts');
+
+/** A scratch $HOME carrying a real, working ~/.claude/bootstrap-prefs.js. */
+function scratchPrefsHome() {
+  const home = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'package-consent-home-')));
+  fs.mkdirSync(path.join(home, '.claude', 'templates'), { recursive: true });
+  fs.copyFileSync(
+    path.join(REAL_SCRIPTS, 'bootstrap-prefs.js'),
+    path.join(home, '.claude', 'bootstrap-prefs.js')
+  );
+  fs.copyFileSync(
+    path.join(REAL_SCRIPTS, 'templates', 'bootstrap-prefs-schema.json'),
+    path.join(home, '.claude', 'templates', 'bootstrap-prefs-schema.json')
+  );
+  return home;
+}
+
+/** A scratch project dir with no bootstrap-prefs.json of its own yet. */
+function scratchProjectDir() {
+  return fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'package-consent-project-')));
+}
+
+function cleanup(...dirs) {
+  for (const d of dirs) fs.rmSync(d, { recursive: true, force: true });
+}
+
+/** Fire package-install-consent.js with an explicit $HOME, so PREFS_SCRIPT
+ * (os.homedir()/.claude/bootstrap-prefs.js) resolves inside the scratch home
+ * instead of the developer's real one. */
+function firePackageWithHome(payload, home) {
+  const input = typeof payload === 'string' ? payload : JSON.stringify(payload);
+  const r = spawnSync(process.execPath, [path.join(HOOKS, PACKAGE)], {
+    input,
+    encoding: 'utf8',
+    env: { ...process.env, HOME: home },
+  });
+  const stdout = (r.stdout || '').trim();
+  if (!stdout) return { status: r.status, decision: 'allow', reason: '', stderr: r.stderr || '' };
+  const parsed = JSON.parse(stdout);
+  return {
+    status: r.status,
+    decision: parsed.hookSpecificOutput?.permissionDecision ?? null,
+    reason: parsed.hookSpecificOutput?.permissionDecisionReason ?? '',
+    stderr: r.stderr || '',
+  };
+}
+
+/** Seed packageInstall.consent for `projectDir` via the real helper, using the
+ * matching scratch `home` so the write never touches the developer's own store. */
+function setProjectConsent(home, projectDir, value) {
+  const res = spawnSync(
+    process.execPath,
+    [
+      path.join(home, '.claude', 'bootstrap-prefs.js'),
+      '--set', 'packageInstall.consent',
+      '--value', value,
+      '--project', projectDir,
+    ],
+    { encoding: 'utf8', env: { ...process.env, HOME: home } }
+  );
+  assert.strictEqual(res.status, 0, `seeding packageInstall.consent=${value} failed: ${res.stderr}`);
+}
+
+test('packageInstall.consent unset: the gate still denies exactly as before', () => {
+  const home = scratchPrefsHome();
+  const project = scratchProjectDir();
+  try {
+    const r = firePackageWithHome(bash('npm install left-pad', project), home);
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.strictEqual(r.decision, 'deny', 'an unanswered preference must still deny by default');
+  } finally {
+    cleanup(home, project);
+  }
+});
+
+test('packageInstall.consent = false: the gate denies exactly as before', () => {
+  const home = scratchPrefsHome();
+  const project = scratchProjectDir();
+  try {
+    setProjectConsent(home, project, 'false');
+    const r = firePackageWithHome(bash('npm install left-pad', project), home);
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.strictEqual(r.decision, 'deny');
+  } finally {
+    cleanup(home, project);
+  }
+});
+
+test('packageInstall.consent = ask: the gate defers, and never denies', () => {
+  const home = scratchPrefsHome();
+  const project = scratchProjectDir();
+  try {
+    setProjectConsent(home, project, 'ask');
+    const r = firePackageWithHome(bash('npm install left-pad', project), home);
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.strictEqual(r.decision, 'defer');
+    assert.ok(r.reason.length > 0, 'a defer with no reason tells the caller nothing');
+  } finally {
+    cleanup(home, project);
+  }
+});
+
+test('packageInstall.consent = true: the gate allows outright, and never denies', () => {
+  const home = scratchPrefsHome();
+  const project = scratchProjectDir();
+  try {
+    setProjectConsent(home, project, 'true');
+    const r = firePackageWithHome(bash('npm install left-pad', project), home);
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.strictEqual(r.decision, 'allow');
+    assert.ok(r.reason.length > 0, 'an allow with no reason tells the caller nothing');
+  } finally {
+    cleanup(home, project);
+  }
+});
+
+test('a missing bootstrap-prefs.js (no PREFS_SCRIPT at all) still denies, never allows', () => {
+  // HOME with no ~/.claude/bootstrap-prefs.js at all: execFileSync throws
+  // ENOENT, packageInstallConsent() catches it and returns null, and null must
+  // be handled identically to "false"/"unset" — never treated as "true".
+  const home = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'package-consent-nohelper-')));
+  const project = scratchProjectDir();
+  try {
+    assert.strictEqual(
+      fs.existsSync(path.join(home, '.claude', 'bootstrap-prefs.js')),
+      false,
+      'fixture bug: this scratch home must not carry a helper'
+    );
+    const r = firePackageWithHome(bash('npm install left-pad', project), home);
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.strictEqual(r.decision, 'deny', 'a missing preference helper must never loosen the default deny');
+  } finally {
+    cleanup(home, project);
+  }
+});
+
+test('a corrupt project preferences file still denies, never allows', () => {
+  // A real, working bootstrap-prefs.js, but the PROJECT'S OWN values file is
+  // hand-corrupted — the "malformed JSON" case named in packageInstallConsent's
+  // own doc comment. bootstrap-prefs.js's own exit-code contract degrades a
+  // corrupt file to `unset` (exit 0, not 1), so this also confirms the hook
+  // reads that degraded "unset" as a deny rather than as an error to swallow
+  // some other way.
+  const home = scratchPrefsHome();
+  const project = scratchProjectDir();
+  try {
+    fs.mkdirSync(path.join(project, '.claude'), { recursive: true });
+    fs.writeFileSync(
+      path.join(project, '.claude', 'bootstrap-prefs.json'),
+      'not json at all {{{ — hand-edited into invalidity\n'
+    );
+    const r = firePackageWithHome(bash('npm install left-pad', project), home);
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.strictEqual(r.decision, 'deny', 'a corrupt project preferences file must never loosen the default deny');
+  } finally {
+    cleanup(home, project);
+  }
+});
+
+test('the deny reason names the packageInstall.consent escape hatch', () => {
+  const home = scratchPrefsHome();
+  const project = scratchProjectDir();
+  try {
+    const r = firePackageWithHome(bash('npm install left-pad', project), home);
+    assert.strictEqual(r.decision, 'deny');
+    assert.ok(
+      r.reason.includes('bootstrap-prefs.js --set packageInstall.consent'),
+      `the deny reason no longer names the escape hatch:\n${r.reason}`
+    );
+  } finally {
+    cleanup(home, project);
+  }
+});
+
+// ───────────────────────────────────────────────────────────────────────────
 // absolute-path-guard.js
 // ───────────────────────────────────────────────────────────────────────────
 
@@ -1180,7 +1366,13 @@ test('all six hooks resolve the shared command-parse helper by relative require'
     assert.strictEqual(r.status, 0, `${hook} failed node --check:\n${r.stderr}`);
   }
   const parse = require(path.join(HOOKS, 'lib', 'command-parse.js'));
-  assert.deepStrictEqual(Object.keys(parse).sort(), ['deny', 'readHookInput', 'splitSegments', 'tokenize']);
+  // allow/defer added by TASK-075 alongside deny, for hooks that consult a
+  // stored preference before deciding — package-install-consent.js is the
+  // first caller.
+  assert.deepStrictEqual(
+    Object.keys(parse).sort(),
+    ['allow', 'defer', 'deny', 'readHookInput', 'splitSegments', 'tokenize']
+  );
 });
 
 test('splitSegments breaks a chain on every separator, including the pipe', () => {

@@ -2,11 +2,12 @@
 id: bootstrap-claude-hooks
 title: lib/hooks — Project-Managed Hook Scripts
 aliases: [lib/hooks, PreToolUse hooks, bootstrap hooks]
-updated: 2026-07-29
+updated: 2026-08-27
 sources:
   - ../../../../raw/research/deny-rules-vs-hooks/index.md
   - ../../../../raw/research/agent-sandbox-escape-vectors/index.md
   - ../../../../raw/research/bypass-mode-enforcement/index.md
+  - ../../../../raw/research/package-install-consent-gating/index.md
 confidence: extracted
 tags: [component, hooks, security, bootstrap, tier-2]
 ---
@@ -45,7 +46,7 @@ A second friction point: TASK-026 shipped `Edit(~/.claude/hooks/**)` and `Edit(~
 - allowlisting `oraios/serena` while gating other `uvx --from git+` sources — a *deny* provably cannot, since deny carries no allowlist exceptions
 - `DYLD_*` / `LD_PRELOAD` assignments, `git -c core.fsmonitor=` neutralization, redirects into profile/settings paths, `source`/`.` of `.env`
 
-**Contested**: package-install consent. relates_to::[[deny-rules-vs-hooks]] says use `permissions.ask` and do not build a hook (a hook cannot relax an ask rule anyway); relates_to::[[bypass-mode-enforcement]] says use a hook, because an `ask` rule in a headless `-p` bypass run has nobody to answer, and exit-2 stderr can name the exact command for the user to run. Unresolved — the callout on derived_from::[[consent-requires-a-yes-path]] carries both positions.
+**Contested, now with a third position**: package-install consent. relates_to::[[deny-rules-vs-hooks]] says use `permissions.ask` and do not build a hook (a hook cannot relax an ask rule anyway); relates_to::[[bypass-mode-enforcement]] says use a hook, because an `ask` rule in a headless `-p` bypass run has nobody to answer, and exit-2 stderr can name the exact command for the user to run. The callout on derived_from::[[consent-requires-a-yes-path]] carries both positions, unresolved as a binary choice. derived_from::[[package-install-consent-gating]] proposes a third option that doesn't require picking one: **keep the hook** (for the headless-safety reason `bypass-mode-enforcement` correctly identifies) **but make its `deny` preference-gated per project** rather than unconditional — a new `packageInstall.consent` bootstrap-prefs key (`true | false | ask`, `scope: project`, default `false` = today's unconditional deny), read by the hook via a `bootstrap-prefs.js` subprocess call. `ask` emits the officially-documented `permissionDecision: "defer"` (see the four-value enum above), handing back to Claude Code's own native prompt rather than hanging headless runs. This would be the first hook-consumed bootstrap-prefs key — `consumer` (`installer | skill`) and `askedBy`'s resolution rule (must point at `lib/scripts/*` or a `/slash-command`) have no path for a `lib/hooks/*.js` consumer today, so implementing this requires an explicit decision on `askedBy` (recommended: `/bootstrap-config`, or a new `setup-project.sh`/`update-project.sh` question) before or instead of extending the `consumer` taxonomy itself. **Implemented** by implements::[[TASK-075]]: `packageInstall.consent` (`true | false | ask`, `scope: project`, `askedBy: /bootstrap-config`, default `false`) now gates the hook's `deny` in `lib/hooks/package-install-consent.js` exactly as proposed — `false`/unset/an unreadable preference still denies unconditionally, `ask` emits `permissionDecision: "defer"` to Claude Code's native prompt, `true` emits `permissionDecision: "allow"`.
 
 Design guidance carried from the research: *warn-and-log* for medium-risk classes, *exit-2* only for high-risk, so over-broad hooks do not break legitimate workflows. The four new tier-2 hooks are specified in implements::[[TASK-027]] (`todo`).
 

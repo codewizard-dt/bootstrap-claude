@@ -341,11 +341,20 @@ unaffected, while the same `npm install -g @playwright/mcp@latest` typed at the
 prompt IS gated. Both are correct: consent was given once for the setup script as
 a whole; an ad-hoc install carries no such consent.
 
-**Known friction, real and expected.**
-`lib/skills/frontend-taste/SKILL.md:29` instructs Claude to run
-`cd ~/code/house-style/preview && npm i && npm run dev`. That command *is*
-hook-visible and will be gated. It is the one genuine friction point this gate
-introduces in-repo — not a bug. Approve it by running it yourself.
+**Known friction, real and expected — no longer resolvable only by running the
+command yourself.** `lib/skills/frontend-taste/SKILL.md:29` instructs Claude to
+run `cd ~/code/house-style/preview && npm i && npm run dev`. That command *is*
+hook-visible and gates by default, which remains the correct behaviour for a
+project that has not opted in to anything — it is the one genuine friction
+point this gate introduces in-repo, not a bug, and the deny message's escape
+hatch is still to approve it by running it yourself. A project can now change
+that default going forward: `packageInstall.consent` (TASK-075) is a
+bootstrap-prefs key, scope `project`, read fresh on every match. `ask` hands the
+call to Claude Code's native permission prompt instead of denying it (`node
+~/.claude/bootstrap-prefs.js --set packageInstall.consent --value ask --project
+.`); `true` allows the match outright (`--value true`). `false`/unset/any read
+failure denies exactly as before — the gate still fails closed, it just now has
+a documented, standing opt-out alongside the per-call rephrasing escape hatch.
 
 **Not covered, deliberately:** bare `uvx <pkg>` with no `--from`; `npx`; and a
 manager that is not the segment's first token, so `claude mcp add … -- uvx --from

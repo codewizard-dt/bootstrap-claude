@@ -37,6 +37,8 @@ bootstrap-claude branches/versions without rebuilding.
                         # update-project.sh a SECOND time, snapshot again, and assert the
                         # two post-update snapshots are identical (a repeat update must be
                         # a true no-op); prints a diff and exits non-zero on mismatch
+./run.sh live-hook    # opt-in, NOT free: verify packageInstall.consent=true against a real,
+                       # authenticated `claude -p` session (see "Live-hook mode" below first)
 ./run.sh setup --rebuild   # any mode can be combined with --rebuild to force a fresh `docker build`
 ```
 
@@ -50,6 +52,63 @@ Each container run gets a fresh, ephemeral filesystem (`docker run --rm`) — no
 between separate `run.sh` invocations. `setup`/`update` target a throwaway scratch project
 directory created inside the container (`/workspace/scratch-project`); the mounted repo checkout
 is never targeted directly, since it's the tool under test, not the target.
+
+## Live-hook mode
+
+Unlike every other mode above, `run.sh live-hook` **authenticates** — it runs a real `claude -p`
+session inside the container against the operator's own Claude Code subscription, rather than
+staying fully offline. It exists to verify one specific thing that has never been tested before
+this mode was added: that `packageInstall.consent=true` actually reaches an `allow` decision in
+Claude Code's real, live permission pipeline (`package-install-consent.js`), not just in a unit
+test of the hook script in isolation.
+
+**Prerequisite.** On the host — never inside the container — run:
+
+```sh
+claude setup-token
+export CLAUDE_CODE_OAUTH_TOKEN=<the token it prints>
+./run.sh live-hook
+```
+
+**Store the token, don't leave it in shell history or a dotfile.** On macOS, save it to Keychain
+under a fixed service name (`claude-code-oauth-token-live-hook`) and only export it into the
+current shell right before invoking this mode:
+
+```sh
+# once, after `claude setup-token` prints a token:
+security add-generic-password -a "$USER" -s "claude-code-oauth-token-live-hook" -w "<the token>"
+
+# every time you actually run this mode:
+export CLAUDE_CODE_OAUTH_TOKEN="$(security find-generic-password -a "$USER" -s "claude-code-oauth-token-live-hook" -w)"
+./run.sh live-hook
+unset CLAUDE_CODE_OAUTH_TOKEN
+```
+
+Never put the token in `~/.zshrc`, `~/.bash_profile`, or any `.env` file — those are sourced on
+every shell start, which is a much larger blast radius than a Keychain item pulled on demand.
+
+`claude setup-token` runs the same OAuth flow as `/login` and prints a one-year token tied to the
+subscription's included usage; `run.sh` forwards it into the container value-less
+(`docker run -e CLAUDE_CODE_OAUTH_TOKEN`), the same pattern already used for `BRAVE_API_KEY`. This
+is what lets the throwaway container run a genuinely authenticated `claude -p` session without
+copying `~/.claude/settings.json`, hooks, or MCP registrations from the host — see
+[`claude-code-authentication`](../../../wiki/knowledge/entities/tools/claude-code-authentication.md)
+for the full research on why that isolation holds. Without `CLAUDE_CODE_OAUTH_TOKEN` set, `run.sh`
+exits 1 with a hint to run `claude setup-token` first and never touches Docker at all.
+
+**This is not free.** Every other mode in this harness (`shell`, `setup`, `update`, `stale`,
+`idempotency`) never authenticates, so they cost nothing beyond local compute. `live-hook` spends
+real usage against the operator's own Claude Code subscription every time it runs — it is not a
+free, repeatable CI check, and should not be wired into `docker-harness.yml` or run casually.
+
+**Scope: only the `allow` path.** Inside the container, this mode installs the repo's hooks for
+real (`install-global.sh --skip-mcps`), seeds `packageInstall.consent=true` for a scratch project
+via `bootstrap-prefs.js`, then runs `claude -p "npm install left-pad"` and asserts it completes
+with zero permission prompts. It verifies **only** `packageInstall.consent=true → allow`. The
+`ask`/`defer` sub-case — where `package-install-consent.js` must actually surface an interactive
+permission prompt and wait on a human response — cannot be exercised by a non-interactive
+`claude -p` session at all, headless or not. That sub-case remains human-only, verified via
+`/uat-walk`.
 
 ## Platform scope boundary
 

@@ -8,6 +8,7 @@ Terminal task files (`done` or `trashed`) moved here by `/wiki-archive` to reduc
 
 | ID | Title | Final Status | Archived |
 |----|-------|--------------|----------|
+| [[TASK-076]] | Docker harness: add a run.sh live-hook mode to verify packageInstall.consent=true against a real Claude Code session | done | 2026-08-27 |
 | [[TASK-066]] | Fix fileSuggestion @-autocomplete for git worktrees with symlinked wiki/raw | done | 2026-08-21 |
 | [[TASK-064]] | Backfill aliases: [<ID>] onto every existing work-item file's frontmatter | done | 2026-08-15 |
 | [[TASK-006]] | Add wiki/hot.md template to lib/scripts/templates/wiki/ | done | 2026-07-06 |

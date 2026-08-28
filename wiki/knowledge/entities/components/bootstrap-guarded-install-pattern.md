@@ -2,7 +2,7 @@
 id: bootstrap-guarded-install-pattern
 title: Guarded, Opt-In, Sticky-Preference Install Pattern
 aliases: [register_optional_mcp, prompt_yn_sticky, OPTIONAL_GUIDES pattern, guarded install pattern]
-updated: 2026-08-13
+updated: 2026-08-27
 sources:
   - ../../../../raw/research/obsidian-setup-automation/index.md
 confidence: extracted
@@ -22,3 +22,5 @@ This repo's own recurring shape for adding any new optional, machine-affecting p
 **Where it's been applied:** MCP registration (`mcp.playwright`, `mcp.braveSearch`, single sticky toggles per tool) and optional wiki guides (`guides.*`, a dynamic per-item key family, bundled-optional-item precedent). `derived_from::[[obsidian-setup-automation]]` proposes a third application — `obsidian.installApp` (global scope, one toggle, mirrors `mcp.playwright`) and `obsidian.plugins` (project scope, one bundled toggle for all three plugins together, mirroring `guides.*`'s bundling rather than MCP's per-tool independence, because Dataview is a hard prerequisite for the other two plugins rather than an independently useful item).
 
 **Why this page exists:** the research that surfaced this pattern the second time noted explicitly that a canonical writeup "would save re-deriving it a third time" — the next optional-install feature this repo adds (of which there will likely be more) should read this page and `lib/scripts/install-mcps.sh`/`sync-wiki-scaffold.sh` directly, rather than re-discovering the shape from scratch.
+
+**A related but distinct frontier**: this pattern's `consumer: installer` keys are all read by `lib/scripts/*.sh` at setup/update time. derived_from::[[package-install-consent-gating]] proposes the **first `bootstrap-prefs` key consumed by a `lib/hooks/*.js` file** (gating `package-install-consent.js`'s unconditional deny) — a third consumer class this schema's `consumer` enum (`installer | skill`) and `askedBy` resolution rule don't yet accommodate. Not the same shape as this page's install-adder pattern (a hook decides allow/deny/defer, it doesn't install anything), but the same underlying question — "should this reusable preference-store convention grow a new consumer category" — so a future reader solving one should check the other. See relates_to::[[bootstrap-claude-hooks]]'s "Contested" section for the concrete proposal.

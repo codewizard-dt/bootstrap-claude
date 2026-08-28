@@ -146,7 +146,7 @@ test('run.sh: an unrecognized positional argument prints usage and exits 1 witho
     encoding: 'utf8',
   });
   assert.strictEqual(result.status, 1);
-  assert.match(result.stderr, /Usage: .*\[shell\|setup\|update\|stale\|idempotency\] \[--rebuild\]/);
+  assert.match(result.stderr, /Usage: .*\[shell\|setup\|update\|stale\|idempotency\|live-hook\] \[--rebuild\]/);
   assert.deepStrictEqual(parseStubLog(logPath), []);
 });
 
@@ -304,6 +304,102 @@ test('run.sh idempotency: tolerates the seed and both update-project.sh calls\' 
   assert.match(script, /diff -u "\$SNAP_DIR\/snapshot-2\.txt" "\$SNAP_DIR\/snapshot-3\.txt"/);
   assert.match(script, /idempotency: FAIL — a second update-project\.sh run produced state that differs/);
   assert.match(script, /idempotency: PASS — a second update-project\.sh run against the same scratch dir is a true no-op/);
+});
+
+// --- run.sh: live-hook mode (TASK-076) ---
+
+test('run.sh live-hook: exits 1 with a claude-setup-token hint and never touches docker when CLAUDE_CODE_OAUTH_TOKEN is unset', () => {
+  const dir = scratchDir();
+  const binDir = path.join(dir, 'bin');
+  writeDockerStub(binDir);
+  const logPath = path.join(dir, 'docker-calls.log');
+  fs.writeFileSync(logPath, '');
+
+  // Destructure the token out explicitly — never rely on the runner's env merely lacking it.
+  const { CLAUDE_CODE_OAUTH_TOKEN, ...envWithoutToken } = process.env;
+  const result = spawnSync('bash', [RUN_SH, 'live-hook'], {
+    cwd: HARNESS_DIR,
+    env: {
+      ...envWithoutToken,
+      PATH: `${binDir}:${envWithoutToken.PATH}`,
+      DOCKER_STUB_LOG: logPath,
+      DOCKER_STUB_IMAGE_EXISTS: '0',
+    },
+    encoding: 'utf8',
+  });
+
+  assert.strictEqual(result.status, 1);
+  assert.match(result.stderr, /claude setup-token/);
+  assert.deepStrictEqual(parseStubLog(logPath), [], 'expected the stubbed docker binary to never be invoked');
+});
+
+test('run.sh live-hook: with CLAUDE_CODE_OAUTH_TOKEN set, docker run forwards the token value-less, bind-mounts the repo read-only, and never passes --dangerously-skip-permissions', () => {
+  const dir = scratchDir();
+  const binDir = path.join(dir, 'bin');
+  writeDockerStub(binDir);
+  const logPath = path.join(dir, 'docker-calls.log');
+  fs.writeFileSync(logPath, '');
+
+  const result = spawnSync('bash', [RUN_SH, 'live-hook'], {
+    cwd: HARNESS_DIR,
+    env: {
+      ...process.env,
+      PATH: `${binDir}:${process.env.PATH}`,
+      DOCKER_STUB_LOG: logPath,
+      DOCKER_STUB_IMAGE_EXISTS: '0',
+      CLAUDE_CODE_OAUTH_TOKEN: 'test-token-value',
+    },
+    encoding: 'utf8',
+  });
+
+  assert.strictEqual(result.status, 0);
+  const calls = parseStubLog(logPath);
+  const runCall = calls.find((c) => c[0] === 'run');
+  assert.ok(runCall, `expected a docker run call, got: ${JSON.stringify(calls)}`);
+
+  const eIdx = runCall.indexOf('-e');
+  assert.ok(eIdx !== -1, 'expected a value-less -e flag');
+  assert.strictEqual(runCall[eIdx + 1], 'CLAUDE_CODE_OAUTH_TOKEN', 'expected -e CLAUDE_CODE_OAUTH_TOKEN forwarded value-less');
+
+  assert.ok(runCall.some((a) => /:\/opt\/bootstrap-claude:ro$/.test(a)), 'expected the repo bind-mounted read-only at /opt/bootstrap-claude');
+  assert.ok(!runCall.includes('--dangerously-skip-permissions'), 'live-hook must never pass --dangerously-skip-permissions');
+});
+
+test('run.sh live-hook: in-container script runs install-global.sh --skip-mcps, then sets packageInstall.consent via bootstrap-prefs.js, then timeout 120 claude -p, in that order', () => {
+  const dir = scratchDir();
+  const binDir = path.join(dir, 'bin');
+  writeDockerStub(binDir);
+  const logPath = path.join(dir, 'docker-calls.log');
+  fs.writeFileSync(logPath, '');
+
+  const result = spawnSync('bash', [RUN_SH, 'live-hook'], {
+    cwd: HARNESS_DIR,
+    env: {
+      ...process.env,
+      PATH: `${binDir}:${process.env.PATH}`,
+      DOCKER_STUB_LOG: logPath,
+      DOCKER_STUB_IMAGE_EXISTS: '0',
+      CLAUDE_CODE_OAUTH_TOKEN: 'test-token-value',
+    },
+    encoding: 'utf8',
+  });
+
+  assert.strictEqual(result.status, 0);
+  const calls = parseStubLog(logPath);
+  const runCall = calls.find((c) => c[0] === 'run');
+  assert.ok(runCall, `expected a docker run call, got: ${JSON.stringify(calls)}`);
+  const script = runCall[runCall.length - 1];
+
+  const installIdx = script.indexOf("install-global.sh' --skip-mcps");
+  const prefsIdx = script.indexOf('bootstrap-prefs.js" --set packageInstall.consent --value true');
+  const claudeIdx = script.indexOf('timeout 120 claude -p');
+  assert.ok(installIdx !== -1, `expected install-global.sh --skip-mcps in: ${script}`);
+  assert.ok(prefsIdx !== -1, `expected bootstrap-prefs.js --set packageInstall.consent --value true in: ${script}`);
+  assert.ok(claudeIdx !== -1, `expected timeout 120 claude -p in: ${script}`);
+  assert.ok(
+    installIdx < prefsIdx && prefsIdx < claudeIdx,
+    `expected install-global.sh before bootstrap-prefs.js before timeout 120 claude -p; got indices ${installIdx}, ${prefsIdx}, ${claudeIdx}`,
+  );
 });
 
 test('run.sh: skips docker build when the image already exists and no --rebuild is passed', () => {

@@ -345,12 +345,18 @@ after an older version touches it, and the user can see what was kept.
 
 ### Why every `consumer: skill` key says `install-global.sh`
 
-All seven `consumer: skill` keys name `install-global.sh` as their `askedBy`,
-including `gitCommit.versionBump` and `gitCommit.autoPush` — which named
-`/git-commit` until this was settled. The field records the **settling** prompt:
-the one site that writes the answer. For all seven keys that site is
+Seven of the eight `consumer: skill` keys name `install-global.sh` as their
+`askedBy`, including `gitCommit.versionBump` and `gitCommit.autoPush` — which
+named `/git-commit` until this was settled. The field records the **settling**
+prompt: the one site that writes the answer. For those seven keys that site is
 `install-global.sh`'s step 7 sync pass, which asks each unanswered key once, in a
 batch, at global scope.
+
+`packageInstall.consent` is the one exception, naming `/bootstrap-config`
+instead. There is no scripted installer moment that could settle it the same
+way: a brand-new project has no `.claude/bootstrap-prefs.json` yet the first
+time someone hits the block, so the only way to answer it is manually, after
+the fact, via `/bootstrap-config`.
 
 `/git-commit` does still prompt — but only once the key is already settled *to a
 value that means "keep asking"* (`confirm` for `versionBump`, `ask` for
@@ -369,7 +375,7 @@ real `lib/scripts/` file or one real `lib/skills/<name>/SKILL.md`, so
 `"install-global.sh, /git-commit"` fails the suite by construction. Where a
 run-time prompt exists, it is documented in the key's `detail`.
 
-### The key registry — all 24 entries
+### The key registry — all 25 entries
 
 Every key in `templates/bootstrap-prefs-schema.json`, grouped by `consumer` —
 `installer` first, then `skill` — which is the same grouping and the same order
@@ -408,22 +414,25 @@ Unicode-aware slug rule for `gitignore.section.*` are in
 above; `gitignore.section.*`'s deliberate one-value grammar is in
 [the section after it](#gitignoresection-has-a-one-value-grammar-on-purpose).
 
-#### `consumer: skill` — 7 entries, read by slash commands at run time
+#### `consumer: skill` — 8 entries, read by slash commands at run time
 
 | Key | Scope | Consumer | Values | Default | Asked by | What it does |
 |-----|-------|----------|--------|---------|----------|--------------|
 | `gitCommit.versionBump` | either | skill | `auto \| confirm \| never` | `auto` | `install-global.sh` | How `/git-commit` handles the version bump before committing |
 | `gitCommit.autoPush` | either | skill | `true \| false \| ask` | `false` | `install-global.sh` | Whether `/git-commit` pushes after a successful commit |
 | `gitCommit.lint` | either | skill | `true \| false` | `false` | `install-global.sh` | Whether `/git-commit` runs the /lint fix-cycle before committing |
+| `packageInstall.consent` | project | skill | `true \| false \| ask` | `false` | `/bootstrap-config` | Whether `package-install-consent.js` allows package-manager installs for this project |
 | `research.persistToRaw` | either | skill | `true \| false \| ask` | `true` | `install-global.sh` | Whether `/research` writes its report and sources to `raw/research/` |
 | `research.autoIngest` | either | skill | `true \| false \| ask` | `false` | `install-global.sh` | Whether `/research` automatically wiki-ingests its saved report |
 | `uatGenerate.promoteTests` | either | skill | `sibling \| never \| dedicated` | `dedicated` | `install-global.sh` | Where `/uat-generate` writes the unit tests it promotes out of UAT cases |
 | `gitignore.offerSectionUpdates` | either | skill | `true \| false \| ask` | `true` | `install-global.sh` | Master gate for the `.gitignore` template section review pass |
 
-These six are the entire `scope: either` population and the entire
-`consumer: skill` population — the two sets coincide, because a key that changes
-what a slash command does is exactly the kind of key a user may want to answer
-once machine-wide and then override in one checkout.
+Seven of these eight are the entire `scope: either` population — a key that
+changes what a slash command does is exactly the kind of key a user may want to
+answer once machine-wide and then override in one checkout. `packageInstall.consent`
+is the exception: `scope: project` on purpose, because a package-install
+trust decision is inherently per-project, not something to settle once for
+every checkout on the machine.
 
 **Every `installer` key has `default: null`; every `skill` key carries a real
 default.** That asymmetry has a consequence worth stating: `prefs_get` alone

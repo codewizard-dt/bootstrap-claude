@@ -15,3 +15,4 @@ Entry format: `- [UAT-NNN — Title](UAT-NNN-slug.md) — verifies TASK-NNN · s
 - [UAT-071 — UAT: Add a run.sh stale mode simulating an upgrade from an older bootstrap-claude release](UAT-071-docker-harness-stale-mode.md) — verifies TASK-071 · pending
 - [UAT-072 — UAT: Docker harness idempotency check — run update twice, diff scratch state](UAT-072-docker-harness-idempotency-check.md) — verifies TASK-072 · pending
 - [UAT-073 — UAT: Wire a GitHub Actions CI job for the Docker fresh-machine harness](UAT-073-docker-harness-ci-job.md) — verifies TASK-073 · pending
+- [UAT-077 — UAT: Gate package-install-consent.js on a new packageInstall.consent preference](UAT-077-package-install-consent-preference.md) — verifies TASK-075 · pending
