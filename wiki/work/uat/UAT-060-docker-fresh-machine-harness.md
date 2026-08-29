@@ -124,14 +124,18 @@ Most of this harness's own logic (Dockerfile content, `run.sh`'s argument parsin
 - **Unit Test Command**: `node --test --test-name-pattern="Standalone infra scripts" test/docker-fresh-machine.test.js`
 - [x] Pass <!-- 2026-08-22 -->
 
-### UAT-EDGE-010 (Manual): A real `run.sh shell` container has a genuinely blank `$HOME` and every foundational tool works
+### UAT-EDGE-010: A real `run.sh shell` container has a genuinely blank `$HOME` and every foundational tool works
 - **Scenario**: Task step 4's first verification bullet — no `~/.claude/skills/`, `~/.claude/hooks/`, or `~/.claude/settings.json` must exist in a fresh container, and `node --version`, `uv --version`, `claude --version`, `git --version`, `brew --version` must all succeed.
 - **Steps**:
-  1. From `test/docker/fresh-machine/`, run: `docker run --rm bootstrap-claude-fresh-machine bash -c 'test ! -e ~/.claude/skills && test ! -e ~/.claude/hooks && test ! -e ~/.claude/settings.json && node --version && uv --version && claude --version && git --version && brew --version && whoami && pwd'` (build first with `./run.sh --rebuild` if the image isn't already cached).
-  2. Confirm exit code 0, no `~/.claude/*` paths exist, and every version command prints a version string.
+  1. Build first with `./run.sh --rebuild` if the image isn't already cached (`docker image inspect bootstrap-claude-fresh-machine`).
+  2. Run the command below as-is.
+- **Command**:
+  ```bash
+  docker run --rm bootstrap-claude-fresh-machine bash -c 'test ! -e ~/.claude/skills && test ! -e ~/.claude/hooks && test ! -e ~/.claude/settings.json && node --version && uv --version && claude --version && git --version && brew --version && whoami && pwd'
+  ```
 - **Expected Result**: Exit 0; no pre-existing Claude Code state; `whoami` → `tester`; `pwd` → `/workspace`; all five tools report a version. Matches the evidence already recorded in TASK-060's Notes (`node --version` v24.19.0, `uv --version` 0.12.5, `claude --version` 2.1.240, `git --version` 2.43.0, `brew --version` 6.0.18 at generation time — exact versions will drift as upstream releases move, only presence/success is being re-verified here).
-- **Repeatable Unit Test**: Not applicable: requires a live Docker daemon and a multi-minute image build/pull.
-- [FAIL: auto-judge: manual test requires human verification] <!-- 2026-08-22 -->
+- **Repeatable Unit Test**: Not applicable: requires a live Docker daemon and a multi-minute image build/pull, but the command itself is a single, fully deterministic invocation — reclassified from Manual to a live-command case (2026-08-27 reassessment) since UAT-CORE's channel 1 (extractable `**Command**:` + machine-checkable Expected) needs no unit-test harness to auto-judge this.
+- [x] Pass <!-- 2026-08-27 -->
 
 ### UAT-EDGE-011 (Manual — pins a documented known limitation, does not paper over it): `run.sh setup` and `run.sh update` both currently fail at the identical point (Serena `project.yml` bootstrap), so `update-project.sh`'s own distinct code has never been exercised independently by this harness
 - **Scenario**: TASK-060's own "Resumed run (2026-08-22)" Notes record that both `setup-project.sh` and `update-project.sh` (chained after `setup-project.sh` in `update` mode) reach every non-interactive prompt (MCP install, Obsidian install, optional guide opt-ins) and correctly auto-decline via `has_tty()`'s fallback, but then **both** fail with exit code 1 at the final `claude --print` Serena `project.yml` bootstrap step, because Serena is never registered in the decline-only non-interactive path. Because `update` mode is `setup-project.sh && update-project.sh`, the `&&` short-circuits on `setup-project.sh`'s failure — meaning `update-project.sh`'s own logic (legacy `.docs/` detection, etc.) has **never actually run** in this harness. This is judged a clearly-expected failure per the task's acceptance bar ("fails only for a clearly-expected reason... not for a missing foundational dependency") and is explicitly TASK-071's job to unblock (the accept-path lane), not a defect in TASK-060 — but a UAT case exists here to pin the current behavior so a future change either fixing it or silently regressing it is caught, rather than the limitation being re-discovered from scratch.
@@ -141,12 +145,13 @@ Most of this harness's own logic (Dockerfile content, `run.sh`'s argument parsin
 - **Expected Result**: Both commands exit non-zero (`echo $?` after each), both fail at the Serena `project.yml` bootstrap step specifically (not earlier, and not for a missing foundational dependency), and `update-project.sh`'s own output/log lines are absent from the `update` mode run.
 - **Note**: `test/docker/fresh-machine/README.md`'s "Out of scope for v1" section currently states *"`setup`/`update` still complete... a failed MCP install only logs a warning rather than aborting the run"* — this reads as contradicting the exit-1 failure documented in the task's own Notes and re-verified by this case. Flagged in Gaps below rather than silently edited, since it's a documentation discrepancy outside this UAT's remit to resolve.
 - **Repeatable Unit Test**: Not applicable: requires a live Docker daemon and multi-minute build/run per invocation (two full runs).
-- [FAIL: auto-judge: manual test requires human verification] <!-- 2026-08-22 -->
+- [FAIL: auto-judge: manual test requires human verification] <!-- 2026-08-27 -->
 
 ---
 
 ## Gaps
 
+- **Automation reassessment (2026-08-27)**: UAT-EDGE-010 was promoted from Manual to a live-command case — it's a single, fully deterministic invocation with no ambiguity in its exit code. UAT-EDGE-011 stays Manual: `run.sh setup`/`run.sh update` don't emit a distinguishing PASS/FAIL line the way `run.sh idempotency` does (see TASK-072), so a bare exit-code check can't tell "failed at the expected, documented step" apart from "failed for a new, different reason" — both currently produce exit 1. Automating it meaningfully would mean enhancing `run.sh setup`/`update` to print an explicit status line first; recommend `/task-add` that as a follow-up rather than bolting an ad hoc check onto this UAT.
 - **Documentation discrepancy found — fixed during UAT walkthrough (2026-08-22)**: `test/docker/fresh-machine/README.md`'s "Out of scope for v1" section stated `setup`/`update` "still complete" when an MCP install is skipped, but TASK-060's own verified Notes (2026-08-22) and UAT-EDGE-011 above show both modes actually **fail** (exit 1) at the Serena `project.yml` bootstrap step — a step downstream of, and unrelated to, the MCP-install skip the sentence was about. Corrected the wording to distinguish "MCP-skip doesn't block completion" (still true) from the separate, currently-real Serena-bootstrap failure, and pointed at the follow-on `run.sh accept`/stale-machine work as the fix path.
 - **No coverage of the persistent-volume variant or MCP-in-Docker**: both are explicitly out of scope per TASK-060's own Notes; no case here exercises them, matching that scope boundary rather than a gap.
 - **No coverage of macOS-only install paths** (`brew install --cask obsidian`, `/Applications/Obsidian.app` check, Playwright launchd agent): explicitly and correctly out of scope — Docker Desktop on macOS runs Linux containers only, as documented in the harness's own README "Platform scope boundary" section.

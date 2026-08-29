@@ -77,6 +77,7 @@ implements::[[TASK-071]]
 
 ## Gaps
 
+- **Automation reassessment (2026-08-27)**: UAT-EDGE-004 stays Manual. `run.sh stale` exits with `update-project.sh`'s own exit code, which is currently *always* non-zero due to the documented, expected Serena-bootstrap limitation (same root cause as UAT-060's EDGE-011) — a bare exit-code check can't distinguish that expected failure from a genuine regression, since both produce the identical exit code. Unlike `run.sh idempotency` (TASK-072), `stale` has no explicit `stale: PASS`/`stale: FAIL` output line to key off. Automating this would require adding one, mirroring `idempotency` mode's own pattern — recommend a follow-up task (the same one flagged in UAT-060's Gaps) rather than a one-off fix here.
 - **No coverage of an `accept` mode**: TASK-070 specified a distinct `run.sh accept` mode (pre-seeding `bootstrap-prefs.js` keys) as a separate, not-yet-built follow-on — TASK-071's own Steps checklist did not request it, and it was correctly not built here (see TASK-071's Notes). No UAT case exists for it since it doesn't exist yet.
 - **No coverage of whether a future, much-older `OLD_REF` boundary would behave differently** (e.g. a ref old enough to predate `bootstrap-prefs.js` or the current wiki scaffold shape) — this task deliberately picked the nearest clean version boundary (`c33808d`, one minor version back) per its Approach's guidance to confirm a suitable boundary exists; testing materially older boundaries is out of scope here.
 

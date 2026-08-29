@@ -33,7 +33,7 @@ Derived from [raw/research/docker-fresh-machine-test-harness/index.md](../../../
 
 ## Phase 3: Testing
 
-- [ ] [[TASK-072: Docker harness idempotency check — run update twice, diff scratch state]]
+- [x] [[TASK-072: Docker harness idempotency check — run update twice, diff scratch state]]
 - [ ] [[TASK-073: Wire a GitHub Actions CI job for the Docker fresh-machine harness]]
 
 ## Notes

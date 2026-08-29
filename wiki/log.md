@@ -19,6 +19,9 @@ Generated UAT-078 for TASK-076 (using UAT-078, not UAT-076/077 — both already 
 ## [2026-08-27] task | TASK-076 Docker harness: add a run.sh live-hook mode to verify packageInstall.consent=true against a real Claude Code session
 Created task TASK-076: add an opt-in `run.sh live-hook` mode that authenticates a throwaway container via `claude setup-token`/`CLAUDE_CODE_OAUTH_TOKEN`, installs this repo's hooks for real, seeds `packageInstall.consent=true`, and asserts a live `claude -p "npm install left-pad"` proceeds with zero prompts — closing UAT-MANUAL-001's allow/true half with real evidence. depends_on TASK-060, TASK-075.
 
+## [2026-08-29] task | TASK-077 Docker harness: add PASS/FAIL status lines to setup/update/stale modes, and fix update mode's && short-circuit so update-project.sh actually runs
+Created task TASK-077: adds an idempotency-mode-style PASS/FAIL status line to `run.sh`'s `setup`/`update`/`stale` modes (checking output against the exact expected Serena-bootstrap failure marker), fixes `update` mode's `&&` short-circuit so `update-project.sh` finally runs, and promotes UAT-060's EDGE-011 + UAT-071's EDGE-004 from Manual to live-command as part of the same task.
+
 ## [2026-08-27] uat | UAT-078 passed · TASK-076 done
 Archived UAT-078 → uat/archive/ and TASK-076 → tasks/archive/. Verified live: `run.sh live-hook` ran a real, authenticated `claude -p "npm install left-pad"` session inside the Docker harness with `packageInstall.consent=true` and zero permission prompts — real, human-confirmed evidence that Claude Code's live hook-dispatch pipeline honors this hook's `allow` decision, closing the `allow`/`true` half of TASK-075's own outstanding UAT-MANUAL-001.
 
@@ -817,3 +820,7 @@ Executed all 5 steps of TASK-075 via `/tackle`, one sub-agent per step, each out
 ## [2026-08-27] uat | UAT-077 generated for TASK-075
 
 Generated UAT-077 (numbered out of sequence — UAT-075/076 were already claimed by an earlier `/uat-skip` batch's sequential numbering, noted explicitly in the file) with 9 EDGE cases plus 1 Manual case. All 9 EDGE cases cite and independently re-verify `/tackle`'s own unit tests (every `Unit Test Command` run standalone before being written into the file, per test-integrity requirements) — no new test files needed, `uatGenerate.promoteTests` resolved to the already-satisfied `dedicated` location. The Manual case (UAT-MANUAL-001) is a genuinely novel gap: `allow`/`defer` are decision values no hook in this codebase has ever emitted before, so whether Claude Code's real hook-dispatch pipeline honors them as documented is unverified by any subprocess test, which can only see the JSON shape the hook script itself produces.
+
+## [2026-08-27] uat | UAT-072 passed (auto) · TASK-072 done
+
+Archived UAT-072 → uat/archive/ and TASK-072 → tasks/archive/. Verified via `/uat-auto`: UAT-EDGE-003 was reclassified from Manual to a live-command case and ran `test/docker/fresh-machine/run.sh idempotency` against the cached `bootstrap-claude-fresh-machine` image with a live Docker daemon, confirming `setup-project.sh` once plus `update-project.sh` twice all tolerate the documented Serena-bootstrap failure and the second `update-project.sh` run is a true no-op, exiting with the exact expected `idempotency: PASS` line (EDGE-001/EDGE-002 were already passing, unit-backed, and untouched). ROADMAP-009's TASK-072 checkbox was flipped `[x]`; the roadmap stays `active` since TASK-060/071/073 remain pending-uat.

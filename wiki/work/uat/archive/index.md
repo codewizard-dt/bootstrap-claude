@@ -9,6 +9,7 @@ Terminal UAT files (`passed`, `skipped`, or `trashed`) moved here by `/wiki-arch
 | ID                                             | Title                                                                                                          | Final Status | Archived   |
 | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------ | ---------- |
 | [[UAT-078-docker-harness-live-hook-mode\|UAT-078]] | UAT: Docker harness live-hook mode (packageInstall.consent=true verification) | passed | 2026-08-27 |
+| [[UAT-072-docker-harness-idempotency-check\|UAT-072]] | UAT: Docker harness idempotency check — run update twice, diff scratch state | passed | 2026-08-27 |
 | [[UAT-066-file-suggestion-worktree-symlink\|UAT-066]] | Fix fileSuggestion @-autocomplete for git worktrees with symlinked wiki/raw | passed | 2026-08-21 |
 | [[UAT-064-backfill-work-item-aliases\|UAT-064]] | Backfill aliases: [<ID>] onto every existing work-item file's frontmatter | passed | 2026-08-15 |
 | [[UAT-006-hot-cache-template\|UAT-006]]        | Add wiki/hot.md template to lib/scripts/templates/wiki/                                                        | passed       | 2026-07-06 |

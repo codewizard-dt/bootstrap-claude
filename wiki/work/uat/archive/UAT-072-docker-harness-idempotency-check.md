@@ -2,10 +2,10 @@
 id: UAT-072
 aliases: [UAT-072]
 title: "UAT: Docker harness idempotency check — run update twice, diff scratch state"
-status: pending
+status: passed
 task: TASK-072
 created: 2026-08-22
-updated: 2026-08-22
+updated: 2026-08-27
 ---
 
 # UAT-072 — UAT: Docker harness idempotency check — run `update` twice, diff scratch state
@@ -52,19 +52,19 @@ implements::[[TASK-072]]
 - **Unit Test Command**: `node --test --test-name-pattern="unrecognized positional argument prints usage" test/docker-fresh-machine.test.js`
 - [x] Pass <!-- 2026-08-22 -->
 
-### UAT-EDGE-003 (Manual): A real `run.sh idempotency` run seeds prior state, tolerates the expected non-interactive Serena-bootstrap failure on all three script calls, and finds `update-project.sh` is a true no-op on its second run (once session-transcript noise is excluded)
+### UAT-EDGE-003: A real `run.sh idempotency` run seeds prior state, tolerates the expected non-interactive Serena-bootstrap failure on all three script calls, and finds `update-project.sh` is a true no-op on its second run (once session-transcript noise is excluded)
 - **Scenario**: TASK-072's own "Step 2 follow-up fixes applied, then re-verified" Notes subsection records a real, live run of `./test/docker/fresh-machine/run.sh idempotency` against the cached `bootstrap-claude-fresh-machine` image, after the two follow-up fixes (seed/update tolerance, `.jsonl` exclusion) landed. This case independently re-verifies that evidence: `setup-project.sh` seeds the scratch dir, both `update-project.sh` calls run in turn, all three tolerate the documented Serena-bootstrap failure, and the snapshot-2-vs-snapshot-3 comparison finds no diff — a genuine idempotency PASS, not merely an untested assertion.
 - **Steps**:
   1. From the repo root, confirm the image is cached (or build it): `docker image inspect bootstrap-claude-fresh-machine >/dev/null 2>&1 || ./test/docker/fresh-machine/run.sh --rebuild`.
-  2. Run `./test/docker/fresh-machine/run.sh idempotency`; capture the full output and `echo $?` afterward.
-  3. Confirm `setup-project.sh` runs its real non-interactive setup sequence and fails only at "Bootstrapping Serena project.yml", printing the `idempotency: setup-project.sh exited non-zero — expected ...` stderr marker rather than aborting the chain.
-  4. Confirm the first `update-project.sh` call then runs, also failing only at the identical expected step, printing `idempotency: first update-project.sh exited non-zero — expected ...`, followed by snapshot-2 being taken.
-  5. Confirm the second `update-project.sh` call then runs, also failing only at the identical expected step, printing `idempotency: second update-project.sh exited non-zero — expected ...`, followed by snapshot-3 being taken.
-  6. Confirm the final `diff -u` between snapshot-2 and snapshot-3 produces no output, and the run prints `idempotency: PASS — a second update-project.sh run against the same scratch dir is a true no-op (identical scratch-project + $HOME/.claude state)` with exit code 0.
-- **Expected Result**: Exit code 0; all three script calls tolerate the identical expected Serena-bootstrap failure; snapshot-2 and snapshot-3 are byte-identical (no diff output); final message is the PASS line above. Matches the evidence already recorded in TASK-072's Notes — this was already manually verified once during `/tackle` with exactly this PASS result (log `idempotency-run3.log`, confirmed via a blocking poll on the actual background process); this UAT case exists as the durable, repeatable manual-verification record per this repo's UAT conventions for Docker-dependent cases, not as a first-time check.
-- **Note**: Before the two follow-up fixes landed, an earlier manual run of this same mode failed at exit code 1 without ever reaching snapshot-1 — a harness/script-error finding (missing seed-step tolerance), not a real `update-project.sh` non-idempotency finding. That earlier result is superseded by the fixed, re-verified PASS this case documents; it is not re-tested here since the underlying defect is already fixed in `run.sh` itself.
-- **Repeatable Unit Test**: Not applicable: requires a live Docker daemon and three sequential non-interactive `setup-project.sh`/`update-project.sh` runs against the same scratch dir per invocation, plus a `$HOME/.claude/` snapshot/diff.
-- [FAIL: auto-judge: manual test requires human verification] <!-- 2026-08-22 -->
+  2. Run the command below as-is.
+- **Command**:
+  ```bash
+  test/docker/fresh-machine/run.sh idempotency
+  ```
+- **Expected Result**: Exit code 0; final stdout line is exactly `idempotency: PASS — a second update-project.sh run against the same scratch dir is a true no-op (identical scratch-project + $HOME/.claude state)`. Matches the evidence already recorded in TASK-072's Notes (log `idempotency-run3.log`).
+- **Note**: Before the two follow-up fixes landed, an earlier manual run of this same mode failed at exit code 1 without ever reaching snapshot-1 — a harness/script-error finding (missing seed-step tolerance), not a real `update-project.sh` non-idempotency finding. That earlier result is superseded by the fixed, re-verified PASS this case documents.
+- **Repeatable Unit Test**: Not applicable: requires a live Docker daemon and three sequential non-interactive `setup-project.sh`/`update-project.sh` runs against the same scratch dir per invocation, plus a `$HOME/.claude/` snapshot/diff — but `run.sh idempotency` itself already emits an unambiguous PASS/FAIL line and matching exit code, so it needs no separate unit-test harness. Reclassified from Manual to a live-command case (2026-08-27 reassessment).
+- [x] Pass <!-- 2026-08-27 -->
 
 ---
 

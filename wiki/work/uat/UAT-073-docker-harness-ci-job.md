@@ -95,3 +95,5 @@ implements::[[TASK-073]]
 ## Gaps
 
 None of the planned cases were dropped for insufficient research — all four static-shape assertions were verified directly against the actual `.github/workflows/docker-harness.yml` and `test/docker/fresh-machine/run.sh` file contents, and all corresponding unit tests were run and passed. UAT-EDGE-006 is intentionally Manual: no GitHub Actions runner or live Docker daemon is available in this environment, so it cannot be promoted to a unit test or auto-judged from static evidence alone — it fail-closes to human verification by design.
+
+- **Automation reassessment (2026-08-27)**: re-examined and confirmed EDGE-006 has no local promotion path, unlike UAT-060/UAT-072's Docker-dependent Manual cases. This one's entire claim is "does the workflow go green on GitHub's actual infrastructure" — a real PR against a real remote is the only mechanism that can answer it; a local Docker run (even a faithful one) tests the harness, not GitHub Actions' own environment/permissions/network. Stays permanently human-only.

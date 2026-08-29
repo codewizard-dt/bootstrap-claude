@@ -2,9 +2,9 @@
 id: TASK-072
 aliases: [TASK-072]
 title: "Docker harness idempotency check — run update twice, diff scratch state"
-status: pending-uat
+status: done
 created: 2026-08-22
-updated: 2026-08-22
+updated: 2026-08-27
 depends_on: [TASK-060]
 blocks: []
 parallel_safe_with: [TASK-073, TASK-031, TASK-039]
