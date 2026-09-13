@@ -211,6 +211,8 @@ Huge inputs (malicious or not) exhaust token budgets, spike rate limits, and inf
 
 ## Reporting
 
+**Output**: after compiling findings, write the full report to `.docs/security-audit/report-<YYYY-MM-DD>.md` using the **Write** tool (create the directory if it doesn't exist). If a report for today already exists, write `report-<YYYY-MM-DD>-2.md` (then `-3`, …) rather than overwriting — a persisted history is what makes check B4 ("benchmark results tracked over time") true instead of aspirational. Print the same report in the conversation as well; the file is a durable copy, not a replacement for the reply.
+
 **Per-check status:** ✅ PASS (control exists & effective) · ⚠️ WARN (partial / has gaps) · ❌ FAIL (no evidence; vulnerable) · ℹ️ N/A (not applicable) · 🔍 NEEDS-REVIEW (can't determine from code — flag for manual review).
 
 **Report structure:**
@@ -244,3 +246,4 @@ Categories audited: [list]
 5. **Do not fix** — audit and report only; hand off fixes to the user or `/task-add`.
 6. **Scope to the repo** — don't speculate about external infra unless config files are present.
 7. **One category at a time** — complete each fully before the next; don't interleave findings.
+8. **Persist the report** — write it to `.docs/security-audit/` (see Reporting) in addition to printing it; a report that only lives in the chat leaves no trail for the next audit to compare against.

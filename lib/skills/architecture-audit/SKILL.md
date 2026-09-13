@@ -167,6 +167,8 @@ Individually-benign behavior in each agent can compound into an unwanted *global
 
 ## Reporting
 
+**Output**: after compiling findings, write the full report to `.docs/architecture-audit/report-<YYYY-MM-DD>.md` using the **Write** tool (create the directory if it doesn't exist). If a report for today already exists, write `report-<YYYY-MM-DD>-2.md` (then `-3`, …) rather than overwriting, so architecture posture is trackable over time rather than a one-off snapshot. Print the same report in the conversation as well; the file is a durable copy, not a replacement for the reply.
+
 **Per-check status:** ✅ PASS (control exists & effective) · ⚠️ WARN (partial / has gaps) · ❌ FAIL (no evidence; at risk) · ℹ️ N/A (not applicable to this architecture) · 🔍 NEEDS-REVIEW (can't determine from code — flag for manual review).
 
 **Report structure:**
@@ -202,3 +204,4 @@ Categories audited: [list]
 6. **Scope to the repo** — don't speculate about external infra unless config files are present.
 7. **One category at a time** — complete each fully before the next; don't interleave findings.
 8. **Judge fit, not fashion** — a single agent that passes evaluation is not a finding against it; only flag multi-agent complexity, topology, or framework choice as a gap when it's mismatched to the actual task shape, not merely "not the newest pattern."
+9. **Persist the report** — write it to `.docs/architecture-audit/` (see Reporting) in addition to printing it; a report that only lives in the chat leaves no trail for the next audit to compare against.
