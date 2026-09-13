@@ -9,4 +9,4 @@ Lists **only active** Decision Groups — a group stays listed while at least on
 
 Entry format: `- [DEC-NNNN — Title](DEC-NNNN-slug.md) — one-line summary · D1 proposed, D2 accepted, …`
 
-_(none yet)_
+- [DEC-0001 — Wiki Cross-Family Linking Schema](DEC-0001-wiki-cross-family-linking-schema.md) — bug↔task, roadmap↔bug, requirement↔decision/task link fields, and task-dependency-encoding reconciliation · D1 proposed, D2 proposed, D3 proposed, D4 proposed

@@ -3,7 +3,7 @@ name: task-add
 description: Create a structured, execution-ready task file in wiki/work/tasks/
 category: planning
 model: claude-sonnet-5
-argument-hint: <task description> [--decision DEC-NNNN#DM] [--roadmap ROADMAP-NNNN]
+argument-hint: <task description> [--decision DEC-NNNN#DM] [--roadmap ROADMAP-NNNN] [--knowledge <slug>]
 disable-model-invocation: false
 user-invocable: true
 ---
@@ -54,6 +54,22 @@ Confirm the file has `status: active` in its frontmatter. If `status: done`, war
 Store `(roadmap_file_path, roadmap_number)` for Step 9.
 
 If no roadmap reference: skip this step entirely.
+
+### Step 2b: Parse and validate knowledge reference (only if `$ARGUMENTS` contains `--knowledge` or a recognizable concept/source slug)
+
+Detect:
+- `--knowledge <slug>` — flag form (e.g. `--knowledge wiki-skill-boilerplate-duplication`)
+- a bare slug matching an existing page filename (without extension) in `wiki/knowledge/concepts/` or `wiki/knowledge/sources/`
+
+Strip the knowledge token and any `--knowledge` flag from `$ARGUMENTS` to get the clean task description.
+
+Locate the page: use `mcp__serena__find_file` to search for `<slug>.md` (try the slug as given, and with `.md` appended if not already present) in `wiki/knowledge/concepts/` and `wiki/knowledge/sources/`.
+
+**If found**: store `(knowledge_file_path, knowledge_slug)` for Step 8.
+
+**If not found**: warn the user (e.g. "Knowledge page '<slug>' not found in wiki/knowledge/concepts/ or wiki/knowledge/sources/ — continuing without a knowledge link.") and continue — never block task creation on a missing knowledge page.
+
+If no knowledge reference: skip this step entirely.
 
 ### Step 4: Determine the next task number
 
@@ -120,6 +136,7 @@ Populate `depends_on`, `blocks`, and `parallel_safe_with` from Step 5 as lists o
 # TASK-NNNN — Task Title
 
 implements::[[DEC-NNNN#DM]]   ← only when a decision reference was provided
+relates_to::[[<slug>]]   ← only when Step 2b resolved a knowledge reference
 depends_on::[[TASK-NNNN]]   ← one line per dependency from Step 5; omit entirely if none
 blocks::[[TASK-NNNN]]   ← one line per blocked task from Step 5; omit entirely if none
 
@@ -148,6 +165,8 @@ blocks::[[TASK-NNNN]]   ← one line per blocked task from Step 5; omit entirely
 Agent type annotations: valid types are `general-purpose`, `Explore`, `Plan`.
 
 **Decision link** (only when Step 2 found an accepted decision reference): Insert `implements::[[DEC-NNNN#DM]]` as a typed link on the line immediately after the H1, before `## Objective`.
+
+**Knowledge link** (only when Step 2b resolved a knowledge reference): Insert `relates_to::[[<slug>]]` as a typed link in the same position — immediately after `implements::` when it's present, or immediately after the H1 when it isn't.
 
 **Dependency links** (from the Step 5 data, no re-derivation needed): insert one `depends_on::[[TASK-NNNN]]` line per dependency and one `blocks::[[TASK-NNNN]]` line per blocked task, in the same position — immediately after `implements::` when it's present, or immediately after the H1 when it isn't. *Aside: these typed-link lines are additive to the existing `> **Depends on**:`/`> **Blocks**:` blockquote format, not a replacement, and creating them here does not backfill any pre-existing task file.*
 

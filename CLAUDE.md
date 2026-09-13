@@ -101,7 +101,7 @@ Follow the root `README.md` to configure a new project, or use the npm package:
 | `/company-align [slug]` | Analyse project–company fit against researched context in `raw/companies/<slug>/`; writes `alignment.md` with gaps, strengths, and talking points |
 | `/now <task>` | Plan and delegate task to subagents (max 3 concurrent) |
 | `/tackle <path>` | Execute outlined task file step-by-step with subagent delegation |
-| `/task-add <desc>` | Create structured task in `wiki/work/tasks/`. Optional flags: `--decision DEC-NNNN#DM` (auto-link to an accepted decision); `--roadmap ROADMAP-NNNN` (auto-append the new task to a roadmap) |
+| `/task-add <desc>` | Create structured task in `wiki/work/tasks/`. Optional flags: `--decision DEC-NNNN#DM` (auto-link to an accepted decision); `--roadmap ROADMAP-NNNN` (auto-append the new task to a roadmap); `--knowledge <slug>` (auto-link a `wiki/knowledge/` page via `relates_to::`) |
 | `/roadmap-create <topic>` | Create an execution-plan roadmap in `wiki/work/roadmaps/` via short Socratic Q&A — captures goal, phases, and a hybrid (task-link OR inline) checklist |
 | `/roadmap-assess` | Survey all active roadmaps together — cross-roadmap dependencies, prioritized list, and a status update for each |
 | `/roadmap-next <roadmap>` | Point at the first unchecked item(s) in one roadmap (path, `NNN-slug`, or number — required) grouped into parallelizable waves; flips a completed roadmap to `status: done` and archives it |
@@ -122,7 +122,7 @@ Follow the root `README.md` to configure a new project, or use the npm package:
 | `/uat-auto <path>` | Non-interactively run every test in a pending UAT file and auto-judge verdicts (headless, fail-closed) |
 | `/uat-auto-plus <path>` | Autonomous-fix variant of `/uat-auto`: diagnoses failures, applies fixes itself, re-runs until green or attempts are exhausted (intended for `--dangerously-skip-permissions` agents) |
 | `/uat-skip <path>` | Skip UAT for a task — flip UAT `status: skipped` and task `status: done`; remove from family indexes |
-| `/bug-file <description>` | File a new bug in `wiki/work/bugs/` with required-on-report fields and update `wiki/work/bugs/index.md` |
+| `/bug-file <description>` | File a new bug in `wiki/work/bugs/` with required-on-report fields and update `wiki/work/bugs/index.md`. Optional flag: `--knowledge <slug>` (auto-link a `wiki/knowledge/` page via `relates_to::`) |
 | `/bug-assess` | Survey all active bugs together — batch-triage any still-open reports first, then rank the active set by priority, severity, and impact into a single prioritized fix order with a status update for each bug |
 | `/bug-triage <BUG-NNNN>` | Triage an open bug (priority, assignee, tags, impact) and decide its next destination: stay triaged, start work (→ `status: in-progress`), or trash (wontfix / duplicate / cannot-reproduce) |
 | `/bug-close <BUG-NNNN>` | Close an in-progress bug — requires root-cause analysis, fix commit, and a regression test before setting `status: closed` |

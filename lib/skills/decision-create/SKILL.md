@@ -31,6 +31,7 @@ See the lifecycle doc's "When to Write" / "When NOT to Write" tables. In short: 
 2. Decide single vs group (Step 1.5).
 3. Recall Serena memories that may inform any decision: `list_memories` (filter by topic), `read_memory` for architecture/gotcha/integration memories touching the topic.
 4. Read `CLAUDE.md`, `PROJECT_STATUS.md` (if present), `wiki/work/decisions/lifecycle.md`, and a sample of recent decisions for local conventions.
+5. **Prior-art scan (optional, cheap — skip silently if nothing plausible turns up):** read `wiki/index.md`'s `### Concepts` and `### Sources` sections for titles/summaries matching the topic, then run `mcp__serena__search_for_pattern` for the topic's key terms across `wiki/knowledge/concepts/` and `wiki/knowledge/sources/`. This is a scan-and-surface check, not a `/research` substitute — don't widen it into a full research pass. Any candidate hit gets confirmed with the user in Step 4, never cited unconfirmed.
 
 ## Step 1.5: Single vs Decision Group triage
 Use the lifecycle doc's "When to Group vs Split":
@@ -73,7 +74,7 @@ Prevents two parallel `accepted` decisions in one area (breaks the chain). Per p
 Group members may share evidence sources (Shared Context), but each block needs its own drivers/options/consequences. If a block lacks evidence for an option/driver, **drop it** rather than fabricate; note the gap in Step 9.
 
 ## Step 4: Clarify with the user (mandatory)
-`AskUserQuestion`, **per decision**, at minimum: (1) **Status** — strongly prefer `proposed` (default); may differ per block. (2) **Recommended option** — present research-backed rec with the comparison table; user confirms/overrides. (3) **Deciders** — owner of *this* decision (may differ per block; default git user). (4) **Tags (mandatory, non-empty)** — 1-3 short tags identifying this block's area (required for supersession detection). (5) **Supersedes** — if Step 2.5 surfaced candidates, ask which (if any): `DEC-NNNN#DM`, `none`, or "decide at finalize time".
+`AskUserQuestion`, **per decision**, at minimum: (1) **Status** — strongly prefer `proposed` (default); may differ per block. (2) **Recommended option** — present research-backed rec with the comparison table; user confirms/overrides. (3) **Deciders** — owner of *this* decision (may differ per block; default git user). (4) **Tags (mandatory, non-empty)** — 1-3 short tags identifying this block's area (required for supersession detection). (5) **Supersedes** — if Step 2.5 surfaced candidates, ask which (if any): `DEC-NNNN#DM`, `none`, or "decide at finalize time". (6) **Prior art** — if Step 1's scan surfaced a candidate page, ask e.g. "Found `wiki/knowledge/concepts/<slug>.md` — relevant?"; on confirmation, add `derived_from::[[<slug>]]` to that decision's Shared Context or `### Context (decision-specific)`. Skip this question entirely when the scan found nothing plausible.
 
 **Refuse to write the file if any block has empty `Tags`.** For groups, batch all decisions' questions in one `AskUserQuestion` when feasible, but keep questions per-decision.
 

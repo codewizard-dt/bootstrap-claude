@@ -3,7 +3,7 @@ name: bug-file
 description: File a new bug report in wiki/work/bugs/ with required-on-report fields and append it to the bug index
 category: planning
 model: claude-sonnet-5
-argument-hint: <short bug description>
+argument-hint: <short bug description> [--knowledge <slug>]
 disable-model-invocation: false
 user-invocable: true
 ---
@@ -53,6 +53,8 @@ For each missing required-on-report field, use `AskUserQuestion`. Batch related 
 
 **Exception**: if the user mentions a task in `$ARGUMENTS`, accept it in either `TASK-NNNN` or `[[TASK-NNNN]]` form and normalize to `"[[TASK-NNNN]]"` for the `linked_task:` frontmatter field. If no task is mentioned, set `linked_task: "—"`.
 
+**Knowledge exception** (optional, non-required): if `$ARGUMENTS` contains `--knowledge <slug>` or a bare slug matching an existing page filename (without extension) in `wiki/knowledge/concepts/` or `wiki/knowledge/sources/`, use `mcp__serena__find_file` to search for `<slug>.md` (try the slug as given, and with `.md` appended if not already present) in those two directories. **If found**: store `(knowledge_file_path, knowledge_slug)` for Step 6. **If not found**: warn the user (e.g. "Knowledge page '<slug>' not found in wiki/knowledge/concepts/ or wiki/knowledge/sources/ — continuing without a knowledge link.") and continue — never block bug filing on a missing knowledge page. If no knowledge reference was given, skip this exception entirely (no `relates_to::` line is written in Step 6).
+
 If the user cannot supply reliable Steps to Reproduce, STOP and tell them:
 
 > Cannot file this bug yet — Steps to Reproduce are required. Capture a deterministic trigger first (a failing test, a screencast, a server log timestamp), then re-run `/bug-file`.
@@ -93,6 +95,18 @@ Use `Write` to create `wiki/work/bugs/BUG-NNNN-<slug>.md`, following the frontma
 - `Last updated`: today's date
 - `aliases: [BUG-NNNN]` — mirrors this file's own id: field so Obsidian's wikilink resolver can find it by short ID (ROADMAP-008)
 - Leave `Root Cause Analysis`, `Resolution`, and `Related` sections present but empty (the templated placeholder line under each `>` quote is fine)
+
+**Knowledge link** (only when the Step 3 exception resolved a knowledge reference): insert `relates_to::[[<slug>]]` as a typed link directly under the `# BUG-NNNN — <title>` H1 heading, before the body prose begins. Bug files have no other typed-link line near the top, so this is a new line, not an insertion alongside an existing one:
+
+```markdown
+# BUG-NNNN — <title>
+
+relates_to::[[<slug>]]
+
+<body prose begins here>
+```
+
+If no knowledge reference was given or resolved, omit the line entirely — do not write an empty placeholder.
 
 ### Step 7: Update the Bug Index
 

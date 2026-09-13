@@ -51,6 +51,7 @@ If the topic is a single task with several steps, **stop and tell the user** —
    - `wiki/work/roadmaps/lifecycle.md` (frontmatter schema, status lifecycle — authoritative)
    - A sample of recent roadmaps in `wiki/work/roadmaps/` to learn local conventions
    - The active-task bullets in `wiki/work/tasks/index.md` so you know what task files already exist and can be linked
+4. **Prior-art scan (optional, cheap — skip silently if nothing plausible turns up):** read `wiki/index.md`'s `### Concepts` and `### Sources` sections for titles/summaries matching the topic, then run `mcp__serena__search_for_pattern` for the topic's key terms across `wiki/knowledge/concepts/` and `wiki/knowledge/sources/`. This is a scan-and-surface check, not a `/research` substitute — don't widen it into a full research pass. Any candidate hit gets confirmed with the user during Step 3's Q&A, never cited unconfirmed. If confirmed, its slug(s) populate the roadmap's `derived_from:` frontmatter field (array of `wiki/knowledge/{concepts,sources}` slugs — see ROADMAP-0013 for a precedent).
 
 ### Step 2: Locate the roadmap directory and assign a number
 
@@ -81,6 +82,8 @@ Walk through the elicitations below. Batch related questions into a single `AskU
 | Batch | Questions covered |
 |-------|-------------------|
 | 1 | Goal, Phases, Owner, Linked PRD/ADRs |
+
+If Step 1's prior-art scan surfaced candidate concept/source pages, fold a confirmation question into this same batch (or a short follow-up if the batch is already full): name the candidate page(s) and ask whether they're relevant to this roadmap. Confirmed hits become the `derived_from:` frontmatter value written in Step 6; unconfirmed or rejected candidates are dropped silently — never cited without confirmation.
 
 Then **per-phase**, in a single follow-up `AskUserQuestion` round (one question per phase, up to 4 — split into multiple rounds only if there are 5 phases):
 
@@ -137,6 +140,7 @@ Use `Write` to create `wiki/work/roadmaps/ROADMAP-NNNN-slug.md` following the fi
 | `Created` | Today's date (derive at runtime — use the conversation environment's `currentDate`, otherwise `date +%Y-%m-%d`) |
 | `Last updated` | Same as `Created` |
 | `Owner` | From Step 3 #3 |
+| `derived_from` | Array of `wiki/knowledge/{concepts,sources}` slugs confirmed during Step 3's prior-art check, or omit the field entirely if none were confirmed — never invent entries |
 | `Linked PRD` | From Step 3 #4, or `—` |
 | `Linked ADRs` | From Step 3 #4, or `—` |
 | `Tags` | 1-3 short area tags inferred from the topic (e.g. `auth`, `billing`, `infra`). If the user did not name any, propose tags during Step 4's confirmation rather than inventing them silently |

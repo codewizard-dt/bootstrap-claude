@@ -107,6 +107,33 @@ Report format:
 
 Report-only — provenance is a human judgment (whether a page is genuinely `inferred`), so these are never auto-fixed (see Step 4).
 
+### 2.11 Typed-link target resolution (MEDIUM)
+
+Scan all wiki pages for `keyword::[[target]]` patterns (vocabulary defined in `wiki/conventions.md` §3: `derived_from`, `supersedes`, `superseded_by`, `implements`, `uses`, `depends_on`, `contradicts`, `relates_to`, `caused`, `fixed`). For each match, resolve the target to confirm it exists:
+
+**Resolution logic:**
+- **Decision targets** (`DEC-NNNN` or `DEC-NNNN#DM`): Confirm the file exists in `wiki/work/decisions/` or `wiki/work/decisions/archive/`. If `#DM` anchor is present, confirm that decision block (`## <Title>` + `Status: <status>` pattern) exists in the file.
+- **Work-family targets** (`TASK-NNNN`, `BUG-NNNN`, `UAT-NNNN`, `REQ-NNNN`, `ROADMAP-NNNN`): Confirm the file exists in the respective family directory (`wiki/work/<family>/`) or `wiki/work/<family>/archive/`.
+- **Knowledge page targets** (bare slugs, e.g. `[[typed-wiki-links]]`): Confirm a page with a matching `id:` or entry in `aliases:` frontmatter exists under `wiki/knowledge/`.
+
+**Reporting:**
+- **Unresolved targets** — report as `[MEDIUM] dangling typed link — <file>:<line> — <keyword>::[[<target>]] does not resolve to any existing page or work item`.
+- **Superseded decision targets** — if a target resolves to a decision block with `Status: superseded by DEC-N#DX`, report separately as `[LOW] typed link to superseded decision — <file>:<line> — consider updating to DEC-N#DX` (informational, not broken; the link still resolves).
+
+### 2.12 Task-less accepted decisions (MEDIUM)
+
+For each decision file in `wiki/work/decisions/` (excluding `lifecycle.md`; include `archive/`), parse every `## D*` decision block — each H2 matching `## D\d+\.` is a decision block, collected in document order. For each block:
+
+- Skip unless `Status: accepted` — only accepted decisions need a follow-up task; skip `proposed`, `deprecated`, `superseded by …`.
+- A decision is task-less if its `### Links` section is absent, or has no `Source task(s):` line, or the `Source task(s):` line is blank / contains only a placeholder (e.g. "none yet").
+
+Unlike `/decision-next` (which stops at the first gap), report **every** task-less accepted decision found across all decision files — matching this skill's "report all, fix none without approval" contract.
+
+Report format:
+```
+[MEDIUM] task-less accepted decision — DEC-NNNN#DM (<title>) has no Source task(s) link
+```
+
 ## Step 3: Report findings
 
 Group by severity (HIGH / MEDIUM / LOW). For each finding:

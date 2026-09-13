@@ -34,7 +34,9 @@ supersedes::[[DEC-0003#D2]]
 derived_from::[[sources/karpathy-llm-wiki]]
 ```
 
-**Vocabulary:** `derived_from`, `supersedes`, `superseded_by`, `implements`, `uses`, `depends_on`, `contradicts`, `relates_to`, `caused`, `fixed`.
+**Vocabulary:** `derived_from`, `supersedes`, `superseded_by`, `implements`, `uses`, `depends_on`, `contradicts`, `relates_to`, `caused`, `fixed`, `implemented_by`, `evolved_by`.
+
+`implemented_by::[[TASK-NNNN]]` / `evolved_by::[[ROADMAP-NNNN]]` on a `knowledge/entities/components/` page — the inverse of a task's/roadmap's own `implements::`/`derived_from::` pointing at the concept.
 
 This convention is **declared now but not backfilled** — use it on new and touched pages going forward; a future `/wiki-lint` pass can backfill the back-catalogue. Cost of starting now is zero; it just avoids accumulating a fresh pile of meaning-less links.
 

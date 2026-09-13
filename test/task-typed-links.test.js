@@ -71,12 +71,17 @@ test('task-audit/SKILL.md places the typed-link note after the blockquote exampl
   );
 });
 
-test('task-add/SKILL.md body template renders depends_on::/blocks:: lines directly after implements::', () => {
+test('task-add/SKILL.md body template renders implements:: then (optionally relates_to::) then depends_on:: then blocks::, in order', () => {
   const text = readSkill(TASK_ADD_SKILL);
+  // TASK-0091 introduced an optional relates_to::[[<slug>]] line that sits
+  // between implements:: and depends_on:: (same "context link" slot as
+  // implements::), so the three original lines are no longer guaranteed to
+  // be strictly consecutive — only strictly ordered, with at most one
+  // optional line between implements:: and depends_on::.
   assert.match(
     text,
-    /implements::\[\[DEC-NNNN#DM\]\][^\n]*\ndepends_on::\[\[TASK-NNN\]\][^\n]*\nblocks::\[\[TASK-NNN\]\]/,
-    'the template must render implements:: then depends_on:: then blocks:: on consecutive lines'
+    /implements::\[\[DEC-NNNN#DM\]\][^\n]*\n(?:relates_to::\[\[<slug>\]\][^\n]*\n)?depends_on::\[\[TASK-NNNN?\]\][^\n]*\nblocks::\[\[TASK-NNNN?\]\]/,
+    'the template must render implements:: then (optionally relates_to::) then depends_on:: then blocks:: in order'
   );
 });
 

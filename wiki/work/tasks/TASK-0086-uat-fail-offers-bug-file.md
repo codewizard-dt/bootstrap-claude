@@ -2,7 +2,7 @@
 id: TASK-0086
 aliases: [TASK-0086]
 title: "uat-walk and uat-auto offer /bug-file inline on a [FAIL] verdict"
-status: done
+status: pending-uat
 created: 2026-09-13
 updated: 2026-09-13
 depends_on: []

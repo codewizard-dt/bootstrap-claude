@@ -31,3 +31,6 @@ Applies per decision: Evidence · Criteria & alternatives · Agreement · Docume
 
 ## Old naming
 Was `ADR-NNNN#DM` and `.docs/adr/`. Now `DEC-NNNN#DM` and `wiki/work/decisions/`. Typed link: `implements::[[DEC-NNNN#DM]]` (not `**Implements**: ADR-...`).
+
+## Gotcha: decision-create Step 6.2 references a lifecycle.md Index section that doesn't exist
+`lib/skills/decision-create/SKILL.md` Step 6.2 instructs adding a row per decision to an "Index" table inside `wiki/work/decisions/lifecycle.md`. Neither the local `wiki/work/decisions/lifecycle.md` nor its template source (`lib/scripts/templates/wiki/work/decisions/lifecycle.md`) has any such section — the file only has "Frontmatter / per-decision schema" and "Status transitions". Do **not** add one: `lifecycle.md` files are template-owned infrastructure (`wiki/conventions.md` §"Template-owned infrastructure") — editing the local copy would be silently overwritten by the next `sync-wiki-scaffold.sh`/`bootstrap update` run, and it's not this decision's job to redesign the template. Active-item tracking already lives correctly in `wiki/work/decisions/index.md` (Step 6.1) — that's sufficient. First hit when drafting `DEC-0001` (2026-09-13); flag to the user as a `decision-create` skill inconsistency rather than silently working around it or silently skipping it.

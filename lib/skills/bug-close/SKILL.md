@@ -133,4 +133,7 @@ Print:
 - Old status → new status; folder move (if any)
 - Resolution summary: fix commit, regression test path
 - For `verified`: a one-line clustering check — search `wiki/work/bugs/archive/` for the last 3 closes with overlapping `Tags` and surface them as "related recent closes" so the user can spot systemic issues.
+  - If the clustering check finds **2 or more** related recent closes (not counting the bug just closed), use `AskUserQuestion` to ask inline: `N related bugs closed recently with tag(s) <tags> — <BUG-NNNN titles>. File a regression-prevention task? (y/n)`
+  - On yes: invoke `Skill` `task-add` with a description referencing the clustered bug IDs and shared tag(s) (e.g. "Investigate recurring `<tag>` failures — see BUG-0003, BUG-0006, BUG-0009"). Do not pass `--roadmap` — there's no roadmap context here; the user can link one later via `/task-add --roadmap` if warranted.
+  - On no (or ≤1 related close): unchanged from today — print the clustering observation and stop, no prompt.
 - For `fixed`: remind the user to re-run `/bug-close` once verification lands.
