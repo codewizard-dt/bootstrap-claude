@@ -3,7 +3,7 @@ name: uat-generate
 description: Generate UAT tests in wiki/work/uat/ for a task
 category: planning
 model: claude-sonnet-5
-argument-hint: <TASK-NNN | path/to/task-file.md | feature description>
+argument-hint: <TASK-NNNN | path/to/task-file.md | feature description>
 disable-model-invocation: false
 user-invocable: true
 ---
@@ -42,15 +42,15 @@ Promoting a case pays off twice: the assertion becomes repeatable, **and** the c
 
 Parse `$ARGUMENTS`:
 
-1. **TASK-NNN or path**: use `mcp__serena__find_file` to locate the task file in `wiki/work/tasks/`. All task files live in this single directory — files never move, status is in frontmatter.
+1. **TASK-NNNN or path**: use `mcp__serena__find_file` to locate the task file in `wiki/work/tasks/`. All task files live in this single directory — files never move, status is in frontmatter.
 2. **Number-slug** (e.g. `014-api-refactor`): use `mcp__serena__find_file` in `wiki/work/tasks/`.
 3. **Feature description**: scan `wiki/work/tasks/` for a matching task via `mcp__serena__list_dir`. If none found, ask the user whether to create a task first via `/task-add`.
 
 **UAT ID mirrors the task number**: TASK-014 → UAT-014. Slug mirrors the task slug.
 
-Output path: `wiki/work/uat/UAT-NNN-slug.md`
+Output path: `wiki/work/uat/UAT-NNNN-slug.md`
 
-**Check for an existing UAT file**: search `wiki/work/uat/` for a file starting with `UAT-NNN-`. If found and `status` is not `trashed`, ask the user: replace, append, or abort?
+**Check for an existing UAT file**: search `wiki/work/uat/` for a file starting with `UAT-NNNN-`. If found and `status` is not `trashed`, ask the user: replace, append, or abort?
 
 Screenshots directory: `wiki/work/uat/screenshots/`
 
@@ -146,20 +146,20 @@ Create the UAT file with this structure:
 
 ```markdown
 ---
-id: UAT-NNN
-aliases: [UAT-NNN]
+id: UAT-NNNN
+aliases: [UAT-NNNN]
 title: "UAT: [Task Title]"
 status: pending
-task: TASK-NNN
+task: TASK-NNNN
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 ---
 
-# UAT-NNN — UAT: [Task Title]
+# UAT-NNNN — UAT: [Task Title]
 
-implements::[[TASK-NNN]]
+implements::[[TASK-NNNN]]
 
-> **Source task**: [[TASK-NNN]]
+> **Source task**: [[TASK-NNNN]]
 > **Generated**: YYYY-MM-DD
 
 ---
@@ -207,7 +207,7 @@ implements::[[TASK-NNN]]
 
 **Key rules**:
 - Every test case ends with `- [ ] Pass`
-- The `implements::[[TASK-NNN]]` typed link must appear on the first line after the H1
+- The `implements::[[TASK-NNNN]]` typed link must appear on the first line after the H1
 - Section separators (`---`) match the outline format `/tackle` expects
 
 **Curl command standards** (mandatory):
@@ -252,16 +252,16 @@ Auth-Role: user
 
 2. Include the created test path in the corresponding UAT case's `Repeatable Unit Test` metadata, plus the verified file-scoped `Unit Test Command` — or `Skipped by preference (uatGenerate.promoteTests=never)` when the gate suppressed promotion.
 
-3. Write `wiki/work/uat/UAT-NNN-slug.md` using the `Write` tool.
+3. Write `wiki/work/uat/UAT-NNNN-slug.md` using the `Write` tool.
 
-4. Update the source task file's frontmatter: set `uat: "[[UAT-NNN]]"`. Use `Read` then `Edit` — never shell redirection.
+4. Update the source task file's frontmatter: set `uat: "[[UAT-NNNN]]"`. Use `Read` then `Edit` — never shell redirection.
 
 ### Step 5: Update the family index
 
 Append to `wiki/work/uat/index.md`:
 
 ```
-- [UAT-NNN — UAT: Title](UAT-NNN-slug.md) — verifies TASK-NNN · pending
+- [UAT-NNNN — UAT: Title](UAT-NNNN-slug.md) — verifies TASK-NNNN · pending
 ```
 
 If the file does not exist, create it with a `# UAT` heading and the list entry.
@@ -271,23 +271,23 @@ If the file does not exist, create it with a `# UAT` heading and the list entry.
 Append:
 
 ```
-## [YYYY-MM-DD] uat | UAT-NNN UAT: <task title>
-Generated UAT-NNN for TASK-NNN with N test cases covering <brief scope>. Created M repeatable unit test(s): <paths or "none">.
+## [YYYY-MM-DD] uat | UAT-NNNN UAT: <task title>
+Generated UAT-NNNN for TASK-NNNN with N test cases covering <brief scope>. Created M repeatable unit test(s): <paths or "none">.
 ```
 
 ### Step 7: Report completion
 
 Print:
-- UAT file: `wiki/work/uat/UAT-NNN-slug.md`
-- Source task: `TASK-NNN`
+- UAT file: `wiki/work/uat/UAT-NNNN-slug.md`
+- Source task: `TASK-NNNN`
 - Test counts by category
 - Repeatable unit tests created or blocked
 - Any gaps (tests dropped due to insufficient research)
 
 Next steps:
 ```
-To walk through tests interactively:  /uat-walk wiki/work/uat/UAT-NNN-slug.md
-To run tests headlessly:              /uat-auto wiki/work/uat/UAT-NNN-slug.md
+To walk through tests interactively:  /uat-walk wiki/work/uat/UAT-NNNN-slug.md
+To run tests headlessly:              /uat-auto wiki/work/uat/UAT-NNNN-slug.md
 ```
 
 Output this banner verbatim:
@@ -295,11 +295,11 @@ Output this banner verbatim:
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   UAT GENERATED
-  File: wiki/work/uat/UAT-NNN-slug.md
+  File: wiki/work/uat/UAT-NNNN-slug.md
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-(Replace `UAT-NNN-slug` with the actual filename.)
+(Replace `UAT-NNNN-slug` with the actual filename.)
 
 ---
 

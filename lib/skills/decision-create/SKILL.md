@@ -77,6 +77,10 @@ Group members may share evidence sources (Shared Context), but each block needs 
 
 **Refuse to write the file if any block has empty `Tags`.** For groups, batch all decisions' questions in one `AskUserQuestion` when feasible, but keep questions per-decision.
 
+## Step 4.5: Re-verify next decision number — IMMEDIATELY before writing
+
+Re-run the scan from Step 2 (`list_dir` on `wiki/work/decisions/` and `archive/`, highest 4-digit prefix + 1). If the number planned earlier is now taken, silently bump to the new next-available number. **Never call `Write` before completing this re-scan.**
+
 ## Step 5: Generate the file
 Write to `wiki/work/decisions/DEC-NNNN-<group-slug>.md` using this template. **Tables only, mermaid for flows** — mandatory in every block.
 
@@ -168,7 +172,7 @@ flowchart LR
 ### Links
 - Related decisions: [[DEC-NNNN-slug|DEC-NNNN#DM: title]]
 - Supersedes: [[DEC-MMMM-slug|DEC-MMMM#DK: title]] (if applicable)
-- Source task(s): `wiki/work/tasks/TASK-NNN-slug.md`
+- Source task(s): `wiki/work/tasks/TASK-NNNN-slug.md`
 
 ---
 

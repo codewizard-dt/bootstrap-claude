@@ -850,12 +850,12 @@
     // Two supported source formats:
     //
     // 1. Active-index bullet lines (all sub-parts optional):
-    //      - [TASK-NNN — Title](TASK-NNN-slug.md) — summary · status
+    //      - [TASK-NNNN — Title](TASK-NNNN-slug.md) — summary · status
     //    Separators matched literally: em dash — (U+2014) between title and
     //    summary; middle dot · (U+00B7) before status suffix(es).
     //
     // 2. Archive-index table rows:
-    //      | [[TASK-NNN]] | Title | Final Status | Archived |
+    //      | [[TASK-NNNN]] | Title | Final Status | Archived |
     //    A data row is identified by its first cell being a [[...]] wiki-link
     //    (the header and |----| separator rows fail that gate). Escaped
     //    pipes (\|) inside cells are handled. Archive rows have no markdown

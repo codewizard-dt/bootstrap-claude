@@ -7,17 +7,9 @@ updated: 2026-08-27
 
 Lists **only active** tasks (`todo`, `in-progress`). When a task leaves the active set (`done`, `trashed`), delete its line here — the file itself never moves; status lives in its frontmatter. See the [lifecycle](lifecycle.md).
 
-Entry format: `- [TASK-NNN — Title](TASK-NNN-slug.md) — one-line summary · status`
+Entry format: `- [TASK-NNNN — Title](TASK-NNNN-slug.md) — one-line summary · status`
 - [TASK-031 — Tier 3: adopt /sandbox](TASK-031-sandbox-tier3.md) — close the script-file write path to settings.json that no hook can parse; measure breakage first, then scope · todo
 - [TASK-039 — Add extensive inline comments to the hook scripts](TASK-039-hook-inline-comments.md) — targeted why-not-what commenting pass over `lib/hooks/`, heavy on the thin Serena-first files, gap-fill on the already-dense guards · pending-uat
-- [TASK-073 — Wire a GitHub Actions CI job for the Docker fresh-machine harness](TASK-073-docker-harness-ci-job.md) — build the image and run setup/update non-interactively on ubuntu-latest, no Docker-in-Docker needed · pending-uat
-- [TASK-067 — Per-key sticky refresh for .obsidian/graph.json instead of whole-file skip-if-present](TASK-067-graph-json-per-key-refresh.md) — replace the whole-file "already present, skip" check with a per-key fingerprinted refresh that keeps template-owned keys in sync while asking (once, stickily) before overwriting a diverged key · pending-uat
 - [TASK-074 — Switch all Serena install commands to --project-from-cwd for worktree support](TASK-074-serena-project-from-cwd.md) — install-mcps.sh, bootstrap-serena.sh, and CLAUDE.md all pass a fixed --project path; switch to --project-from-cwd so registration follows worktrees · todo
 - [TASK-075 — Gate package-install-consent.js on a new packageInstall.consent preference](TASK-075-package-install-consent-preference.md) — project-scoped true|false|ask key (default false) so a project can opt out of the unconditional npm/pip/etc. install deny without weakening the guarantee elsewhere · pending-uat
-- [TASK-078 — Delete the Docker fresh-machine test harness entirely](TASK-078-remove-docker-harness.md) — remove test/docker/fresh-machine/, test/docker-fresh-machine.test.js, and its lib/scripts/README.md pointer row · pending-uat
-- [TASK-079 — Delete all GitHub Actions workflows from this repo](TASK-079-remove-github-actions.md) — remove docker-harness.yml, security.yml, and root .gitleaks.toml · pending-uat
-- [TASK-080 — Remove the /bootstrap deploy feature code (setup-deployment.sh, its prompt, and bin/cli.js wiring)](TASK-080-remove-deploy-feature-code.md) — delete the script/prompt and strip deploy/deployment command wiring · pending-uat
-- [TASK-081 — Remove deployment-strategy.md and strip every deploy/CI doc reference](TASK-081-remove-deploy-doc-references.md) — README.md, CLAUDE.md, lib/scripts/README.md, lib/prompts/README.md, sync-wiki-scaffold.sh, setup-project.sh · in-progress
-- [TASK-082 — Trash TASK-073 and UAT-073 (descoped by GitHub Actions removal)](TASK-082-trash-task-073.md) — via /task-trash, once GitHub Actions is removed · todo
-- [TASK-083 — Close ROADMAP-009 with an explicit reverted-not-completed note](TASK-083-close-roadmap-009.md) — flip to done + Notes callout, then archive · todo
-- [TASK-084 — Mark the Docker harness wiki knowledge page as retired](TASK-084-retire-docker-harness-wiki-page.md) — add a retirement callout to wiki/knowledge/sources/docker-fresh-machine-test-harness.md · todo
+- [TASK-0085 — Fix bug-file/roadmap-create filename bugs and standardize wiki/work/ IDs at 4 digits going forward](TASK-0085-normalize-wiki-work-naming.md) — corrects two stale skill-file naming bugs and moves tasks/UAT/req/roadmaps to 4-digit IDs going forward · pending-uat

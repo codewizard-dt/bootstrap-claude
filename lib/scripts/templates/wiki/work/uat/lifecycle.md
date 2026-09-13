@@ -5,7 +5,7 @@ updated: 2026-06-11
 
 # UAT Lifecycle
 
-User-acceptance test files, one per task. ID scheme: **UAT-NNN** (3-digit, zero-padded) — the number **mirrors the task it verifies** (`UAT-014` ↔ `TASK-014`). Filename: `UAT-NNN-slug.md`.
+User-acceptance test files, one per task. ID scheme: **UAT-NNNN** (4-digit, zero-padded) — the number **mirrors the task it verifies** (`UAT-0014` ↔ `TASK-0014`). Filename: `UAT-NNNN-slug.md`.
 
 Active files are **never moved** after creation; state lives in the `status:` frontmatter field. Terminal items (`passed`, `skipped`, `trashed`) may be moved to [`archive/`](archive/) by `/wiki-archive`. The active set is tracked in [`index.md`](index.md).
 
@@ -13,14 +13,14 @@ Active files are **never moved** after creation; state lives in the `status:` fr
 
 | Key | Required | Notes |
 |-----|----------|-------|
-| `id` | yes | `UAT-NNN` |
+| `id` | yes | `UAT-NNNN` |
 | `title` | yes | UAT title |
 | `status` | yes | `pending \| in-progress \| passed \| failed \| skipped \| trashed` |
-| `task` | yes | `TASK-NNN` back-link to the task under test |
+| `task` | yes | `TASK-NNNN` back-link to the task under test |
 | `created` / `updated` | yes | `YYYY-MM-DD` |
 | `tags` | no | discovery only |
 
-The body carries an `implements::[[TASK-NNN]]` typed link; the task carries a `uat:` frontmatter link back (`../uat/UAT-NNN-slug.md`).
+The body carries an `implements::[[TASK-NNNN]]` typed link; the task carries a `uat:` frontmatter link back (`../uat/UAT-NNNN-slug.md`).
 
 ## Per-test markers
 

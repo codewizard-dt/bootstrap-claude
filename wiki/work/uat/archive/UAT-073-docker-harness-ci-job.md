@@ -2,10 +2,10 @@
 id: UAT-073
 aliases: [UAT-073]
 title: "UAT: Wire a GitHub Actions CI job for the Docker fresh-machine harness"
-status: pending
+status: trashed
 task: TASK-073
 created: 2026-08-22
-updated: 2026-08-22
+updated: 2026-09-13
 ---
 
 # UAT-073 — UAT: Wire a GitHub Actions CI job for the Docker fresh-machine harness

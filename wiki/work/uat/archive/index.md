@@ -8,6 +8,8 @@ Terminal UAT files (`passed`, `skipped`, or `trashed`) moved here by `/wiki-arch
 
 | ID                                             | Title                                                                                                          | Final Status | Archived   |
 | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------ | ---------- |
+| [[UAT-081]] | UAT: Remove deployment-strategy.md and strip every deploy/CI doc reference | passed | 2026-09-13 |
+| [[UAT-073]] | UAT: Wire a GitHub Actions CI job for the Docker fresh-machine harness | trashed | 2026-09-13 |
 | [[UAT-071-docker-harness-stale-mode\|UAT-071]] | UAT: Add a run.sh stale mode simulating an upgrade from an older bootstrap-claude release | passed | 2026-09-03 |
 | [[UAT-060-docker-fresh-machine-harness\|UAT-060]] | UAT: Docker fresh-machine test harness for setup/update | passed | 2026-09-03 |
 | [[UAT-079-docker-harness-pass-fail-lines\|UAT-079]] | UAT: Docker harness PASS/FAIL status lines for setup/update/stale modes | passed | 2026-09-03 |
@@ -76,3 +78,10 @@ Terminal UAT files (`passed`, `skipped`, or `trashed`) moved here by `/wiki-arch
 | [[UAT-074-docker-harness-invocation-entrypoint\|UAT-074]] | UAT: Resolve the correct setup/update invocation entrypoint for the Docker harness's run.sh | skipped | 2026-08-22 |
 | [[UAT-075-docker-harness-node-lts-pin\|UAT-075]] | UAT: Confirm current Node LTS to pin as the Docker harness's ARG NODE_VERSION | skipped | 2026-08-22 |
 | [[UAT-076-docker-harness-accept-path-decision\|UAT-076]] | UAT: Decide whether the Docker harness needs an accept-path test lane | skipped | 2026-08-22 |
+| [[UAT-080-remove-deploy-feature-code\|UAT-080]] | UAT: Remove the /bootstrap deploy feature code | passed | 2026-09-13 |
+| [[UAT-082]] | UAT: Delete all GitHub Actions workflows from this repo | passed | 2026-09-13 |
+| [[UAT-067-graph-json-per-key-refresh\|UAT-067]] | UAT: Per-key sticky refresh for .obsidian/graph.json instead of whole-file skip-if-present | passed | 2026-09-13 |
+| [[UAT-062-remove-docker-harness\|UAT-062]] | UAT: Delete the Docker fresh-machine test harness entirely | passed | 2026-09-13 |
+| [[UAT-085-trash-task-073\|UAT-085]] | UAT: Trash TASK-073 and UAT-073 (descoped by GitHub Actions removal) | skipped | 2026-09-13 |
+| [[UAT-084]] | UAT: Mark the Docker harness wiki knowledge page as retired | passed | 2026-09-13 |
+| [[UAT-083]] | UAT: Close ROADMAP-009 with an explicit reverted-not-completed note | passed | 2026-09-13 |

@@ -2697,7 +2697,7 @@ const CITATION_PINS = {
   'merge-gitignore.sh:171': 'Review .gitignore updates?',
   'merge-gitignore.sh:440': "Add .serena/, raw/, and wiki/ to git's local ignore list",
   // A data declaration, not a prompt: the list that generates the guides.* keys.
-  'sync-wiki-scaffold.sh:88': 'OPTIONAL_GUIDES=',
+  'sync-wiki-scaffold.sh:87': 'OPTIONAL_GUIDES=',
   'lib.sh:410': 'Scope for $name',
   'install-global.sh:72': 'Delete these',
 };

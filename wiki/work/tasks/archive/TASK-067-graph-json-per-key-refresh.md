@@ -2,9 +2,9 @@
 id: TASK-067
 aliases: [TASK-067]
 title: "Per-key sticky refresh for .obsidian/graph.json instead of whole-file skip-if-present"
-status: pending-uat
+status: done
 created: 2026-08-21
-updated: 2026-08-21
+updated: 2026-09-13
 depends_on: []
 blocks: []
 parallel_safe_with: [TASK-031, TASK-039, TASK-060]

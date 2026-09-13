@@ -85,7 +85,7 @@ Use `AskUserQuestion` (batched where the UI permits):
 | Fix commit | Short SHA (or "see PR") | **Yes** |
 | Fix version | Release tag or `—` | No |
 | Linked PR | `#NNN` or full URL or `—` | No (recommended) |
-| Linked task | `[[TASK-NNN]]` or `—` | No |
+| Linked task | `[[TASK-NNNN]]` or `—` | No |
 | **Regression test** | Path to an automated test that fails-before / passes-after, **or** path to a UAT entry that exercises the fix | **Yes** |
 
 For **Verify and close**, both required fields must be supplied. If the user cannot name a regression test, STOP and tell them:
@@ -123,7 +123,7 @@ Use **`Edit`** — one targeted call. Never `sed`, `awk`, `perl -i`, or `echo >>
 
 ### Step 9: Cross-Linking
 
-- If a `Linked task` was provided in `[[TASK-NNN]]` format: resolve the task file using `mcp__serena__find_file` with pattern `TASK-NNN-*` searching `wiki/work/tasks/` (finds active or archived). Then open the task file and append `- Closes BUG-NNNN` to its footer (after the existing UAT link section, or under a new `**Closes**:` line). Use `Edit`.
+- If a `Linked task` was provided in `[[TASK-NNNN]]` format: resolve the task file using `mcp__serena__find_file` with pattern `TASK-NNNN-*` searching `wiki/work/tasks/` (finds active or archived). Then open the task file and append `- Closes BUG-NNNN` to its footer (after the existing UAT link section, or under a new `**Closes**:` line). Use `Edit`.
 - If a `Linked PR` was provided and PR is open: remind the user to add `Closes BUG-NNNN` to the PR description so GitHub auto-references the bug record.
 
 ### Step 10: Report Completion

@@ -22,7 +22,7 @@ intent discovered mid-build — but zero *preventable* ones. This skill encodes 
 It inherits the global manifesto (least code, simplest architecture, maximal correctness,
 no docs unless asked). This is the *how-to-build*; the manifesto is *what good looks like*.
 
-**Input:** a project dir with a `wiki/work/requirements/REQ-NNN-slug.md` (REQ) file + a project `CLAUDE.md`
+**Input:** a project dir with a `wiki/work/requirements/REQ-NNNN-slug.md` (REQ) file + a project `CLAUDE.md`
 (stack, hosting, boundaries).
 **Output:** code — a typed boundary contract, *failing* oracle stubs, and the answered batched
 forks. Not documentation.
@@ -49,7 +49,7 @@ Parse `$ARGUMENTS` to find the requirement file:
 | `<path>` (e.g. `wiki/work/requirements/REQ-003-onboarding.md`) | Use as-is |
 | `<NNN-slug>` (e.g. `003-onboarding`) | `mcp__serena__find_file` with mask `003-onboarding.md` under `wiki/work/requirements/` |
 | `<NNN>` (e.g. `3` or `003`) | Pad to 3 digits; `mcp__serena__find_file` with mask `NNN-*.md` under `wiki/work/requirements/` |
-| Empty / missing | Look for any `wiki/work/requirements/REQ-NNN-slug.md` with `status: approved`; if ambiguous, ask via `AskUserQuestion` |
+| Empty / missing | Look for any `wiki/work/requirements/REQ-NNNN-slug.md` with `status: approved`; if ambiguous, ask via `AskUserQuestion` |
 
 **Verify the requirement has `status: approved`** before proceeding. If `draft`, tell the user to run `/req-finalize <path>` first. If `retired` or `superseded`, refuse — no system should be built against a cancelled requirement.
 

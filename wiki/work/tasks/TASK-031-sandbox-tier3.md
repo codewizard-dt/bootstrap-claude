@@ -49,7 +49,7 @@ Close the one hole the hook tier structurally cannot: a Bash-capable agent writi
   - **(a) Unattended runs only** — `power-mode` and `uat-auto-plus`, which are the entire bypass surface. Highest value per unit of friction; the research's recommendation
   - **(b) Always-on for this repo** — strongest, but step 1 will show whether the installer and MCP bootstrap survive it
   - **(c) Ship it as opt-in template guidance** — document how, default off, let each project choose
-- [ ] **Do not set `disableBypassPermissionsMode`.** It would break `uat-auto-plus`, `power-mode`, `setup-strict-typechecks.sh:28`, `setup-deployment.sh:104`, and `migrate-project.sh:228`
+- [ ] **Do not set `disableBypassPermissionsMode`.** It would break `uat-auto-plus`, `power-mode`, `setup-strict-typechecks.sh:28`, and `migrate-project.sh:228`
 - [ ] **Do not set `allowManagedPermissionRulesOnly` or `allowManagedHooksOnly`.** The first would nullify all 116 deny entries in `~/.claude/settings.json`; the second would disable every hook this repo installs. Both are recorded footguns
 - [ ] Note that managed settings *are* self-applicable by a solo developer with `sudo` on macOS (`/Library/Application Support/ClaudeCode/`) — this is not MDM-only, so it is a real option for the strict end of the range
 

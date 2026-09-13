@@ -66,7 +66,7 @@
     "scope": "project",
     "consumer": "installer",
     "summary": "Install a specific optional guide into wiki/guides/",
-    "detail": "One key per entry in sync-wiki-scaffold.sh's OPTIONAL_GUIDES list (sync-wiki-scaffold.sh:88), keyed by the exact entry text including any extension — today that is guides.evals-framework.md and guides.type-checking-templates. true delivers the guide into wiki/guides/ on every run; false keeps it out and suppresses the per-run prompt. A guide already present in wiki/guides/ (or in the legacy .docs/guides/) is refreshed regardless of this key — existing opt-in wins, because the file on disk is the stronger signal than a stored answer. The required guide tier is never gated by these keys.",
+    "detail": "One key per entry in sync-wiki-scaffold.sh's OPTIONAL_GUIDES list (sync-wiki-scaffold.sh:87), keyed by the exact entry text including any extension — today that is guides.evals-framework.md and guides.type-checking-templates. true delivers the guide into wiki/guides/ on every run; false keeps it out and suppresses the per-run prompt. A guide already present in wiki/guides/ (or in the legacy .docs/guides/) is refreshed regardless of this key — existing opt-in wins, because the file on disk is the stronger signal than a stored answer. The required guide tier is never gated by these keys.",
     "values": "true | false",
     "default": null,
     "askedBy": "sync-wiki-scaffold.sh",

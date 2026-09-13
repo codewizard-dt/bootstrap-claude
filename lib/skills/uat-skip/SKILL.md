@@ -3,7 +3,7 @@ name: uat-skip
 description: Skip UAT for a task — sets UAT and task status to skipped/done, removes index rows, auto-checkoffs roadmap
 category: planning
 model: claude-haiku-4-5-20251001
-argument-hint: <TASK-NNN or path/to/task-file.md>
+argument-hint: <TASK-NNNN or path/to/task-file.md>
 disable-model-invocation: false
 user-invocable: true
 ---
@@ -31,7 +31,7 @@ No files are moved. Status lives in frontmatter.
 
 Parse `$ARGUMENTS` to locate the task file in `wiki/work/tasks/`:
 
-1. **TASK-NNN** or **TASK-NNN-slug** — use Serena `find_file` to locate `TASK-NNN*.md` inside `wiki/work/tasks/`. Task files never move; there are no subdirectories to check.
+1. **TASK-NNNN** or **TASK-NNNN-slug** — use Serena `find_file` to locate `TASK-NNNN*.md` inside `wiki/work/tasks/`. Task files never move; there are no subdirectories to check.
 2. **Full path** — confirm the file exists with `find_file`. If it does not exist, STOP and report the error.
 3. **Ambiguous / description only** — list matches and ask the user to clarify.
 
@@ -46,17 +46,17 @@ Read the task file. Extract:
 ## Step 2: Find or Create the UAT File
 
 **If a UAT file is linked** (`uat:` frontmatter exists):
-- Read `wiki/work/uat/<UAT-NNN-slug>.md`.
+- Read `wiki/work/uat/<UAT-NNNN-slug>.md`.
 - The file will have its status set to `skipped` in Step 3.
 
 **If no UAT file exists:**
-- Determine the next UAT-NNN by reading `wiki/work/uat/index.md` (highest existing NNN + 1).
+- Determine the next UAT-NNNN by reading `wiki/work/uat/index.md` (highest existing NNN + 1).
 - Derive the slug from the task title (lowercase, hyphens, strip special chars).
-- Create `wiki/work/uat/UAT-NNN-slug.md` using this skeleton:
+- Create `wiki/work/uat/UAT-NNNN-slug.md` using this skeleton:
 
 ```markdown
 ---
-id: UAT-NNN
+id: UAT-NNNN
 title: "UAT: <Task Title> (Skipped)"
 task: <task-file-path>
 status: skipped
@@ -66,7 +66,7 @@ updated: YYYY-MM-DD
 
 # UAT: <Task Title> (Skipped)
 
-> **Source task**: [[<TASK-NNN>]]
+> **Source task**: [[<TASK-NNNN>]]
 > **Skipped**: YYYY-MM-DD
 > **Reason**: UAT intentionally skipped via /uat-skip — no tests generated
 
@@ -76,7 +76,7 @@ This task's UAT was intentionally skipped. No test cases were generated or execu
 ```
 
 - Add a row to `wiki/work/uat/index.md`:
-  `| UAT-NNN | <title> | skipped | <TASK-NNN> |`
+  `| UAT-NNNN | <title> | skipped | <TASK-NNNN> |`
 
 ---
 
@@ -84,12 +84,12 @@ This task's UAT was intentionally skipped. No test cases were generated or execu
 
 Apply the STATUS-FLIP PROCEDURE to both artifacts:
 
-**UAT file** (`wiki/work/uat/UAT-NNN-slug.md`):
+**UAT file** (`wiki/work/uat/UAT-NNNN-slug.md`):
 1. Edit `status: pending` (or whatever current status) → `status: skipped`
 2. Edit `updated:` → today's date
 3. Remove the UAT's row from `wiki/work/uat/index.md` (skipped UATs are not active)
 
-**Task file** (`wiki/work/tasks/TASK-NNN-slug.md`):
+**Task file** (`wiki/work/tasks/TASK-NNNN-slug.md`):
 1. Edit `status:` (whatever it currently is — `todo`, `in-progress`, or `pending-uat`) → `status: done`
 2. Edit `updated:` → today's date
 3. Remove the task's row from `wiki/work/tasks/index.md` (done tasks are not active)
@@ -103,9 +103,9 @@ Use the `Edit` tool for all frontmatter changes. Never use `sed`, `awk`, or shel
 After the status flips and index row removals in Step 3, archive both artifacts:
 
 1. `git mv wiki/work/uat/<UAT-file>.md wiki/work/uat/archive/<UAT-file>.md`
-2. Append UAT row to `wiki/work/uat/archive/index.md`: `| [[UAT-NNN]] | Title | skipped | YYYY-MM-DD |`
+2. Append UAT row to `wiki/work/uat/archive/index.md`: `| [[UAT-NNNN]] | Title | skipped | YYYY-MM-DD |`
 3. `git mv wiki/work/tasks/<TASK-file>.md wiki/work/tasks/archive/<TASK-file>.md`
-4. Append task row to `wiki/work/tasks/archive/index.md`: `| [[TASK-NNN]] | Title | done | YYYY-MM-DD |`
+4. Append task row to `wiki/work/tasks/archive/index.md`: `| [[TASK-NNNN]] | Title | done | YYYY-MM-DD |`
 
 Use `Bash` for `git mv` only. Use `Edit` for all index appends.
 
@@ -116,12 +116,12 @@ Use `Bash` for `git mv` only. Use `Edit` for all index appends.
 Scan every active roadmap (files in `wiki/work/roadmaps/` whose `status: active` frontmatter):
 
 1. Use Serena `list_dir` on `wiki/work/roadmaps/` (exclude `lifecycle.md` and `index.md`).
-2. Read each file. Look for lines matching `- [ ] [[TASK-NNN` (wiki-style task link).
-3. For each match, `Edit` `- [ ] [[TASK-NNN` → `- [x] [[TASK-NNN` **and** update `updated:` in that roadmap's frontmatter to today.
-4. **Phase sweep**: after flipping this task's line, scan other `- [ ] [[TASK-NNN` lines in the same `## Phase` block. For each, check if that task's `status:` is `done`. If yes, flip `- [ ]` → `- [x]`.
+2. Read each file. Look for lines matching `- [ ] [[TASK-NNNN` (wiki-style task link).
+3. For each match, `Edit` `- [ ] [[TASK-NNNN` → `- [x] [[TASK-NNNN` **and** update `updated:` in that roadmap's frontmatter to today.
+4. **Phase sweep**: after flipping this task's line, scan other `- [ ] [[TASK-NNNN` lines in the same `## Phase` block. For each, check if that task's `status:` is `done`. If yes, flip `- [ ]` → `- [x]`.
 5. **Roadmap completion check**: if ALL checkboxes in the roadmap are now `[x]`, flip the roadmap's `status: active` → `status: done` and `updated:` → today, remove the roadmap's row from `wiki/work/roadmaps/index.md`, then archive the roadmap file:
    - `git mv wiki/work/roadmaps/<file>.md wiki/work/roadmaps/archive/<file>.md`
-   - Append to `wiki/work/roadmaps/archive/index.md`: `| [[ROADMAP-NNN]] | Title | done | YYYY-MM-DD |`
+   - Append to `wiki/work/roadmaps/archive/index.md`: `| [[ROADMAP-NNNN]] | Title | done | YYYY-MM-DD |`
 6. Silent no-op if no roadmap references this task.
 
 ---
@@ -143,9 +143,9 @@ Check the task body for a typed link `implements::[[DEC-NNNN#DM]]` or similar de
 Append to `wiki/log.md`:
 
 ```markdown
-## [YYYY-MM-DD] uat | UAT-NNN skipped → TASK-NNN done · both archived
+## [YYYY-MM-DD] uat | UAT-NNNN skipped → TASK-NNNN done · both archived
 
-UAT skipped for <task title>. Task marked done. Archived UAT-NNN → uat/archive/ and TASK-NNN → tasks/archive/. <Optional: reason if user provided one.>
+UAT skipped for <task title>. Task marked done. Archived UAT-NNNN → uat/archive/ and TASK-NNNN → tasks/archive/. <Optional: reason if user provided one.>
 ```
 
 Use the `Edit` tool (append at end of file).
@@ -158,9 +158,9 @@ Use the `Edit` tool (append at end of file).
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 UAT SKIP COMPLETE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Task:   TASK-NNN → status: done → archived to tasks/archive/
-UAT:    UAT-NNN → status: skipped → archived to uat/archive/
-        (or: Skeleton UAT-NNN created and immediately archived)
+Task:   TASK-NNNN → status: done → archived to tasks/archive/
+UAT:    UAT-NNNN → status: skipped → archived to uat/archive/
+        (or: Skeleton UAT-NNNN created and immediately archived)
 
 Roadmaps updated: [list or "None"]
 Decisions updated: [list or "None"]

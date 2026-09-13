@@ -182,7 +182,7 @@ If this requirement's row does not yet exist in the index table, insert a new ro
 
 | Column | Format |
 |--------|--------|
-| `ID` | `[REQ-NNN](requirements/NNN-slug.md)` |
+| `ID` | `[REQ-NNNN](requirements/NNN-slug.md)` |
 | `Title` | The requirement's initiative title |
 | `Status` | `approved` |
 | `Created` | The requirement's `created:` date |
@@ -193,7 +193,7 @@ If this requirement's row does not yet exist in the index table, insert a new ro
 Append to `wiki/log.md`:
 
 ```
-## [YYYY-MM-DD] req-approved | REQ-NNN <title>
+## [YYYY-MM-DD] req-approved | REQ-NNNN <title>
 ```
 
 Use `Read` then `Edit` for the index update — never `echo >>` or `sed`.
@@ -223,7 +223,7 @@ Suggested next steps:
 | Suggestion | When to use it |
 |------------|----------------|
 | `/req-extract-decisions <file>` | The default next step — extract Architecturally Significant Requirements and propose decision candidates |
-| `/task-add --req REQ-NNN <description>` | Only when the requirement's scope is small enough to skip decisions entirely |
+| `/task-add --req REQ-NNNN <description>` | Only when the requirement's scope is small enough to skip decisions entirely |
 | `/req-update <file> <change>` | If a scope change surfaces post-approval — appends an `## Amendment N` block; never rewrites |
 
 Do **not** auto-create downstream artifacts — present them as suggestions only.

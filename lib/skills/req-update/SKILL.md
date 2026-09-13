@@ -61,8 +61,8 @@ If the **change instructions are empty**, use `AskUserQuestion` to elicit them b
    |--------|--------|
    | `draft` | Continue to Step 3 (you will take the **direct-edit branch** in Step 4) |
    | `approved` | Continue to Step 3 (you will take the **amendment branch** in Step 4); also check if the user intends to retire (see retiring branch below) |
-   | `retired` | **STOP.** Tell the user: "REQ-NNN is retired. Run `/req-create` for any new scope." |
-   | `superseded` | **STOP.** Tell the user: "REQ-NNN was superseded. Update the successor requirement instead." |
+   | `retired` | **STOP.** Tell the user: "REQ-NNNN is retired. Run `/req-create` for any new scope." |
+   | `superseded` | **STOP.** Tell the user: "REQ-NNNN was superseded. Update the successor requirement instead." |
 
 **Retiring branch** (when the user indicates they want to mark the requirement as retired):
 1. Ask for the retirement reason via `AskUserQuestion`
@@ -70,7 +70,7 @@ If the **change instructions are empty**, use `AskUserQuestion` to elicit them b
 3. Append reason to `## Notes` section: *"Retired YYYY-MM-DD: <reason>"*
 4. Update `updated` in frontmatter to today's date
 5. Remove the requirement's row from `wiki/work/requirements/index.md` (terminal status — active index only)
-6. Append to `wiki/log.md`: `## [YYYY-MM-DD] req-retired | REQ-NNN <title> — <reason>`
+6. Append to `wiki/log.md`: `## [YYYY-MM-DD] req-retired | REQ-NNNN <title> — <reason>`
 7. Skip to Step 10 (report)
 
 ---
@@ -204,7 +204,7 @@ Apply each marker with one `Edit` call. Use unique surrounding text in `old_stri
 Append to `wiki/log.md`:
 
 ```
-## [YYYY-MM-DD] req-updated | REQ-NNN <title> — Amendment N
+## [YYYY-MM-DD] req-updated | REQ-NNNN <title> — Amendment N
 ```
 
 ---

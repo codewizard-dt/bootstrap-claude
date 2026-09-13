@@ -33,7 +33,7 @@ Write when there's a real problem worth aligning on, more than one decision area
 3. Read `CLAUDE.md`, `PROJECT_STATUS.md` (if present), `wiki/work/requirements/lifecycle.md` (authoritative template/lifecycle/anti-patterns), and a sample of recent requirements for local conventions.
 
 ## Step 2: Locate directory, assign number
-Requirements live at `wiki/work/requirements/REQ-NNN-slug.md` (3-digit zero-padded). `list_dir` both `wiki/work/requirements/` and `wiki/work/requirements/archive/` (skip either that doesn't exist) — highest prefix across both + 1 (first is `REQ-001`). Never re-use a number; retired requirements keep theirs forever. Derive the slug — names the **initiative**, lowercase dash-separated ≤60 chars (e.g. "Self-serve billing portal" → `REQ-004-self-serve-billing-portal.md`). Confirm number + slug via `AskUserQuestion` if non-obvious.
+Requirements live at `wiki/work/requirements/REQ-NNNN-slug.md` (4-digit zero-padded). `list_dir` both `wiki/work/requirements/` and `wiki/work/requirements/archive/` (skip either that doesn't exist) — highest prefix across both + 1 (first is `REQ-0001`). Never re-use a number; retired requirements keep theirs forever. Derive the slug — names the **initiative**, lowercase dash-separated ≤60 chars (e.g. "Self-serve billing portal" → `REQ-0004-self-serve-billing-portal.md`). Confirm number + slug via `AskUserQuestion` if non-obvious.
 
 ## Step 3: Research (optional, scoped)
 For an unfamiliar product space, run a **lightweight** `/research` for **product context only**:
@@ -68,13 +68,17 @@ Walk the elicitations **in order**. Batch related ones into a single round when 
 ## Step 5: Preview and confirm before writing
 Present a **tabular preview** of every elicited section; user confirms via `AskUserQuestion` (*Approve and write* / *Edit specific section* / *Cancel*). **Do not write until explicit approval.** Preview must include at least: Header (Title, status `draft`, Owner, Stakeholders, Tags), Problem Statement (full), Personas (table), User Stories (`US-N` titles + AC counts), Success Metrics (full table), Goals→Metrics (full table showing the link), Non-Goals (full table), Constraints/Assumptions/Open Questions (tables or "(empty — none elicited)"). Edits → loop back to the relevant Step 4 elicitation and re-present.
 
+### Step 5a: Re-verify next requirement number — IMMEDIATELY before writing
+
+Re-run the scan from Step 2. If the number planned earlier is now taken, silently bump to the new next-available number. **Never call `Write` before completing this re-scan.**
+
 ## Step 6: Write the file
-After confirmation, `Write` `wiki/work/requirements/REQ-NNN-slug.md`.
+After confirmation, `Write` `wiki/work/requirements/REQ-NNNN-slug.md`.
 
 ```yaml
 ---
-id: REQ-NNN
-aliases: [REQ-NNN]
+id: REQ-NNNN
+aliases: [REQ-NNNN]
 type: requirement
 status: draft
 created: YYYY-MM-DD
@@ -86,21 +90,21 @@ tags: [<tag1>, <tag2>]
 ---
 ```
 
-Sections in order: `# REQ-NNN: <Title>` · `## Problem Statement` · `## Goals` (table, every row links a Success Metric ID) · `## Non-Goals` (≥1 row) · `## Personas` (table) · `## User Stories` (each `### US-N. <title>` with the story sentence + an AC table) · `## Success Metrics` (table) · `## Constraints` / `## Assumptions` / `## Open Questions` (table or "(none — placeholder retained)") · `## Linked Decisions` (empty, retain explanatory blockquote) · `## Linked Tasks` (empty, blockquote) · `## Notes` (empty) · `## Amendments` (empty, `<!-- Amendments appear here as ## Amendment 1, ## Amendment 2, etc. -->`).
+Sections in order: `# REQ-NNNN: <Title>` · `## Problem Statement` · `## Goals` (table, every row links a Success Metric ID) · `## Non-Goals` (≥1 row) · `## Personas` (table) · `## User Stories` (each `### US-N. <title>` with the story sentence + an AC table) · `## Success Metrics` (table) · `## Constraints` / `## Assumptions` / `## Open Questions` (table or "(none — placeholder retained)") · `## Linked Decisions` (empty, retain explanatory blockquote) · `## Linked Tasks` (empty, blockquote) · `## Notes` (empty) · `## Amendments` (empty, `<!-- Amendments appear here as ## Amendment 1, ## Amendment 2, etc. -->`).
 
 **Refuse to write** if any required-non-empty field is missing or fails its bar — loop back to Step 4.
 
 ## Step 7: Update indexes + log (`Edit` only, never `sed`/`awk`/`echo >>`)
-Update `wiki/work/requirements/index.md` — if the placeholder row `_No requirements yet …_` exists, **replace** it; else **append** in ascending REQ order. Row/columns: `ID` = `[REQ-NNN](../work/requirements/REQ-NNN-slug.md)` · `Title` · `Status` = `draft` · `Created` = `YYYY-MM-DD` · `Owner` · `Linked Decisions` = `—` · `Linked Tasks` = `—`. Append to `wiki/log.md`: `## [YYYY-MM-DD] req-create | REQ-NNN <title>`.
+Append (or replace the placeholder row) in `wiki/work/requirements/index.md` using the format documented at the top of that file: `- [REQ-NNNN — Title](REQ-NNNN-slug.md) — one-line summary · status`, in ascending REQ order. Append to `wiki/log.md`: `## [YYYY-MM-DD] req-create | REQ-NNNN <title>`.
 
 ## Step 8: Cross-link related artifacts
-If prompted by an existing task/research note/reference, link both ways (`Read` then `Edit`, never `sed`): source artifact gets `**Requirement**: REQ-NNN ([file](<relative-link>))` in a sensible section; the new requirement references the source in `## Notes` (e.g. "Originated from `wiki/work/tasks/TASK-012-runbook-triage.md`"). No related artifact → skip.
+If prompted by an existing task/research note/reference, link both ways (`Read` then `Edit`, never `sed`): source artifact gets `**Requirement**: REQ-NNNN ([file](<relative-link>))` in a sensible section; the new requirement references the source in `## Notes` (e.g. "Originated from `wiki/work/tasks/TASK-012-runbook-triage.md`"). No related artifact → skip.
 
 ## Step 9: Update memory if appropriate
-`mcp__serena__write_memory` only for a **non-obvious** product insight future sessions benefit from (a genuinely new persona; a regulatory constraint; a known product gotcha) — skip self-evident ones or conjecture. Topic-hierarchical name (`product/personas/sre-oncall`, `product/constraints/soc2-admin-logging`), referencing `REQ-NNN` in the body.
+`mcp__serena__write_memory` only for a **non-obvious** product insight future sessions benefit from (a genuinely new persona; a regulatory constraint; a known product gotcha) — skip self-evident ones or conjecture. Topic-hierarchical name (`product/personas/sre-oncall`, `product/constraints/soc2-admin-logging`), referencing `REQ-NNNN` in the body.
 
 ## Step 10: Report
-Tabular summary: File path, Status (`draft`), Personas/User Stories/Success Metrics/Non-Goals counts, Constraints/Assumptions/Open Questions (populated/empty per section), index updated (1 row), log appended, cross-links (list or *none*), memory (name or *skipped*), suggested next step `/req-finalize wiki/work/requirements/REQ-NNN-slug.md`. Note any placeholder-reduced field under a **Gaps** section for the user to address before `/req-finalize`.
+Tabular summary: File path, Status (`draft`), Personas/User Stories/Success Metrics/Non-Goals counts, Constraints/Assumptions/Open Questions (populated/empty per section), index updated (1 row), log appended, cross-links (list or *none*), memory (name or *skipped*), suggested next step `/req-finalize wiki/work/requirements/REQ-NNNN-slug.md`. Note any placeholder-reduced field under a **Gaps** section for the user to address before `/req-finalize`.
 
 ---
 

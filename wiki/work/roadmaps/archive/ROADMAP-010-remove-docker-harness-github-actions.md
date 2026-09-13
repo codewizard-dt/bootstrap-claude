@@ -2,9 +2,9 @@
 id: ROADMAP-010
 aliases: [ROADMAP-010]
 title: Remove Docker Test Harness and GitHub Actions
-status: active
+status: done
 created: 2026-09-04
-updated: 2026-09-04
+updated: 2026-09-13
 owner: David Taylor
 derived_from: []
 linked_requirements: []
@@ -20,19 +20,19 @@ No GitHub Actions run against this repo — `docker-harness.yml` and `security.y
 
 ## Phase 1: Remove the Docker harness and all GitHub Actions
 
-- [ ] [[TASK-078: Delete the Docker fresh-machine test harness entirely]]
-- [ ] [[TASK-079: Delete all GitHub Actions workflows from this repo]]
+- [x] [[TASK-078: Delete the Docker fresh-machine test harness entirely]]
+- [x] [[TASK-079: Delete all GitHub Actions workflows from this repo]]
 
 ## Phase 2: Remove the /bootstrap deploy feature
 
-- [ ] [[TASK-080: Remove the /bootstrap deploy feature code (setup-deployment.sh, its prompt, and bin/cli.js wiring)]]
-- [ ] [[TASK-081: Remove deployment-strategy.md and strip every deploy/CI doc reference]]
+- [x] [[TASK-080: Remove the /bootstrap deploy feature code (setup-deployment.sh, its prompt, and bin/cli.js wiring)]]
+- [x] [[TASK-081: Remove deployment-strategy.md and strip every deploy/CI doc reference]]
 
 ## Phase 3: Close out open work items and wiki records
 
-- [ ] [[TASK-082: Trash TASK-073 and UAT-073 (descoped by GitHub Actions removal)]]
-- [ ] [[TASK-083: Close ROADMAP-009 with an explicit reverted-not-completed note]]
-- [ ] [[TASK-084: Mark the Docker harness wiki knowledge page as retired]]
+- [x] [[TASK-082: Trash TASK-073 and UAT-073 (descoped by GitHub Actions removal)]]
+- [x] [[TASK-083: Close ROADMAP-009 with an explicit reverted-not-completed note]]
+- [x] [[TASK-084: Mark the Docker harness wiki knowledge page as retired]]
 
 ## Notes
 

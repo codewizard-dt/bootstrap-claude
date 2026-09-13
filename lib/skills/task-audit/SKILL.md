@@ -25,7 +25,7 @@ Analyse all active tasks: verify implementation completeness, auto-check unannot
 
 Read `wiki/work/tasks/index.md` using the `Read` tool.
 
-- Parse every active-item bullet line — format `- [TASK-NNN — Title](TASK-NNN-slug.md) — one-line summary · status`. Extract the `TASK-NNN` ID and the linked file path (e.g. `wiki/work/tasks/TASK-001-project-registry-push.md`) for each.
+- Parse every active-item bullet line — format `- [TASK-NNNN — Title](TASK-NNNN-slug.md) — one-line summary · status`. Extract the `TASK-NNNN` ID and the linked file path (e.g. `wiki/work/tasks/TASK-001-project-registry-push.md`) for each.
 - `index.md` lists active items only and carries no progress or flags columns — those are computed from each task file in Step 2.
 - If the list is empty, report "No active tasks — nothing to audit." and STOP.
 
@@ -84,7 +84,7 @@ In the same file read, locate the dependency blockquote appearing **immediately 
 - Links follow the pattern `[NNN-slug](NNN-slug.md)` — extract the NNN-slug identifier from each link.
 - A task with no dependency block at all is treated as having `Depends on: none`, `Blocks: none`, `Parallel-safe with: none`.
 
-Going forward, task files should also carry one `depends_on::[[TASK-NNN]]` line per dependency and one `blocks::[[TASK-NNN]]` line per blocked task, directly below the blockquote — these are additive typed links for Obsidian/Breadcrumbs graph visualization. `/task-audit`'s own parser continues to read only the blockquote above, unchanged.
+Going forward, task files should also carry one `depends_on::[[TASK-NNNN]]` line per dependency and one `blocks::[[TASK-NNNN]]` line per blocked task, directly below the blockquote — these are additive typed links for Obsidian/Breadcrumbs graph visualization. `/task-audit`'s own parser continues to read only the blockquote above, unchanged.
 
 ### 2f. Build the Node Record
 

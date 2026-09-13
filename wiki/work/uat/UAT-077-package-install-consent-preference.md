@@ -126,7 +126,7 @@ implements::[[TASK-075]]
   5. Re-set the key to `false` (or `--unset` it) and repeat step 3 once more. Observe: does the original deny message reappear, including the escape-hatch text?
 - **Expected Result**: Step 3 (`true`) — install proceeds with no prompt. Step 4 (`ask`) — Claude Code's own native permission UI appears (not a hook-authored message), and approving it allows the install. Step 5 (`false`/unset) — the original deny message reappears verbatim, including the `bootstrap-prefs.js --set packageInstall.consent` escape hatch.
 - **Repeatable Unit Test**: Not applicable: requires a real Claude Code session and its live hook-dispatch/permission-mode pipeline — no subprocess harness can observe how the host interprets a returned `permissionDecision`, only what the hook script itself emitted.
-- [FAIL: auto-judge: manual test requires human verification] <!-- 2026-08-27 -->
+- [FAIL: auto-judge: manual test requires human verification] <!-- 2026-09-13 -->
 
 ---
 

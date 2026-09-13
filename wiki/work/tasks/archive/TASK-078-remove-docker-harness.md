@@ -2,9 +2,9 @@
 id: TASK-078
 aliases: [TASK-078]
 title: "Delete the Docker fresh-machine test harness entirely"
-status: pending-uat
+status: done
 created: 2026-09-04
-updated: 2026-09-04
+updated: 2026-09-13
 depends_on: []
 blocks: [TASK-081, TASK-084]
 parallel_safe_with: [TASK-079, TASK-080]

@@ -75,9 +75,8 @@ done
 #               missing => prompt in interactive mode (default no), skip silently
 #               otherwise. Opt out by deleting the file/dir (costs one default-no
 #               prompt per interactive update).
-#    mcp-tools.md is assembled per-project by build-mcp-guide.sh, and
-#    deployment-strategy.md is delivered only by setup-deployment.sh
-#    (`bootstrap deploy`) — neither is synced here.
+#    mcp-tools.md is assembled per-project by build-mcp-guide.sh and is not
+#    synced here.
 GUIDES_SRC="$TEMPLATE_DIR/raw/guides"
 GUIDES_DST="$PROJECT_DIR/wiki/guides"
 LEGACY_GUIDES="$PROJECT_DIR/.docs/guides"
@@ -142,9 +141,7 @@ done
 
 # 4b. LEGACY MIGRATION: guides used to live in .docs/guides/. Every
 #     template-owned guide found there is removed (fresh copies now land in
-#     wiki/guides/ above); deployment-strategy.md is MOVED to wiki/guides/
-#     when `bootstrap deploy` has run (its build.yml marker exists) and
-#     deleted otherwise. User-authored files in .docs/guides/ are untouched.
+#     wiki/guides/ above). User-authored files in .docs/guides/ are untouched.
 #     Also removes deprecated task-spec.md from either location (superseded by
 #     wiki/work/tasks/lifecycle.md, which it actively contradicts).
 if [ -d "$LEGACY_GUIDES" ]; then
@@ -154,15 +151,6 @@ if [ -d "$LEGACY_GUIDES" ]; then
       echo "  Migrated: removed .docs/guides/$legacy (guides now live in wiki/guides/)."
     fi
   done
-  if [ -f "$LEGACY_GUIDES/deployment-strategy.md" ]; then
-    if [ -f "$PROJECT_DIR/.github/workflows/build.yml" ]; then
-      mv "$LEGACY_GUIDES/deployment-strategy.md" "$GUIDES_DST/deployment-strategy.md"
-      echo "  Migrated: moved deployment-strategy.md to wiki/guides/ (deploy artifacts present)."
-    else
-      rm -f "$LEGACY_GUIDES/deployment-strategy.md"
-      echo "  Removed deployment-strategy.md (deploy-only guide; delivered by 'npx @codewizard-dt/bootstrap deploy')."
-    fi
-  fi
   # Drop the legacy dirs when empty; scratch content (.docs/demo etc.) is kept.
   rmdir "$LEGACY_GUIDES" 2>/dev/null && echo "  Removed empty .docs/guides/." || true
   rmdir "$PROJECT_DIR/.docs" 2>/dev/null || true

@@ -54,9 +54,9 @@ This step is read-only — never run `/decision-finalize` yourself; surface the 
 
 ## Step 5: Cross-roadmap dependency analysis
 
-For every remaining roadmap's `task-link` items (skip `inline` items — no task file exists yet to inspect): `Read` the task file, find `## Dependencies` / `## Blocked by` / `depends_on::` / `blocks::` refs, extract `TASK-NNN` IDs.
+For every remaining roadmap's `task-link` items (skip `inline` items — no task file exists yet to inspect): `Read` the task file, find `## Dependencies` / `## Blocked by` / `depends_on::` / `blocks::` refs, extract `TASK-NNNN` IDs.
 
-For each referenced `TASK-NNN`, check whether it belongs to a *different* roadmap (scan the parsed item lists from Step 2 for that ID). If so, record a directed edge `blocking_roadmap → blocked_roadmap` (the roadmap holding the prerequisite task blocks the roadmap holding the dependent task).
+For each referenced `TASK-NNNN`, check whether it belongs to a *different* roadmap (scan the parsed item lists from Step 2 for that ID). If so, record a directed edge `blocking_roadmap → blocked_roadmap` (the roadmap holding the prerequisite task blocks the roadmap holding the dependent task).
 
 Also note — but do not treat as a hard edge — soft relatedness: roadmaps sharing a `linked_requirements` or `linked_decisions` entry. If a shared linked decision's text explicitly states a sequence ("do X before Y", "requires X shipped first"), `Read` that decision file and promote it to a hard edge instead.
 
@@ -70,7 +70,7 @@ Order the remaining roadmaps, highest priority first, using this precedence:
 2. **Functional priority** — a judgment call from each roadmap's `## Goal`, `tags`, and any linked requirement's priority/severity field (`Read` it if present). Goals that unblock or protect other work (infra, security, load-bearing bug fixes) outrank polish or nice-to-have goals. Record a one-sentence rationale per roadmap in the report — this is a judgment call the user can override, not a fact.
 3. **Momentum** (tie-break only — never overrides #1 or #2) — a higher `done/total` ratio ranks slightly higher; finishing in-flight work compounds value faster than starting a new thread.
 
-If two or more roadmaps are genuinely indistinguishable on all three signals, keep their existing relative order (`ROADMAP-NNN` ascending) rather than guessing.
+If two or more roadmaps are genuinely indistinguishable on all three signals, keep their existing relative order (`ROADMAP-NNNN` ascending) rather than guessing.
 
 An outstanding decision (Step 4) does **not** change a roadmap's rank — it changes what "next" means for it. A blocked roadmap can still be #1 in priority; it's just not actionable via `/roadmap-next` until the decision resolves. Reflect that in the rank table's `Depends on` column and in the Step 6d status block.
 
@@ -104,8 +104,8 @@ These roadmaps are gated on decisions still `proposed` — resolve via `/decisio
 
 | Rank | Roadmap | Progress | Priority rationale | Depends on |
 |------|---------|----------|---------------------|------------|
-| 1 | ROADMAP-NNN — <title> | M/N | <one sentence> | — |
-| 2 | ROADMAP-MMM — <title> | M/N | <one sentence> | ROADMAP-NNN (Phase X blocks it) |
+| 1 | ROADMAP-NNNN — <title> | M/N | <one sentence> | — |
+| 2 | ROADMAP-MMM — <title> | M/N | <one sentence> | ROADMAP-NNNN (Phase X blocks it) |
 ```
 
 `Depends on` lists the hard-edge blockers found in Step 5, or `—` if none. A roadmap with an outstanding decision also gets `Blocked by DEC-NNNN#DM` appended here even if it has no roadmap-to-roadmap dependency.
@@ -115,7 +115,7 @@ These roadmaps are gated on decisions still `proposed` — resolve via `/decisio
 One block per roadmap, in ranked order:
 
 ```
-### ROADMAP-NNN — <title>
+### ROADMAP-NNNN — <title>
 - Owner: <owner, or "unassigned">
 - Progress: M/N items checked
 - Status: <active — on track | active — stalled | active — mostly inline placeholders, not yet materialized | blocked — awaiting decision(s)>
@@ -135,7 +135,7 @@ If the roadmap has an outstanding decision from Step 4, set `Status: blocked —
 ```
 ## Warning: Dependency Cycle
 
-ROADMAP-NNN → ROADMAP-MMM → ROADMAP-NNN
+ROADMAP-NNNN → ROADMAP-MMM → ROADMAP-NNNN
 These roadmaps block each other — resolve the cycle manually before treating either as higher priority.
 ```
 

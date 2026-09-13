@@ -5,7 +5,7 @@ updated: 2026-06-11
 
 # Tasks Lifecycle
 
-Execution-ready task files with `## Steps` checklists. ID scheme: **TASK-NNN** (3-digit, zero-padded). Filename: `TASK-NNN-slug.md`. UAT test files mirror task naming (**UAT-NNN**) and live in the sibling [`../uat/`](../uat/) family.
+Execution-ready task files with `## Steps` checklists. ID scheme: **TASK-NNNN** (4-digit, zero-padded). Filename: `TASK-NNNN-slug.md`. UAT test files mirror task naming (**UAT-NNNN**) and live in the sibling [`../uat/`](../uat/) family.
 
 Active files are **never moved** after creation; state lives in the `status:` frontmatter field. Terminal items (`done`, `trashed`) may be moved to [`archive/`](archive/) by `/wiki-archive`. The active set is tracked in [`index.md`](index.md).
 
@@ -13,14 +13,14 @@ Active files are **never moved** after creation; state lives in the `status:` fr
 
 | Key | Required | Notes |
 |-----|----------|-------|
-| `id` | yes | `TASK-NNN` |
+| `id` | yes | `TASK-NNNN` |
 | `title` | yes | task title |
 | `status` | yes | `todo \| in-progress \| done \| trashed` |
 | `created` / `updated` | yes | `YYYY-MM-DD` |
-| `depends_on` | no | `TASK-NNN` IDs that must finish first |
-| `blocks` | no | `TASK-NNN` IDs this one gates |
-| `parallel_safe_with` | no | `TASK-NNN` IDs safe to run concurrently |
-| `uat` | no | link to the matching `../uat/UAT-NNN-slug.md` |
+| `depends_on` | no | `TASK-NNNN` IDs that must finish first |
+| `blocks` | no | `TASK-NNNN` IDs this one gates |
+| `parallel_safe_with` | no | `TASK-NNNN` IDs safe to run concurrently |
+| `uat` | no | link to the matching `../uat/UAT-NNNN-slug.md` |
 | `tags` | no | discovery only |
 
 ## Status transitions

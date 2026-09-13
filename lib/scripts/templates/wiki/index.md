@@ -38,11 +38,11 @@ _(none yet)_ — one page per entity, filed by sub-type:
 
 Each family's `index.md` lists its **active items only** (completed/terminal items drop off the list; files never move — status lives in frontmatter).
 
-- **Requirements** — REQ-NNN. [Active index](work/requirements/index.md) · [lifecycle](work/requirements/lifecycle.md)
+- **Requirements** — REQ-NNNN. [Active index](work/requirements/index.md) · [lifecycle](work/requirements/lifecycle.md)
 - **Decisions** — DEC-NNNN (per-decision `#DM`). [Active index](work/decisions/index.md) · [lifecycle](work/decisions/lifecycle.md)
-- **Roadmaps** — ROADMAP-NNN. [Active index](work/roadmaps/index.md) · [lifecycle](work/roadmaps/lifecycle.md)
-- **Tasks** — TASK-NNN. [Active index](work/tasks/index.md) · [lifecycle](work/tasks/lifecycle.md)
-- **UAT** — UAT-NNN, one per task. [Active index](work/uat/index.md) · [lifecycle](work/uat/lifecycle.md)
+- **Roadmaps** — ROADMAP-NNNN. [Active index](work/roadmaps/index.md) · [lifecycle](work/roadmaps/lifecycle.md)
+- **Tasks** — TASK-NNNN. [Active index](work/tasks/index.md) · [lifecycle](work/tasks/lifecycle.md)
+- **UAT** — UAT-NNNN, one per task. [Active index](work/uat/index.md) · [lifecycle](work/uat/lifecycle.md)
 - **Bugs** — BUG-NNNN. [Active index](work/bugs/index.md) · [lifecycle](work/bugs/lifecycle.md)
 
 ---

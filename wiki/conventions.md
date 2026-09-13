@@ -21,7 +21,7 @@ Why this is the one expensive-to-defer rule: typed links, Maps of Content, super
 
 Reference pages by a **stable identity**, not a raw file path — so links survive reorganization.
 
-- **Work families** carry an ID in frontmatter and filename: `REQ-NNN`, `DEC-NNNN` (per-decision `#DM`), `ROADMAP-NNN`, `TASK-NNN`, `UAT-NNN`, `BUG-NNNN`.
+- **Work families** carry an ID in frontmatter and filename: `REQ-NNNN`, `DEC-NNNN` (per-decision `#DM`), `ROADMAP-NNNN`, `TASK-NNNN`, `UAT-NNNN`, `BUG-NNNN`.
 - **Knowledge pages** carry an `id` (kebab-case slug) plus an `aliases:` list of alternative names. Link by title/alias (`[[Karpathy]]`) rather than by path; the alias makes the reference durable even if the file moves.
 
 ## 3. Typed links

@@ -3,7 +3,7 @@ name: task-add
 description: Create a structured, execution-ready task file in wiki/work/tasks/
 category: planning
 model: claude-sonnet-5
-argument-hint: <task description> [--decision DEC-NNNN#DM] [--roadmap ROADMAP-NNN]
+argument-hint: <task description> [--decision DEC-NNNN#DM] [--roadmap ROADMAP-NNNN]
 disable-model-invocation: false
 user-invocable: true
 ---
@@ -42,8 +42,8 @@ If no decision reference: skip this step entirely.
 ### Step 3: Parse and validate roadmap reference (only if `$ARGUMENTS` contains `--roadmap` or a `ROADMAP-` token)
 
 Detect:
-- `ROADMAP-NNN` — bare token
-- `--roadmap ROADMAP-NNN` or `--roadmap NNN` — flag form
+- `ROADMAP-NNNN` — bare token
+- `--roadmap ROADMAP-NNNN` or `--roadmap NNN` — flag form
 
 Strip the roadmap token from `$ARGUMENTS`.
 
@@ -59,7 +59,7 @@ If no roadmap reference: skip this step entirely.
 
 Scan **all** task locations to find the next available number:
 - `mcp__serena__list_dir` on `wiki/work/tasks/` and `wiki/work/tasks/archive/` (skip either that doesn't exist).
-- Collect every `TASK-NNN` prefix from filenames across **both** directories. Take `max + 1`, zero-pad to 3 digits. The first task is `TASK-001`.
+- Collect every `TASK-<digits>` prefix from filenames across **both** directories. Take `max + 1`, zero-pad the result to 4 digits. In a brand-new project the first task is `TASK-0001`; in this repo, continue from the current max (do not restart at 1). Collect the numeric value from every `TASK-<digits>-` prefix regardless of digit count — existing tasks are 3-digit, new ones are 4-digit — ignoring leading zeros when comparing.
 - Also scan `wiki/work/tasks/index.md` for any reserved IDs not yet on disk.
 - Never re-use a number — IDs are immutable references, and archived tasks keep their original number forever (terminal tasks move to `archive/`; they don't stay in `wiki/work/tasks/`).
 
@@ -89,17 +89,17 @@ Confirm with the user via `AskUserQuestion`.
 
 ### Step 7a: Re-verify next task number — IMMEDIATELY before writing
 
-Re-run the scan from Step 4. If the number planned in Step 7 is now taken, silently bump to the new next-available number. **Never call `Write` before completing this re-scan.**
+Re-run the scan from Step 4, collecting the numeric value from every `TASK-<digits>-` prefix regardless of digit count and zero-padding the result to 4 digits. If the number planned in Step 7 is now taken, silently bump to the new next-available number. **Never call `Write` before completing this re-scan.**
 
 ### Step 8: Create the task file
 
-Create `wiki/work/tasks/TASK-NNN-slug.md` using the `Write` tool.
+Create `wiki/work/tasks/TASK-NNNN-slug.md` using the `Write` tool.
 
 **Frontmatter** (required):
 ```yaml
 ---
-id: TASK-NNN
-aliases: [TASK-NNN]
+id: TASK-NNNN
+aliases: [TASK-NNNN]
 title: "<task title>"
 status: todo
 created: YYYY-MM-DD
@@ -112,16 +112,16 @@ tags: []
 ---
 ```
 
-Populate `depends_on`, `blocks`, and `parallel_safe_with` from Step 5 as lists of `TASK-NNN` IDs (empty list if none).
+Populate `depends_on`, `blocks`, and `parallel_safe_with` from Step 5 as lists of `TASK-NNNN` IDs (empty list if none).
 
 **Body structure**:
 
 ```markdown
-# TASK-NNN — Task Title
+# TASK-NNNN — Task Title
 
 implements::[[DEC-NNNN#DM]]   ← only when a decision reference was provided
-depends_on::[[TASK-NNN]]   ← one line per dependency from Step 5; omit entirely if none
-blocks::[[TASK-NNN]]   ← one line per blocked task from Step 5; omit entirely if none
+depends_on::[[TASK-NNNN]]   ← one line per dependency from Step 5; omit entirely if none
+blocks::[[TASK-NNNN]]   ← one line per blocked task from Step 5; omit entirely if none
 
 ## Objective
 
@@ -149,14 +149,14 @@ Agent type annotations: valid types are `general-purpose`, `Explore`, `Plan`.
 
 **Decision link** (only when Step 2 found an accepted decision reference): Insert `implements::[[DEC-NNNN#DM]]` as a typed link on the line immediately after the H1, before `## Objective`.
 
-**Dependency links** (from the Step 5 data, no re-derivation needed): insert one `depends_on::[[TASK-NNN]]` line per dependency and one `blocks::[[TASK-NNN]]` line per blocked task, in the same position — immediately after `implements::` when it's present, or immediately after the H1 when it isn't. *Aside: these typed-link lines are additive to the existing `> **Depends on**:`/`> **Blocks**:` blockquote format, not a replacement, and creating them here does not backfill any pre-existing task file.*
+**Dependency links** (from the Step 5 data, no re-derivation needed): insert one `depends_on::[[TASK-NNNN]]` line per dependency and one `blocks::[[TASK-NNNN]]` line per blocked task, in the same position — immediately after `implements::` when it's present, or immediately after the H1 when it isn't. *Aside: these typed-link lines are additive to the existing `> **Depends on**:`/`> **Blocks**:` blockquote format, not a replacement, and creating them here does not backfill any pre-existing task file.*
 
 ### Step 9: Update the family index
 
 Append to `wiki/work/tasks/index.md`:
 
 ```
-- [TASK-NNN — Title](TASK-NNN-slug.md) — one-line objective · todo
+- [TASK-NNNN — Title](TASK-NNNN-slug.md) — one-line objective · todo
 ```
 
 If the file does not exist, create it with a `# Tasks` heading and the list entry. Insert in numeric order.
@@ -166,7 +166,7 @@ If the file does not exist, create it with a `# Tasks` heading and the list entr
 In the decision's `### Links` section, add or append a `Source task(s):` line:
 
 ```
-- Source task(s): [[TASK-NNN]] — **WIP** (added YYYY-MM-DD)
+- Source task(s): [[TASK-NNNN]] — **WIP** (added YYYY-MM-DD)
 ```
 
 If no `### Links` section exists, create one before the closing `---` separator of that decision block. Use `Read` then `Edit` — never shell redirection.
@@ -176,7 +176,7 @@ If no `### Links` section exists, create one before the closing `---` separator 
 Read the roadmap file. Identify the last `## Phase N:` section (or any checklist section). Append a new `- [ ]` line:
 
 ```
-- [ ] [[TASK-NNN: <task title>]]
+- [ ] [[TASK-NNNN: <task title>]]
 ```
 
 Update the roadmap's `updated:` frontmatter field to today's date. Use `Read` then `Edit`.
@@ -186,8 +186,8 @@ Update the roadmap's `updated:` frontmatter field to today's date. Use `Read` th
 Append:
 
 ```
-## [YYYY-MM-DD] task | TASK-NNN <task title>
-Created task TASK-NNN: <one sentence summarising the objective>.
+## [YYYY-MM-DD] task | TASK-NNNN <task title>
+Created task TASK-NNNN: <one sentence summarising the objective>.
 ```
 
 ### Step 13: Refresh the hot cache
@@ -197,14 +197,14 @@ The new task is durable, cross-session-relevant wiki state. Run the **Hot Cache 
 ### Step 14: Confirm completion
 
 Report:
-- Created file: `wiki/work/tasks/TASK-NNN-slug.md`
-- Task ID: `TASK-NNN`
+- Created file: `wiki/work/tasks/TASK-NNNN-slug.md`
+- Task ID: `TASK-NNNN`
 - Status: `todo`
 - Next steps:
 
 ```
-To implement:  /tackle wiki/work/tasks/TASK-NNN-slug.md
-To generate tests:  /uat-generate TASK-NNN
+To implement:  /tackle wiki/work/tasks/TASK-NNNN-slug.md
+To generate tests:  /uat-generate TASK-NNNN
 ```
 
 If linked to a roadmap, mention which roadmap was updated and suggest:

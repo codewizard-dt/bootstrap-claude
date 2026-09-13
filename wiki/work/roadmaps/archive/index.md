@@ -15,3 +15,5 @@ Terminal roadmap files (`done`) moved here by `/wiki-archive` to reduce director
 | [[ROADMAP-005]] | Preference store — ask once, remember, and stop skills acting without consent | done | 2026-08-07 |
 | [[ROADMAP-006]] | Automate Obsidian + Plugin Setup | done | 2026-08-14 |
 | [[ROADMAP-007]] | Obsidian Graph View Defaults & Dataview Query Examples | done | 2026-08-15 |
+| [[ROADMAP-009]] | Docker Fresh-Machine Test Harness for setup/update | done | 2026-09-04 |
+| [[ROADMAP-010]] | Remove Docker Test Harness and GitHub Actions | done | 2026-09-13 |

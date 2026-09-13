@@ -19,7 +19,7 @@ The hard boundary:
 
 > *A roadmap shows order. A task contains implementation steps. Never smuggle step-level detail into a roadmap item.*
 
-If a checkbox starts growing sub-bullets like "run `pnpm install`" or "edit `src/foo.ts`", that content belongs in a real task file — created via `/task-add` (or `/task-add --roadmap ROADMAP-NNN` to auto-link). Redirect the user when this happens.
+If a checkbox starts growing sub-bullets like "run `pnpm install`" or "edit `src/foo.ts`", that content belongs in a real task file — created via `/task-add` (or `/task-add --roadmap ROADMAP-NNNN` to auto-link). Redirect the user when this happens.
 
 This skill drives a **short** Socratic Q&A session via `AskUserQuestion`. Roadmap creation is execution planning, not product strategy — keep questions focused and tight. Aim for one or two batched `AskUserQuestion` rounds plus per-phase follow-ups, not a full PRD-style interrogation.
 
@@ -54,14 +54,14 @@ If the topic is a single task with several steps, **stop and tell the user** —
 
 ### Step 2: Locate the roadmap directory and assign a number
 
-Roadmaps live at `wiki/work/roadmaps/NNN-slug.md`. Numbers are 3-digit zero-padded.
+Roadmaps live at `wiki/work/roadmaps/ROADMAP-NNNN-slug.md`. Numbers are 4-digit zero-padded.
 
-1. **Use `mcp__serena__list_dir` on `wiki/work/roadmaps/` and `wiki/work/roadmaps/archive/`** (skip either that doesn't exist) to scan existing files. Collect every `NNN-` prefix from **both** directories — completed roadmaps move to `archive/` but keep their original number forever.
+1. **Use `mcp__serena__list_dir` on `wiki/work/roadmaps/` and `wiki/work/roadmaps/archive/`** (skip either that doesn't exist) to scan existing files. Collect the numeric value from every `ROADMAP-<digits>-` prefix across **both** directories, regardless of digit count (existing files are 3-digit; new ones are 4-digit) — ignore leading zeros when comparing.
 2. **Use `mcp__serena__search_for_pattern`** against `wiki/work/roadmaps/index.md` for `ROADMAP-\d{3}` entries — these may reserve numbers not yet on disk.
-3. Take `max + 1`, zero-pad to 3 digits. The first roadmap is `001`.
+3. Take `max + 1`, zero-pad the result to 4 digits. In a brand-new project the first roadmap is `ROADMAP-0001`; in this repo, continue from the current max (do not restart at 1).
 4. **Derive the file slug** — names the **initiative**. Lowercase, dash-separated, ≤ 60 chars:
-   - "Ship the billing portal" → `001-ship-billing-portal.md`
-   - "Migrate to Postgres 17" → `004-migrate-postgres-17.md`
+   - "Ship the billing portal" → `ROADMAP-0001-ship-billing-portal.md`
+   - "Migrate to Postgres 17" → `ROADMAP-0004-migrate-postgres-17.md`
 
 Confirm the chosen number and slug with the user via `AskUserQuestion` only if either is non-obvious.
 
@@ -86,18 +86,18 @@ Then **per-phase**, in a single follow-up `AskUserQuestion` round (one question 
 
 | # | Elicitation | Quality bar |
 |---|-------------|-------------|
-| 5 | **Phase N items** | For each phase, the user names (a) any existing tasks (`TASK-NNN` or slug fragments) that belong in this phase, and (b) any inline placeholder items. Items may be empty if the user wants to fill in later by editing the roadmap file directly or via `/task-add --roadmap ROADMAP-NNN` — but **at least one phase must contain at least one item** (a roadmap with zero items is not a roadmap) |
+| 5 | **Phase N items** | For each phase, the user names (a) any existing tasks (`TASK-NNNN` or slug fragments) that belong in this phase, and (b) any inline placeholder items. Items may be empty if the user wants to fill in later by editing the roadmap file directly or via `/task-add --roadmap ROADMAP-NNNN` — but **at least one phase must contain at least one item** (a roadmap with zero items is not a roadmap) |
 
 When the user supplies a task reference:
 
-- Look it up in `wiki/work/tasks/` via `mcp__serena__find_file` to confirm it exists. The link must read `[[TASK-NNN: <task title>]]`.
+- Look it up in `wiki/work/tasks/` via `mcp__serena__find_file` to confirm it exists. The link must read `[[TASK-NNNN: <task title>]]`.
 - If the user supplies a task reference that does **not** exist, treat it as an inline placeholder (do not fabricate a link). Note in the per-phase clarification that a task file must be created before this item can be worked on — it will be created automatically when `/roadmap-next` is run.
 
 **Inline placeholders**: items without a corresponding task file are written as `- [ ] <description>`. They are valid at creation time because tasks may not exist yet. However, **inline items cannot be worked on** — `/roadmap-next` will automatically invoke `/task-add` to create a task file for each inline item before surfacing it. The roadmap item is then upgraded to a task-link in place.
 
 **Redirection rule**: if the user starts spelling out implementation detail under an item (file paths, function names, sub-steps), respond:
 
-> That sounds like task content, not a roadmap item. Roadmaps show *ordering*. The *how* belongs in a task file — file one with `/task-add --roadmap ROADMAP-NNN <description>` and the roadmap will auto-link to it.
+> That sounds like task content, not a roadmap item. Roadmaps show *ordering*. The *how* belongs in a task file — file one with `/task-add --roadmap ROADMAP-NNNN <description>` and the roadmap will auto-link to it.
 
 Then re-ask for a single checkbox-sized item.
 
@@ -110,7 +110,7 @@ Before writing the file, present a **tabular preview** of the roadmap:
 | Header | Title, Status (`active`), Owner, Linked PRD, Linked ADRs, Tags |
 | Goal | Full text |
 | Phases | Table of `Phase N` → `Name` → `# items` (task-link + inline counts) |
-| Per-phase items | One sub-list per phase showing each item's rendered form (`[[TASK-NNN: title]]` or inline text) |
+| Per-phase items | One sub-list per phase showing each item's rendered form (`[[TASK-NNNN: title]]` or inline text) |
 
 The user confirms via `AskUserQuestion` with options like *Approve and write*, *Edit specific phase*, *Cancel*. Do **not** write the file until the user explicitly approves.
 
@@ -122,18 +122,18 @@ The number determined in Step 2 may now be stale (other roadmaps created mid-ses
 
 - `mcp__serena__list_dir` on `wiki/work/roadmaps/` **and** `wiki/work/roadmaps/archive/` (skip either that doesn't exist)
 - `mcp__serena__search_for_pattern` against `wiki/work/roadmaps/index.md` for `ROADMAP-\d{3}` entries
-- Collect every `NNN-` prefix from both directories, take `max + 1`, zero-pad to 3 digits
+- Collect the numeric value from every `ROADMAP-<digits>-` prefix across both directories, regardless of digit count (existing files are 3-digit; new ones are 4-digit) — ignore leading zeros when comparing. Take `max + 1`, zero-pad the result to 4 digits.
 - If the number you planned to use in Step 4 has been taken, silently bump to the new next-available number and use it. Do not re-prompt the user.
 - **Never call `Write` before completing this re-scan.**
 
 ### Step 6: Write the roadmap file
 
-Use `Write` to create `wiki/work/roadmaps/NNN-slug.md` following the field table below and the item-rendering rules **exactly**; the frontmatter must match the schema in `wiki/work/roadmaps/lifecycle.md`.
+Use `Write` to create `wiki/work/roadmaps/ROADMAP-NNNN-slug.md` following the field table below and the item-rendering rules **exactly**; the frontmatter must match the schema in `wiki/work/roadmaps/lifecycle.md`.
 
 | Field | Value at creation time |
 |-------|------------------------|
 | `Status` | `active` |
-| `aliases` | `[ROADMAP-NNN]` — mirrors the file's own `id:` value |
+| `aliases` | `[ROADMAP-NNNN]` — mirrors the file's own `id:` value |
 | `Created` | Today's date (derive at runtime — use the conversation environment's `currentDate`, otherwise `date +%Y-%m-%d`) |
 | `Last updated` | Same as `Created` |
 | `Owner` | From Step 3 #3 |
@@ -146,7 +146,7 @@ Use `Write` to create `wiki/work/roadmaps/NNN-slug.md` following the field table
 
 **Item rendering rules**:
 
-- Task-link item: `- [ ] [[TASK-NNN: <task title>]]`
+- Task-link item: `- [ ] [[TASK-NNNN: <task title>]]`
 - Inline item: `- [ ] <free-form description>`
 
 **Refuse to write** if:
@@ -165,7 +165,7 @@ Edit `wiki/work/roadmaps/index.md` to add a new bullet line (active items only �
 2. If the placeholder line (`_(none yet)_` or a "no roadmaps yet" note) exists, **replace** it with the new line. Otherwise **append** the new line in numerical order.
 3. Use the entry format documented at the top of `index.md`:
 
-   `- [ROADMAP-NNN — <title>](NNN-slug.md) — <one-line summary> · 0/<total> items checked`
+   `- [ROADMAP-NNNN — <title>](ROADMAP-NNNN-slug.md) — <one-line summary> · 0/<total> items checked`
 
    where `<title>` is the roadmap's H1 sub-title (without any `Roadmap NNN:` prefix), `<one-line summary>` is a short description of the goal, and `<total>` is the count of `- [ ]` checkboxes you just wrote across all phases.
 
@@ -181,7 +181,7 @@ Print a tabular summary:
 
 | Field | Value |
 |-------|-------|
-| File path | `wiki/work/roadmaps/NNN-slug.md` |
+| File path | `wiki/work/roadmaps/ROADMAP-NNNN-slug.md` |
 | Status | `active` |
 | Phases | N |
 | Total items | M (task-link: X, inline: Y) |
@@ -189,9 +189,9 @@ Print a tabular summary:
 | Linked PRD | PRD-NNN or `—` |
 | Linked ADRs | list or `—` |
 | Index updated | yes (1 row added) |
-| Suggested next steps | `/roadmap-next wiki/work/roadmaps/NNN-slug.md` — surfaces the first item and creates task files for any inline placeholders  •  `/task-add --roadmap ROADMAP-NNN <description>` — file a new task auto-linked to this roadmap |
+| Suggested next steps | `/roadmap-next wiki/work/roadmaps/ROADMAP-NNNN-slug.md` — surfaces the first item and creates task files for any inline placeholders  •  `/task-add --roadmap ROADMAP-NNNN <description>` — file a new task auto-linked to this roadmap |
 
-If any phase was left empty by design (user plans to fill it in later by editing the roadmap file directly or via `/task-add --roadmap ROADMAP-NNN`), note it in a separate **Gaps** section so the user can address it before execution begins.
+If any phase was left empty by design (user plans to fill it in later by editing the roadmap file directly or via `/task-add --roadmap ROADMAP-NNNN`), note it in a separate **Gaps** section so the user can address it before execution begins.
 
 If the roadmap contains any inline placeholder items (items without a task-link), include a **Placeholders** section listing them:
 
@@ -208,17 +208,17 @@ This is informational only — no action required now.
 1. **Tables, not bullets, for every preview and summary in the conversation.** The roadmap file itself uses checklists (that's its format), but every Q&A preview and Step 8 report uses tables.
 2. **Phase names are short and execution-flavored.** "Foundation", "API", "Tests", "Release" — not "Phase where we figure out the database stuff".
 3. **Items are single checkbox-sized.** No sub-bullets, no indented steps, no embedded code blocks. If an item needs detail, it's a task — file one. Items without a task file are written as inline placeholders (`- [ ] <description>`) and are valid at creation time, but will be converted to task-links automatically by `/roadmap-next` before they can be worked on.
-4. **Task-link items must use `[[TASK-NNN: <title>]]` format.** The `TASK-NNN:` prefix is required so the auto-checkoff machinery can detect references. Path-based markdown links break when files move to `archive/`; wiki-style ID links never do.
+4. **Task-link items must use `[[TASK-NNNN: <title>]]` format.** The `TASK-NNNN:` prefix is required so the auto-checkoff machinery can detect references. Path-based markdown links break when files move to `archive/`; wiki-style ID links never do.
 5. **At least one phase must contain at least one item.** An empty roadmap is a hard fail — loop back to Step 3 #5.
-6. **Never invent task references.** If the user says "TASK-42" and no `042-*.md` file exists, render it as an inline placeholder, not a `[[TASK-NNN: ...]]` wiki link.
+6. **Never invent task references.** If the user says "TASK-42" and no `042-*.md` file exists, render it as an inline placeholder, not a `[[TASK-NNNN: ...]]` wiki link.
 
 ---
 
 ## CRITICAL Rules
 
 1. **Refuse to write the file if any required field is empty or fails its quality bar** (Goal, Owner, ≥1 phase with ≥1 item). Loop back to Step 3 — do not silently fill gaps with invented content.
-2. **Never invent task links.** Every `[[TASK-NNN: ...]]` wiki link must correspond to a real file under `wiki/work/tasks/`. Verify with `mcp__serena__find_file` before rendering.
+2. **Never invent task links.** Every `[[TASK-NNNN: ...]]` wiki link must correspond to a real file under `wiki/work/tasks/`. Verify with `mcp__serena__find_file` before rendering.
 3. **Never use `sed`, `awk`, `echo >>`, or shell redirection to edit markdown.** Always `Read` then `Edit`. See `wiki/guides/mcp-tools.md`.
-4. **Never auto-create downstream artifacts.** This skill creates exactly one roadmap file (plus the index row edit). Do **not** create tasks, PRDs, or ADRs as a side effect — the user can file tasks afterward via `/task-add --roadmap ROADMAP-NNN`.
+4. **Never auto-create downstream artifacts.** This skill creates exactly one roadmap file (plus the index row edit). Do **not** create tasks, PRDs, or ADRs as a side effect — the user can file tasks afterward via `/task-add --roadmap ROADMAP-NNNN`.
 5. **Redirect step-level detail to task territory** — if the user starts specifying *how* under an item, restate the question as "what's the single checkable unit?" and re-elicit.
 6. **Status starts as `active` and stays there.** This skill never writes `done`. The flip from `active` → `done` is a manual decision the human makes when every box is `[x]`. After flipping, the file may be moved to `wiki/work/roadmaps/archive/` — `/roadmap-next` will suggest this step.

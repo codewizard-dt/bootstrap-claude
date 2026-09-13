@@ -5,7 +5,7 @@ updated: 2026-06-11
 
 # Requirements Lifecycle
 
-Requirements (PRDs) capture the problem, personas, user stories, success metrics, and non-goals for a body of work. ID scheme: **REQ-NNN** (3-digit, zero-padded, globally unique). Filename: `REQ-NNN-slug.md`.
+Requirements (PRDs) capture the problem, personas, user stories, success metrics, and non-goals for a body of work. ID scheme: **REQ-NNNN** (4-digit, zero-padded, globally unique). Filename: `REQ-NNNN-slug.md`.
 
 Active files are **never moved** after creation; state lives in the `status:` frontmatter field. Terminal items (`retired`) may be moved to [`archive/`](archive/) by `/wiki-archive`. The active set is tracked in [`index.md`](index.md).
 
@@ -13,7 +13,7 @@ Active files are **never moved** after creation; state lives in the `status:` fr
 
 | Key | Required | Notes |
 |-----|----------|-------|
-| `id` | yes | `REQ-NNN` |
+| `id` | yes | `REQ-NNNN` |
 | `title` | yes | short requirement name |
 | `status` | yes | `draft \| approved \| retired` |
 | `created` / `updated` | yes | `YYYY-MM-DD` |

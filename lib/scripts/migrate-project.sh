@@ -5,7 +5,7 @@ set -euo pipefail
 # structure (wiki/knowledge/ + wiki/work/). The mechanical scaffold is done by
 # sync-wiki-scaffold.sh; the semantic conversion (frontmatter synthesis, ID
 # renames, link rewriting, family indexes) is performed by Claude using the
-# prompt template at lib/prompts/migrate-wiki.md — same seam as setup-deployment.
+# prompt template at lib/prompts/migrate-wiki.md.
 #
 # Safety: requires a clean git tree and runs on a fresh `wiki-migration` branch
 # so the entire migration is one reviewable diff. Files are `git mv`d before

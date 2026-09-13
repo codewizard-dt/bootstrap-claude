@@ -151,17 +151,17 @@ Runs once no test has a blocking status. Two outcomes.
 ### All pass (no `[FAIL]` / `[FIXING]` remain)
 
 1. **UAT status** — Edit `status:` → `passed`; bump `updated:` in the UAT frontmatter.
-2. **Task status** — read `task:` from the UAT frontmatter → open `wiki/work/tasks/TASK-NNN-slug.md`, Edit `status:` → `done`; bump `updated:`. (Expected prior status is `pending-uat`, set by `/tackle` when it finished implementation — but flip to `done` regardless of what's there now.)
+2. **Task status** — read `task:` from the UAT frontmatter → open `wiki/work/tasks/TASK-NNNN-slug.md`, Edit `status:` → `done`; bump `updated:`. (Expected prior status is `pending-uat`, set by `/tackle` when it finished implementation — but flip to `done` regardless of what's there now.)
 3. **Remove index rows** — delete the UAT row from `wiki/work/uat/index.md` and the task row from `wiki/work/tasks/index.md` (one `Edit` per file).
 4. **Archive both** (`git mv` via Bash; index appends via `Edit`):
-   - `git mv wiki/work/uat/<UAT>.md wiki/work/uat/archive/` → append `| [[UAT-NNN]] | Title | passed | YYYY-MM-DD |` to `wiki/work/uat/archive/index.md`
-   - `git mv wiki/work/tasks/<TASK>.md wiki/work/tasks/archive/` → append `| [[TASK-NNN]] | Title | done | YYYY-MM-DD |` to `wiki/work/tasks/archive/index.md`
-5. **Roadmap auto-checkoff** — scan `wiki/work/roadmaps/` for `status: active` files. For each: Edit `- [ ] [[TASK-NNN` → `- [x] [[TASK-NNN`; then sweep remaining `- [ ]` free-text lines, checking the ones the completing task clearly accomplished (leave uncertain ones). If all items are now `[x]`: flip roadmap `status: done`, bump `updated:`, remove its row from `wiki/work/roadmaps/index.md`, `git mv` it to `archive/`, and append `| [[ROADMAP-NNN]] | Title | done | YYYY-MM-DD |` to `wiki/work/roadmaps/archive/index.md`. Silent no-op if no roadmap references the task. `Edit` only (except `git mv`).
+   - `git mv wiki/work/uat/<UAT>.md wiki/work/uat/archive/` → append `| [[UAT-NNNN]] | Title | passed | YYYY-MM-DD |` to `wiki/work/uat/archive/index.md`
+   - `git mv wiki/work/tasks/<TASK>.md wiki/work/tasks/archive/` → append `| [[TASK-NNNN]] | Title | done | YYYY-MM-DD |` to `wiki/work/tasks/archive/index.md`
+5. **Roadmap auto-checkoff** — scan `wiki/work/roadmaps/` for `status: active` files. For each: Edit `- [ ] [[TASK-NNNN` → `- [x] [[TASK-NNNN`; then sweep remaining `- [ ]` free-text lines, checking the ones the completing task clearly accomplished (leave uncertain ones). If all items are now `[x]`: flip roadmap `status: done`, bump `updated:`, remove its row from `wiki/work/roadmaps/index.md`, `git mv` it to `archive/`, and append `| [[ROADMAP-NNNN]] | Title | done | YYYY-MM-DD |` to `wiki/work/roadmaps/archive/index.md`. Silent no-op if no roadmap references the task. `Edit` only (except `git mv`).
 6. **Decision annotation** — check the task body for `implements::[[DEC-NNNN#DM]]`. If found: open `wiki/work/decisions/NNNN-slug.md`, append `— implemented YYYY-MM-DD` to this task's `Source task(s):` line. Then check `wiki/work/tasks/` **and** `tasks/archive/` for other `todo|in-progress` tasks with the same `implements::[[DEC-NNNN#DM]]`; if none remain, append `— decision fully implemented YYYY-MM-DD` on a new line in the `## DM.` block. Sweep remaining `- [ ]` items in that block, checking the ones this task accomplished. `Read` then `Edit` only — never `sed`.
 7. **Log entry** — append to `wiki/log.md`:
    ```
-   ## [YYYY-MM-DD] uat | UAT-NNN passed<MODE-TAG> · TASK-NNN done
-   Archived UAT-NNN → uat/archive/ and TASK-NNN → tasks/archive/. [one sentence on what was verified]
+   ## [YYYY-MM-DD] uat | UAT-NNNN passed<MODE-TAG> · TASK-NNNN done
+   Archived UAT-NNNN → uat/archive/ and TASK-NNNN → tasks/archive/. [one sentence on what was verified]
    ```
    `<MODE-TAG>`: walk → none · auto → ` (auto)` · auto-plus → ` (auto-plus)`.
 8. Emit the completion summary (task + UAT IDs, new `done`/`passed` statuses, archive paths).

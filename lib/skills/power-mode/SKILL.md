@@ -19,8 +19,8 @@ Use this skill to drive tasks or roadmaps to completion using a parallel agent t
 **Trigger:** `/power-mode <path>` with no additional instructions.
 
 Inspect the path argument:
-- Path contains `roadmap` or matches `ROADMAP-NNN` → **Roadmap-to-Completion Orchestrator** (see below)
-- Path contains `task` or matches `TASK-NNN` → **Single-Task Executor** (see below)
+- Path contains `roadmap` or matches `ROADMAP-NNNN` → **Roadmap-to-Completion Orchestrator** (see below)
+- Path contains `task` or matches `TASK-NNNN` → **Single-Task Executor** (see below)
 
 ---
 
@@ -57,7 +57,7 @@ All agent call examples below omit this footer for brevity — it is always requ
 
 ## Single-Task Executor
 
-**Trigger:** `/power-mode <path/to/TASK-NNN.md>` with no additional instructions.
+**Trigger:** `/power-mode <path/to/TASK-NNNN.md>` with no additional instructions.
 
 **Goal:** Drive one task through the full tackle → UAT-generate → UAT-auto pipeline exactly once, then stop.
 
@@ -67,7 +67,7 @@ All agent call examples below omit this footer for brevity — it is always requ
 
 ```
 Agent({
-  description: "Tackle <TASK-NNN>",
+  description: "Tackle <TASK-NNNN>",
   prompt: "Run /tackle <task-path>. [append team member footer]",
   mode: "bypassPermissions"
 })
@@ -79,7 +79,7 @@ Wait for the agent to complete.
 
 ```
 Agent({
-  description: "UAT generate <TASK-NNN>",
+  description: "UAT generate <TASK-NNNN>",
   prompt: "Run /uat-generate <task-path>. [append team member footer]",
   mode: "bypassPermissions"
 })
@@ -91,7 +91,7 @@ Wait for the agent to complete.
 
 ```
 Agent({
-  description: "UAT auto <TASK-NNN>",
+  description: "UAT auto <TASK-NNNN>",
   prompt: "Run /uat-auto <uat-path> (infer the UAT file path from the task path — same NNN slug, under wiki/work/uat/).
 
 Note: on all-pass, /uat-auto's own UAT-CORE Closure procedure already flips the task to done, archives both files, removes index rows, and auto-checks the matching roadmap checkbox (if any) — you do not need to instruct any of that here; it happens natively. Just wait for it to complete and report its summary.
@@ -109,7 +109,7 @@ Done. No further iteration.
 
 ## Roadmap-to-Completion Orchestrator
 
-**Trigger:** `/power-mode <path/to/ROADMAP-NNN.md>` with no additional instructions.
+**Trigger:** `/power-mode <path/to/ROADMAP-NNNN.md>` with no additional instructions.
 
 **Goal:** Drive the roadmap to completion — every item through the full tackle → UAT-generate → UAT-auto pipeline — looping through waves of parallelizable work until no implementation work remains.
 
@@ -150,7 +150,7 @@ Run tackle → UAT-generate → UAT-auto for all tasks in the current wave. Appl
 
 Phase 1 — Tackle (parallel, minimum 5 agents when 5+ collision-safe tasks available):
 ```
-Agent({ description: "Tackle TASK-NNN", prompt: "Run /tackle <path>. [append team member footer]", mode: "bypassPermissions" })
+Agent({ description: "Tackle TASK-NNNN", prompt: "Run /tackle <path>. [append team member footer]", mode: "bypassPermissions" })
 Agent({ description: "Tackle TASK-MMM", prompt: "Run /tackle <path>. [append team member footer]", mode: "bypassPermissions" })
 // ... one per task, all in the same message
 ```
@@ -159,7 +159,7 @@ Wait for all to complete.
 
 Phase 2 — Generate UAT tests (parallel, read-only):
 ```
-Agent({ description: "UAT generate TASK-NNN", prompt: "Run /uat-generate <task-path>. [append team member footer]", mode: "bypassPermissions" })
+Agent({ description: "UAT generate TASK-NNNN", prompt: "Run /uat-generate <task-path>. [append team member footer]", mode: "bypassPermissions" })
 // ... one per task, all in the same message
 ```
 
@@ -168,7 +168,7 @@ Wait for all to complete.
 Phase 3 — Run UATs (parallel when UAT files don't collide):
 ```
 Agent({
-  description: "UAT auto TASK-NNN",
+  description: "UAT auto TASK-NNNN",
   prompt: "Run /uat-auto <uat-path>.
 
 Note: on all-pass, /uat-auto's own UAT-CORE Closure procedure already flips the task to done, archives both files, removes index rows, and auto-checks the matching roadmap checkbox — no need to instruct any of that here.

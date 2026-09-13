@@ -55,7 +55,7 @@ Report:
 
 - Any file under `wiki/knowledge/` that has a `status:` frontmatter key (stateful artifacts don't belong in knowledge)
 - Any file under `wiki/work/` that lacks a `status:` frontmatter key (work artifacts must be status-driven)
-- Any file under `wiki/knowledge/` whose name matches a work-family ID pattern (REQ-NNN, TASK-NNN, BUG-NNNN, etc.)
+- Any file under `wiki/knowledge/` whose name matches a work-family ID pattern (REQ-NNNN, TASK-NNNN, BUG-NNNN, etc.)
 
 ### 2.3 ID / filename mismatch (MEDIUM)
 

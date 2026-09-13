@@ -70,7 +70,7 @@ If the user says **No**, STOP.
    ```
    Then append to `wiki/work/tasks/archive/index.md`:
    ```
-   | [[TASK-NNN]] | <Title> | trashed | YYYY-MM-DD |
+   | [[TASK-NNNN]] | <Title> | trashed | YYYY-MM-DD |
    ```
 
 3. **For each related UAT file** (if any):
@@ -81,7 +81,7 @@ If the user says **No**, STOP.
      ```
    - Append to `wiki/work/uat/archive/index.md`:
      ```
-     | [[UAT-NNN]] | <Title> | trashed | YYYY-MM-DD |
+     | [[UAT-NNNN]] | <Title> | trashed | YYYY-MM-DD |
      ```
 
 ### Step 5: Update Active Indexes
@@ -90,14 +90,14 @@ Remove the task's row from `wiki/work/tasks/index.md`. If there is a matching UA
 
 Use `Read` then `Edit` — never `echo >>` or `sed`. If a row is already absent, note it and continue.
 
-**Do NOT remove references from roadmaps, decisions, or other files** — `[[TASK-NNN]]` and `[[UAT-NNN]]` IDs remain valid regardless of file location.
+**Do NOT remove references from roadmaps, decisions, or other files** — `[[TASK-NNNN]]` and `[[UAT-NNNN]]` IDs remain valid regardless of file location.
 
 ### Step 6: Append to wiki/log.md
 
 Append one entry to `wiki/log.md`:
 
 ```
-## [YYYY-MM-DD] task-trashed | TASK-NNN <title> — archived to wiki/work/tasks/archive/
+## [YYYY-MM-DD] task-trashed | TASK-NNNN <title> — archived to wiki/work/tasks/archive/
 ```
 
 Use `Read` then `Edit` — never `echo >>`.

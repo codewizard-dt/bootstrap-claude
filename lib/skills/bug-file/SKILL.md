@@ -51,7 +51,7 @@ For each missing required-on-report field, use `AskUserQuestion`. Batch related 
 
 **Do not** ask for `Priority`, `Assignee`, `Impact`, `Workaround`, `Tags`, `Linked task`, `Root Cause`, or `Resolution` — those belong to `/bug-triage` or `/bug-close`. Leaving them blank (or with the templated placeholder line) on initial filing is correct.
 
-**Exception**: if the user mentions a task in `$ARGUMENTS`, accept it in either `TASK-NNN` or `[[TASK-NNN]]` form and normalize to `"[[TASK-NNN]]"` for the `linked_task:` frontmatter field. If no task is mentioned, set `linked_task: "—"`.
+**Exception**: if the user mentions a task in `$ARGUMENTS`, accept it in either `TASK-NNNN` or `[[TASK-NNNN]]` form and normalize to `"[[TASK-NNNN]]"` for the `linked_task:` frontmatter field. If no task is mentioned, set `linked_task: "—"`.
 
 If the user cannot supply reliable Steps to Reproduce, STOP and tell them:
 
@@ -70,21 +70,25 @@ Derive the slug from the title: lowercase, hyphen-separated, 2–5 words, ≤ 60
 ### Step 5: Present and Confirm
 
 Before writing, present:
-- Resolved filename: `wiki/work/bugs/NNNN-<slug>.md`
+- Resolved filename: `wiki/work/bugs/BUG-NNNN-<slug>.md`
 - Title, Severity, Reporter
 - The gathered Environment, Steps, Expected, Actual, Reproducibility values
 
 Ask the user to confirm via `AskUserQuestion` ("File this bug? Yes / Edit / Cancel"). If `Cancel`, STOP. If `Edit`, ask which field and re-prompt.
 
+### Step 5a: Re-verify next bug number — IMMEDIATELY before writing
+
+Re-run the scan from Step 4. If the number planned in Step 4/5 is now taken, silently bump to the new next-available number. **Never call `Write` before completing this re-scan.**
+
 ### Step 6: Write the Bug File
 
-Use `Write` to create `wiki/work/bugs/NNNN-<slug>.md`, following the frontmatter schema in `wiki/work/bugs/lifecycle.md` and the field set gathered in Steps 3–5. Set:
+Use `Write` to create `wiki/work/bugs/BUG-NNNN-<slug>.md`, following the frontmatter schema in `wiki/work/bugs/lifecycle.md` and the field set gathered in Steps 3–5. Set:
 
 - `Status: new`
 - `Priority: —` (filled in triage)
 - `Assignee: —` (filled in triage)
 - `Tags: —` (filled in triage)
-- `linked_task:` — `"[[TASK-NNN]]"` if a task was mentioned (normalized from either `TASK-NNN` or `[[TASK-NNN]]` input); `"—"` otherwise
+- `linked_task:` — `"[[TASK-NNNN]]"` if a task was mentioned (normalized from either `TASK-NNNN` or `[[TASK-NNNN]]` input); `"—"` otherwise
 - `Reported`: today's date (`YYYY-MM-DD`)
 - `Last updated`: today's date
 - `aliases: [BUG-NNNN]` — mirrors this file's own id: field so Obsidian's wikilink resolver can find it by short ID (ROADMAP-008)
@@ -105,7 +109,7 @@ Use **`Edit`** — one targeted call. Never `sed`, `awk`, `perl -i`, or `echo >>
 ### Step 8: Report Completion
 
 Print:
-- Created file: `wiki/work/bugs/NNNN-<slug>.md`
+- Created file: `wiki/work/bugs/BUG-NNNN-<slug>.md`
 - Bug ID: `BUG-NNNN`
 - Status: `new`
 - Next step:

@@ -75,7 +75,7 @@ See `wiki/guides/mcp-tools.md` for the complete Serena memory reference.
 
 ## Step 4: Check the Task Index
 
-`/tackle` no-args mode surveys active tasks by reading `wiki/work/tasks/index.md` — a flat bullet list of active items (`- [TASK-NNN — Title](TASK-NNN-slug.md) — one-line summary · status`), one line per `todo`/`in-progress` task. There is no table to "bootstrap"; do a lightweight consistency check so that survey stays trustworthy.
+`/tackle` no-args mode surveys active tasks by reading `wiki/work/tasks/index.md` — a flat bullet list of active items (`- [TASK-NNNN — Title](TASK-NNNN-slug.md) — one-line summary · status`), one line per `todo`/`in-progress` task. There is no table to "bootstrap"; do a lightweight consistency check so that survey stays trustworthy.
 
 1. Use `mcp__serena__list_dir` on `wiki/work/tasks/` to list task files (top-level only, not `archive/`). If the directory is empty or has no task files, skip this step.
 2. Read `wiki/work/tasks/index.md` (use `Read` — markdown).

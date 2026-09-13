@@ -19,11 +19,11 @@ CLAUDE.md     This schema section.
 
 **`wiki/work/`** — stateful lifecycle artifacts, organized by status. Active files are **never moved** after creation; state lives in the `status:` frontmatter field. Each family has a `lifecycle.md` (schema + valid transitions), an `index.md` listing **only active items**, and an `archive/` subdirectory for terminal items. When an item leaves the active set, delete its line from the family index; terminal items may be moved to `archive/` by `/wiki-archive`.
 
-- `wiki/work/requirements/` — REQ-NNN
+- `wiki/work/requirements/` — REQ-NNNN
 - `wiki/work/decisions/` — DEC-NNNN (per-decision `#DM`)
-- `wiki/work/roadmaps/` — ROADMAP-NNN
-- `wiki/work/tasks/` — TASK-NNN
-- `wiki/work/uat/` — UAT-NNN (own family, one per task)
+- `wiki/work/roadmaps/` — ROADMAP-NNNN
+- `wiki/work/tasks/` — TASK-NNNN
+- `wiki/work/uat/` — UAT-NNNN (own family, one per task)
 - `wiki/work/bugs/` — BUG-NNNN
 
 **`wiki/guides/`** — template-owned reference guides delivered by the bootstrap tooling (MCP tool rules in `mcp-tools.md`, shell anti-patterns, opted-in frameworks like evals or type-checking templates). Read them and obey them; **never edit them** — they are refreshed by `npx @codewizard-dt/bootstrap update` and any local edit will be overwritten. They are infrastructure, not wiki content: no frontmatter, no index entries, exempt from the atomic-page rule.

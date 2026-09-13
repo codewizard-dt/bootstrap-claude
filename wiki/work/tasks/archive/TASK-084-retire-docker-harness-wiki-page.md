@@ -2,13 +2,13 @@
 id: TASK-084
 aliases: [TASK-084]
 title: "Mark the Docker harness wiki knowledge page as retired"
-status: todo
+status: done
 created: 2026-09-04
-updated: 2026-09-04
+updated: 2026-09-13
 depends_on: [TASK-078]
 blocks: []
 parallel_safe_with: []
-uat: ""
+uat: "[[UAT-084]]"
 tags: [cleanup, wiki]
 ---
 
@@ -31,6 +31,9 @@ Knowledge pages are timeless synthesis and are normally revised in place, not de
 
 ### 1. Add a retirement callout  <!-- agent: general-purpose -->
 
-- [ ] `Read` `wiki/knowledge/sources/docker-fresh-machine-test-harness.md`
-- [ ] `Edit` to insert, immediately after the frontmatter/H1, a callout: `> **Retired (2026-09-04):** The Docker fresh-machine harness this page describes was removed entirely per [[ROADMAP-010]] — the harness was judged too much operational hassle for its value. This page is kept as historical/technical record only; do not treat it as describing current functionality.`
-- [ ] Check `wiki/index.md` for this page's entry and add a `(retired)` marker to its one-line summary if it does not already convey this
+- [x] `Read` `wiki/knowledge/sources/docker-fresh-machine-test-harness.md`
+- [x] `Edit` to insert, immediately after the frontmatter/H1, a callout: `> **Retired (2026-09-04):** The Docker fresh-machine harness this page describes was removed entirely per [[ROADMAP-010]] — the harness was judged too much operational hassle for its value. This page is kept as historical/technical record only; do not treat it as describing current functionality.`
+- [x] Check `wiki/index.md` for this page's entry and add a `(retired)` marker to its one-line summary if it does not already convey this
+
+<!-- Updated: 2026-09-13 -->
+

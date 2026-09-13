@@ -2,9 +2,9 @@
 id: TASK-079
 aliases: [TASK-079]
 title: "Delete all GitHub Actions workflows from this repo"
-status: pending-uat
+status: done
 created: 2026-09-04
-updated: 2026-09-04
+updated: 2026-09-13
 depends_on: []
 blocks: [TASK-082]
 parallel_safe_with: [TASK-078, TASK-080]

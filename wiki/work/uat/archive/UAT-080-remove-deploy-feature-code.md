@@ -2,10 +2,10 @@
 id: UAT-080
 aliases: [UAT-080]
 title: "UAT: Remove the /bootstrap deploy feature code"
-status: pending
+status: passed
 task: TASK-080
 created: 2026-09-04
-updated: 2026-09-04
+updated: 2026-09-13
 ---
 
 # UAT-080 — UAT: Remove the /bootstrap deploy feature code
@@ -35,7 +35,7 @@ implements::[[TASK-080]]
   ```
 - **Expected Result**: Empty output (neither file is tracked in git any longer).
 - **Repeatable Unit Test**: Not applicable: asserts on repo/git file-tracking state, not deterministic business logic; a unit test would just re-shell out to git with no added rigor over the manual `git ls-files` check.
-- [ ] Pass
+- [x] Pass <!-- 2026-09-13 -->
 
 ### UAT-EDGE-002: Usage text no longer mentions deploy, and every remaining command still lists
 - **Scenario**: `node bin/cli.js` with no arguments prints usage/help text that omits any mention of `deploy`/`deployment`, while still listing `setup`, `update`, `install`, `migrate`, `typechecks`, and `dashboard`.
@@ -49,7 +49,7 @@ implements::[[TASK-080]]
 - **Expected Result**: Exit code 1; usage text lists exactly the six remaining commands with descriptions; no occurrence of "deploy" (case-insensitive) anywhere in the output.
 - **Repeatable Unit Test**: Created: `test/cli-deploy-removed.test.js`
 - **Unit Test Command**: `node --test test/cli-deploy-removed.test.js`
-- [ ] Pass
+- [x] Pass <!-- 2026-09-13 -->
 
 ### UAT-EDGE-003: `bootstrap deploy` falls through to the unknown-command path
 - **Scenario**: Running the CLI with the now-removed `deploy` command no longer invokes `setup-deployment.sh` — it falls through to the same unknown-command usage/error path as any other invalid command.
@@ -62,4 +62,4 @@ implements::[[TASK-080]]
 - **Expected Result**: Exit code 1; stderr begins with `Usage: bootstrap <command>`; no mention of `deploy`/`deployment` in the printed usage text; no attempt to exec `lib/scripts/setup-deployment.sh` (which no longer exists, so any such attempt would fail with a different error, e.g. ENOENT).
 - **Repeatable Unit Test**: Created: `test/cli-deploy-removed.test.js`
 - **Unit Test Command**: `node --test test/cli-deploy-removed.test.js`
-- [ ] Pass
+- [x] Pass <!-- 2026-09-13 -->

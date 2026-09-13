@@ -2,9 +2,9 @@
 id: ROADMAP-009
 aliases: [ROADMAP-009]
 title: Docker Fresh-Machine Test Harness for setup/update
-status: active
+status: done
 created: 2026-08-22
-updated: 2026-08-22
+updated: 2026-09-13
 owner: David Taylor
 derived_from: [raw/research/docker-fresh-machine-test-harness/index.md, ../../knowledge/sources/docker-fresh-machine-test-harness.md]
 linked_requirements: []
@@ -39,3 +39,4 @@ Derived from [raw/research/docker-fresh-machine-test-harness/index.md](../../../
 ## Notes
 
 - **2026-08-22**: Added a Phase 2 item for a "stale-harness" mode after initial creation, per user request — the original scope (TASK-060) only covers a completely empty `~/.claude/`; stale-harness exercises the more common real-world case of `update` running against an already-installed older release. Kept as a new item on the same image/`run.sh`, not a separate Dockerfile/task, matching TASK-060's existing "one generic image, run.sh decides behavior" design.
+- **2026-09-04**: The Docker fresh-machine harness this roadmap built was fully removed per [[ROADMAP-010]] — the user judged the harness "a fun idea but too much hassle" and decided GitHub Actions CI plus the harness itself should not exist in this repo. This roadmap is closed as `done` because every checklist item was in fact completed and verified at the time, not because the harness survives — see ROADMAP-010 for the reversal.

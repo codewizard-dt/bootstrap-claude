@@ -2,9 +2,9 @@
 id: TASK-073
 aliases: [TASK-073]
 title: "Wire a GitHub Actions CI job for the Docker fresh-machine harness"
-status: pending-uat
+status: trashed
 created: 2026-08-22
-updated: 2026-08-22
+updated: 2026-09-13
 depends_on: [TASK-060]
 blocks: []
 parallel_safe_with: [TASK-072, TASK-031, TASK-039]

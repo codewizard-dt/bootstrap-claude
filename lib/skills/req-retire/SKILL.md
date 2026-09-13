@@ -3,7 +3,7 @@ name: req-retire
 description: Retire a requirement — set status to retired in frontmatter, document the reason, move to archive/, append a log entry.
 category: planning
 model: claude-haiku-4-5-20251001
-argument-hint: <wiki/work/requirements/REQ-NNN-slug.md, NNN-slug, or NNN> [reason]
+argument-hint: <wiki/work/requirements/REQ-NNNN-slug.md, NNN-slug, or NNN> [reason]
 disable-model-invocation: false
 user-invocable: true
 ---
@@ -12,7 +12,7 @@ user-invocable: true
 
 # Retire Requirement
 
-Set a requirement's `status` to `retired`, document why, then move the file to `wiki/work/requirements/archive/`. After archiving, cross-references using `[[REQ-NNN]]` remain valid — the ID is stable regardless of file location.
+Set a requirement's `status` to `retired`, document why, then move the file to `wiki/work/requirements/archive/`. After archiving, cross-references using `[[REQ-NNNN]]` remain valid — the ID is stable regardless of file location.
 
 This skill is a focused shortcut for the retirement flow. For amendments that don't touch status, use `/req-update`. For supersession (a new requirement replaces this one), use `/req-update` with supersession intent or pass `status: superseded` instructions here.
 
@@ -50,8 +50,8 @@ If the file cannot be located, **stop** and report.
    |----------------|--------|
    | `draft` | Continue — may be retired before approval |
    | `approved` | Continue — most common case |
-   | `retired` | **STOP.** Tell the user: "REQ-NNN is already retired. No action needed." |
-   | `superseded` | **STOP.** Tell the user: "REQ-NNN is already superseded. No action needed." |
+   | `retired` | **STOP.** Tell the user: "REQ-NNNN is already retired. No action needed." |
+   | `superseded` | **STOP.** Tell the user: "REQ-NNNN is already superseded. No action needed." |
 
 3. **Check for downstream artifacts** in `## Linked Decisions` and `## Linked Tasks`:
    - List any linked decisions and their current status
@@ -74,7 +74,7 @@ Use `AskUserQuestion` to confirm. Show:
 Ask the user:
 
 1. **"Retire this requirement? (yes / no)"**
-2. **"Reason for retiring REQ-NNN?"** (if not provided in `$ARGUMENTS` — required, one line or more)
+2. **"Reason for retiring REQ-NNNN?"** (if not provided in `$ARGUMENTS` — required, one line or more)
 
 If the user says **No**, STOP. Do not proceed.
 
@@ -113,7 +113,7 @@ git mv wiki/work/requirements/<file>.md wiki/work/requirements/archive/<file>.md
 Then append to `wiki/work/requirements/archive/index.md`:
 
 ```
-| [[REQ-NNN]] | <Title> | retired | YYYY-MM-DD |
+| [[REQ-NNNN]] | <Title> | retired | YYYY-MM-DD |
 ```
 
 Use `Read` then `Edit` for the archive index append — never `echo >>`.
@@ -123,7 +123,7 @@ Use `Read` then `Edit` for the archive index append — never `echo >>`.
 Append one entry to `wiki/log.md`:
 
 ```
-## [YYYY-MM-DD] req-retired | REQ-NNN <title> — reason: <one-line summary of reason>
+## [YYYY-MM-DD] req-retired | REQ-NNNN <title> — reason: <one-line summary of reason>
 ```
 
 Use `Read` then `Edit` — never `echo >>` or `sed`.
@@ -150,8 +150,8 @@ Print a tabular summary:
 
 | Field | Value |
 |-------|-------|
-| Requirement | `REQ-NNN <title>` |
-| File path | `wiki/work/requirements/REQ-NNN-slug.md` → `wiki/work/requirements/archive/REQ-NNN-slug.md` |
+| Requirement | `REQ-NNNN <title>` |
+| File path | `wiki/work/requirements/REQ-NNNN-slug.md` → `wiki/work/requirements/archive/REQ-NNNN-slug.md` |
 | Old status | `draft` or `approved` |
 | New status | `retired` |
 | Reason | <one-line summary> |
@@ -167,7 +167,7 @@ Print a tabular summary:
 
 1. Use tables for the downstream artifacts list and the completion report — never paragraph prose.
 2. **One `Edit` call per change** — never bulk rewrites.
-3. **After archiving, cross-references using `[[REQ-NNN]]` remain valid** — the ID is stable regardless of file location.
+3. **After archiving, cross-references using `[[REQ-NNNN]]` remain valid** — the ID is stable regardless of file location.
 4. **The skill never auto-retires or auto-deprecates downstream artifacts** — it surfaces them with suggested commands.
 5. **The retirement reason in `## Notes` is permanent** — it is the audit trail for why this requirement was retired.
 

@@ -2,10 +2,10 @@
 id: UAT-067
 aliases: [UAT-067]
 title: "UAT: Per-key sticky refresh for .obsidian/graph.json instead of whole-file skip-if-present"
-status: pending
+status: passed
 task: TASK-067
 created: 2026-08-21
-updated: 2026-08-21
+updated: 2026-09-13
 ---
 
 # UAT-067 — UAT: Per-key sticky refresh for `.obsidian/graph.json` instead of whole-file skip-if-present

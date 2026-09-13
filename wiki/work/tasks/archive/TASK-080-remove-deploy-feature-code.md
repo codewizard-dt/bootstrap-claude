@@ -2,9 +2,9 @@
 id: TASK-080
 aliases: [TASK-080]
 title: "Remove the /bootstrap deploy feature code (setup-deployment.sh, its prompt, and bin/cli.js wiring)"
-status: pending-uat
+status: done
 created: 2026-09-04
-updated: 2026-09-04
+updated: 2026-09-13
 depends_on: []
 blocks: [TASK-081]
 parallel_safe_with: [TASK-078, TASK-079]

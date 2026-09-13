@@ -113,7 +113,7 @@ TASK-039 was a comments-only documentation pass over `lib/hooks/` (+1445/−78 a
   3. Confirm the header-block template lists `Blocks:`, `Why a hook:`, `Fails:`, and `False positives:`.
 - **Expected Result**: All present. The `Fails:` bullet must describe the *corrected* finding — the infrastructure fails **open** across nearly every guard, an ambiguous *match* fails closed, and `interpreter-indirection-guard.js` is the sole genuinely fail-closed guard.
 - **Repeatable Unit Test**: Created: `test/hook-comments.test.js`
-- [FAIL: auto-judge: manual test requires human verification — no machine-executable command; the unit test proves the section exists but asserts nothing about the corrected fails-open/fails-closed prose] <!-- 2026-08-07 -->
+- [FAIL: auto-judge: unit test covers only part of Expected — test/hook-comments.test.js confirms the section exists, names lib/hooks/, states the exception does not extend, warns against stripping, and checks the Blocks:/Why a hook:/Fails:/False positives: field labels are present, but asserts nothing about the specific content of the Fails: bullet (the corrected fails-open/fails-closed finding), which is the Expected Result's load-bearing claim] <!-- 2026-09-13 -->
 
 ### UAT-DOC-002: `CLAUDE.md` records the exception and points at the standard
 - **Scenario**: An agent reading `CLAUDE.md` must learn about the exception before it opens a hook file, otherwise the README section is discovered only after the damage.
@@ -122,7 +122,7 @@ TASK-039 was a comments-only documentation pass over `lib/hooks/` (+1445/−78 a
   2. Confirm it names the deliberate exception to the repo-wide no-comments default, scopes it to `lib/hooks/` alone, points at `lib/hooks/README.md` § Commenting standard, and says not to strip the comments.
 - **Expected Result**: All four elements present in that one bullet.
 - **Repeatable Unit Test**: Created: `test/hook-comments.test.js`
-- [FAIL: auto-judge: manual test requires human verification — no machine-executable command; the unit test covers "names the exception + points at the README", not all four required elements] <!-- 2026-08-07 -->
+- [FAIL: auto-judge: unit test covers only part of Expected — test/hook-comments.test.js confirms the `lib/hooks/` bullet exists, names the exception to the no-comments default, and points at README.md § Commenting standard, but asserts nothing about the bullet saying not to strip the comments (the fourth required element)] <!-- 2026-09-13 -->
 
 ### UAT-DOC-003: Every hook file opens with a header block naming itself
 - **Scenario**: The standard's signpost requirement. A file whose prologue does not identify it (`<file>.js — <event> / <matcher>`) has either lost its header or had one copy-pasted from a sibling — and the matcher line is load-bearing, because the wrong matcher makes a hook silently inert.
@@ -209,7 +209,7 @@ TASK-039 was a comments-only documentation pass over `lib/hooks/` (+1445/−78 a
   ```
 - **Expected Result**: empty output. If TASK-039 is already committed, run the same command against the pre-task commit (`git diff --stat b85cbe9 -- lib/scripts lib/skills bin`) and confirm any changes shown belong to other tasks, not to a comment pass.
 - **Repeatable Unit Test**: Not applicable: defined relative to git history, like UAT-BEHAVIOR-001 — after commit there is no diff to inspect, and a permanent "no comments in lib/scripts" test would be a new repo-wide style rule that TASK-039 never asked for.
-- [FAIL: auto-judge: expected empty output, got 14 files / +1563 −90 across lib/scripts + lib/skills — the working tree now also carries ROADMAP-005, so this git-relative command can no longer isolate TASK-039's scope] <!-- 2026-08-07 -->
+- [FAIL: auto-judge: expected section not machine-verifiable — `git diff --stat HEAD -- lib/scripts lib/skills bin` is non-empty (1 file, lib/scripts/wiki-dashboard-server.js); re-run against the pre-task commit (`b85cbe9`) per the test's own fallback shows 44 files / +4290 −625, none of which are comment-only edits to lib/scripts, lib/skills, or bin (substantive new features: bootstrap-prefs.js, install-obsidian.sh, roadmap-assess/SKILL.md, etc.) — consistent with "belongs to other tasks", but confirming that requires human semantic judgment of diff content, not a machine-checkable assertion; the test's own git-history-relative design (see Gaps note 2) degrades further as more unrelated work lands] <!-- 2026-09-13 -->
 
 ### UAT-INSTALL-001: The commented hooks are synced to `~/.claude/hooks/`
 - **Scenario**: `~/.claude/hooks/` is an rsync target that does not update itself; the installed copy is what actually runs. The task ran `install-global.sh --skip-mcps` to sync — this confirms the sync landed.

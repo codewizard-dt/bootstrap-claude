@@ -19,7 +19,7 @@ Most skills operate on the LLM Wiki (`wiki/`, `raw/`) described in the root `CLA
 
 | Skill | Purpose |
 |-------|---------|
-| `req-create` | Draft a new requirement (REQ-NNN) via Socratic Q&A — problem, personas, user stories, success metrics, non-goals |
+| `req-create` | Draft a new requirement (REQ-NNNN) via Socratic Q&A — problem, personas, user stories, success metrics, non-goals |
 | `req-finalize` | Run a completeness audit on a draft requirement, resolve gaps via Q&A, flip `status: draft → approved` |
 | `req-extract-decisions` | Extract Architecturally Significant Requirements from an approved requirement and propose Decision Group candidates |
 | `req-update` | Amend an approved requirement with a tracked, append-only Amendment block; direct edits for drafts |
@@ -104,6 +104,7 @@ Most skills operate on the LLM Wiki (`wiki/`, `raw/`) described in the root `CLA
 | Skill | Purpose |
 |-------|---------|
 | `security-audit` | Audit an LLM/AI application across 11 categories — internal posture (observability, rate limiting, access controls, HITL policy, benchmarking) and external threats (prompt injection, data leakage, output XSS, excessive agency, supply chain, token DoS) |
+| `architecture-audit` | Audit an AI agent/application's architecture across 9 categories — design fit (single- vs. multi-agent justification, orchestration topology, delegation hygiene, framework/SDK fit, compounding-error containment) and operational readiness (observability, cost/resource controls, context/state management, cross-agent safety composition) |
 
 ## Porting & extraction
 

@@ -2,10 +2,10 @@
 id: UAT-082
 aliases: [UAT-082]
 title: "UAT: Delete all GitHub Actions workflows from this repo"
-status: pending
+status: passed
 task: TASK-079
 created: 2026-09-04
-updated: 2026-09-04
+updated: 2026-09-13
 ---
 
 # UAT-082 — UAT: Delete all GitHub Actions workflows from this repo
@@ -20,9 +20,9 @@ implements::[[TASK-079]]
 
 ## Prerequisites
 
-- [ ] Repo root is `/Users/davidtaylor/Repositories/bootstrap-claude`; all commands run from there
-- [ ] Node.js 18+ available on `PATH` (every case below runs `node --test` against real files on disk — no network, no GitHub Actions runner, no Docker needed)
-- [ ] `npm test` baseline green before starting
+- [x] Repo root is `/Users/davidtaylor/Repositories/bootstrap-claude`; all commands run from there
+- [x] Node.js 18+ available on `PATH` (every case below runs `node --test` against real files on disk — no network, no GitHub Actions runner, no Docker needed)
+- [x] `npm test` baseline green before starting
 
 ---
 
@@ -36,7 +36,7 @@ implements::[[TASK-079]]
 - **Expected Result**: File absent.
 - **Repeatable Unit Test**: Created: `test/github-actions-removed.test.js` (test: `.github/workflows/docker-harness.yml no longer exists`)
 - **Unit Test Command**: `node --test --test-name-pattern="docker-harness.yml no longer exists" test/github-actions-removed.test.js`
-- [ ] Pass
+- [x] Pass <!-- 2026-09-13 -->
 
 ### UAT-EDGE-002: `.github/workflows/security.yml` no longer exists
 - **Scenario**: TASK-079 Step 1 ran `git rm .github/workflows/security.yml` (the Gitleaks secret-scanning workflow).
@@ -46,7 +46,7 @@ implements::[[TASK-079]]
 - **Expected Result**: File absent.
 - **Repeatable Unit Test**: Created: `test/github-actions-removed.test.js` (test: `.github/workflows/security.yml no longer exists`)
 - **Unit Test Command**: `node --test --test-name-pattern="security.yml no longer exists" test/github-actions-removed.test.js`
-- [ ] Pass
+- [x] Pass <!-- 2026-09-13 -->
 
 ### UAT-EDGE-003: Root `.gitleaks.toml` no longer exists
 - **Scenario**: TASK-079 Step 1 ran `git rm .gitleaks.toml` — the config `security.yml` depended on, now orphaned along with it.
@@ -56,7 +56,7 @@ implements::[[TASK-079]]
 - **Expected Result**: File absent.
 - **Repeatable Unit Test**: Created: `test/github-actions-removed.test.js` (test: `root .gitleaks.toml no longer exists`)
 - **Unit Test Command**: `node --test --test-name-pattern="root .gitleaks.toml no longer exists" test/github-actions-removed.test.js`
-- [ ] Pass
+- [x] Pass <!-- 2026-09-13 -->
 
 ### UAT-EDGE-004: `.github/workflows/` has no remaining files
 - **Scenario**: TASK-079 Step 1's fourth checkbox required confirming `.github/workflows/` has no remaining files after the two `git rm`s — an empty (or, since git does not track empty directories, entirely absent) directory is the correct end state, not a lingering third workflow file.
@@ -66,7 +66,7 @@ implements::[[TASK-079]]
 - **Expected Result**: `.github/workflows/` is absent or empty — currently absent (git does not track empty dirs).
 - **Repeatable Unit Test**: Created: `test/github-actions-removed.test.js` (test: `.github/workflows/ has no remaining files (an empty/absent directory is fine)`)
 - **Unit Test Command**: `node --test --test-name-pattern="no remaining files" test/github-actions-removed.test.js`
-- [ ] Pass
+- [x] Pass <!-- 2026-09-13 -->
 
 ### UAT-EDGE-005: `package.json`'s `files` array no longer lists `.github/` or `.gitleaks.toml`
 - **Scenario**: TASK-079 Step 2 found and fixed an orphaned stale reference: `package.json`'s `"files"` publish array still listed `.github/` and `.gitleaks.toml` even after both were deleted from the repo, which would have silently no-op'd on `npm pack`/`npm publish` (nothing to include) but left a misleading manifest entry.
@@ -76,7 +76,7 @@ implements::[[TASK-079]]
 - **Expected Result**: No matching entries; `files` is `["bin/", "lib/", "raw/", "!raw/research/", "!raw/companies/", "!raw/*.pdf"]`.
 - **Repeatable Unit Test**: Created: `test/github-actions-removed.test.js` (test: `package.json "files" array no longer lists .github/ or .gitleaks.toml`)
 - **Unit Test Command**: `node --test --test-name-pattern="files.*array no longer lists" test/github-actions-removed.test.js`
-- [ ] Pass
+- [x] Pass <!-- 2026-09-13 -->
 
 ---
 

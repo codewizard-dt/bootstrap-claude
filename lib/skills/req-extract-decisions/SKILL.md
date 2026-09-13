@@ -134,7 +134,7 @@ For **each proposed group**, ask: "Create this as a decision now?" with options:
 | `merge into <Gx>` | Combine this group with another listed group |
 | `split` | Break this group into multiple smaller groups |
 | `skip — already covered` | Drop the group; the ASR is handled by an existing decision |
-| `skip — non-architectural` | Drop the group; handle directly via `/task-add --req REQ-NNN` |
+| `skip — non-architectural` | Drop the group; handle directly via `/task-add --req REQ-NNNN` |
 
 ### Step 7: Update the requirement's `## Linked Decisions` section
 
@@ -161,7 +161,7 @@ Also update the requirement's frontmatter `updated` to today's date. Both edits 
 Append to `wiki/log.md`:
 
 ```
-## [YYYY-MM-DD] req-extract-decisions | REQ-NNN <title> — N ASRs identified
+## [YYYY-MM-DD] req-extract-decisions | REQ-NNNN <title> — N ASRs identified
 ```
 
 ### Step 8: Update existing decisions that reuse requirement ASRs
@@ -172,8 +172,8 @@ For each affected decision file:
 
 1. `Read` the file
 2. Locate the target decision's `### Links` section
-3. Check whether `Source REQ: REQ-NNN` already exists — **skip if present** (idempotent)
-4. `Edit` to append: `- Source REQ: [REQ-NNN](../requirements/NNN-slug.md)`
+3. Check whether `Source REQ: REQ-NNNN` already exists — **skip if present** (idempotent)
+4. `Edit` to append: `- Source REQ: [REQ-NNNN](../requirements/NNN-slug.md)`
 
 Touch only the target decision's `### Links`. Do not modify any decision's status, metadata, or content beyond the `### Links` append.
 
@@ -183,7 +183,7 @@ Print a tabular completion report:
 
 | Field | Value |
 |-------|-------|
-| Requirement | `REQ-NNN <title>` |
+| Requirement | `REQ-NNNN <title>` |
 | ASRs identified | count |
 | ASRs covered by existing decisions | count (linked back) |
 | New decision groups proposed | count |
@@ -198,10 +198,10 @@ Then list the **next-action commands**, one per confirmed new group:
 
 ```
 To create the proposed decisions, run each:
-  /decision-create group: search-infrastructure (from REQ-NNN)
-  /decision-create hris-integration (from REQ-NNN)
+  /decision-create group: search-infrastructure (from REQ-NNNN)
+  /decision-create hris-integration (from REQ-NNNN)
 
-After each /decision-create completes, return to REQ-NNN's `## Linked Decisions` table
+After each /decision-create completes, return to REQ-NNNN's `## Linked Decisions` table
 and update the placeholder row with the actual wikilink [[NNNN-slug|DEC-NNNN#DM]].
 ```
 
@@ -209,7 +209,7 @@ If any ASRs were skipped as non-architectural, also surface:
 
 ```
 The following ASRs are best handled directly as tasks (no decision needed):
-  /task-add --req REQ-NNN "<short description for ASR Ax>"
+  /task-add --req REQ-NNNN "<short description for ASR Ax>"
 ```
 
 The skill does **not** auto-invoke `/decision-create` or `/task-add`. It surfaces the commands; the user runs them.
@@ -223,7 +223,7 @@ The skill does **not** auto-invoke `/decision-create` or `/task-add`. It surface
 3. **Never invent ASRs.** Every entry in the ASR table must trace to a specific requirement section, quoted or paraphrased verbatim.
 4. **Boundary rule is enforced strictly.** Requirements ask for outcomes, decisions admit trade-offs. If a candidate ASR sounds like a solution, reformulate it as the underlying outcome.
 5. **Requirement edits are surgical.** Use `Read` then `Edit` to update only the `## Linked Decisions` table and the `updated` field. Never rewrite the file.
-6. **Idempotent back-links.** If `Source REQ: REQ-NNN` already exists in a decision's `### Links`, skip the edit. Re-running this skill against the same requirement must not duplicate links.
+6. **Idempotent back-links.** If `Source REQ: REQ-NNNN` already exists in a decision's `### Links`, skip the edit. Re-running this skill against the same requirement must not duplicate links.
 7. **Wikilinks for existing decisions.** Use `[[NNNN-slug\|DEC-NNNN#DM]]` format in the `## Linked Decisions` table.
 
 ---
