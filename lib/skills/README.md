@@ -67,6 +67,7 @@ Most skills operate on the LLM Wiki (`wiki/`, `raw/`) described in the root `CLA
 | Skill | Purpose |
 |-------|---------|
 | `bug-file` | File a new bug report with required-on-report fields; append it to the bug index |
+| `bug-assess` | Survey all active bugs together — batch-triage any still-open reports first, then rank the active set by priority, severity, and impact into a single prioritized fix order with a status update for each bug |
 | `bug-triage` | Set priority/assignee/tags/impact, then advance to `in-progress`, keep `triaged`, or reject (wontfix/duplicate/cannot-reproduce) and archive |
 | `bug-close` | Close an in-progress bug — record root cause and resolution, require a regression test, move to `archive/` |
 

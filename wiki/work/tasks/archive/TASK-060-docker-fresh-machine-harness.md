@@ -2,9 +2,9 @@
 id: TASK-060
 aliases: [TASK-060]
 title: "Docker fresh-machine test harness for setup/update"
-status: pending-uat
+status: done
 created: 2026-08-15
-updated: 2026-08-22
+updated: 2026-09-03
 depends_on: [TASK-068, TASK-069]
 blocks: [TASK-071, TASK-072, TASK-073]
 parallel_safe_with: [TASK-031, TASK-039]

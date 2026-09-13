@@ -28,8 +28,8 @@ Derived from [raw/research/docker-fresh-machine-test-harness/index.md](../../../
 
 ## Phase 2: Implementation
 
-- [ ] [[TASK-060: Docker fresh-machine test harness for setup/update]]
-- [ ] [[TASK-071: Add a run.sh stale mode simulating an upgrade from an older bootstrap-claude release]]
+- [x] [[TASK-060: Docker fresh-machine test harness for setup/update]]
+- [x] [[TASK-071: Add a run.sh stale mode simulating an upgrade from an older bootstrap-claude release]]
 
 ## Phase 3: Testing
 

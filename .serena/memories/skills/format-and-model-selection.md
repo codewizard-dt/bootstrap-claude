@@ -1,6 +1,6 @@
 # Skills Format and Model-Selection Convention
 
-_Verified against `lib/skills/*/SKILL.md` on 2026-08-06 (60 skills)._
+_Verified against `lib/skills/*/SKILL.md` on 2026-09-02 (61 skills)._
 
 ## File Layout
 Skills live at `lib/skills/<name>/SKILL.md` (directory format). Installed globally to `~/.claude/skills/` by `lib/scripts/install-global.sh`.
@@ -22,7 +22,7 @@ argument-hint: <preserve from original if present>
 
 ## Category Field
 
-- **researching** — gathers/analyzes information; deliverable is a report, answer, or diagnosis; read-mostly. (`research`, `research-company`, `company-align`, `gap-assess`, `security-audit`, `debug-logs`, `eval-gap`, `task-audit`, `flashcard`, `wiki-query`, `wiki-lint`, `wiki-ingest`, `primer`, `decision-next`, `roadmap-next`, `roadmap-assess`)
+- **researching** — gathers/analyzes information; deliverable is a report, answer, or diagnosis; read-mostly. (`research`, `research-company`, `company-align`, `gap-assess`, `security-audit`, `debug-logs`, `eval-gap`, `task-audit`, `flashcard`, `wiki-query`, `wiki-lint`, `wiki-ingest`, `primer`, `decision-next`, `roadmap-next`, `roadmap-assess`, `bug-assess`)
 - **planning** — creates or maintains planning artifacts and their lifecycle bookkeeping. (`port-feature`, `extract-feature`, `decision-create`, `decision-finalize`, `decision-walkthrough`, `req-create`, `req-finalize`, `req-update`, `req-retire`, `req-extract-decisions`, `roadmap-create`, `task-add`, `task-update`, `task-trash`, `uat-generate`, `uat-skip`, `bug-file`, `bug-triage`)
 - **executing** — changes code/docs/config, runs or verifies the system, or produces final deliverables. (`req-compile`, `power-mode`, `uat-auto-plus`, `now`, `tackle`, `uat-walk`, `uat-auto`, `eval-create`, `eval-run`, `lint`, `bug-close`, `simplify`, `update-docs`, `serena-config`, `git-commit`, `frontend-taste`, `demo`, `elevator-pitch`, `project-readme`, `marp-slideshow`, `mermaid-flowchart`, `anti-slop`)
 - **wiki** — wiki-maintenance operations. Only three skills use it: `wiki-archive`, `wiki-rotate-log`, `wiki-tidy`. Note the asymmetry: the other wiki skills (`wiki-query`, `wiki-lint`, `wiki-ingest`) are filed as **researching**, not `wiki`.

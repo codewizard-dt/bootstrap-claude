@@ -124,6 +124,7 @@ Follow the root `README.md` to configure a new project, or use the npm package:
 | `/uat-auto-plus <path>` | Autonomous-fix variant of `/uat-auto`: diagnoses failures, applies fixes itself, re-runs until green or attempts are exhausted (intended for `--dangerously-skip-permissions` agents) |
 | `/uat-skip <path>` | Skip UAT for a task — flip UAT `status: skipped` and task `status: done`; remove from family indexes |
 | `/bug-file <description>` | File a new bug in `wiki/work/bugs/` with required-on-report fields and update `wiki/work/bugs/index.md` |
+| `/bug-assess` | Survey all active bugs together — batch-triage any still-open reports first, then rank the active set by priority, severity, and impact into a single prioritized fix order with a status update for each bug |
 | `/bug-triage <BUG-NNNN>` | Triage an open bug (priority, assignee, tags, impact) and decide its next destination: stay triaged, start work (→ `status: in-progress`), or trash (wontfix / duplicate / cannot-reproduce) |
 | `/bug-close <BUG-NNNN>` | Close an in-progress bug — requires root-cause analysis, fix commit, and a regression test before setting `status: closed` |
 | `/eval-create [stage] [description]` | Assess eval coverage against the 5-stage framework and create new evals with mandatory user approval. Bootstrap mode (no golden sets yet) enforces strictly 1 eval at a time. Pass a description to jump directly to creating that eval. |

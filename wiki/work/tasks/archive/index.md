@@ -8,6 +8,9 @@ Terminal task files (`done` or `trashed`) moved here by `/wiki-archive` to reduc
 
 | ID | Title | Final Status | Archived |
 |----|-------|--------------|----------|
+| [[TASK-071]] | Add a run.sh stale mode simulating an upgrade from an older bootstrap-claude release | done | 2026-09-03 |
+| [[TASK-060]] | Docker fresh-machine test harness for setup/update | done | 2026-09-03 |
+| [[TASK-077]] | Docker harness: add PASS/FAIL status lines to setup/update/stale modes, and fix update mode's && short-circuit so update-project.sh actually runs | done | 2026-09-03 |
 | [[TASK-076]] | Docker harness: add a run.sh live-hook mode to verify packageInstall.consent=true against a real Claude Code session | done | 2026-08-27 |
 | [[TASK-072]] | Docker harness idempotency check — run update twice, diff scratch state | done | 2026-08-27 |
 | [[TASK-066]] | Fix fileSuggestion @-autocomplete for git worktrees with symlinked wiki/raw | done | 2026-08-21 |

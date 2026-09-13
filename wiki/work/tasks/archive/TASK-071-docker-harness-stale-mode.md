@@ -2,9 +2,9 @@
 id: TASK-071
 aliases: [TASK-071]
 title: "Add a run.sh stale mode simulating an upgrade from an older bootstrap-claude release"
-status: pending-uat
+status: done
 created: 2026-08-22
-updated: 2026-08-22
+updated: 2026-09-03
 depends_on: [TASK-060, TASK-070]
 blocks: []
 parallel_safe_with: [TASK-031, TASK-039]

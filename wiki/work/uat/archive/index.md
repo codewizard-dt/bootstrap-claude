@@ -8,6 +8,9 @@ Terminal UAT files (`passed`, `skipped`, or `trashed`) moved here by `/wiki-arch
 
 | ID                                             | Title                                                                                                          | Final Status | Archived   |
 | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------ | ---------- |
+| [[UAT-071-docker-harness-stale-mode\|UAT-071]] | UAT: Add a run.sh stale mode simulating an upgrade from an older bootstrap-claude release | passed | 2026-09-03 |
+| [[UAT-060-docker-fresh-machine-harness\|UAT-060]] | UAT: Docker fresh-machine test harness for setup/update | passed | 2026-09-03 |
+| [[UAT-079-docker-harness-pass-fail-lines\|UAT-079]] | UAT: Docker harness PASS/FAIL status lines for setup/update/stale modes | passed | 2026-09-03 |
 | [[UAT-078-docker-harness-live-hook-mode\|UAT-078]] | UAT: Docker harness live-hook mode (packageInstall.consent=true verification) | passed | 2026-08-27 |
 | [[UAT-072-docker-harness-idempotency-check\|UAT-072]] | UAT: Docker harness idempotency check — run update twice, diff scratch state | passed | 2026-08-27 |
 | [[UAT-066-file-suggestion-worktree-symlink\|UAT-066]] | Fix fileSuggestion @-autocomplete for git worktrees with symlinked wiki/raw | passed | 2026-08-21 |
