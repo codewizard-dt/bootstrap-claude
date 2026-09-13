@@ -55,6 +55,7 @@ Unit-backed:
   • UAT-EDGE-002: Rate Limit Window — `node --test test/rate-limit.test.js` (7 tests, 0 fail)
 Failed:
   • UAT-API-003: Delete Position — "auto-judge: HTTP 500 expected 204"
+    → /bug-file "UAT-API-003: HTTP 500 received, expected 204"
   • UAT-EDGE-001: Empty Positions — "auto-judge: manual test requires human verification"
 Next action: /uat-walk wiki/work/uat/UAT-005-positions.md
 ```
@@ -65,7 +66,7 @@ On all-pass, replace `Next action` with the task/UAT IDs and their new `done`/`p
 
 ## Rules
 
-- **No user interaction, ever** — no `AskUserQuestion`, no inline prompts, no clarifying questions. Ambiguity → record fail / exit with a diagnostic summary.
+- **No user interaction, ever** — no `AskUserQuestion`, no inline prompts, no clarifying questions. Ambiguity → record fail / exit with a diagnostic summary. Bug-file suggestions in the summary are informational text only — never call `/bug-file` itself.
 - **Verdict discipline** — `[x] Pass` only on concrete machine-verified evidence: a matching live command, or a unit-backed run meeting all 7 criteria. `[FAIL: auto-judge: <reason>]` for everything else (uncertainty, missing command with no unit test, non-verifiable Expected, UI, bare manual); **never** `[SKIP]`.
 - **A green exit code is not a pass** — for unit-backed tests, always confirm the run actually executed tests from the recorded file (UAT-CORE Step 4 criterion 3). Exit 0 with 0 tests collected is the one failure mode that looks exactly like success.
 - **No browser automation** — UI tests always fail-closed to human verification, unit test or not.

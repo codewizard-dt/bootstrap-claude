@@ -122,7 +122,7 @@ Batch verdict input formats: `all pass` / `all p` (same to all) · `p p f fix s`
 
 ### Verdict actions (per test)
 - **Pass** → `- [x] Pass <!-- YYYY-MM-DD -->`
-- **Fail** → ask inline "What went wrong? (optional)"; mark `- [FAIL: <note or "No details provided">] <!-- YYYY-MM-DD -->`
+- **Fail** → ask inline "What went wrong? (optional)"; mark `- [FAIL: <note or "No details provided">] <!-- YYYY-MM-DD -->`. Once recorded, ask inline "File a bug for this? (y/n)" — default no if the user doesn't answer explicitly. On yes: invoke `Skill` `bug-file` with a pre-filled description assembled from the test's `Description`/`Steps`/`EXPECTED` fields and the fail note as `Actual Behavior` (pass this as the skill's `$ARGUMENTS` parameter). After `/bug-file` completes (or the user says no), continue to the next test without delay.
 - **Skip** → ask inline "Reason for skipping? (optional)"; mark `- [SKIP: <reason or "User skipped">] <!-- YYYY-MM-DD -->`
 - **Fix now** → see Fix workflow. Process all non-fix verdicts in the batch first, then handle fix-now tests one at a time.
 
