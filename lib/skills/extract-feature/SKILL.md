@@ -35,7 +35,7 @@ The output document is formatted to be a valid "source project" for `/port-featu
 3. **Clarifying questions** — ask before proceeding if any are ambiguous:
    - **Output location**: Should the extracted module live as a subdirectory within this project (e.g., `packages/<module-name>/`) or as a stub for a new standalone repo? (Default: subdirectory)
    - **Constraints**: Any hard constraints — must stay in the same language, no new dependencies, must preserve the current public API for backward compatibility?
-   - **Supplementary output**: Should this skill also create a task file in `wiki/work/tasks/` to track the actual extraction work? (Default: yes, suggest it)
+   - **Supplementary output**: Is this extraction substantial enough to warrant a roadmap (multiple ordered steps) via `/roadmap-create`, or small enough for a single task via `/task-add`? Default to a roadmap once Phase 5's extraction steps exceed ~3 steps or missing test coverage must be backfilled first.
 
 ---
 
@@ -224,110 +224,52 @@ Classify each source file by porting effort:
 
 ---
 
-## Phase 6: Write the Extraction Plan
+## Phase 6: Produce the Extraction Roadmap
 
-### 6a. Write the Plan File
+### 6a. Present the Full Analysis
 
-Write to `.docs/extract/<kebab-feature-name>.md`:
+Present the complete assessment in the conversation as structured tables/sections — this is working analysis for the roadmap and any task files, not a standalone persisted document:
 
-```markdown
----
-feature: <feature name>
-extracted-from: <absolute path of current project>
-assessed: <YYYY-MM-DD>
-effort: <Low / Medium / High / Very High>
-status: draft
-solid-compliant: true
-proposed-module-path: <packages/<module-name> OR external repo name>
----
+- **Source Feature Inventory** — Phase 3 inventory (this is what must ultimately land in the extracted module's own `README.md` per Phase 4b — that file, not a wiki doc, is what `/port-feature` reads)
+- **Coupling Analysis** — Phase 2d coupling map table
+- **Interface Specifications** — Phase 4a interface table
+- **Proposed Module Structure** — Phase 4b directory tree with annotations
+- **Technology Mapping** — Phase 4c table
+- **Complexity Breakdown** — Phase 5c table
+- **Gap Analysis** — Phase 5a current-project changes + 5b missing test coverage
+- **Extraction Steps** — ordered, dependency-respecting steps; for each: title, effort (Direct/Adapt/Rewrite), files affected (extract to target, create/move/refactor), what to do, and definition of done (tests pass, imports resolve, no references to old path)
 
-# Extraction Plan: <Feature Name>
+### 6b. Decide: Roadmap or Single Task
 
-> **Feature**: <feature description>
-> **Extracted from**: `<absolute project path>`
-> **Proposed module**: `<module path>`
-> **Overall effort**: <Low / Medium / High / Very High>
-> **Summary**: <One sentence on what this extraction involves.>
+- **≤3 extraction steps, no missing test coverage flagged in 5b** → skip the roadmap. Go straight to `/task-add "Extract <feature name> into standalone module"`, carrying the full step detail into the task's steps, then skip to Phase 7.
+- **>3 steps, missing test coverage to backfill first, or the user asked for a roadmap in Phase 0** → continue to 6c.
 
-## Source Feature Inventory
+### 6c. Delegate to `/roadmap-create`
 
-<Phase 3 inventory — this section is read by /port-feature when this module is the source>
+> **Delegate to `/roadmap-create Extract <feature name> into standalone module`**
 
-## Coupling Analysis
+Feed `/roadmap-create`'s own Socratic Q&A from the analysis already gathered, rather than making the user re-derive it from scratch:
 
-<Phase 2d coupling map table>
+| Elicitation | Answer to supply |
+|---|---|
+| Goal | The one/two-sentence extraction summary + overall effort verdict from 5c |
+| Phases | Group the ordered Extraction Steps from 6a into 2-5 execution-flavored phases (e.g. "Backfill tests", "Define interfaces", "Extract core", "Wire adapters") — never one phase per step |
+| Owner | Ask the user if not already known |
+| Linked PRD/ADRs | Any `wiki/work/requirements/` or `wiki/work/decisions/` entries found during Phase 2a |
 
-## Interface Specifications
-
-<Phase 4a interface table>
-
-## Proposed Module Structure
-
-<Phase 4b directory tree with annotations>
-
-## Technology Mapping
-
-<Phase 4c table>
-
-## Complexity Breakdown
-
-<Phase 5c table>
-
-## Gap Analysis
-
-<Phase 5a current-project changes + 5b missing test coverage>
-
-## Extraction Steps
-
-Ordered, dependency-respecting steps. Each step is concrete and actionable.
-
-### Step 1: <title>
-
-**Effort**: <Direct / Adapt / Rewrite>
-**Files affected**:
-- `<source file>` — extract to `<target file>` (create / move / refactor)
-
-**What to do**:
-<Specific instructions: what to move, what to strip, what interface to introduce, what adapter to write>
-
-**Definition of done**: <How to know this step is complete — tests pass, imports resolve, no references to old path>
-
----
-
-### Step 2: <title>
-
-… (repeat for each step)
-
----
-
-## Suggested Next Actions
-
-- To create a task from this plan: `/task-add "Extract <feature name> into standalone module"`
-- To port this module into another project after extraction: `/port-feature <proposed-module-path> <feature name>`
-- If an interface decision is still open: <frame the specific decision clearly>
-```
-
-### 6b. Optionally Create a Task File
-
-If the user requested a task file (or the plan is concrete enough to execute immediately):
-
-```
-/task-add "Extract <feature name> into standalone module"
-```
-
-Include the extraction plan path as context in the task.
+Each Extraction Step becomes one roadmap item — an inline placeholder (`- [ ] <step title>`) under its phase, per `/roadmap-create`'s item-format rules. **Do not embed the step's file list / what-to-do / definition-of-done in the roadmap item** — that detail belongs in the task file created for it via `/task-add --roadmap ROADMAP-NNNN <step title>` (or automatically when `/roadmap-next` runs).
 
 ---
 
 ## Phase 7: Report to User
 
-After writing the plan file:
+After the roadmap (or single task) is created:
 
-1. State the path written: `.docs/extract/<kebab-feature-name>.md`
+1. State what was created: the roadmap path (`wiki/work/roadmaps/ROADMAP-NNNN-slug.md`) or the single task command run
 2. Give a one-line effort verdict (e.g., "High effort — 3 interfaces to design, 2 rewrites, 1 missing test suite")
 3. List the top 3 extraction steps in brief
 4. Call out the single biggest coupling risk or blocker
-5. Suggest the most useful next action (task creation, interface decision to make, or `/port-feature` handoff)
+5. Suggest the most useful next action (`/roadmap-next ROADMAP-NNNN`, an interface decision to make, or `/port-feature` handoff once the module's own `README.md` is written)
 
 ---
 
@@ -338,7 +280,7 @@ After writing the plan file:
 3. **No speculation** — every coupling point listed must be grounded in what you actually read from the codebase (Serena tool results), not assumed
 4. **Interfaces for everything** — every `infra`, `direct-external`, `internal-coupling`, and `config` dependency must have a corresponding interface in the plan; none may be left as a concrete import in the extracted module's `core/`
 5. **SOLID enforced** — each SOLID principle (SRP, OCP, LSP, ISP, DIP) must be explicitly addressed in Phase 4a; call out any violations with a mitigation
-6. **port-feature compatibility** — Phase 3 inventory must match exactly the format `/port-feature` Phase 1c expects; the `.docs/extract/` document must be usable as a "source project" spec
+6. **port-feature compatibility** — Phase 3 inventory must match exactly the format `/port-feature` Phase 1c expects; the extracted module's own `README.md` (Phase 4b) must be usable as a "source project" spec
 7. **Brave Search rate limit** — 50 requests/second, parallel searches allowed (applies during Phase 1 research)
 8. **Maximum 3 concurrent sub-processes** at a time
 9. **Always terminate all processes when done** (dev servers, type checkers, long-running commands)

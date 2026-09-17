@@ -11,7 +11,7 @@ user-invocable: true
 
 # Demo
 
-Audit the project's features, produce a **2-3 minute demo run book** at `.docs/demo/runbook.md`, then generate a **Marp slideshow** from it at `.docs/demo/runbook.slides.md`.
+Audit the project's features, produce a **2-3 minute demo run book** at `wiki/demo/runbook.md`, then generate a **Marp slideshow** from it at `wiki/demo/runbook.slides.md`.
 
 ---
 
@@ -27,7 +27,7 @@ Audit the project's features, produce a **2-3 minute demo run book** at `.docs/d
 
 Use Serena MCP to explore the project. Never use `bash` commands for file exploration.
 
-Start by reading Serena memories and the project's README, manifest, and any planning docs in `.docs/`. Then browse the source tree and use `mcp__serena__get_symbols_overview` on key files to discover what the project actually does — routes, commands, exported functions, UI entry points.
+Start by reading Serena memories and the project's README, manifest, and `wiki/index.md` for planning context. Then browse the source tree and use `mcp__serena__get_symbols_overview` on key files to discover what the project actually does — routes, commands, exported functions, UI entry points.
 
 Compile a **feature inventory** — a flat list of distinct, user-visible capabilities. For each feature note what it does and how to trigger it (a click path, a command, or a code example). Aim for around a dozen features; collapse trivial variations into a single entry.
 
@@ -47,7 +47,7 @@ Before designing the narrative, collect every stated requirement so the demo can
 
 2. `wiki/work/decisions/` — scan accepted ADR decisions for capabilities they mandate or prohibit.
 
-3. Any other requirements files in `.docs/` (e.g. `requirements.md`, `spec.md`, `brief.md`).
+3. Any other requirements-like pages in `wiki/knowledge/sources/` (ingested source summaries not already captured as formal requirements).
 
 Produce a **requirements checklist** — a flat list of discrete, testable requirements drawn from those sources. Each entry should be one line, e.g. `REQ-01: User can sign up with email and password`. If no requirements documents exist, note that explicitly and continue.
 
@@ -75,7 +75,7 @@ End with a single closing sentence pointing to next steps or where to learn more
 
 ## Phase 4 — Write the Run Book
 
-Create `.docs/demo/` if it doesn't exist. Write `.docs/demo/runbook.md` using this template:
+Create `wiki/demo/` if it doesn't exist. Write `wiki/demo/runbook.md` using this template:
 
 ```markdown
 # Demo Run Book — {Project Name}
@@ -145,7 +145,7 @@ Fill every placeholder with real project content. The run book must be self-cont
 
 Invoke the `marp-slideshow` skill on the run book you just wrote:
 
-> **Delegate to `/marp-slideshow .docs/demo/runbook.md .docs/demo/`**
+> **Delegate to `/marp-slideshow wiki/demo/runbook.md wiki/demo/`**
 
 The deck must use a **GitHub dark style** — set the front-matter to a dark background (`#0d1117`) with light text (`#c9d1d9`) and accent color (`#58a6ff`). Write every slide as if you are speaking directly to a stakeholder: tell the story, don't transcribe the run book. One clear idea per slide; no bullet dumps. Speaker notes contain the verbatim spoken line from the run book.
 
@@ -153,11 +153,11 @@ If the `marp-slideshow` skill is not available, write the deck directly: use `ma
 
 **Architecture diagrams**: If the project has a meaningful architecture worth showing (layered systems, data flows, service dependencies), follow this two-track approach — one format per destination:
 
-- **Run book (Markdown)** — embed a fenced `mermaid` block directly in `.docs/demo/runbook.md` at the appropriate section. Keep each diagram small — no more than six or seven nodes. One layer per diagram.
+- **Run book (Markdown)** — embed a fenced `mermaid` block directly in `wiki/demo/runbook.md` at the appropriate section. Keep each diagram small — no more than six or seven nodes. One layer per diagram.
 - **Slides (SVG image)** — never embed a raw Mermaid code block in the slides. Instead:
-  1. Write the raw Mermaid source (no markdown wrapper) to `.docs/demo/<name>.mmd` (e.g. `architecture.mmd`, `data-flow.mmd`).
-  2. Render it to SVG via Bash: `npx @mermaid-js/mermaid-cli mmdc -i .docs/demo/<name>.mmd -o .docs/demo/<name>.svg`
-  3. Reference the rendered SVG in the slide: `![Architecture](.docs/demo/<name>.svg)`
+  1. Write the raw Mermaid source (no markdown wrapper) to `wiki/demo/<name>.mmd` (e.g. `architecture.mmd`, `data-flow.mmd`).
+  2. Render it to SVG via Bash: `npx @mermaid-js/mermaid-cli mmdc -i wiki/demo/<name>.mmd -o wiki/demo/<name>.svg`
+  3. Reference the rendered SVG in the slide: `![Architecture](wiki/demo/<name>.svg)`
 
 One diagram per slide. Name `.mmd` files after their content (e.g. `system-overview.mmd`, `data-flow.mmd`).
 
@@ -168,7 +168,7 @@ One diagram per slide. Name `.mmd` files after their content (e.g. `system-overv
 Print a short summary to the user:
 
 - **Run book** — path, word count, and step count
-- **Slideshow** — path, slide count, and render command (`npx @marp-team/marp-cli@latest .docs/demo/runbook.slides.md`)
+- **Slideshow** — path, slide count, and render command (`npx @marp-team/marp-cli@latest wiki/demo/runbook.slides.md`)
 - **Requirements coverage** — table of all requirements, each marked Covered / Gap / Undocumented
 - **Gaps** — requirements with no demo step, and features that exist but couldn't be cleanly demo'd
 

@@ -49,14 +49,15 @@ Every `wiki/work/` family skill either references shared mechanics instead of re
 - [ ] Rename `bug-file` → `bug-create`
 - [ ] Remove `req-update` and `task-update` entirely, with no replacement — no other family has ever had an `update` action, and removal simplifies the vocabulary rather than extending it everywhere
 - [ ] Add `<PRD>-assess`, `<ADR>-assess`, and `uat-assess` so every family (Roadmaps/Tasks/Bugs already have one) shares a common `assess` action
+- [ ] Rename `req-extract-decisions` → `adr-extract`; change its source semantics from operating only within the requirements/PRD family to explicitly taking a PRD (or other document) as its source and producing ADR candidates from it — this moves the action from a PRD-side skill to an ADR-side skill
 
 ## Notes
 
 - Originated from `/research wiki work family lifecycles and instructions, consider ways to simplify skills/instructions/workflows...` this session (not a REQ): [Research: Simplifying the wiki/work/ Family Skills](../../knowledge/sources/wiki-skill-simplification.md) and [wiki/work/ Skill Duplication Catalogue](../../knowledge/concepts/wiki-skill-boilerplate-duplication.md).
 - Phase 3's second item depends on [[DEC-0001]]#D4 (task-dependency-encoding standardization) being finalized — that decision is owned by [[ROADMAP-0013]], not this roadmap; this item should not be tackled until D4 is accepted.
-- The `req-*` → `requirement-*` skill rename was researched in the same session ([Research: Renaming req-* Skills to requirement-*](../../knowledge/sources/req-to-requirement-rename.md), [skill-family-rename-pattern](../../knowledge/concepts/skill-family-rename-pattern.md)) but **deliberately excluded from this roadmap** — the user chose to defer it. The research remains available for a future roadmap/task. **Note:** Phase 4's `requirements` → `PRD` rename is a *different* rename direction for the same family (label, not `req-` → `requirement-`); reconcile the two before executing Phase 4 so the family doesn't get renamed twice.
+- The `req-*` → `requirement-*` skill rename was researched in the same session ([Research: Renaming req-* Skills to requirement-*](../../knowledge/sources/req-to-requirement-rename.md), [skill-family-rename-pattern](../../knowledge/concepts/skill-family-rename-pattern.md)) but is **superseded by Phase 4's `requirements` → `PRD` rename** — the user has confirmed PRD is the preferred label, not `requirement-*`. The research page remains as historical context for the rejected direction; no future roadmap should revive `requirement-*`.
 - Phase 4 was derived from an in-conversation design discussion (iterative action-matrix tables), not from the `wiki-skill-simplification`/`wiki-skill-boilerplate-duplication` sources behind Phases 1-3 — there is no `raw/` source backing it.
-- Phase 4 left two questions open during design, to resolve before or while executing it:
-  1. Whether `req-extract-decisions` should be renamed to match ADR terminology (e.g. `prd-extract-adrs`), since it currently references "decisions" even though that family becomes ADR.
-  2. Whether Roadmaps and UAT need their own terminal `deprecate`/`close`-equivalent action — after Phase 4, PRD/ADR use `deprecate` and Tasks/Bugs use `close`, but Roadmaps and UAT have no terminal action of their own.
+- Phase 4's open questions have been resolved except one:
+  1. **Resolved** — `req-extract-decisions` renames to `adr-extract` (not `prd-extract-adrs`) and becomes an ADR-side skill that takes a PRD (or other document) as its source.
+  2. **Still open** — whether Roadmaps and UAT need their own terminal `deprecate`/`close`-equivalent action. After Phase 4, PRD/ADR use `deprecate` and Tasks/Bugs use `close`, but Roadmaps and UAT have no terminal action of their own; resolve before or while executing Phase 4.
 - All items are inline placeholders (no task files exist yet) — `/roadmap-next` will create them automatically.

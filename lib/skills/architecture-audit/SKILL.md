@@ -168,7 +168,7 @@ Individually-benign behavior in each agent can compound into an unwanted *global
 
 ## Reporting
 
-**Output**: after compiling findings, write the full report to `wiki/audits/reports/architecture-audit-<YYYY-MM-DD>.md` using the **Write** tool (create the directory if it doesn't exist). If a report for today already exists, write `architecture-audit-<YYYY-MM-DD>-2.md` (then `-3`, …) rather than overwriting, so architecture posture is trackable over time rather than a one-off snapshot. Print the same report in the conversation as well; the file is a durable copy, not a replacement for the reply.
+**Output**: after compiling findings, write the full report to `wiki/reports/architecture-audit/<YYYY-MM-DD>.md` using the **Write** tool (create the directory if it doesn't exist). If a report for today already exists, write `<YYYY-MM-DD>-2.md` (then `-3`, …) rather than overwriting, so architecture posture is trackable over time rather than a one-off snapshot. Print the same report in the conversation as well; the file is a durable copy, not a replacement for the reply.
 
 **Topology diagram**: every report embeds a Mermaid flowchart of the *actual* orchestration topology found in the codebase (from Setup step 5) — not an idealized one. Nodes: the orchestrator/lead agent, each distinct subagent/role, and any tool/data-store nodes material to control flow (group many similar tools into a single `Tools` node rather than enumerating each). Edges: label direction and kind (`delegates`, `returns`, `invokes`). If OT3 finds a peer-to-peer/mesh edge (agents communicating directly, bypassing the orchestrator), render it as a distinct dashed edge with a `⚠` label so the violation is visible in the diagram itself, not just called out in prose:
 
@@ -224,5 +224,5 @@ flowchart TD
 6. **Scope to the repo** — don't speculate about external infra unless config files are present.
 7. **One category at a time** — complete each fully before the next; don't interleave findings.
 8. **Judge fit, not fashion** — a single agent that passes evaluation is not a finding against it; only flag multi-agent complexity, topology, or framework choice as a gap when it's mismatched to the actual task shape, not merely "not the newest pattern."
-9. **Persist the report** — write it to `wiki/audits/reports/` (see Reporting) in addition to printing it; a report that only lives in the chat leaves no trail for the next audit to compare against.
+9. **Persist the report** — write it to `wiki/reports/architecture-audit/` (see Reporting) in addition to printing it; a report that only lives in the chat leaves no trail for the next audit to compare against.
 10. **Diagram the topology** — every report includes a Mermaid flowchart of the actual control-flow graph (Setup step 5, Reporting § Topology diagram); mark any peer-to-peer/mesh edges distinctly so OT3 violations are visible in the picture, not just described in prose.

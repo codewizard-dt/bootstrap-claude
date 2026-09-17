@@ -33,7 +33,7 @@ Assess a specific feature or area of functionality in an external (source) proje
    - Confirm the source directory exists: use `mcp__serena__find_file` or Bash `ls <source-path>` to verify it is accessible
 
 3. **Clarifying questions** (ask before proceeding if ambiguous):
-   - Should the port plan produce a task file in `wiki/work/tasks/`, a report in `.docs/port/`, or both?
+   - Is this port substantial enough to warrant a roadmap (multiple ordered steps spanning several files/integration points) via `/roadmap-create`, or small enough for a single task via `/task-add`? Default to a roadmap once Phase 3's porting steps exceed ~3 steps or touch more than one integration point.
    - Is there a preferred output level of detail (high-level steps vs. file-by-file implementation plan)?
    - Are there any known constraints (e.g., "must stay in TypeScript", "no new dependencies")?
 
@@ -201,107 +201,52 @@ List risks that could complicate the port:
 
 ---
 
-## Phase 4: Produce the Port Plan
+## Phase 4: Produce the Port Roadmap
 
-### 4a. Write the Port Plan File
+### 4a. Present the Full Analysis
 
-Write a structured port plan to `.docs/port/<kebab-feature-name>.md`:
+Present the complete assessment in the conversation as structured tables/sections — this is working analysis for the roadmap and any task files, not a standalone persisted document:
 
-```markdown
----
-source-project: <source-path>
-feature: <feature name>
-assessed: <YYYY-MM-DD>
-effort: <Low / Medium / High / Very High>
-status: draft
----
+- **Source Feature Summary** — condensed Phase 1c inventory
+- **Target Project Context** — condensed Phase 2d profile
+- **Technology Mapping** — table from 3a
+- **Complexity Breakdown** — table from 3b
+- **Dependency Changes** — table from 3c
+- **Integration Points** — bullets from 3d
+- **Risks** — table from 3e
+- **Porting Steps** — ordered, dependency-respecting steps; for each: title, effort (Direct/Adapt/Rewrite), files affected (create/modify/delete), what to do, and definition of done
 
-# Port Plan: <Feature Name>
+### 4b. Decide: Roadmap or Single Task
 
-> **Source**: `<source-path>`
-> **Feature**: <functionality description>
-> **Overall effort**: <Low / Medium / High / Very High>
-> **Summary**: <One sentence on what this port involves.>
+- **≤3 porting steps, single integration point** → skip the roadmap. Go straight to `/task-add "Port <feature name> from <source-path>"`, carrying the full step detail (files affected, what to do, definition of done) into the task's steps, then skip to Phase 5.
+- **>3 steps, multiple integration points, or the user asked for a roadmap in Phase 0** → continue to 4c.
 
-## Source Feature Summary
+### 4c. Delegate to `/roadmap-create`
 
-<Condensed version of the Source Feature Inventory from Phase 1c>
+> **Delegate to `/roadmap-create Port <feature name> from <source-path>`**
 
-## Target Project Context
+Feed `/roadmap-create`'s own Socratic Q&A from the analysis already gathered, rather than making the user re-derive it from scratch:
 
-<Condensed version of the Target Project Profile from Phase 2d>
+| Elicitation | Answer to supply |
+|---|---|
+| Goal | The one/two-sentence port summary + overall effort verdict from 3b |
+| Phases | Group the ordered Porting Steps from 4a into 2-5 execution-flavored phases (e.g. "Dependencies", "Core port", "Integration", "Tests") — never one phase per step |
+| Owner | Ask the user if not already known |
+| Linked PRD/ADRs | Any `wiki/work/requirements/` or `wiki/work/decisions/` entries found during Phase 2a/2c |
 
-## Technology Mapping
-
-<Table from 3a>
-
-## Complexity Breakdown
-
-<Table from 3b>
-
-## Dependency Changes
-
-<Table from 3c>
-
-## Integration Points
-
-<Bullet list from 3d>
-
-## Risks
-
-<Table from 3e>
-
-## Porting Steps
-
-Ordered, dependency-respecting steps. Each step is concrete and actionable.
-
-### Step 1: <title>
-
-**Effort**: <Direct / Adapt / Rewrite>
-**Files affected**:
-- `<target file path>` — <create / modify / delete>
-
-**What to do**:
-<Specific instructions: what to copy, what to change, how to adapt the API, what conventions to follow>
-
-**Definition of done**: <How to know this step is complete>
-
----
-
-### Step 2: <title>
-
-… (repeat for each step)
-
----
-
-## Suggested Next Actions
-
-- To create a task from this plan: `/task-add "Port <feature name> from <source-path>" --roadmap <if applicable>`
-- To explore the source further: use Read on `<most important source file>`
-- If a dependency decision is needed: <frame the specific decision>
-```
-
-### 4b. Optionally Create a Task File
-
-If the user requested a task file (or if the plan is actionable enough to execute), suggest:
-
-```
-/task-add "Port <feature name> from <source-project-name>"
-```
-
-And note what context from the port plan should be included in the task.
+Each Porting Step becomes one roadmap item — an inline placeholder (`- [ ] <step title>`) under its phase, per `/roadmap-create`'s item-format rules. **Do not embed the step's file list / what-to-do / definition-of-done in the roadmap item** — that detail belongs in the task file created for it via `/task-add --roadmap ROADMAP-NNNN <step title>` (or automatically when `/roadmap-next` runs).
 
 ---
 
 ## Phase 5: Report to User
 
-After writing the plan file:
+After the roadmap (or single task) is created:
 
-1. State the path written: `.docs/port/<kebab-feature-name>.md`
+1. State what was created: the roadmap path (`wiki/work/roadmaps/ROADMAP-NNNN-slug.md`) or the single task command run
 2. Give a one-line overall effort verdict (e.g., "Medium effort — 4 files to adapt, 1 rewrite, no new dependencies required")
 3. List the top 3 porting steps in brief
 4. Call out the single biggest risk or blocker
-5. Suggest the most useful next action (task creation, further exploration, or a specific decision to make)
+5. Suggest the most useful next action (`/roadmap-next ROADMAP-NNNN`, further exploration, or a specific dependency decision to make)
 
 ---
 

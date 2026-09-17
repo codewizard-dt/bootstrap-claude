@@ -21,7 +21,7 @@ The first whitespace-separated token is the **input path** (required). An option
 
 **Output path resolution rules** (apply in order):
 
-1. **No output path provided** → write to `.docs/MARP/<input-stem>.slides.md` (create `.docs/MARP/` if it doesn't exist). Do **not** place the deck next to the input file.
+1. **No output path provided** → write to `wiki/marp/<input-stem>.slides.md` (create `wiki/marp/` if it doesn't exist). Do **not** place the deck next to the input file.
 2. **Output path provided** → always normalize the filename so it ends in `.slides.md`, even if the user didn't say so:
    - `deck` → `deck.slides.md`
    - `deck.md` → `deck.slides.md` (strip the trailing `.md`, then append `.slides.md`)
@@ -190,7 +190,7 @@ Before calling `Write`, mentally verify:
 - [ ] Speaker notes (HTML comments) are present where the source had context that didn't fit on-slide
 - [ ] Footer / header are short (one line, no Markdown that breaks YAML — wrap in quotes if it contains `:` or `#`)
 - [ ] Output filename ends in `.slides.md` (always — append/normalize even if the user-supplied path didn't include it)
-- [ ] If the user did **not** supply an output path, the deck is written to `.docs/MARP/<input-stem>.slides.md` (not next to the source)
+- [ ] If the user did **not** supply an output path, the deck is written to `wiki/marp/<input-stem>.slides.md` (not next to the source)
 
 ## Phase 5 — Write & Confirm
 

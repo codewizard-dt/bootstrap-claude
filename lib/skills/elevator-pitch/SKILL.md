@@ -36,7 +36,7 @@ Use Serena MCP tools to explore the target project. You are looking for the stor
 - **The best features** — identify the 2-3 features that are most impressive, most useful, or most surprising. Look for things with real numbers (command counts, time saved, steps eliminated), elegant abstractions, or capabilities that competitors don't have. These are the things you'd demo first to a skeptic.
 - **The best part** — something that makes a developer or user think "oh that's clever."
 
-Check: `package.json` (name, description), existing `README.md`, the top-level directory structure, and any `.docs/` or `CLAUDE.md` files for stated goals.
+Check: `package.json` (name, description), existing `README.md`, the top-level directory structure, and any planning docs in `wiki/` (e.g. `wiki/index.md`, `wiki/work/requirements/`) or `CLAUDE.md` files for stated goals.
 
 ### 2. Write the pitch
 
