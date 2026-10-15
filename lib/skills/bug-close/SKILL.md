@@ -23,18 +23,11 @@ Finalize a bug that has been fixed. Records the root cause, the resolution (comm
 
 ### Step 1: Resolve the Bug File
 
-Parse `$ARGUMENTS`. Accepted forms:
-- `BUG-NNNN` (e.g. `BUG-0042`)
-- `NNNN` (e.g. `0042` or `42`)
-- `NNNN-slug` (e.g. `0042-csv-export`)
-- Full path
+Resolve the file per ~/.claude/skills/_shared/ID-RESOLUTION.md — family: bugs · scope: active-then-archive-gate · ambiguous: interactive · empty: not found anywhere → STOP and report the error
 
-Resolution order:
-1. If full path: confirm with `mcp__serena__list_dir`.
-2. Otherwise normalize and search `wiki/work/bugs/` first via `mcp__serena__find_file`.
-3. If found in `wiki/work/bugs/` root: STOP and tell the user the bug must be triaged and worked first — `/bug-triage` → choose "Start work now" → land a fix → re-run `/bug-close`.
-4. If found in `archive/`: STOP — already terminal.
-5. If not found anywhere: STOP and report the error.
+Gates on the resolution result:
+- If found in `wiki/work/bugs/` root: STOP and tell the user the bug must be triaged and worked first — `/bug-triage` → choose "Start work now" → land a fix → re-run `/bug-close`.
+- If found in `archive/`: STOP — already terminal.
 
 Read the bug file in full.
 
@@ -59,7 +52,7 @@ Use `AskUserQuestion` (single-select):
 
 | Choice | Effect | When to pick |
 |--------|--------|--------------|
-| **Verify and close** (default) | Status → `verified`; **move file** to `archive/` | A fix has been merged and validated |
+| **Verify and close** (default) | Status → `closed`; **move file** to `archive/` | A fix has been merged and validated |
 | **Mark fixed (not yet verified)** | Status → `fixed`; file stays in `wiki/work/bugs/` | Patch landed but waiting on UAT or staging soak |
 | **Won't fix (late decision)** | Status → `wontfix`; **move file** to `archive/` | Investigation revealed the fix isn't worth the cost or invalidates a constraint |
 | **Cannot reproduce (re-evaluated)** | Status → `cannot-reproduce`; **move file** to `archive/` | Work started, repro never re-surfaced, abandoning |
@@ -80,7 +73,7 @@ Edit the bug file to replace the placeholder line under `## Root Cause Analysis`
 
 Use `AskUserQuestion` (batched where the UI permits):
 
-| Field | Form | Required for `verified`? |
+| Field | Form | Required for `closed`? |
 |-------|------|--------------------------|
 | Fix commit | Short SHA (or "see PR") | **Yes** |
 | Fix version | Release tag or `—` | No |
@@ -102,24 +95,17 @@ Update `Status:` and `Last updated:` in the bug file via `Edit` before moving.
 
 | Outcome | Action |
 |---------|--------|
-| Verify and close | Archive-move sequence (see below) with status `verified` |
+| Verify and close | Archive with `terminal_status: closed` |
 | Mark fixed | No move |
-| Won't fix / Cannot reproduce | Archive-move sequence (see below) with the appropriate status |
+| Won't fix / Cannot reproduce | Archive with `terminal_status: wontfix` or `cannot-reproduce` |
 
-**Archive-move sequence** (for all terminal outcomes — `Bash` only for `git mv`):
-
-1. `Bash`: `git mv wiki/work/bugs/NNNN-slug.md wiki/work/bugs/archive/NNNN-slug.md`
-2. `Edit`: remove the bug's row from `wiki/work/bugs/index.md`
-3. `Edit`: append to `wiki/work/bugs/archive/index.md`: `| [[BUG-NNNN]] | <title> | <status> | YYYY-MM-DD |`
-4. `Edit`: append to `wiki/log.md`
+For every archiving outcome, read `~/.claude/skills/_shared/ARCHIVE-WORK-ITEM.md` now, then run its Procedure: `family: bugs`, `terminal_status: closed | wontfix | cannot-reproduce`, default log entry. That procedure writes the only `wiki/log.md` entry for the close.
 
 ### Step 8: Update the Bug Index
 
-For all terminal outcomes (`verified`, `wontfix`, `cannot-reproduce`), the archive-move sequence in Step 7 already removes the active index row and appends to `archive/index.md`. No further index edits are needed for those outcomes.
-
 For `fixed` (no move): find the row for this bug in `wiki/work/bugs/index.md` and update the `Status` column to `fixed`.
 
-Use **`Edit`** — one targeted call. Never `sed`, `awk`, `perl -i`, or `echo >>`.
+Use one targeted `Edit` call. Edit only — see `~/.claude/skills/_shared/SKILL-BOILERPLATE.md` § Edit hygiene.
 
 ### Step 9: Cross-Linking
 
@@ -132,8 +118,8 @@ Print:
 - Bug ID, title
 - Old status → new status; folder move (if any)
 - Resolution summary: fix commit, regression test path
-- For `verified`: a one-line clustering check — search `wiki/work/bugs/archive/` for the last 3 closes with overlapping `Tags` and surface them as "related recent closes" so the user can spot systemic issues.
+- For `closed`: a one-line clustering check — search `wiki/work/bugs/archive/` for the last 3 closes with overlapping `Tags` and surface them as "related recent closes" so the user can spot systemic issues.
   - If the clustering check finds **2 or more** related recent closes (not counting the bug just closed), use `AskUserQuestion` to ask inline: `N related bugs closed recently with tag(s) <tags> — <BUG-NNNN titles>. File a regression-prevention task? (y/n)`
-  - On yes: invoke `Skill` `task-add` with a description referencing the clustered bug IDs and shared tag(s) (e.g. "Investigate recurring `<tag>` failures — see BUG-0003, BUG-0006, BUG-0009"). Do not pass `--roadmap` — there's no roadmap context here; the user can link one later via `/task-add --roadmap` if warranted.
+  - On yes: invoke `Skill` `task-create` with a description referencing the clustered bug IDs and shared tag(s) (e.g. "Investigate recurring `<tag>` failures — see BUG-0003, BUG-0006, BUG-0009"). Do not pass `--roadmap` — there's no roadmap context here; the user can link one later via `/task-create --roadmap` if warranted.
   - On no (or ≤1 related close): unchanged from today — print the clustering observation and stop, no prompt.
 - For `fixed`: remind the user to re-run `/bug-close` once verification lands.

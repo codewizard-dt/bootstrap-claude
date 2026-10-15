@@ -1,9 +1,9 @@
 ---
 name: power-mode
-description: Orchestrator for parallel agent teams. When invoked with a roadmap file path, drives every item through the full tackle → uat-generate → uat-auto pipeline until complete. When invoked with a task file path, runs that pipeline once and stops.
+description: Orchestrator for parallel agent teams. When invoked with a roadmap file path, drives every item through the full tackle → uat-create → uat-auto pipeline until complete. When invoked with a task file path, runs that pipeline once in the current session and stops.
 category: executing
 model: claude-sonnet-5
-argument-hint: "[roadmap-file-path | task-file-path]"
+argument-hint: "[roadmap-file-path | task-file-path | TASK-NNNN]"
 disable-model-invocation: false
 user-invocable: true
 ---
@@ -20,7 +20,8 @@ Use this skill to drive tasks or roadmaps to completion using a parallel agent t
 
 Inspect the path argument:
 - Path contains `roadmap` or matches `ROADMAP-NNNN` → **Roadmap-to-Completion Orchestrator** (see below)
-- Path contains `task` or matches `TASK-NNNN` → **Single-Task Executor** (see below)
+- Path contains `task` or matches `TASK-NNNN` → **Single-Task Executor** (a pointer at the tackle → uat-create → uat-auto pipeline; see below)
+- A task **ID** instead of a path (`TASK-0086`, `task 86`) → resolve it to its file with `find_file` on `TASK-<zero-padded NNNN>-*.md` under `wiki/work/tasks/`, then run the **Single-Task Executor** on that path. A bare number with no `TASK`/`ROADMAP` prefix is ambiguous — stop and ask which one is meant.
 
 ---
 
@@ -55,55 +56,45 @@ All agent call examples below omit this footer for brevity — it is always requ
 
 ---
 
+## Agent Lifecycle — Reap Finished and Idle Agents (CRITICAL)
+
+Named agents become teammates that **persist after their work is done** — a finished or idle agent keeps its panel row and process until it is explicitly shut down. Never leave them lingering. You are responsible for fully terminating every agent you spawn.
+
+**Reap sweep — run at each of these points:**
+- Immediately after every "Wait for all to complete" (end of each phase)
+- At the end of every wave, before returning to Step 1
+- Periodically while waiting on long-running agents (roughly every few minutes of wall-clock time, or whenever you are notified an agent finished)
+- Before the final report / stopping point
+
+**Sweep procedure:**
+1. Call `ListAgents` to enumerate the agents you spawned this run.
+2. For each agent that is **finished** (reported completion, or its result already arrived) or **idle** (no activity and awaiting input it will never get), collect its report first, then terminate it:
+   - `SendMessage` the agent a shutdown request (e.g. "Work complete — shut down now."), and confirm it disappears from `ListAgents`.
+   - If it is still listed afterwards, or is hung/stuck, stop it with `TaskStop` using its task ID.
+3. Re-run `ListAgents` and verify that no finished or idle agent from a completed phase remains. Repeat step 2 until the list is clean.
+
+**Rules:**
+- Never terminate an agent that is still actively working — only finished or idle ones.
+- Never begin the next phase or wave while finished/idle agents from the previous one are still alive.
+- Never spawn a replacement for a stuck agent without terminating the stuck one first.
+- Do not treat "the agent returned its result" as termination — it is not. Termination is confirmed only when the agent no longer appears in `ListAgents`.
+- The final state on stopping must be **zero** power-mode agents remaining.
+
+---
+
 ## Single-Task Executor
 
-**Trigger:** `/power-mode <path/to/TASK-NNNN.md>` with no additional instructions.
+**Trigger:** `/power-mode <path/to/TASK-NNNN.md>` (or a `TASK-NNNN` ID, resolved per Dispatch) with no additional instructions.
 
-**Goal:** Drive one task through the full tackle → UAT-generate → UAT-auto pipeline exactly once, then stop.
+A single task has nothing to parallelize, so this mode is only a pointer — no agent team, no reap sweep. Same autonomous mandate as the roadmap loop: take the task to completion. Run these three skills in order in the current session (Skill tool), without pausing, asking questions, or awaiting approval between them:
 
-**AUTONOMOUS EXECUTION MANDATE:** Execute all three phases without pausing, asking questions, or awaiting approval. The only valid stopping point is after `/uat-auto` completes and the file-move housekeeping is done.
+1. `/tackle <task-path>`
+2. `/uat-create <task-path>`
+3. `/uat-auto <uat-path>` — same NNNN slug, under `wiki/work/uat/`
 
-**Phase 1 — Tackle**
+Resume from the first incomplete stage by reading the task's `status:` — `todo`/`in-progress` starts at 1; `pending-uat` with no UAT file starts at 2, with one starts at 3; `done`/`trashed` → report and stop.
 
-```
-Agent({
-  description: "Tackle <TASK-NNNN>",
-  prompt: "Run /tackle <task-path>. [append team member footer]",
-  mode: "bypassPermissions"
-})
-```
-
-Wait for the agent to complete.
-
-**Phase 2 — Generate UAT tests**
-
-```
-Agent({
-  description: "UAT generate <TASK-NNNN>",
-  prompt: "Run /uat-generate <task-path>. [append team member footer]",
-  mode: "bypassPermissions"
-})
-```
-
-Wait for the agent to complete.
-
-**Phase 3 — Run UATs**
-
-```
-Agent({
-  description: "UAT auto <TASK-NNNN>",
-  prompt: "Run /uat-auto <uat-path> (infer the UAT file path from the task path — same NNN slug, under wiki/work/uat/).
-
-Note: on all-pass, /uat-auto's own UAT-CORE Closure procedure already flips the task to done, archives both files, removes index rows, and auto-checks the matching roadmap checkbox (if any) — you do not need to instruct any of that here; it happens natively. Just wait for it to complete and report its summary.
-
-UAT tests recorded as [FAIL: auto-judge: UI test requires human verification] do NOT block task completion — /uat-auto does not run UI tests. Treat these as an acceptable resting state, not a blocker.
-
-If any tests remain as - [ ] Pass because stub indicators were detected, that's expected — /uat-auto leaves the task in place rather than closing it. Report the stub-detected tests in your summary. [append team member footer]",
-  mode: "bypassPermissions"
-})
-```
-
-Done. No further iteration.
+Stop after `/uat-auto` returns. On all-pass, its own UAT-CORE Closure procedure handles task/UAT status, archiving, index rows, and the roadmap checkbox. UI tests are run in a real browser by `/uat-auto` through the Playwright MCP — expect them to pass or fail on evidence, not to be deferred wholesale. Tests left as `[FAIL: auto-judge: ... requires human verification]` (bare manual, visual-only UI Expected, Playwright unavailable) or stub-detected `- [ ] Pass` are an acceptable resting state, not a blocker — report them in the summary.
 
 ---
 
@@ -111,7 +102,7 @@ Done. No further iteration.
 
 **Trigger:** `/power-mode <path/to/ROADMAP-NNNN.md>` with no additional instructions.
 
-**Goal:** Drive the roadmap to completion — every item through the full tackle → UAT-generate → UAT-auto pipeline — looping through waves of parallelizable work until no implementation work remains.
+**Goal:** Drive the roadmap to completion — every item through the full tackle → UAT-create → UAT-auto pipeline — looping through waves of parallelizable work until no implementation work remains.
 
 **AUTONOMOUS EXECUTION MANDATE:** Once triggered, drive the roadmap to completion without stopping. Do NOT pause between waves to report progress or ask for permission to continue. The only valid stopping point is when `/roadmap-next` reports no items remaining. A roadmap item is complete once it has been through the full pipeline — UAT tests requiring human verification do NOT block loop progression.
 
@@ -137,16 +128,16 @@ For any item that is an inline placeholder (no existing task file link), spawn a
 ```
 Agent({
   description: "Create task for <item>",
-  prompt: "Run /task-add for this roadmap item: '<item description>'. Link the resulting task back into the roadmap file at wiki/work/roadmaps/<file>. Run /research before writing the task. Make all scope, naming, and structuring decisions autonomously — infer reasonable defaults from the roadmap context and existing task files in wiki/work/tasks/. [append team member footer]",
+  prompt: "Run /task-create for this roadmap item: '<item description>'. Link the resulting task back into the roadmap file at wiki/work/roadmaps/<file>. Run /research before writing the task. Make all scope, naming, and structuring decisions autonomously — infer reasonable defaults from the roadmap context and existing task files in wiki/work/tasks/. [append team member footer]",
   mode: "bypassPermissions"
 })
 ```
 
-Wait for all task-creation agents to complete.
+Wait for all task-creation agents to complete, then reap them (see Agent Lifecycle).
 
 **Step 3 — Three-phase pipeline for the wave**
 
-Run tackle → UAT-generate → UAT-auto for all tasks in the current wave. Apply the Parallelization Mandate at every phase.
+Run tackle → UAT-create → UAT-auto for all tasks in the current wave. Apply the Parallelization Mandate at every phase.
 
 Phase 1 — Tackle (parallel, minimum 5 agents when 5+ collision-safe tasks available):
 ```
@@ -159,7 +150,7 @@ Wait for all to complete.
 
 Phase 2 — Generate UAT tests (parallel, read-only):
 ```
-Agent({ description: "UAT generate TASK-NNNN", prompt: "Run /uat-generate <task-path>. [append team member footer]", mode: "bypassPermissions" })
+Agent({ description: "UAT create TASK-NNNN", prompt: "Run /uat-create <task-path>. [append team member footer]", mode: "bypassPermissions" })
 // ... one per task, all in the same message
 ```
 
@@ -173,12 +164,14 @@ Agent({
 
 Note: on all-pass, /uat-auto's own UAT-CORE Closure procedure already flips the task to done, archives both files, removes index rows, and auto-checks the matching roadmap checkbox — no need to instruct any of that here.
 
-UAT tests recorded as [FAIL: auto-judge: UI test requires human verification] do NOT block this step. If stub-detected tests remain, that's /uat-auto's own expected behavior — it leaves the file in place; report the stubs. [append team member footer]",
+UI tests (UAT-UI-*) MUST be run with the Playwright MCP — load its deferred tools via ToolSearch (query 'playwright browser') and follow /uat-auto's browser channel (UAT-CORE Step 4 channel 3). Do NOT record a UI test as needing human verification without having attempted the browser run; the only acceptable deferrals are a visual-only Expected or Playwright genuinely unavailable (say which in your report).
+
+Tests recorded as [FAIL: auto-judge: ... requires human verification] for those reasons, or bare manual cases, do NOT block this step. If stub-detected tests remain, that's /uat-auto's own expected behavior — it leaves the file in place; report the stubs. [append team member footer]",
   mode: "bypassPermissions"
 })
 ```
 
-**Step 4 — Repeat**
+**Step 4 — Reap and repeat**
 
-Immediately return to Step 1. No pausing, no reporting, no confirmation. Loop until `/roadmap-next` reports no items remaining.
+Run the reap sweep (see Agent Lifecycle): terminate every finished or idle agent from this wave and verify via `ListAgents` that none remain. Then immediately return to Step 1. No pausing, no reporting, no confirmation. Loop until `/roadmap-next` reports no items remaining, then run a final reap sweep so zero power-mode agents remain.
 

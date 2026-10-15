@@ -75,10 +75,10 @@ See `wiki/guides/mcp-tools.md` for the complete Serena memory reference.
 
 ## Step 4: Check the Task Index
 
-`/tackle` no-args mode surveys active tasks by reading `wiki/work/tasks/index.md` — a flat bullet list of active items (`- [TASK-NNNN — Title](TASK-NNNN-slug.md) — one-line summary · status`), one line per `todo`/`in-progress` task. There is no table to "bootstrap"; do a lightweight consistency check so that survey stays trustworthy.
+`/tackle` no-args mode surveys active tasks by reading `wiki/work/tasks/index.md` — a flat bullet list of active items (`- [TASK-NNNN — Title](TASK-NNNN-slug.md) — one-line summary · status`), one line per `todo`/`in-progress`/`pending-uat` task. There is no table to "bootstrap"; do a lightweight consistency check so that survey stays trustworthy.
 
 1. Use `mcp__serena__list_dir` on `wiki/work/tasks/` to list task files (top-level only, not `archive/`). If the directory is empty or has no task files, skip this step.
 2. Read `wiki/work/tasks/index.md` (use `Read` — markdown).
-3. Consistency check: every active task file (frontmatter `status: todo` or `in-progress`) should have exactly one bullet line in `index.md`, and every bullet in `index.md` should point to a real active task file. If you spot drift (an active task file with no line, a line pointing at a moved/trashed/archived file, or a `done`/`trashed` task still listed), report a one-line warning to the user listing what's off, but do NOT auto-fix — the skill that mutated state without updating the index is the bug.
+3. Consistency check: every active task file (frontmatter `status: todo`, `in-progress` or `pending-uat`) should have exactly one bullet line in `index.md`, and every bullet in `index.md` should point to a real active task file. If you spot drift (an active task file with no line, a line pointing at a moved/trashed/archived file, or a `done`/`trashed` task still listed), report a one-line warning to the user listing what's off, but do NOT auto-fix — the skill that mutated state without updating the index is the bug.
 
 See `wiki/work/tasks/lifecycle.md` for the active status set and frontmatter schema.

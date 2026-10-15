@@ -39,7 +39,7 @@ Before designing the narrative, collect every stated requirement so the demo can
 
 **Check for requirements documents in this order:**
 
-1. `wiki/work/requirements/` — read every non-retired PRD file (skip `archive/`). Extract:
+1. `wiki/work/requirements/` — read every non-retired PRD file (decide by each file's `status:`, never by location; retired PRDs stay in place, and any legacy holding folder is skipped). Extract:
    - User stories / personas
    - Functional requirements
    - Success metrics / acceptance criteria

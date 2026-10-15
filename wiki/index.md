@@ -1,6 +1,6 @@
 ---
 title: Wiki Index
-updated: 2026-09-13
+updated: 2026-09-20
 ---
 
 # Wiki Index — Home Map
@@ -31,7 +31,7 @@ The wiki is split into two domains with opposite organizing laws:
 - [Research: Which Claude Code controls survive --dangerously-skip-permissions](knowledge/sources/bypass-mode-enforcement.md) — deny/ask/hooks/sandbox all enforce under bypass; what bypass destroys is the built-in protected-path guard (supersedes the sandbox-escape report on that point)
 - [Research: git exclude vs Claude Code @ autocomplete](knowledge/sources/git-exclude-at-autocomplete.md) — info/exclude blinds the @ picker (and rg); no git-side layout fixes it; the documented `fileSuggestion` custom command is the escape hatch (supersedes the info/exclude report's "Claude tools unaffected" claim)
 - [Obsidian and Typed Wiki Linking](knowledge/sources/obsidian-wiki-linking.md) — this repo's `rel::[[target]]` convention is Dataview's full-line inline-field syntax, not a bespoke invention, currently used with zero plugins installed
-- [Automating Obsidian and Plugin Setup in the Bootstrap Scripts](knowledge/sources/obsidian-setup-automation.md) — app + plugin install are both fully scriptable and fit the existing guarded/opt-in install pattern; /wiki-lint's graph view improves for free, /task-audit does not
+- [Automating Obsidian and Plugin Setup in the Bootstrap Scripts](knowledge/sources/obsidian-setup-automation.md) — app + plugin install are both fully scriptable and fit the existing guarded/opt-in install pattern; /wiki-lint's graph view improves for free, /task-assess does not
 - [Research: Serena MCP — Project Scope vs. Local Scope](knowledge/sources/serena-mcp-scope.md) — confirms the existing local-scope choice against Claude Code's official scope docs; no code change indicated
 - [Obsidian Graph View Styling, Productivity Patterns, and Shippable Wiki Defaults](knowledge/sources/obsidian-graph-defaults.md) — graph.json colorGroups is native/zero-plugin; this repo's known wiki taxonomy makes a hand-authored color template more precise than auto-detecting plugins like Graph Styler
 - [Research: .mcp.json vs ~/.claude.json — implications, performance, and behavior](knowledge/sources/mcp-scope-performance-behavior.md) — no performance difference exists (transport, not scope, drives it); real differences are precedence, headless-vs-interactive approval prompts, and workspace trust; found a contradiction on prior "no path-portability mechanism" claim
@@ -47,8 +47,10 @@ The wiki is split into two domains with opposite organizing laws:
 - [Research: Wiki Structure, Work-Family Lifecycles, and Cross-Family Synergy](knowledge/sources/wiki-work-family-synergy.md) — bug↔task, roadmap↔bug, and requirement↔decision/task have no schema-level link field at all; only roadmap→task materialization is truly automatic in the pipeline; schema fixes must land in the template source, not the local wiki/ copy
 - [Research: Simplifying the wiki/work/ Family Skills](knowledge/sources/wiki-skill-simplification.md) — no SKILL.md is a safe deletion; the "reference, don't restate" pattern already works in 3 places but wiki-tidy does the opposite and has already drifted; req-update's retire branch skips req-retire's git mv step
 - [Research: Renaming req-* Skills to requirement-*](knowledge/sources/req-to-requirement-rename.md) — this repo already renamed a skill-family prefix twice (adr→decision, prd→req) via install-global.sh's ORPHAN_SKILLS array; full reference inventory + a pre-existing CLAUDE.md doc-drift bug (req-retire missing from its command table) found along the way
+- [Research: A Cross-Family `/whats-next` Skill (Assess + Prioritize ALL Open Work)](knowledge/sources/whats-next.md) — 14 of 40 open tasks+bugs sit outside every roadmap; recommends a new read-only cross-family advisor (not a wrapper, not a power-mode mode) with tiered ranking and an explicit `--go` handoff; flags `pending-uat` missing from tasks/lifecycle.md
 
 ### Concepts
+- [Cross-Family Work Prioritization (Tiers, Not Scores)](knowledge/concepts/cross-family-work-prioritization.md) — fix broken → finish in-flight → unblock → start ready → triage, tie-broken by downstream critical-path depth; roadmap membership is a column, not a ranking input
 - [Multi-Agent Orchestration Patterns](knowledge/concepts/multi-agent-orchestration-patterns.md) — orchestrator+isolated-subagents survives production, peer/group-chat doesn't; 15x token cost of multi-agent vs. chat; compounding-error math (0.85^10)
 - [GenAI Observability Standard](knowledge/concepts/genai-observability-standard.md) — OTel GenAI semantic conventions (still Development status) as the vendor-neutral layer; proxy vs. SDK/OTel tracer backend split
 - [wiki/work/ Filename Convention: PREFIX-NNN(N)-slug.md, and Where Two Skills Drifted From It](knowledge/concepts/wiki-work-filename-convention.md) — `bug-file`/`roadmap-create` write bare filenames pre-dating the wiki2 migration; fix is text-only, no data migration needed
@@ -88,7 +90,7 @@ The wiki is split into two domains with opposite organizing laws:
 
 Each family's `index.md` lists its **active items only** (completed/terminal items drop off the list; files never move — status lives in frontmatter).
 
-- **Requirements** — REQ-NNN. [Active index](work/requirements/index.md) · [lifecycle](work/requirements/lifecycle.md)
+- **Requirements** — PRD-NNN. [Active index](work/requirements/index.md) · [lifecycle](work/requirements/lifecycle.md)
 - **Decisions** — DEC-NNNN (per-decision `#DM`). [Active index](work/decisions/index.md) · [lifecycle](work/decisions/lifecycle.md)
 - **Roadmaps** — ROADMAP-NNN. [Active index](work/roadmaps/index.md) · [lifecycle](work/roadmaps/lifecycle.md)
 - **Tasks** — TASK-NNN. [Active index](work/tasks/index.md) · [lifecycle](work/tasks/lifecycle.md)

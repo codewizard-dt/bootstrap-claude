@@ -44,16 +44,16 @@ TEMPLATE_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"   # repo root
 ## Work families (wiki/work/)
 
 Files never move; status in frontmatter; each family has lifecycle.md + index.md (active items only).
-- `requirements/` REQ-NNN · `decisions/` DEC-NNNN#DM · `roadmaps/` ROADMAP-NNN
+- `requirements/` REQ-NNN · `decisions/` ADR-NNNN#DM (legacy DEC-) · `roadmaps/` ROADMAP-NNN
 - `tasks/` TASK-NNN · `uat/` UAT-NNN (own family, not nested in tasks/) · `bugs/` BUG-NNNN
 
-task-trash: flips status: trashed (no file deletion, no trashed/ directory).
+task-close: flips status: trashed (no file deletion, no trashed/ directory).
 
 ## Skill workflow pipeline
 
-`/req-create → /req-finalize → /req-extract-decisions → /decision-create → /decision-finalize → /task-add → /tackle → /update-docs → /uat-generate → /uat-walk` (human) OR `/uat-auto` (headless)
+`/prd-create → /prd-finalize → /adr-extract → /adr-create → /adr-finalize → /task-create → /tackle → /update-docs → /uat-create → /uat-walk` (human) OR `/uat-auto` (headless)
 
-Requirement/decision layer is optional for small work — jump directly to `/task-add`.
+Requirement/decision layer is optional for small work — jump directly to `/task-create`.
 
 ## Required MCPs
 

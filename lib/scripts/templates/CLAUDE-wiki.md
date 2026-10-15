@@ -17,10 +17,10 @@ CLAUDE.md     This schema section.
 - `wiki/knowledge/concepts/` — patterns, ideas, conventions, recurring themes
 - `wiki/knowledge/entities/{people,organisations,tools,components}/` — one page per entity, filed by sub-type
 
-**`wiki/work/`** — stateful lifecycle artifacts, organized by status. Active files are **never moved** after creation; state lives in the `status:` frontmatter field. Each family has a `lifecycle.md` (schema + valid transitions), an `index.md` listing **only active items**, and an `archive/` subdirectory for terminal items. When an item leaves the active set, delete its line from the family index; terminal items may be moved to `archive/` by `/wiki-archive`.
+**`wiki/work/`** — stateful lifecycle artifacts, organized by status. Active files are **never moved** after creation; state lives in the `status:` frontmatter field. Each family has a `lifecycle.md` (schema + valid transitions), and an `index.md`. **Tasks, UAT and bugs** archive: their index lists **only active items** (delete the line when an item leaves the active set), and terminal items may be moved to an `archive/` subdirectory by `/wiki-archive`. **Roadmaps, decisions and requirements** close in place: the file never moves, and the family `index.md` moves its row from `## Active` to `## Closed`.
 
-- `wiki/work/requirements/` — REQ-NNNN
-- `wiki/work/decisions/` — DEC-NNNN (per-decision `#DM`)
+- `wiki/work/requirements/` — PRD-NNNN
+- `wiki/work/decisions/` — ADR-NNNN (per-decision `#DM`)
 - `wiki/work/roadmaps/` — ROADMAP-NNNN
 - `wiki/work/tasks/` — TASK-NNNN
 - `wiki/work/uat/` — UAT-NNNN (own family, one per task)
@@ -48,9 +48,9 @@ Keep the two from duplicating or contradicting each other: project-specific stat
 | `/wiki-ingest <raw-file>` | Process a source from `raw/` into the wiki — summary page, entity/concept updates, index + log entries |
 | `/wiki-query <question>` | Answer from the wiki with citations; auto-ingest relevant un-ingested `raw/` sources when coverage is missing; offer to file valuable synthesis back as a new page |
 | `/wiki-lint` | Health-check — contradictions, orphan pages, stale claims, index drift, never-ingested raw sources |
-| `/wiki-archive [family]` | Batch-move terminal work items into `<family>/archive/`; update `archive/index.md` and log the operation |
+| `/wiki-archive [family]` | Batch-move terminal tasks, UAT and bugs into `<family>/archive/`; update `archive/index.md` and log the operation (roadmaps, decisions and requirements close in place and are never archived) |
 | `/wiki-rotate-log` | Rotate `wiki/log.md` to a timestamped archive file when it exceeds ~500 lines; create a fresh `log.md` with an archive pointer |
-| `/wiki-tidy` | One-shot cleanup — lint, archive terminal items across all families, then rotate log if overgrown; phases run in sequence with user confirmation |
+| `/wiki-tidy` | One-shot cleanup — lint, archive terminal tasks/UAT/bugs, then rotate log if overgrown; phases run in sequence with user confirmation |
 
 ### CRITICAL wiki rules
 
@@ -60,5 +60,5 @@ Keep the two from duplicating or contradicting each other: project-specific stat
 4. Flag contradictions explicitly — when a new source conflicts with an existing page, add a `> **Contradiction:**` callout citing both; never silently overwrite
 5. Answer from the wiki, not general knowledge — if the wiki lacks coverage, say so and suggest `/wiki-ingest` for relevant sources
 6. Atomic pages — one concept, entity, or artifact per file; split a page rather than let it cover two things
-7. Typed links — when a link has a meaning, annotate it inline as `rel::[[target]]` (e.g. `implements::[[REQ-012]]`, `supersedes::[[DEC-0003#D2]]`); keep the two domains separate — never file a stateful artifact under `knowledge/` or a timeless synthesis under `work/`
+7. Typed links — when a link has a meaning, annotate it inline as `rel::[[target]]` (e.g. `implements::[[PRD-012]]`, `supersedes::[[ADR-0003#D2]]`); keep the two domains separate — never file a stateful artifact under `knowledge/` or a timeless synthesis under `work/`
 8. Template-owned files are read-only — never edit `wiki/guides/*`, `wiki/conventions.md`, `wiki/work/*/lifecycle.md`, or `wiki/dashboard.html`; they are refreshed from the bootstrap templates and local edits will be lost

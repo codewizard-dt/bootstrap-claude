@@ -90,7 +90,7 @@ Worth filing this answer as a new wiki page?
 Target: wiki/knowledge/concepts/<concept-slug>.md
 ```
 
-**Never file stateful work artifacts here** — requirements, decisions, tasks, bugs belong in `wiki/work/` and are created by their own skills (`/req-create`, `/decision-create`, etc.).
+**Never file stateful work artifacts here** — requirements, decisions, tasks, bugs belong in `wiki/work/` and are created by their own skills (`/prd-create`, `/adr-create`, etc.).
 
 If the user says yes:
 1. Create `wiki/knowledge/concepts/<concept-slug>.md` with proper frontmatter (`id`, `title`, `updated`, `tags`, `sources` if derived from a raw source).

@@ -35,7 +35,7 @@ The output document is formatted to be a valid "source project" for `/port-featu
 3. **Clarifying questions** — ask before proceeding if any are ambiguous:
    - **Output location**: Should the extracted module live as a subdirectory within this project (e.g., `packages/<module-name>/`) or as a stub for a new standalone repo? (Default: subdirectory)
    - **Constraints**: Any hard constraints — must stay in the same language, no new dependencies, must preserve the current public API for backward compatibility?
-   - **Supplementary output**: Is this extraction substantial enough to warrant a roadmap (multiple ordered steps) via `/roadmap-create`, or small enough for a single task via `/task-add`? Default to a roadmap once Phase 5's extraction steps exceed ~3 steps or missing test coverage must be backfilled first.
+   - **Supplementary output**: Is this extraction substantial enough to warrant a roadmap (multiple ordered steps) via `/roadmap-create`, or small enough for a single task via `/task-create`? Default to a roadmap once Phase 5's extraction steps exceed ~3 steps or missing test coverage must be backfilled first.
 
 ---
 
@@ -241,7 +241,7 @@ Present the complete assessment in the conversation as structured tables/section
 
 ### 6b. Decide: Roadmap or Single Task
 
-- **≤3 extraction steps, no missing test coverage flagged in 5b** → skip the roadmap. Go straight to `/task-add "Extract <feature name> into standalone module"`, carrying the full step detail into the task's steps, then skip to Phase 7.
+- **≤3 extraction steps, no missing test coverage flagged in 5b** → skip the roadmap. Go straight to `/task-create "Extract <feature name> into standalone module"`, carrying the full step detail into the task's steps, then skip to Phase 7.
 - **>3 steps, missing test coverage to backfill first, or the user asked for a roadmap in Phase 0** → continue to 6c.
 
 ### 6c. Delegate to `/roadmap-create`
@@ -257,7 +257,7 @@ Feed `/roadmap-create`'s own Socratic Q&A from the analysis already gathered, ra
 | Owner | Ask the user if not already known |
 | Linked PRD/ADRs | Any `wiki/work/requirements/` or `wiki/work/decisions/` entries found during Phase 2a |
 
-Each Extraction Step becomes one roadmap item — an inline placeholder (`- [ ] <step title>`) under its phase, per `/roadmap-create`'s item-format rules. **Do not embed the step's file list / what-to-do / definition-of-done in the roadmap item** — that detail belongs in the task file created for it via `/task-add --roadmap ROADMAP-NNNN <step title>` (or automatically when `/roadmap-next` runs).
+Each Extraction Step becomes one roadmap item — an inline placeholder (`- [ ] <step title>`) under its phase, per `/roadmap-create`'s item-format rules. **Do not embed the step's file list / what-to-do / definition-of-done in the roadmap item** — that detail belongs in the task file created for it via `/task-create --roadmap ROADMAP-NNNN <step title>` (or automatically when `/roadmap-next` runs).
 
 ---
 

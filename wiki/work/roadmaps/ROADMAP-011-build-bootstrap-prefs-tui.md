@@ -20,16 +20,16 @@ A user can view and change any `bootstrap-prefs.json` key from a plain terminal 
 
 ## Phase 1: Core TUI Engine
 
-- [ ] Build bootstrap-prefs-tui.js: a readline-driven menu porting /bootstrap-config's Step A–G flow, shelling out to bootstrap-prefs.js for every get/set/unset/list and reading the schema directly (including the guides.* and gitignore.section.* dynamic families)
+- [ ] [[TASK-0103: Build bootstrap-prefs-tui.js: readline menu porting /bootstrap-config Step A-G]]
 
 ## Phase 2: CLI Wiring
 
-- [ ] Wire bootstrap-prefs-tui.js into bin/cli.js as a new `config` subcommand (mirrors the existing `dashboard` entry), supporting both a no-args interactive menu and flag-driven passthrough (e.g. `bootstrap config --get/--set <key> ...`) for scripting
+- [x] [[TASK-0104: Wire bootstrap-prefs-tui.js into bin/cli.js as a `config` subcommand]]
 
 ## Phase 3: Verification & Docs
 
-- [ ] UAT covering the interactive menu flow, scope enforcement (BUG-0009-style refusal), and both dynamic families
-- [ ] Update README.md / relevant docs to mention `bootstrap config` as the non-Claude-Code path for editing preferences
+- [ ] [[TASK-0105: Verify the bootstrap-prefs TUI: automated tests for the menu flow, scope refusal, and the guides.* / gitignore.section.* families]]
+- [x] [[TASK-0106: Document `bootstrap config` as the non-Claude-Code path for editing preferences]]
 
 ## Notes
 

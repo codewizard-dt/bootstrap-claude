@@ -149,7 +149,7 @@
     "scope": "global",
     "consumer": "installer",
     "summary": "Delete stale skill folders in ~/.claude/skills/ left by the wiki rename",
-    "detail": "Asked by install-global.sh:72 when any renamed-away skill folder (the adr-* and prd-* families) is still present in ~/.claude/skills/. true removes those folders with rm -rf; false keeps them, and they continue to appear as duplicate slash commands alongside their renamed replacements. The list of orphan names is fixed in the script — this key does not decide which folders qualify, only whether the deletion runs.",
+    "detail": "Asked by install-global.sh:80 when any renamed-away skill folder (the adr-* and prd-* families) is still present in ~/.claude/skills/ and is not a live skill in the installed lib/skills/ tree. true removes those folders with rm -rf; false keeps them, and they continue to appear as duplicate slash commands alongside their renamed replacements. The list of orphan names is fixed in the script — this key does not decide which folders qualify, only whether the deletion runs.",
     "values": "true | false",
     "default": null,
     "askedBy": "install-global.sh"
@@ -211,7 +211,7 @@
   "uatGenerate.promoteTests": {
     "scope": "either",
     "consumer": "skill",
-    "summary": "Where /uat-generate writes the unit tests it promotes out of UAT cases",
+    "summary": "Where /uat-create writes the unit tests it promotes out of UAT cases",
     "detail": "The question is WHERE promoted tests land, not whether they exist. 'dedicated' is today's behavior: they go in the project's dedicated test directory, resolved by looking at the repo first (an existing test directory) and falling back to the language default — test/ for JS/TS, tests/ for Python, spec/ where that is the local idiom. The directory is detected rather than stored, because this grammar is a closed enumeration of literal tokens and a stored path would be free text. 'sibling' puts each test beside the file under test using the language's own convention (src/parse.ts -> src/parse.test.ts). 'never' writes nothing: the skill still runs its promotability analysis and records the verdict on each UAT case, it just creates no file. An existing test file that already covers the unit is extended in place under every value, and a project's visible layout wins over a stored answer that contradicts it — so this key is a default for new work, not an override of the repo. It affects what lands on disk, not how the UAT itself is judged. Legacy true/false/ask values from the key's earlier grammar are mapped by the skill: true -> dedicated, false -> never, ask -> ask once per run.",
     "values": "sibling | never | dedicated",
     "default": "dedicated",
@@ -224,6 +224,15 @@
     "detail": "Controls the single opening gate at merge-gitignore.sh:171 ('Review .gitignore updates? (N line(s) across M section(s))'). This is a full three-state key: 'ask' is today's behavior, true runs the section pass without the opening question (each individual section is still offered by title, so nothing is appended silently), and false skips the whole pass with no prompt at all. The key itself never appends a line to any .gitignore — it only decides whether the pass runs. The .git/info/exclude block is OUTSIDE this gate entirely and keeps its own consent prompt: see gitignore.infoExclude. Individual section declines are remembered separately under gitignore.section.*.",
     "values": "true | false | ask",
     "default": true,
+    "askedBy": "install-global.sh"
+  },
+  "sandbox.scaffold": {
+    "scope": "global",
+    "consumer": "installer",
+    "summary": "Whether install-global.sh merges the Claude Code sandbox block into ~/.claude/settings.json",
+    "detail": "Asked by install-global.sh step 7b. true merges lib/scripts/templates/settings-sandbox.json ({\"enabled\": true, \"excludedCommands\": [\"docker *\", \"docker-compose *\"]}) into ~/.claude/settings.json as the \"sandbox\" key; false leaves the settings alone. Enabling the sandbox adds OS-level containment (macOS Seatbelt, Linux/WSL2 bubblewrap + socat) for Bash and its child processes. docker commands are incompatible with the sandbox, so they are pre-listed under sandbox.excludedCommands as the escape hatch; add any other tool that fails under the sandbox to excludedCommands the same way. A pre-existing \"sandbox\" key in settings.json is never overwritten, whatever this key says. Native Windows and WSL1 are unsupported and skipped. Unset means the question is asked again on the next sync.",
+    "values": "true | false",
+    "default": null,
     "askedBy": "install-global.sh"
   }
 }

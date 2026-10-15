@@ -28,10 +28,10 @@ This repo follows the three-layer LLM Wiki pattern described in `raw/llm-wiki.md
 - `wiki/knowledge/concepts/` — patterns, ideas, conventions, recurring themes
 - `wiki/knowledge/entities/{people,organisations,tools,components}/` — one page per entity, filed by sub-type (`components/` holds this repo's own skills, hooks, scripts)
 
-**`wiki/work/`** — stateful lifecycle artifacts, organized by status. Active files are **never moved** after creation; state lives in the `status:` frontmatter field; each family has a `lifecycle.md` defining its schema and valid transitions, an `index.md` listing **only active items**, and an `archive/` subdirectory for terminal items. Terminal items may be moved to `archive/` by `/wiki-archive` — safe because links use stable IDs, not paths.
+**`wiki/work/`** — stateful lifecycle artifacts, organized by status. Active files are **never moved** after creation; state lives in the `status:` frontmatter field; each family has a `lifecycle.md` defining its schema and valid transitions, and an `index.md`. **Tasks, UAT and bugs** archive: their index lists **only active items**, and terminal items may be moved to an `archive/` subdirectory by `/wiki-archive` — safe because links use stable IDs, not paths. **Roadmaps, decisions and requirements** close in place: the file never moves, and the family `index.md` moves its row from `## Active` to `## Closed` (legacy `archive/` folders are migrated by the next `bootstrap update`).
 
-- `wiki/work/requirements/` — requirements / PRDs (REQ-NNNN)
-- `wiki/work/decisions/` — architecture decision records (DEC-NNNN, per-decision `#DM`)
+- `wiki/work/requirements/` — requirements / PRDs (PRD-NNNN)
+- `wiki/work/decisions/` — architecture decision records (ADR-NNNN, per-decision `#DM`)
 - `wiki/work/roadmaps/` — execution-plan roadmaps (ROADMAP-NNNN)
 - `wiki/work/tasks/` — task files (TASK-NNNN)
 - `wiki/work/uat/` — UAT files (UAT-NNNN), one per task — **own family, not nested inside tasks/**
@@ -50,9 +50,9 @@ Every page obeys [`wiki/conventions.md`](wiki/conventions.md). The load-bearing 
 | `/wiki-ingest <raw-file>` | Process a source from `raw/` into the wiki — summary page, entity/concept page updates, index + log entry; one source per invocation |
 | `/wiki-query <question>` | Answer from the wiki with citations; auto-ingest relevant un-ingested `raw/` sources when coverage is missing; offer to file valuable synthesis back as a new page |
 | `/wiki-lint` | Health-check — contradictions, orphan pages, stale claims, missing cross-references, never-ingested raw sources |
-| `/wiki-archive [family]` | Batch-move terminal work items into `<family>/archive/`; update `archive/index.md` and log the operation. Omit family to see a summary count across all families |
+| `/wiki-archive [family]` | Batch-move terminal tasks, UAT and bugs into `<family>/archive/`; update `archive/index.md` and log the operation (roadmaps, decisions and requirements close in place and are never archived). Omit family to see a summary count across the archiving families |
 | `/wiki-rotate-log` | Rotate `wiki/log.md` to a timestamped archive file (`log-YYYY_MM_DD_HHMMSS.md`) when it exceeds ~500 lines; create a fresh `log.md` with an archive-pointer header |
-| `/wiki-tidy` | One-shot cleanup — lint, archive terminal items across all families, then rotate log if overgrown; phases run in sequence with user confirmation |
+| `/wiki-tidy` | One-shot cleanup — lint, archive terminal tasks/UAT/bugs, then rotate log if overgrown; phases run in sequence with user confirmation |
 
 ### CRITICAL wiki rules
 
@@ -62,7 +62,7 @@ Every page obeys [`wiki/conventions.md`](wiki/conventions.md). The load-bearing 
 4. Flag contradictions explicitly — when a new source conflicts with an existing page, add a `> **Contradiction:**` callout citing both; never silently overwrite
 5. Answer from the wiki, not general knowledge — if the wiki lacks coverage, say so and suggest `/wiki-ingest` for relevant sources
 6. Atomic pages — one concept, entity, or artifact per file; split a page rather than let it cover two things (the one expensive-to-retrofit rule)
-7. Typed links — when a link has a meaning, annotate it inline as `rel::[[target]]` (e.g. `implements::[[REQ-012]]`, `supersedes::[[DEC-0003#D2]]`); plain `[[links]]` remain valid. Keep the two domains separate: never file a stateful artifact under `knowledge/` or a timeless synthesis under `work/`
+7. Typed links — when a link has a meaning, annotate it inline as `rel::[[target]]` (e.g. `implements::[[PRD-012]]`, `supersedes::[[ADR-0003#D2]]`); plain `[[links]]` remain valid. Keep the two domains separate: never file a stateful artifact under `knowledge/` or a timeless synthesis under `work/`
 
 ## Setup Workflow
 
@@ -70,10 +70,11 @@ Follow the root `README.md` to configure a new project, or use the npm package:
 
 - `npx @codewizard-dt/bootstrap setup` — runs `lib/scripts/setup-project.sh` (installs hooks and skills globally and merges the canonical deny list + hook wiring into `~/.claude/settings.json` first via `install-global.sh --skip-mcps`, then runs the interactive MCP install — guarded, a failure warns and continues — syncs wiki scaffold + tiered `wiki/guides/` (required guide always refreshed; optional guides prompted), backfills `aliases:` onto any drifted `wiki/work/` file, bootstraps Serena)
 - `npx @codewizard-dt/bootstrap update` — runs `lib/scripts/update-project.sh` (installs hooks and skills globally and merges the canonical deny list + hook wiring into `~/.claude/settings.json` first via `install-global.sh --skip-mcps`, then the guarded interactive MCP install, syncs wiki scaffold + tiered `wiki/guides/`, backfills `aliases:` onto any drifted `wiki/work/` file)
-- `npx @codewizard-dt/bootstrap install` — runs `lib/scripts/install-global.sh` (installs hooks and skills globally without a project path, merges the canonical permission deny list from `lib/scripts/templates/settings-deny.json` and the canonical hook wiring from `lib/scripts/templates/settings-hooks.json` into `~/.claude/settings.json`, then installs/updates MCPs last — guarded so a failure warns instead of aborting the local installs; `--skip-mcps` skips them)
-- `npx @codewizard-dt/bootstrap migrate [--dry-run]` — runs `lib/scripts/migrate-project.sh` (Claude-driven migration of a legacy `.docs/` project to the wiki structure; requires a clean git tree, runs on a fresh `wiki-migration` branch, `git mv` preserves history; assembles `wiki/guides/mcp-tools.md` for the detected MCPs)
+- `npx @codewizard-dt/bootstrap install` — runs `lib/scripts/install-global.sh` (installs hooks and skills globally without a project path, merges the canonical permission deny list from `lib/scripts/templates/settings-deny.json` and the canonical hook wiring from `lib/scripts/templates/settings-hooks.json` into `~/.claude/settings.json`, on a tty offers an opt-in starter Claude Code sandbox block (step 7b, `sandbox.scaffold` pref; docker is pre-excluded as incompatible with the sandbox), also copies the unattended-run sandbox profile to `~/.claude/templates/settings-sandbox-unattended.json` (applied per session with `claude --settings`, never merged), then installs/updates MCPs last — guarded so a failure warns instead of aborting the local installs; `--skip-mcps` skips them)
+- `npx @codewizard-dt/bootstrap migrate [--dry-run]` — runs `lib/scripts/migrate-project.sh` (Claude-driven migration of a legacy `.docs/` project to the wiki structure; requires a clean git tree, runs on a fresh `wiki-migration` branch, `git mv` preserves history; assembles `wiki/guides/mcp-tools.md` for the detected MCPs; also renames existing `DEC-NNNN` → `ADR-NNNN` and `REQ-NNNN` → `PRD-NNNN` work items — files, references, old ID kept as alias — via `lib/scripts/rename-wiki-ids.js`, with or without legacy `.docs/` content)
 - `npx @codewizard-dt/bootstrap typechecks [languages]` — runs `lib/scripts/setup-strict-typechecks.sh` (strict type-checking setup via Claude)
-- `npx @codewizard-dt/bootstrap dashboard [port]` — runs `lib/scripts/wiki-dashboard-server.js` (zero-dependency Node server that serves the live `wiki/work/` dashboard read-only over HTTP; foreground until Ctrl-C; default `http://localhost:4317`, override with a port arg e.g. `dashboard 4400`, auto-falls back to the next free port if taken)
+- `npx @codewizard-dt/bootstrap dashboard [port]` — runs `lib/scripts/wiki-dashboard-server.js` (zero-dependency Node server that serves the live `wiki/work/` dashboard read-only, and the `/usage-report` rollup via a read-only `/api/usage` route, over HTTP; foreground until Ctrl-C; default `http://localhost:4317`, override with a port arg e.g. `dashboard 4400`, auto-falls back to the next free port if taken)
+- `npx @codewizard-dt/bootstrap config [flags]` — runs `lib/scripts/bootstrap-prefs-tui.js` (zero-dependency readline TUI for `bootstrap-prefs.json`: no-args interactive menu porting `/bootstrap-config`'s Step A-G flow, optionally scoped with `--global` / `--project <dir>`) or, when any of `--get` / `--set` / `--unset` / `--list` / `--section-key` is passed, forwards the flags straight to `lib/scripts/bootstrap-prefs.js` for scripting (e.g. `config --set <key> --value <v> --global`); every read/write delegates to `bootstrap-prefs.js`; the non-Claude-Code counterpart of `/bootstrap-config`
 
 **Manual setup steps:**
 
@@ -90,39 +91,44 @@ Follow the root `README.md` to configure a new project, or use the npm package:
 | `/wiki-ingest <raw-file>` | Process a source from `raw/` into the wiki — summary page, entity/concept updates, index + log entries |
 | `/wiki-query <question>` | Answer a question from the wiki with citations; auto-ingest relevant un-ingested `raw/` sources when coverage is missing; optionally file the answer back as a new wiki page |
 | `/wiki-lint` | Health-check the wiki — contradictions, orphans, stale claims, missing cross-references, never-ingested sources |
-| `/wiki-archive [family]` | Batch-move terminal work items into `<family>/archive/`; update `archive/index.md` and log the operation. Omit family to see a count summary across all families |
+| `/wiki-archive [family]` | Batch-move terminal tasks, UAT and bugs into `<family>/archive/`; update `archive/index.md` and log the operation (roadmaps, decisions and requirements close in place and are never archived). Omit family to see a count summary across the archiving families |
 | `/wiki-rotate-log` | Rotate `wiki/log.md` to a timestamped archive file (`log-YYYY_MM_DD_HHMMSS.md`) when it exceeds ~500 lines; create a fresh `log.md` with an archive-pointer header |
-| `/wiki-tidy` | One-shot cleanup — lint, archive terminal items across all families, then rotate log if overgrown; phases run in sequence with user confirmation |
+| `/wiki-tidy` | One-shot cleanup — lint, archive terminal tasks/UAT/bugs, then rotate log if overgrown; phases run in sequence with user confirmation |
 | `/primer` | Refresh codebase context via Serena memories |
 | `/serena-config` | Interactively configure Serena language servers in `.serena/project.yml` |
-| `/bootstrap-config [view \| edit \| reset] [--global \| --project]` | View, edit, and reset stored bootstrap preferences — which installer prompts get asked, and how consent-gated skills behave |
+| `/bootstrap-config [view \| edit \| reset] [--global \| --project]` | View, edit, and reset stored bootstrap preferences — which installer prompts get asked, and how consent-gated skills behave (terminal equivalent: `bootstrap config`) |
 | `/research <topic>` | Deep research using codebase analysis, library docs, and web search |
 | `/research-company <name> [URL]` | Comprehensive company research — mission, operations, leadership, financials, and ~5 years of news |
 | `/company-align [slug]` | Analyse project–company fit against researched context in `raw/companies/<slug>/`; writes `alignment.md` with gaps, strengths, and talking points |
 | `/now <task>` | Plan and delegate task to subagents (max 3 concurrent) |
+| `/autopilot [--dry-run]` | One unattended tick for `/loop 1h /autopilot` — if idle, run `/whats-next` and `/power-mode` the first drivable item; if no work is left, `/research` similar products against this codebase; if still none, create a roadmap from the newest research |
 | `/tackle <path>` | Execute outlined task file step-by-step with subagent delegation |
-| `/task-add <desc>` | Create structured task in `wiki/work/tasks/`. Optional flags: `--decision DEC-NNNN#DM` (auto-link to an accepted decision); `--roadmap ROADMAP-NNNN` (auto-append the new task to a roadmap); `--knowledge <slug>` (auto-link a `wiki/knowledge/` page via `relates_to::`) |
+| `/task-create <desc>` | Create structured task in `wiki/work/tasks/`. Optional flags: `--decision ADR-NNNN#DM` (auto-link to an accepted decision; legacy `DEC-NNNN#DM` accepted); `--roadmap ROADMAP-NNNN` (auto-append the new task to a roadmap); `--knowledge <slug>` (auto-link a `wiki/knowledge/` page via `relates_to::`) |
 | `/roadmap-create <topic>` | Create an execution-plan roadmap in `wiki/work/roadmaps/` via short Socratic Q&A — captures goal, phases, and a hybrid (task-link OR inline) checklist |
 | `/roadmap-assess` | Survey all active roadmaps together — cross-roadmap dependencies, prioritized list, and a status update for each |
-| `/roadmap-next <roadmap>` | Point at the first unchecked item(s) in one roadmap (path, `NNN-slug`, or number — required) grouped into parallelizable waves; flips a completed roadmap to `status: done` and archives it |
-| `/req-create <idea>` | Create a lean requirement in `wiki/work/requirements/` via Socratic Q&A capturing problem, personas, user stories, success metrics, and non-goals |
-| `/req-finalize <file>` | Run completeness audit on a draft requirement, resolve gaps via Q&A, and flip `status` from `draft` to `approved` |
-| `/req-extract-decisions <file>` | Extract Architecturally Significant Requirements from an approved requirement, cross-check existing decisions, and propose Decision Group candidates for `/decision-create` |
-| `/req-update <file> [change]` | Amend an approved requirement with an append-only Amendment block; apply direct edits to drafts; surface downstream decision/task impact |
-| `/req-compile <file>` | Compile a requirement into a running, self-verifying system — routes every claim to its cheapest re-runnable check |
-| `/decision-create <topic>` | Create a Decision Group file in `wiki/work/decisions/` containing 1+ proposed decisions; per-decision tags/status; table-only comparisons; mermaid flowcharts |
-| `/decision-finalize <file>#<DM>` | Finalize a single proposed decision (e.g. `0001-wiki-model#D2`); per-decision E-C-A-D-R audit; per-decision supersession check; siblings remain untouched |
-| `/decision-walkthrough <file>` | Walk a Decision Group file decision-by-decision, presenting each architecture choice and confirming it with the user via Q&A; light edits only (no status flips) |
-| `/decision-next [file or NNNN]` | Read-only — find the first accepted decision with no task reference and suggest `/task-add` |
-| `/task-audit [--mermaid] [--json]` | Generate a dependency graph of active tasks in `wiki/work/tasks/`, show execution waves (parallelisable groups), and flag stale references or missing dependency blocks |
-| `/task-trash <path>` | Flip task (and matching UAT) `status: trashed`; remove from family indexes; record reason; clean roadmap/decision references — no file deletion |
-| `/task-update <path> <changes>` | Modify an existing task's scope or steps |
-| `/uat-generate <target>` | Generate UAT tests in `wiki/work/uat/` (own family) mirroring task naming conventions |
+| `/roadmap-next <roadmap>` | Point at the first unchecked item(s) in one roadmap (path, `NNN-slug`, or number — required) grouped into parallelizable waves; flips a completed roadmap to `status: done` and moves its index row to Closed (the file stays in place) |
+| `/prd-create <idea>` | Create a lean requirement in `wiki/work/requirements/` via Socratic Q&A capturing problem, personas, user stories, success metrics, and non-goals |
+| `/prd-finalize <file>` | Run completeness audit on a draft requirement, resolve gaps via Q&A, and flip `status` from `draft` to `approved` |
+| `/prd-compile <file>` | Compile a requirement into a running, self-verifying system — routes every claim to its cheapest re-runnable check |
+| `/prd-deprecate <file> [reason]` | Deprecate a PRD — set `status: retired`, document the reason, move its index row to Closed, log it; status-only, the file never moves |
+| `/prd-assess` | Survey all active PRDs together — flag approved requirements with no downstream ADRs or tasks and stale drafts, detect blocking open decisions, and rank them with a status update for each (read-only) |
+| `/adr-extract <PRD or document>` | Extract Architecturally Significant Requirements from a PRD (or any document), cross-check existing ADRs, and propose Decision Group candidates for `/adr-create` |
+| `/adr-create <topic>` | Create a Decision Group file in `wiki/work/decisions/` containing 1+ proposed decisions; per-decision tags/status; table-only comparisons; mermaid flowcharts |
+| `/adr-finalize <file>#<DM>` | Finalize a single proposed decision (e.g. `0001-wiki-model#D2`); per-decision E-C-A-D-R audit; per-decision supersession check; siblings remain untouched |
+| `/adr-walkthrough <file>` | Walk a Decision Group file decision-by-decision, presenting each architecture choice and confirming it with the user via Q&A; light edits only (no status flips) |
+| `/adr-deprecate <file>#<DM> [reason]` | Deprecate a single ADR decision block — set Status to `deprecated`, document the reason, update the family index, log it; status-only, the file never moves |
+| `/adr-next [file or NNNN]` | Read-only — find the first accepted decision with no task reference and suggest `/task-create` |
+| `/adr-assess` | Survey all active ADRs together — surface proposed decisions and accepted decisions with no task, follow supersession chains, and rank decision blocks with a status update for each (read-only) |
+| `/task-assess [--mermaid] [--json]` | Generate a dependency graph of active tasks in `wiki/work/tasks/`, show execution waves (parallelisable groups), and flag stale references or missing dependency blocks |
+| `/task-close <path>` | Flip task (and matching UAT) `status: trashed`; remove from family indexes; record reason; clean roadmap/decision references — no file deletion |
+| `/uat-create <target>` | Create UAT tests in `wiki/work/uat/` (own family) mirroring task naming conventions |
 | `/uat-walk <path>` | Interactively walk through a pending UAT file test-by-test with the user |
 | `/uat-auto <path>` | Non-interactively run every test in a pending UAT file and auto-judge verdicts (headless, fail-closed) |
 | `/uat-auto-plus <path>` | Autonomous-fix variant of `/uat-auto`: diagnoses failures, applies fixes itself, re-runs until green or attempts are exhausted (intended for `--dangerously-skip-permissions` agents) |
 | `/uat-skip <path>` | Skip UAT for a task — flip UAT `status: skipped` and task `status: done`; remove from family indexes |
-| `/bug-file <description>` | File a new bug in `wiki/work/bugs/` with required-on-report fields and update `wiki/work/bugs/index.md`. Optional flag: `--knowledge <slug>` (auto-link a `wiki/knowledge/` page via `relates_to::`) |
+| `/uat-assess` | Survey all active UATs together — group by what each is waiting on (failing cases, partial walks, auto-runnable, manual-only, stubs), rank by what each unblocks, and suggest a next command for each (read-only) |
+| `/whats-next [--limit N] [--family ...]` | Survey ALL open work — tasks (in or out of a roadmap), UATs, bugs, roadmaps, ADR blocks and PRDs — and rank one prioritized do-next list with parallel waves (read-only) |
+| `/bug-create <description>` | Create a new bug report in `wiki/work/bugs/` with required-on-report fields and update `wiki/work/bugs/index.md`. Optional flag: `--knowledge <slug>` (auto-link a `wiki/knowledge/` page via `relates_to::`) |
 | `/bug-assess` | Survey all active bugs together — batch-triage any still-open reports first, then rank the active set by priority, severity, and impact into a single prioritized fix order with a status update for each bug |
 | `/bug-triage <BUG-NNNN>` | Triage an open bug (priority, assignee, tags, impact) and decide its next destination: stay triaged, start work (→ `status: in-progress`), or trash (wontfix / duplicate / cannot-reproduce) |
 | `/bug-close <BUG-NNNN>` | Close an in-progress bug — requires root-cause analysis, fix commit, and a regression test before setting `status: closed` |
@@ -134,6 +140,7 @@ Follow the root `README.md` to configure a new project, or use the npm package:
 | `/lint` | Get IDE diagnostics, fix issues one-by-one in verify cycles |
 | `/typecheck` | Detect type-checking tools (typecheck/tsc/mypy/pyright/go vet/cargo check/etc.), run each one, and only invoke `/git-commit` if all pass |
 | `/debug-logs [symptom]` | Diagnose failures by inspecting session context, background processes, and conventional log stores; produce ranked hypotheses with next actions (read-only) |
+| `/usage-report [--all-projects] [--since YYYY-MM-DD]` | Parse local Claude Code session logs (offline, read-only) into per-project token and estimated-cost rollups by model and skill |
 | `/port-feature <source-path> <functionality>` | Assess a feature in an external project and produce a concrete porting plan (technology mapping, complexity breakdown, ordered steps) targeting the current project's conventions |
 | `/simplify <path>` | Analyze files/directories to remove redundancy and simplify complexity |
 | `/demo [path] [custom instructions]` | Audit all project functionality and produce a 2-3 minute demo run book and Marp slideshow |
@@ -165,17 +172,17 @@ Standard Read/Edit/Write tools are permitted for markdown and config files (JSON
 - `wiki/index.md` — Page catalog and home Map of Content (sectioned Knowledge / Work); read first on every wiki query; updated on every ingest and filed answer
 - `wiki/log.md` — Append-only operation log; last entry shows when the wiki was last touched
 - `wiki/conventions.md` — Rules every page follows: atomic pages, stable IDs/aliases, typed links (`rel::[[target]]`), reserved frontmatter namespace, two-domain rule
-- `wiki/work/decisions/lifecycle.md` — Lifecycle spec for decisions (DEC-NNNN IDs; `status: proposed | accepted | superseded`)
-- `wiki/work/tasks/lifecycle.md` — Lifecycle spec for tasks (TASK-NNNN IDs; `status: todo | in-progress | done | trashed`)
+- `wiki/work/decisions/lifecycle.md` — Lifecycle spec for decisions (ADR-NNNN IDs; `status: proposed | accepted | superseded`)
+- `wiki/work/tasks/lifecycle.md` — Lifecycle spec for tasks (TASK-NNNN IDs; `status: todo | in-progress | pending-uat | done | trashed`)
 - `wiki/work/uat/lifecycle.md` — Lifecycle spec for UAT (UAT-NNNN IDs — own family, not nested in tasks/; `status: pending | in-progress | passed | failed | skipped | trashed`)
 - `wiki/work/bugs/lifecycle.md` — Lifecycle spec for bugs (BUG-NNNN IDs; `status: open | triaged | in-progress | closed | wontfix | duplicate | cannot-reproduce`)
-- `wiki/work/requirements/lifecycle.md` — Lifecycle spec for requirements (REQ-NNNN IDs; `status: draft | approved | retired`)
+- `wiki/work/requirements/lifecycle.md` — Lifecycle spec for requirements (PRD-NNNN IDs; `status: draft | approved | retired`)
 - `wiki/work/roadmaps/lifecycle.md` — Lifecycle spec for roadmaps (ROADMAP-NNNN IDs; `status: active | done`)
 - `README.md` — Root usage and architecture documentation: how to use the repo, 4-layer architecture diagrams, design decisions, publishing, troubleshooting
-- `lib/skills/` — All custom skill definitions (in Skills directory format); installed globally to `~/.claude/skills/` by `lib/scripts/install-global.sh`
+- `lib/skills/` — All custom skill definitions (in Skills directory format); installed globally to `~/.claude/skills/` by `lib/scripts/install-global.sh`; `lib/skills/_shared/` holds reference docs (no `SKILL.md`, not a slash command) that skills point at instead of restating
 - `lib/hooks/` — Project-managed hook scripts; installed globally to `~/.claude/hooks/` by `lib/scripts/install-global.sh`. Three groups: safety/policy hooks (`env-file-guard.js`, `git-protected-ops-block.js`, `mv-absolute-path-block.js`), **command-class guards** that gate invocation forms a deny rule cannot express — `interpreter-indirection-guard.js`, `package-install-consent.js`, `absolute-path-guard.js`, `protected-write-guard.js`, `claude-settings-guard.js`, `env-content-read-guard.js`, sharing `lib/hooks/lib/command-parse.js` — and the Serena-first enforcement hooks ported from `claude-code-lsp-enforcement-kit`. See `lib/hooks/README.md` for what each hook blocks, its known false positives and escape hatches, and the `~/.claude/settings.json` wiring — registered automatically by `install-global.sh` via `merge-settings-hooks.js` merging `lib/scripts/templates/settings-hooks.json`, so copying the scripts and wiring them are one step, repeated idempotently on every `install`/`setup`/`update`. Each guard's matcher is load-bearing (the wrong one makes a hook silently inert), which is why the template is the single source of truth. These files also carry inline rationale comments by deliberate exception to the repo-wide no-comments default — the exception is scoped to `lib/hooks/` alone and governed by `lib/hooks/README.md` § Commenting standard; do not strip them
 - `lib/prompts/` — Claude prompt templates for setup scripts. `setup-strict-typechecks.md` drives `setup-strict-typechecks.sh`. Edit these to change what Claude scaffolds — the scripts are just thin wrappers that read, interpolate, and invoke
-- `lib/scripts/install-global.sh` — Installs/updates hooks, skills, and MCPs globally so they are available across all projects. Local steps run first: hooks + skills install, then the canonical permission deny-list merge (`lib/scripts/templates/settings-deny.json`, via `lib/scripts/merge-settings-deny.js`) into `~/.claude/settings.json` — `Bash(...)` command patterns plus `Edit(...)`/`Read(...)` file-tool patterns — then the canonical hook-wiring merge (`lib/scripts/templates/settings-hooks.json`, via `lib/scripts/merge-settings-hooks.js`; "template owns its blocks" — user entries never modified or removed; prints a restart-your-session reminder when the wiring was created or changed). Also copies `lib/scripts/templates/file-suggestion.sh` to `~/.claude/file-suggestion.sh` and merges the `fileSuggestion` settings key (`merge-settings-deny.js --set-key` mode) so `@`-autocomplete sees the `.git/info/exclude`'d machine-local dirs again; a pre-existing different `fileSuggestion` is warned about and left alone. MCPs install last, guarded so a failure warns instead of aborting; `--skip-mcps` skips them. Called by both setup and update scripts (as `install-global.sh --skip-mcps`)
+- `lib/scripts/install-global.sh` — Installs/updates hooks, skills, and MCPs globally so they are available across all projects. Local steps run first: hooks + skills install, then the canonical permission deny-list merge (`lib/scripts/templates/settings-deny.json`, via `lib/scripts/merge-settings-deny.js`) into `~/.claude/settings.json` — `Bash(...)` command patterns plus `Edit(...)`/`Read(...)` file-tool patterns — then the canonical hook-wiring merge (`lib/scripts/templates/settings-hooks.json`, via `lib/scripts/merge-settings-hooks.js`; "template owns its blocks" — user entries never modified or removed; prints a restart-your-session reminder when the wiring was created or changed). Also copies `lib/scripts/templates/file-suggestion.sh` to `~/.claude/file-suggestion.sh` and merges the `fileSuggestion` settings key (`merge-settings-deny.js --set-key` mode) so `@`-autocomplete sees the `.git/info/exclude`'d machine-local dirs again; a pre-existing different `fileSuggestion` is warned about and left alone. Step 7b (tty-only, asked while global pref `sandbox.scaffold` is unanswered) offers to merge `lib/scripts/templates/settings-sandbox.json` (`enabled: true`, `excludedCommands: ["docker *", "docker-compose *"]` — docker is incompatible with the sandbox; `excludedCommands` is the escape hatch for any other tool that fails under it) as the `sandbox` key via `merge-settings-deny.js --set-key`, never overwriting a pre-existing different one. Block "6b" also copies (never merges) `lib/scripts/templates/settings-sandbox-unattended.json` to `~/.claude/templates/settings-sandbox-unattended.json` — the stricter sandbox profile for unattended runs, passed per session as `claude --settings <file> --dangerously-skip-permissions`; the installer itself must be run from a normal shell, never a sandboxed one. MCPs install last, guarded so a failure warns instead of aborting; `--skip-mcps` skips them. Called by both setup and update scripts (as `install-global.sh --skip-mcps`)
 - `lib/scripts/setup-project.sh` — Set up a new project: installs hooks/skills/settings globally first (via `install-global.sh --skip-mcps`), then runs the guarded interactive MCP install, syncs wiki scaffold + tiered `wiki/guides/`, backfills `wiki/work/` `aliases:` drift, bootstraps Serena `project.yml`
 - `lib/scripts/update-project.sh` — Install hooks/skills/settings globally first (via `install-global.sh --skip-mcps`), then run the guarded interactive MCP install, sync the wiki scaffold + tiered `wiki/guides/`, and backfill `wiki/work/` `aliases:` drift into a target project (re-runs `bootstrap-serena.sh` idempotently)
 - `lib/scripts/sync-wiki-scaffold.sh` — Scaffolds an EMPTY wiki into target projects: creates `raw/` + `wiki/` with all family directories, lifecycle docs, per-family active-item `index.md`, and stub index/log from `lib/scripts/templates/wiki/`. Copy-once for project-owned files; always-refreshes `conventions.md` and `lifecycle.md` files. Delivers guides tier-wise into `wiki/guides/` (required always refreshed; optional prompted via `--interactive`, sticky once present) and migrates legacy `.docs/guides/` contents (template-owned files removed or relocated; empty dirs pruned; deprecated `task-spec.md` deleted). Delivers the wiki-schema section (copy-once, sentinel `## LLM Wiki`, template at `lib/scripts/templates/CLAUDE-wiki.md`) and the `.env` safety policy (copy-once, sentinel line, template at `lib/scripts/templates/CLAUDE-env-safety.md`) into the target's `CLAUDE.md` — or, when a `CLAUDE.md` already exists without the schema, asks interactively whether to modify it or write `CLAUDE.local.md` instead (non-interactive default: `CLAUDE.local.md`, never touching a file it didn't create). Called by both setup and update scripts.
@@ -207,10 +214,10 @@ CLAUDE.md     This schema section.
 - `wiki/knowledge/concepts/` — patterns, ideas, conventions, recurring themes
 - `wiki/knowledge/entities/{people,organisations,tools,components}/` — one page per entity, filed by sub-type
 
-**`wiki/work/`** — stateful lifecycle artifacts, organized by status. Active files are **never moved** after creation; state lives in the `status:` frontmatter field. Each family has a `lifecycle.md` (schema + valid transitions), an `index.md` listing **only active items**, and an `archive/` subdirectory for terminal items. When an item leaves the active set, delete its line from the family index; terminal items may be moved to `archive/` by `/wiki-archive`.
+**`wiki/work/`** — stateful lifecycle artifacts, organized by status. Active files are **never moved** after creation; state lives in the `status:` frontmatter field. Each family has a `lifecycle.md` (schema + valid transitions), and an `index.md`. **Tasks, UAT and bugs** archive: their index lists **only active items** (delete the line when an item leaves the active set), and terminal items may be moved to an `archive/` subdirectory by `/wiki-archive`. **Roadmaps, decisions and requirements** close in place: the file never moves, and the family `index.md` moves its row from `## Active` to `## Closed`.
 
-- `wiki/work/requirements/` — REQ-NNNN
-- `wiki/work/decisions/` — DEC-NNNN (per-decision `#DM`)
+- `wiki/work/requirements/` — PRD-NNNN
+- `wiki/work/decisions/` — ADR-NNNN (per-decision `#DM`)
 - `wiki/work/roadmaps/` — ROADMAP-NNNN
 - `wiki/work/tasks/` — TASK-NNNN
 - `wiki/work/uat/` — UAT-NNNN (own family, one per task)
@@ -236,9 +243,9 @@ Keep the two from duplicating or contradicting each other: project-specific stat
 | `/wiki-ingest <raw-file>` | Process a source from `raw/` into the wiki — summary page, entity/concept updates, index + log entries |
 | `/wiki-query <question>` | Answer from the wiki with citations; auto-ingest relevant un-ingested `raw/` sources when coverage is missing; offer to file valuable synthesis back as a new page |
 | `/wiki-lint` | Health-check — contradictions, orphan pages, stale claims, index drift, never-ingested raw sources |
-| `/wiki-archive [family]` | Batch-move terminal work items into `<family>/archive/`; update `archive/index.md` and log the operation |
+| `/wiki-archive [family]` | Batch-move terminal tasks, UAT and bugs into `<family>/archive/`; update `archive/index.md` and log the operation (roadmaps, decisions and requirements close in place and are never archived) |
 | `/wiki-rotate-log` | Rotate `wiki/log.md` to a timestamped archive file when it exceeds ~500 lines; create a fresh `log.md` with an archive pointer |
-| `/wiki-tidy` | One-shot cleanup — lint, archive terminal items across all families, then rotate log if overgrown; phases run in sequence with user confirmation |
+| `/wiki-tidy` | One-shot cleanup — lint, archive terminal tasks/UAT/bugs, then rotate log if overgrown; phases run in sequence with user confirmation |
 
 ### Optional tooling
 
@@ -255,4 +262,4 @@ Two external tools are worth knowing about but are **not adopted by default** in
 4. Flag contradictions explicitly — when a new source conflicts with an existing page, add a `> **Contradiction:**` callout citing both; never silently overwrite
 5. Answer from the wiki, not general knowledge — if the wiki lacks coverage, say so and suggest `/wiki-ingest` for relevant sources
 6. Atomic pages — one concept, entity, or artifact per file; split a page rather than let it cover two things
-7. Typed links — when a link has a meaning, annotate it inline as `rel::[[target]]` (e.g. `implements::[[REQ-012]]`, `supersedes::[[DEC-0003#D2]]`); keep the two domains separate — never file a stateful artifact under `knowledge/` or a timeless synthesis under `work/`
+7. Typed links — when a link has a meaning, annotate it inline as `rel::[[target]]` (e.g. `implements::[[PRD-012]]`, `supersedes::[[ADR-0003#D2]]`); keep the two domains separate — never file a stateful artifact under `knowledge/` or a timeless synthesis under `work/`

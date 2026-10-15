@@ -29,11 +29,9 @@ No files are moved. Status lives in frontmatter.
 
 ## Step 1: Resolve the Task File
 
-Parse `$ARGUMENTS` to locate the task file in `wiki/work/tasks/`:
+Locate the task file in `wiki/work/tasks/`. Task files never move; there are no subdirectories to check.
 
-1. **TASK-NNNN** or **TASK-NNNN-slug** — use Serena `find_file` to locate `TASK-NNNN*.md` inside `wiki/work/tasks/`. Task files never move; there are no subdirectories to check.
-2. **Full path** — confirm the file exists with `find_file`. If it does not exist, STOP and report the error.
-3. **Ambiguous / description only** — list matches and ask the user to clarify.
+Resolve the file per ~/.claude/skills/_shared/ID-RESOLUTION.md — family: tasks · scope: active · ambiguous: interactive (ambiguous / description only: list matches and ask the user to clarify) · empty: STOP and report the error
 
 Read the task file. Extract:
 - `id:` frontmatter field (e.g. `TASK-007`)
@@ -94,7 +92,7 @@ Apply the STATUS-FLIP PROCEDURE to both artifacts:
 2. Edit `updated:` → today's date
 3. Remove the task's row from `wiki/work/tasks/index.md` (done tasks are not active)
 
-Use the `Edit` tool for all frontmatter changes. Never use `sed`, `awk`, or shell redirection.
+Edit only — see `~/.claude/skills/_shared/SKILL-BOILERPLATE.md` § Edit hygiene.
 
 ---
 
@@ -119,16 +117,14 @@ Scan every active roadmap (files in `wiki/work/roadmaps/` whose `status: active`
 2. Read each file. Look for lines matching `- [ ] [[TASK-NNNN` (wiki-style task link).
 3. For each match, `Edit` `- [ ] [[TASK-NNNN` → `- [x] [[TASK-NNNN` **and** update `updated:` in that roadmap's frontmatter to today.
 4. **Phase sweep**: after flipping this task's line, scan other `- [ ] [[TASK-NNNN` lines in the same `## Phase` block. For each, check if that task's `status:` is `done`. If yes, flip `- [ ]` → `- [x]`.
-5. **Roadmap completion check**: if ALL checkboxes in the roadmap are now `[x]`, flip the roadmap's `status: active` → `status: done` and `updated:` → today, remove the roadmap's row from `wiki/work/roadmaps/index.md`, then archive the roadmap file:
-   - `git mv wiki/work/roadmaps/<file>.md wiki/work/roadmaps/archive/<file>.md`
-   - Append to `wiki/work/roadmaps/archive/index.md`: `| [[ROADMAP-NNNN]] | Title | done | YYYY-MM-DD |`
+5. **Roadmap completion check**: if ALL checkboxes in the roadmap are now `[x]`, close it in place — read `~/.claude/skills/_shared/ARCHIVE-WORK-ITEM.md` and run its **In-place close (roadmaps, decisions, requirements)** section with `family: roadmaps`, `terminal_status: done`, `log: skip` (Step 6 writes this skill's own log entry). The file is not moved; its `status:` flips to `done` and its row moves from `## Active` to `## Closed` in `wiki/work/roadmaps/index.md`.
 6. Silent no-op if no roadmap references this task.
 
 ---
 
 ## Step 5: Decision Annotation
 
-Check the task body for a typed link `implements::[[DEC-NNNN#DM]]` or similar decision reference:
+Check the task body for a typed link `implements::[[ADR-NNNN#DM]]` (or legacy `implements::[[DEC-NNNN#DM]]`) or similar decision reference:
 
 - If found, locate the decision file in `wiki/work/decisions/`.
 - Search the decision file for any `Source task(s):` line referencing this task.

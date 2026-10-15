@@ -55,18 +55,30 @@ for fam in "${LEGACY_FAMILIES[@]}"; do
   fi
 done
 
-if [ ${#LEGACY_FOUND[@]} -eq 0 ]; then
-  echo "Nothing to migrate: no legacy .docs/ artifact content found in $PROJECT_DIR."
+# Second migration concern: wiki work items still carrying the pre-rename IDs
+# (DEC-NNNN decisions, REQ-NNNN requirements). Handled deterministically by
+# rename-wiki-ids.js, independent of whether any legacy .docs/ content exists.
+RENAME_COUNT="$(node "$SCRIPT_DIR/rename-wiki-ids.js" --count "$PROJECT_DIR")"
+
+if [ ${#LEGACY_FOUND[@]} -eq 0 ] && [ "$RENAME_COUNT" -eq 0 ]; then
+  echo "Nothing to migrate: no legacy .docs/ artifact content and no DEC-/REQ- work items found in $PROJECT_DIR."
   exit 0
 fi
 
-echo "Legacy .docs/ content found in $PROJECT_DIR:"
-for entry in "${LEGACY_FOUND[@]}"; do
-  fam="${entry%%:*}"
-  count="${entry##*:}"
-  echo "  .docs/$fam — $count markdown file(s)"
-done
-echo ""
+if [ ${#LEGACY_FOUND[@]} -gt 0 ]; then
+  echo "Legacy .docs/ content found in $PROJECT_DIR:"
+  for entry in "${LEGACY_FOUND[@]}"; do
+    fam="${entry%%:*}"
+    count="${entry##*:}"
+    echo "  .docs/$fam — $count markdown file(s)"
+  done
+  echo ""
+fi
+
+if [ "$RENAME_COUNT" -gt 0 ]; then
+  echo "Legacy work-item IDs found: $RENAME_COUNT file(s) to rename (DEC-→ADR-, REQ-→PRD-)."
+  echo ""
+fi
 
 # --- Detect git repo (used by both dry-run and live paths) -----------------
 if git -C "$PROJECT_DIR" rev-parse --git-dir &>/dev/null; then
@@ -86,8 +98,12 @@ if [ "$DRY_RUN" = true ]; then
       echo "  ${f#"$PROJECT_DIR/"}"
     done
   done
+  if [ "$RENAME_COUNT" -gt 0 ]; then
+    echo "ID rename (DEC-→ADR-, REQ-→PRD-):"
+    node "$SCRIPT_DIR/rename-wiki-ids.js" --dry-run "$PROJECT_DIR"
+  fi
   echo ""
-  echo "Target layout: wiki/work/{tasks,uat,decisions,requirements,bugs,roadmaps}/"
+  [ ${#LEGACY_FOUND[@]} -gt 0 ] && echo "Target layout: wiki/work/{tasks,uat,decisions,requirements,bugs,roadmaps}/"
   if [ "$IS_GIT" = true ]; then
     echo "Run without --dry-run to migrate (requires clean git tree)."
   else
@@ -117,6 +133,32 @@ else
   echo "Note: no git repository detected — migration will use plain 'mv' instead of 'git mv'."
   echo "      File history will not be preserved. Consider 'git init && git add -A && git commit' first."
   echo ""
+fi
+
+# --- Rename DEC-/REQ- work items to ADR-/PRD- (deterministic, no Claude) ----
+if [ "$RENAME_COUNT" -gt 0 ]; then
+  echo "Renaming legacy work-item IDs (DEC-→ADR-, REQ-→PRD-)..."
+  node "$SCRIPT_DIR/rename-wiki-ids.js" "$PROJECT_DIR"
+  echo ""
+
+  if [ ${#LEGACY_FOUND[@]} -eq 0 ]; then
+    echo "============================="
+    echo "  Migration run complete"
+    echo "============================="
+    echo ""
+    if [ "$IS_GIT" = true ]; then
+      echo "Next steps (changes are on branch 'wiki-migration', uncommitted):"
+      echo "  1. Review:       git status && git diff"
+      echo "  2. Health-check: open Claude Code and run /wiki-lint"
+      echo "  3. Commit:       git add -A && git commit -m 'Rename DEC-/REQ- work items to ADR-/PRD-'"
+      echo "  4. Merge:        switch back and merge wiki-migration when satisfied"
+    else
+      echo "Next steps:"
+      echo "  1. Review:       check wiki/work/decisions and wiki/work/requirements"
+      echo "  2. Health-check: open Claude Code and run /wiki-lint"
+    fi
+    exit 0
+  fi
 fi
 
 # --- Scaffold first: wiki tree + CLAUDE.md schema + tiered guides ----------

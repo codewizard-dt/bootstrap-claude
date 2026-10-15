@@ -1,6 +1,6 @@
 ---
 name: wiki-tidy
-description: One-shot wiki cleanup — runs lint, archives terminal items across all families, and rotates the log if overgrown, in sequence with user confirmation at each phase
+description: One-shot wiki cleanup — runs lint, archives terminal tasks/UAT/bugs, and rotates the log if overgrown, in sequence with user confirmation at each phase
 category: wiki
 model: claude-sonnet-5
 user-invocable: true
@@ -17,7 +17,7 @@ Three-phase cleanup for a neglected wiki. Runs in order: **lint → archive → 
 Run the full wiki-lint audit by following every step in `/wiki-lint` exactly as written:
 
 1. Inventory the wiki tree.
-2. Run all 10 checks (stranded terminal files, family-index drift, two-domain violations, ID/filename mismatch, UAT↔task cross-links, typed-link vocabulary, orphan pages, never-ingested raw sources, contradictions, stale frontmatter).
+2. Run all 13 checks, 2.0–2.12 (stranded terminal files, family-index drift, two-domain violations, ID/filename mismatch, UAT↔task cross-links, typed-link vocabulary, orphan pages, never-ingested raw sources, contradictions, stale frontmatter, provenance/confidence, typed-link target resolution, task-less accepted decisions) — each check's logic lives in `/wiki-lint`.
 3. Report findings grouped by severity (HIGH / MEDIUM / LOW).
 4. For each HIGH finding, propose the exact fix.
 5. Ask: **"Which findings should I fix? Reply with 'all', specific IDs, or 'none' to skip. Type 'stop' to end wiki-tidy here."**
@@ -29,25 +29,22 @@ If the user types `stop`, end the skill here. Otherwise continue to Phase 2.
 
 ## Phase 2: Archive
 
-Run `/wiki-archive` as a cleanup sweep — it scans for any work items with terminal status that were not automatically moved to `archive/` by their originating skill (`uat-auto`, `bug-close`, `task-trash`, etc.). In a healthy wiki this phase finds nothing; it exists as a safety net.
+Run `/wiki-archive` as a cleanup sweep — it scans for any tasks, UAT or bugs with terminal status that were not automatically moved to `archive/` by their originating skill (`uat-auto`, `bug-close`, `task-close`, etc.). In a healthy wiki this phase finds nothing; it exists as a safety net. Roadmaps, decisions and requirements close in place (Closed section of the family index) and are never swept; a leftover non-empty `archive/` in one of those families is only reported (`run npx @codewizard-dt/bootstrap update to migrate`), never moved.
 
-Scan all 6 families in sequence: `tasks`, `uat`, `bugs`, `requirements`, `decisions`, `roadmaps`.
+Scan the 3 archiving families in sequence: `tasks`, `uat`, `bugs`.
 
 For each family:
 1. Read its `lifecycle.md` to confirm the terminal statuses (do NOT hardcode).
 2. Use `mcp__serena__list_dir` on the family directory.
 3. Identify files whose `status:` frontmatter is terminal (exclude `lifecycle.md`, `index.md`, `.gitkeep`, and anything already under `archive/`).
 
-After scanning all 6 families, show a combined summary:
+After scanning all 3 families, show a combined summary:
 
 ```
 Archive candidates:
   tasks       — N items  (TASK-012 done, TASK-019 trashed, …)
   uat         — N items  (UAT-012 passed, …)
   bugs        — N items
-  requirements— N items
-  decisions   — N items
-  roadmaps    — N items
 
 Total: N items across N families.
 ```
@@ -102,6 +99,6 @@ Wiki tidy complete.
 ## CRITICAL rules
 
 - Follow each sub-skill's CRITICAL rules exactly — they take precedence over brevity.
-- Never move an active item. Never edit archived file content. Never delete anything.
+- Never move an active item. Never move a roadmap, decision or requirement (they close in place). Never edit archived file content (tasks/UAT/bugs). Never delete anything.
 - Always confirm with the user before applying changes in each phase.
 - `stop` at any phase prompt ends the skill immediately without proceeding further.

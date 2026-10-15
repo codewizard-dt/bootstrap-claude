@@ -64,7 +64,7 @@ Scan every line this commit **adds or modifies** for comments more verbose than 
 - If it explains a genuinely non-obvious *why* (a workaround, a hidden constraint, a subtle invariant) but spans more lines or words than necessary, rewrite it to the single shortest sentence that preserves that reason.
 - Preserve the comment's position (same line for a trailing comment, same location for a block comment) and its language's comment syntax — only the wording and line count change.
 
-Use `Edit` per file for every change — never `sed`/`awk`/shell rewrites.
+Use `Edit` per file for every change. Edit only — see `~/.claude/skills/_shared/SKILL-BOILERPLATE.md` § Edit hygiene.
 
 ## Step 3: Assess Changes
 
@@ -257,7 +257,7 @@ git-commit "[no-bump] Fix the login redirect"
 
 ```bash
 git-commit "[patch] Fix UAT verdict logic for edge-case test skips"
-git-commit "[minor] Add /task-audit skill with dependency graph and wave output"
+git-commit "[minor] Add /task-assess skill with dependency graph and wave output"
 git-commit "[major] Rename all skills to noun-first convention, drop legacy verb-first aliases"
 ```
 
@@ -265,14 +265,14 @@ git-commit "[major] Rename all skills to noun-first convention, drop legacy verb
 
 ```bash
 git-commit "Fix UAT verdict logic for edge-case test skips"
-git-commit "Add /task-audit skill with dependency graph and wave output"
+git-commit "Add /task-assess skill with dependency graph and wave output"
 ```
 
 ### Writing a good single-line subject
 
 If the change feels too complex to summarize in one line, **make the subject more descriptive** — do not reach for a multi-line body. Aim for ~70–100 characters but go longer if it adds real information. Lead with the *what* and the *why* on the same line, separated by a colon when helpful:
 
-- ✅ `[minor] Require research for every test type in /uat-generate with checkpoint gate`
+- ✅ `[minor] Require research for every test type in /uat-create with checkpoint gate`
 - ✅ `[patch] Allow standard tools for markdown editing; ban bash exploration commands`
 - ✅ `Allow standard tools for markdown editing; ban bash exploration commands` (no bump this run — the subject still carries its weight)
 - ❌ `Update commands` (too vague — and vague is vague with or without a prefix)

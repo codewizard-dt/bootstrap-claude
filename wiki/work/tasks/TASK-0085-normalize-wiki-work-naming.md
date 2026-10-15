@@ -26,7 +26,7 @@ Full research, root-cause dating (both bugs predate the 2026-06-11 wiki2 migrati
 
 Two independent fix classes:
 
-1. **Structural/logic fixes** — exact, hand-specified edits to the skills whose filename-writing or number-scanning behavior is actually wrong or now needs to be width-agnostic (bug-file, roadmap-create, roadmap-next, task-add, req-create, decision-create).
+1. **Structural/logic fixes** — exact, hand-specified edits to the skills whose filename-writing or number-scanning behavior is actually wrong or now needs to be width-agnostic (bug-create, roadmap-create, roadmap-next, task-add, req-create, adr-create).
 2. **Mechanical token relabeling** — every doc that states the ID scheme using the literal placeholder tokens `TASK-NNN`, `UAT-NNN`, `REQ-NNN`, `ROADMAP-NNN` (never `DEC-NNNN`/`BUG-NNNN`, which are already correct and unchanged) gets those tokens swapped to their 4-digit form (`TASK-NNNN`, `UAT-NNNN`, `REQ-NNNN`, `ROADMAP-NNNN`). Do this with `mcp__serena__replace_in_files` (dry-run first) rather than by hand, scoped to the exact files listed in Step 10 — **never** run it as an unscoped repository-wide sweep: `raw/**` is immutable and must never be touched, and the real data files under `wiki/work/{tasks,uat,requirements,roadmaps}/*.md` contain concrete IDs like `TASK-074` (no literal `NNN` substring), not placeholder tokens, so they are naturally unaffected by a literal-string replace but are explicitly excluded from the tool's file-list anyway as a safety margin.
 
 **Critical correctness point for width-agnostic scanning** (Steps 2 and 4 below): once 3-digit and 4-digit filenames coexist in the same family, a number-scan that assumes fixed width would either miss existing high numbers (causing an ID collision, e.g. writing `ROADMAP-0001` when `ROADMAP-001` already exists and both represent the number 1) or fail to find new 4-digit files on a later run. The fix is to extract the **numeric value** from `PREFIX-<digits>-*.md` regardless of how many digits are present (ignore leading zeros when comparing), take the max across every match in both the active and `archive/` directories, add 1, and zero-pad **the result** to 4 digits.
@@ -35,9 +35,9 @@ Two independent fix classes:
 
 ## Steps
 
-### 1. Fix `bug-file`'s filename bug and add the missing re-verify race guard  <!-- agent: general-purpose --> <!-- Updated: 2026-09-13 -->
+### 1. Fix `bug-create`'s filename bug and add the missing re-verify race guard  <!-- agent: general-purpose --> <!-- Updated: 2026-09-13 -->
 
-File: `lib/skills/bug-file/SKILL.md`
+File: `lib/skills/bug-create/SKILL.md`
 
 - [x] Step 5 ("Present and Confirm"): change `Resolved filename: \`wiki/work/bugs/NNNN-<slug>.md\`` → `Resolved filename: \`wiki/work/bugs/BUG-NNNN-<slug>.md\``.
 - [x] Step 6 ("Write the Bug File"): change `Use \`Write\` to create \`wiki/work/bugs/NNNN-<slug>.md\`` → `Use \`Write\` to create \`wiki/work/bugs/BUG-NNNN-<slug>.md\``.
@@ -79,7 +79,7 @@ File: `lib/skills/task-add/SKILL.md`
 
 ### 5. Fix `req-create`'s width, its Row/columns wording mismatch, and add the missing race guard  <!-- agent: general-purpose --> <!-- Updated: 2026-09-13 -->
 
-File: `lib/skills/req-create/SKILL.md`
+File: `lib/skills/prd-create/SKILL.md`
 
 - [x] Step 2 ("Locate directory, assign number"): change `Requirements live at \`wiki/work/requirements/REQ-NNN-slug.md\` (3-digit zero-padded).` → `Requirements live at \`wiki/work/requirements/REQ-NNNN-slug.md\` (4-digit zero-padded).` And `highest prefix across both + 1 (first is \`REQ-001\`)` → `highest prefix across both + 1 (first is \`REQ-0001\`)`. Update the slug example `"Self-serve billing portal" → \`REQ-004-self-serve-billing-portal.md\`` → `"Self-serve billing portal" → \`REQ-0004-self-serve-billing-portal.md\``. (No existing requirement files exist yet, so no width-agnostic legacy-scan logic is needed here — this is a clean cutover.)
 - [x] Step 7 ("Update indexes + log"): the current text describes the index update as "Row/columns: `ID` = ... · `Title` · `Status` = ... · `Created` = ... · `Owner` · `Linked Decisions` = `—` · `Linked Tasks` = `—`", which reads as a table but `wiki/work/requirements/index.md`'s own documented entry format is a flat bullet line (`- [REQ-NNN — Title](REQ-NNN-slug.md) — one-line summary · status`), matching every other family. Rewrite Step 7's index-update instruction to state the flat-bullet entry format explicitly, e.g.: `Append (or replace the placeholder row) in \`wiki/work/requirements/index.md\` using the format documented at the top of that file: \`- [REQ-NNNN — Title](REQ-NNNN-slug.md) — one-line summary · status\`, in ascending REQ order.`
@@ -91,9 +91,9 @@ File: `lib/skills/req-create/SKILL.md`
   ```
   Note: Step 6's own file-write example (frontmatter/heading showing `REQ-NNN`) and other `REQ-NNN` occurrences elsewhere in the file were deliberately left untouched here — the mechanical sweep in Step 10 below covers them.
 
-### 6. Add the missing race guard to `decision-create`  <!-- agent: general-purpose --> <!-- Updated: 2026-09-13 -->
+### 6. Add the missing race guard to `adr-create`  <!-- agent: general-purpose --> <!-- Updated: 2026-09-13 -->
 
-File: `lib/skills/decision-create/SKILL.md`
+File: `lib/skills/adr-create/SKILL.md`
 
 - [x] Inserted **"Step 4.5: Re-verify next decision number — IMMEDIATELY before writing"** at lines 80-82, immediately between Step 4 (Clarify with the user) and Step 5 (Generate the file):
   ```

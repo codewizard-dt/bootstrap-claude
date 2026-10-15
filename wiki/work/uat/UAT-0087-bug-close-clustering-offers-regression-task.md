@@ -32,7 +32,7 @@ implements::[[TASK-0087]]
 - **Expected Result**: All three base bullets are present and precede the clustering-check bullet in document order.
 - **Repeatable Unit Test**: Created: `test/bug-close-clustering-offer.test.js`
 - **Unit Test Command**: `node --test test/bug-close-clustering-offer.test.js`
-- [ ] Pass
+- [x] Pass <!-- 2026-09-19 -->
 
 ### UAT-EDGE-002: 2+ related closes trigger the templated inline prompt
 - **Scenario**: When the clustering check finds **2 or more** related recent closes (not counting the bug just closed), Step 10 must use `AskUserQuestion` to ask the exact templated question: `N related bugs closed recently with tag(s) <tags> — <BUG-NNNN titles>. File a regression-prevention task? (y/n)`.
@@ -40,7 +40,7 @@ implements::[[TASK-0087]]
 - **Expected Result**: Both the threshold gate and the exact question text are present verbatim.
 - **Repeatable Unit Test**: Created: `test/bug-close-clustering-offer.test.js`
 - **Unit Test Command**: `node --test test/bug-close-clustering-offer.test.js`
-- [ ] Pass
+- [x] Pass <!-- 2026-09-19 -->
 
 ### UAT-EDGE-003: "yes" answer files a regression task via task-add without --roadmap
 - **Scenario**: On a "yes" answer to the prompt, Step 10 must invoke `Skill` `task-add` with a description referencing the clustered bug IDs and shared tag(s), and must explicitly not pass `--roadmap` (no roadmap context exists at this point — the user can link one later via `/task-add --roadmap`).
@@ -48,7 +48,7 @@ implements::[[TASK-0087]]
 - **Expected Result**: Both the task-add invocation instruction and the no-`--roadmap` instruction are present.
 - **Repeatable Unit Test**: Created: `test/bug-close-clustering-offer.test.js`
 - **Unit Test Command**: `node --test test/bug-close-clustering-offer.test.js`
-- [ ] Pass
+- [x] Pass <!-- 2026-09-19 -->
 
 ### UAT-EDGE-004: "no" answer (or ≤1 related close) is an unchanged, silent no-op
 - **Scenario**: On a "no" answer, or when ≤1 related close is found, behavior must be unchanged from before this task — print the clustering observation and stop, with no prompt at all.
@@ -56,7 +56,7 @@ implements::[[TASK-0087]]
 - **Expected Result**: The no-op branch text is present verbatim, confirming no prompt fires in this case.
 - **Repeatable Unit Test**: Created: `test/bug-close-clustering-offer.test.js`
 - **Unit Test Command**: `node --test test/bug-close-clustering-offer.test.js`
-- [ ] Pass
+- [x] Pass <!-- 2026-09-19 -->
 
 ### UAT-EDGE-005: new sub-bullets are structurally nested under the verified clustering-check bullet, not top-level
 - **Scenario**: The three new sub-bullets (prompt, yes-branch, no-branch) must be nested (2-space-indented) directly beneath the pre-existing "For `verified`: ... clustering check" bullet, so they cannot be misread as unconditional top-level report items and cannot accidentally gate the `fixed`-status branch that follows.
@@ -64,7 +64,7 @@ implements::[[TASK-0087]]
 - **Expected Result**: All three new lines are nested sub-bullets; the `fixed`-status bullet is untouched.
 - **Repeatable Unit Test**: Created: `test/bug-close-clustering-offer.test.js`
 - **Unit Test Command**: `node --test test/bug-close-clustering-offer.test.js`
-- [ ] Pass
+- [x] Pass <!-- 2026-09-19 -->
 
 ### UAT-MANUAL-001: end-to-end walkthrough with a real 2-related-close cluster
 - **Scenario**: Run `/bug-close` on a bug that shares tags with 2+ recently archived bugs, and confirm the live behavior matches the documented contract: the inline prompt appears with correct tag(s)/titles substituted, answering "y" invokes `/task-add` with a sensible description referencing the clustered bug IDs and no `--roadmap` flag, and answering "n" (or having only 0-1 related closes) prints just the clustering observation with no prompt.
@@ -77,7 +77,7 @@ implements::[[TASK-0087]]
   6. Repeat closing a bug with 0-1 tag overlap in the archive; confirm no prompt appears and only the clustering observation prints.
 - **Expected Result**: Live behavior matches every static claim verified in UAT-EDGE-001 through 005 above — this is the runtime confirmation that the documented contract is actually followed when a human (or `/uat-walk` operator) executes the skill.
 - **Repeatable Unit Test**: Not applicable: requires live `/bug-close` execution, `AskUserQuestion` interaction, and real archive-file state — cannot run inside a deterministic unit-test harness without mocking the whole skill-invocation loop.
-- [ ] Pass
+- [FAIL: auto-judge: manual test requires human verification] <!-- 2026-09-19 -->
 
 ---
 

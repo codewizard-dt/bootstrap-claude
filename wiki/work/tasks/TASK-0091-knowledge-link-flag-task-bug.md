@@ -26,7 +26,7 @@ Both this task and `TASK-0088` edit `lib/skills/task-add/SKILL.md`. They touch d
 
 ## Approach
 
-**Source-of-truth note**: edit `lib/skills/task-add/SKILL.md` and `lib/skills/bug-file/SKILL.md` in this repo, never their `~/.claude/skills/` counterparts — those are machine-local copies installed by `install-global.sh`, overwritten on the next sync.
+**Source-of-truth note**: edit `lib/skills/task-add/SKILL.md` and `lib/skills/bug-create/SKILL.md` in this repo, never their `~/.claude/skills/` counterparts — those are machine-local copies installed by `install-global.sh`, overwritten on the next sync.
 
 Match the existing flag-parsing pattern exactly (detect token, strip it, resolve the file, store for later steps) rather than inventing a new mechanism.
 
@@ -40,9 +40,9 @@ Match the existing flag-parsing pattern exactly (detect token, strip it, resolve
 
 <!-- Updated: 2026-09-13 (Step 2b inserted between existing Step 3 and Step 4; Step 8 body template + prose updated; argument-hint left untouched for Step 3 of this task) -->
 
-### 2. Add the same flag to bug-file <!-- agent: general-purpose -->
+### 2. Add the same flag to bug-create <!-- agent: general-purpose -->
 
-- [x] In `lib/skills/bug-file/SKILL.md`, add the identical `--knowledge <slug>` handling in "### Step 3: Gather Required Fields via Q&A" (as an optional, non-required field alongside the existing `linked_task` exception handling).
+- [x] In `lib/skills/bug-create/SKILL.md`, add the identical `--knowledge <slug>` handling in "### Step 3: Gather Required Fields via Q&A" (as an optional, non-required field alongside the existing `linked_task` exception handling).
 - [x] Store the resolved page reference and write it into the bug file body (bug files don't currently have a typed-link line near the top the way tasks do — add one, e.g. directly under the H1, following the same `relates_to::[[<slug>]]` convention).
 
 <!-- Updated: 2026-09-13 (Knowledge exception added to Step 3 Q&A; relates_to::[[<slug>]] template added to Step 6 body write; argument-hint left untouched for Step 3 of this task) -->
@@ -50,6 +50,6 @@ Match the existing flag-parsing pattern exactly (detect token, strip it, resolve
 ### 3. Document the new flags <!-- agent: general-purpose -->
 
 - [x] Update both skills' `argument-hint:` frontmatter to include `[--knowledge <slug>]`.
-- [x] If `CLAUDE.md`'s Custom Commands table describes `/task-add`'s or `/bug-file`'s flags, update those one-line descriptions to mention the new optional flag.
+- [x] If `CLAUDE.md`'s Custom Commands table describes `/task-add`'s or `/bug-create`'s flags, update those one-line descriptions to mention the new optional flag.
 
 <!-- Updated: 2026-09-13 (argument-hint updated in both SKILL.md files; CLAUDE.md Custom Commands table rows for /task-add and /bug-file updated to mention --knowledge <slug>) -->

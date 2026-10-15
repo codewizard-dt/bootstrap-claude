@@ -10,8 +10,8 @@ All scripts use `set -euo pipefail`. Every script that touches a target project 
 |--------|---------------------|---------------|
 | `setup-project.sh` | `setup` | Preflight-checks `claude` and `uv` are installed, then runs the full new-project sequence: global hooks/skills/settings install first (offline-safe, via `install-global.sh --skip-mcps` — includes the deny-list and hooks-wiring merges), then the interactive MCP install (guarded — a failure warns and continues), wiki scaffold + tiered guides sync (optional guides prompted), `.gitignore` merge, and Serena `project.yml` bootstrap. |
 | `update-project.sh` | `update` | Re-runs the same shared sequence as `setup` (global hooks/skills/settings via `install-global.sh --skip-mcps`, then the guarded interactive MCP install) and re-syncs the wiki scaffold + tiered `wiki/guides/` into an existing project. Detects legacy `.docs/`-layout families (`tasks`, `uat`, `adr`, `prd`, `bugs`, `roadmaps`) and warns without touching them — migration is a separate, explicit step (`migrate`). Never touches `.github/`. |
-| `install-global.sh` | `install` | Installs/updates hooks, skills, settings, and MCPs globally with **no project path** — the shared step both `setup` and `update` delegate to. Local/offline-safe steps run first: hooks rsync to `~/.claude/hooks/` (stderr warning if `lib/hooks` is missing), skills install (pruning stale skill folders from the wiki rename — `adr-*` → `decision-*`, `prd-*` → `req-*`), the canonical permission deny-list merge into `~/.claude/settings.json` via `merge-settings-deny.js`, then the hooks-wiring merge via `merge-settings-hooks.js` — registering the copied hook scripts in the settings `hooks` key, with a restart-your-session reminder when the wiring was created or changed. Then copies `templates/file-suggestion.sh` → `~/.claude/file-suggestion.sh` and registers it as the `fileSuggestion` `@`-autocomplete picker (`merge-settings-deny.js --set-key` mode) — printing a restart note on fresh registration, or leaving a pre-existing different `fileSuggestion` untouched. Then step 6 installs the preference helper — `bootstrap-prefs.js` → `~/.claude/bootstrap-prefs.js` and `templates/bootstrap-prefs-schema.json` → `~/.claude/templates/bootstrap-prefs-schema.json`, the layout that lets a skill read a preference with no `--schema` flag (see [Preference helper notes](#preference-helper-notes)); a missing helper or schema warns and continues. Step 7 then settles the seven `consumer: skill` preferences that have never been answered — asked once, in a batch, at global scope, gated on a tty as a whole, so a non-interactive run prints one note and writes no answers and no preferences file. MCPs install **last** (step 8) — the only network-dependent step, guarded so a failure warns instead of aborting the local installs — and `--skip-mcps` skips them when the caller already handled MCP install interactively. |
-| `migrate-project.sh` | `migrate` | Claude-driven migration of a legacy `.docs/`-layout project to the LLM Wiki structure (`wiki/knowledge/` + `wiki/work/`). Preflight requires a clean git tree; runs on a fresh `wiki-migration` branch so the whole migration is one reviewable diff. Scaffolds first via `sync-wiki-scaffold.sh --interactive`, assembles `wiki/guides/mcp-tools.md` via `build-mcp-guide.sh`, then drives the semantic conversion (frontmatter synthesis, ID renames, link rewrites, family indexes) with the prompt at `lib/prompts/migrate-wiki.md`. `git mv` before edit, so history is preserved. `--dry-run` prints the file inventory only and does not touch anything. |
+| `install-global.sh` | `install` | Installs/updates hooks, skills, settings, and MCPs globally with **no project path** — the shared step both `setup` and `update` delegate to. Local/offline-safe steps run first: hooks rsync to `~/.claude/hooks/` (stderr warning if `lib/hooks` is missing), skills install (pruning stale skill folders from the wiki rename — `adr-*` → `decision-*`, `prd-*` → `req-*`; a listed name that ships again in `lib/skills/` is live and is never listed, prompted about, or pruned), the canonical permission deny-list merge into `~/.claude/settings.json` via `merge-settings-deny.js`, then the hooks-wiring merge via `merge-settings-hooks.js` — registering the copied hook scripts in the settings `hooks` key, with a restart-your-session reminder when the wiring was created or changed. Then copies `templates/file-suggestion.sh` → `~/.claude/file-suggestion.sh` and registers it as the `fileSuggestion` `@`-autocomplete picker (`merge-settings-deny.js --set-key` mode) — printing a restart note on fresh registration, or leaving a pre-existing different `fileSuggestion` untouched. Then step 6 installs the preference helper — `bootstrap-prefs.js` → `~/.claude/bootstrap-prefs.js` and `templates/bootstrap-prefs-schema.json` → `~/.claude/templates/bootstrap-prefs-schema.json`, the layout that lets a skill read a preference with no `--schema` flag (see [Preference helper notes](#preference-helper-notes)); a missing helper or schema warns and continues. Step 6b copies `templates/settings-sandbox-unattended.json` → `~/.claude/templates/settings-sandbox-unattended.json` (copy only, never merged — see [Unattended-run sandbox profile](#unattended-run-sandbox-profile)). Step 7 then settles the seven `consumer: skill` preferences that have never been answered — asked once, in a batch, at global scope, gated on a tty as a whole, so a non-interactive run prints one note and writes no answers and no preferences file. Step 7b (`configure_sandbox`, between steps 7 and 8 — no renumbering) is the opt-in Claude Code sandbox question — see [Sandbox scaffold notes](#sandbox-scaffold-notes); it is wrapped so a failure warns and continues, and the closing "Global setup complete" summary appends `+ sandbox` only when the step actually merged or confirmed the block. MCPs install **last** (step 8) — the only network-dependent step, guarded so a failure warns instead of aborting the local installs — and `--skip-mcps` skips them when the caller already handled MCP install interactively. |
+| `migrate-project.sh` | `migrate` | Claude-driven migration of a legacy `.docs/`-layout project to the LLM Wiki structure (`wiki/knowledge/` + `wiki/work/`). Preflight requires a clean git tree; runs on a fresh `wiki-migration` branch so the whole migration is one reviewable diff. Scaffolds first via `sync-wiki-scaffold.sh --interactive`, assembles `wiki/guides/mcp-tools.md` via `build-mcp-guide.sh`, then drives the semantic conversion (frontmatter synthesis, ID renames, link rewrites, family indexes) with the prompt at `lib/prompts/migrate-wiki.md`. `git mv` before edit, so history is preserved. Also renames already-migrated wiki work items from the pre-rename IDs (`DEC-NNNN` → `ADR-NNNN`, `REQ-NNNN` → `PRD-NNNN`) via `rename-wiki-ids.js` — this runs first, needs no legacy `.docs/`, and when there is nothing else to migrate the run ends there (no scaffold sync, no Claude call). `--dry-run` prints the file inventory and the rename plan and does not touch anything. |
 | `setup-strict-typechecks.sh` | `typechecks` | Loads `lib/prompts/setup-strict-typechecks.md`, appends an optional language list (space- or comma-separated), and runs `claude` to detect languages, research current strict-mode conventions, install toolchains, and wire `make typecheck`. |
 | `wiki-dashboard-server.js` | `dashboard` | Zero-dependency Node static file server (Node builtins only) that serves the live wiki dashboard client (`templates/wiki/dashboard.html`) at `/` and the project's `wiki/` tree read-only under `/wiki/*`, all with `no-store` cache headers so the polling client always sees current content. Runs in the foreground until Ctrl-C. Binds `http://localhost:4317` by default; pass a port to override (`bootstrap dashboard 4400`), and falls back to the next port (up to 10 tries) if the chosen one is in use. Unlike the other CLI scripts, this is Node, not Bash, and is long-running rather than one-shot. |
 
@@ -24,6 +24,7 @@ All scripts use `set -euo pipefail`. Every script that touches a target project 
 | `sync-wiki-scaffold.sh` | `setup-project.sh`, `update-project.sh`, `migrate-project.sh` | Scaffolds an **empty** wiki into the target project from `templates/wiki/`: creates `raw/` + all `wiki/` family directories, lifecycle docs, per-family `index.md`, and stub `index.md`/`log.md`. Copy-once for project-owned files; always-refreshes `conventions.md` and `lifecycle.md`. Delivers guides from `raw/guides/` tier-wise into `wiki/guides/`: `command-anti-patterns.md` required (always refreshed); `evals-framework.md` + `type-checking-templates/` optional (`--interactive` prompts on first delivery, sticky refresh once present — legacy `.docs/guides/` presence counts, opt out by deleting); migrates legacy `.docs/guides/` (template-owned files removed or relocated, deprecated `task-spec.md` deleted, empty dirs pruned). Also delivers the `## LLM Wiki` section and `.env` safety policy (copy-once, sentinel-guarded, from `templates/CLAUDE-wiki.md` / `templates/CLAUDE-env-safety.md`) into the target's `CLAUDE.md` — when a `CLAUDE.md` already exists without the schema, prompts whether to modify it or write `CLAUDE.local.md` instead (non-interactive default: `CLAUDE.local.md`). |
 | `build-mcp-guide.sh` | `setup-project.sh`, `update-project.sh`, `migrate-project.sh` | Assembles `wiki/guides/mcp-tools.md` in the target project from the per-server stub files in `templates/guides/stubs/`, including only the sections for MCPs actually installed. |
 | `bootstrap-serena.sh` | `setup-project.sh`, `update-project.sh` | Headlessly triggers `.serena/project.yml` creation via `claude --print` and enables the optional Serena tools needed by this template's workflow. Preflights `claude` and `python3`. |
+| `rename-wiki-ids.js` | `migrate-project.sh` (invoked via `node`; `--count` and `--dry-run` for the preflight/preview) | Zero-dependency Node script that renames `DEC-NNNN` → `ADR-NNNN` (`wiki/work/decisions/`) and `REQ-NNNN` → `PRD-NNNN` (`wiki/work/requirements/`) in an existing wiki: renames the files (active + `archive/`; `git mv` when tracked, plain rename otherwise), rewrites every reference to a renamed ID in `wiki/**/*.md` (`id:`, `[[…]]` links with `#DM` anchors, typed links, link text and relative link targets), keeps the old ID as an alias on each renamed file, and appends one entry to `wiki/log.md`. Only IDs that belong to a renamed file are rewritten, so look-alike text (e.g. a PRD's own "REQ-1 … REQ-2" list) is left alone; existing log entries and `raw/` are never edited. Idempotent; exits 1 without changing anything if a target name already exists. Unlike `backfill-wiki-aliases.js`, failures are not swallowed — it is an explicit command. Renamed skill names mentioned in prose are not rewritten. |
 | `backfill-wiki-aliases.js` | `lib.sh` (`run_project_sync`, unguarded — invoked via `node`, not direct exec) | Zero-dependency Node script that re-runs TASK-064's one-time sweep on every `setup`/`update`: scans every `wiki/work/<family>/` file (active + `archive/`, all 6 families) for one that carries `id:` but no `aliases:` yet, and inserts `aliases: [<id>]` immediately after the `id:` line. Idempotent and additive-only — a file that already has `aliases:` (inline or block-list form) is left completely untouched, never corrected or overwritten. Fixes drift (a hand-authored file, an older bootstrap checkout, a merge) that would otherwise leave a bare `[[TASK-NNN]]`-style wikilink dead in Obsidian — see `wiki/knowledge/sources/obsidian-alias-link-resolution.md` for why. Deliberately **out of scope: `wiki/knowledge/`** — a knowledge page's filename already equals its `id:` slug, so its wikilinks already resolve on Obsidian's plain filename match with no alias needed, and existing knowledge-page aliases are curated alternate names a script has no safe way to invent. Always exits 0 (same contract as `merge-settings-deny.js`/`merge-settings-hooks.js`) — warns and skips on anything unexpected rather than aborting the caller. |
 | `merge-gitignore.sh` | `setup-project.sh`, `update-project.sh` | Fully interactive `.gitignore` merge — **nothing is ever added without asking**. The packaged template's titled sections are offered one by one (`Add/update .gitignore section '<title>' (N new line(s))? [y/N]`); sections with nothing new are skipped silently. Non-interactive runs (or no tty) change nothing at all. Never touches existing project content. Also offers (git repos only) to keep `.serena/`/`raw/`/`wiki/` out of git via **`.git/info/exclude`** — never `.gitignore`, which would blind Serena on the wiki (see `wiki/knowledge/concepts/git-ignore-tool-visibility.md`); per-machine and idempotent. `info/exclude` *is* honored by ripgrep-class walkers and the `@` file picker, so every machine-local exclusion this script manages — the wiki/agent-state dirs AND the `.claude/bootstrap-prefs.*` files, whichever of its prompts get answered and in whichever order — is written under **one shared, generic sentinel** (`# bootstrap machine-local (autocomplete-visible)`) that the `fileSuggestion` picker installed by `install-global.sh` reads back to restore `@`-autocomplete. The sentinel line itself is written proactively on every interactive run against a git repo, even if every exclude-affecting prompt is declined, so the anchor is always there regardless of which preferences got set; a project still carrying the old, separately-named pre-unification header is repaired onto the shared sentinel automatically. |
 | `merge-settings-deny.js` | `install-global.sh` | Zero-dependency Node script that merges the canonical permission deny list (`templates/settings-deny.json` — `Bash(...)` command patterns plus `Edit(...)`/`Read(...)` file-tool patterns) into `~/.claude/settings.json` `permissions.deny`. Entries are opaque strings, so any rule form the permission system accepts merges unchanged. Additive union only: missing entries are appended, user entries are never removed or reordered, all other settings keys pass through untouched. Atomic write, preserves existing indentation, and always exits 0 (warns + skips on unparseable or unexpected file shapes so an install never aborts over a settings merge). `--target`/`--source` flags exist as test seams. A second mode, `--set-key <name> --set-value <json>`, merges a single top-level settings key instead of the deny list (used to register `fileSuggestion`): absent → set; already deep-equal → no-op; present but different → one-line warning and skip, never a clobber. Supplying `--set-key` skips the deny merge entirely; a malformed `--set-value` exits 1, since that is a call-site bug rather than a user's file. |
@@ -45,7 +46,7 @@ Static and semi-static assets copied or read by the scripts above — never exec
 
 | Path | Read/copied by | Contents |
 |------|-----------------|----------|
-| `templates/wiki/` | `sync-wiki-scaffold.sh` | The empty wiki scaffold: `index.md`, `log.md`, `conventions.md`, and per-family `knowledge/`/`work/{tasks,uat,bugs,requirements,decisions,roadmaps}/` directories with `lifecycle.md`, `index.md`, `archive/index.md`, and `.gitkeep` placeholders. |
+| `templates/wiki/` | `sync-wiki-scaffold.sh` | The empty wiki scaffold: `index.md`, `log.md`, `conventions.md`, and per-family `knowledge/`/`work/{tasks,uat,bugs,requirements,decisions,roadmaps}/` directories with `lifecycle.md`, `index.md` (`## Active` / `## Closed` sections for roadmaps, decisions and requirements, which close in place), `archive/index.md` (tasks, UAT and bugs only), and `.gitkeep` placeholders. |
 | `templates/guides/stubs/` | `build-mcp-guide.sh` | Per-MCP-server markdown fragments (`serena.md`, `context7.md`, `brave-search.md`, `playwright.md`) plus `00-header.md` (the shared top-of-file rules), assembled into `wiki/guides/mcp-tools.md`. |
 | `templates/CLAUDE-wiki.md` | `sync-wiki-scaffold.sh` | The `## LLM Wiki` schema section delivered into a target project's `CLAUDE.md` (copy-once, sentinel-guarded). |
 | `templates/CLAUDE-env-safety.md` | `sync-wiki-scaffold.sh` | The `.env` read/write safety policy prepended to a target project's `CLAUDE.md` (copy-once, never duplicated). |
@@ -54,6 +55,8 @@ Static and semi-static assets copied or read by the scripts above — never exec
 | `templates/settings-deny.json` | `merge-settings-deny.js` | The canonical `permissions.deny` list (bare JSON array of rule strings). Covers **both** `Bash(...)` command patterns (destructive disk/system commands, `sudo`, permission footguns, git working-tree/history protections, macOS persistence, credential exfiltration, fetch-and-execute) **and** file-tool path patterns — `Edit(...)` / `Read(...)` — protecting Claude Code's own settings and hooks, shell profiles, git config, and credential stores. Audited against the Claude Code permission-rule docs; merged additively into `~/.claude/settings.json` on every `install`/`setup`/`update`. See [Deny-list notes](#deny-list-notes) for the enforcement model and known costs. |
 | `templates/bootstrap-prefs-schema.json` | `bootstrap-prefs.js` (resolved by default as `<its own dir>/templates/bootstrap-prefs-schema.json`, no flag needed), `install-global.sh` (step 6 copies it to `~/.claude/templates/`; step 7's sync pass reads it to decide which keys are still unanswered), the installer prompt sites (`install-mcps.sh`, `merge-gitignore.sh`, `sync-wiki-scaffold.sh`, `update-project.sh`, `lib.sh`), `/bootstrap-config` | The canonical registry of every bootstrap preference key — a flat JSON object mapping a dotted key to an entry that describes it (`scope`, `consumer`, `summary`, `detail`, `values`, `default`, `askedBy`, optional `dynamic`). One file, several readers, so adding or renaming a preference is a one-file change and the surfaces cannot drift apart — the same "template owns the canonical data" model as the two settings templates above. Pure data: JSON carries no comments, so the file stays bare (no `$comment` keys, no trailing commas, `JSON.parse`-able with zero preprocessing) and its rules live in [Preference-schema notes](#preference-schema-notes). |
 | `templates/settings-hooks.json` | `merge-settings-hooks.js` | The canonical hook wiring — a bare hooks-value object (the value of the settings `hooks` key, not a full settings file) covering 4 events (`SessionStart`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`) whose entries map 1:1 onto the 18 hook scripts in `lib/hooks/*.js`. The single source of truth for the wiring merged into `~/.claude/settings.json` on every `install`/`setup`/`update`; each block's matcher is load-bearing (see `lib/hooks/README.md`), which is why the wiring ships as a template instead of being hand-pasted. |
+| `templates/settings-sandbox.json` | `install-global.sh` (step 7b, via `merge-settings-deny.js --set-key sandbox --set-value`) | The starter `sandbox` settings block, offered on opt-in only: `{"enabled": true, "excludedCommands": ["docker *", "docker-compose *"]}`. Deliberately minimal — no filesystem, network, or credentials policy. See [Sandbox scaffold notes](#sandbox-scaffold-notes). |
+| `templates/settings-sandbox-unattended.json` | `install-global.sh` (step 6b — copied to `~/.claude/templates/`, **not** merged) | The stricter `sandbox` profile for unattended runs, a standalone settings file (`{"sandbox": {...}}`) applied per session with `claude --settings`. See [Unattended-run sandbox profile](#unattended-run-sandbox-profile). |
 
 ## Deny-list notes
 
@@ -69,7 +72,9 @@ Two structural limits, neither mode-dependent:
 - **Deny matches a literal command spelling, not a capability.** `Bash(rm -rf ~*)`
   does not stop `/bin/rm -rf ~`, and no deny rule can see inside `bash -c`,
   `python -c`, or `node -e`. Blocking a *capability* needs a `PreToolUse` hook
-  (which parses the command) or the OS sandbox.
+  (which parses the command) or the OS sandbox (opt-in — see
+  [Sandbox scaffold notes](#sandbox-scaffold-notes) and, for unattended runs,
+  [Unattended-run sandbox profile](#unattended-run-sandbox-profile)).
 - **Deny rules cannot carry allowlist exceptions.** A broad deny blocks every
   matching call even when a narrower `allow` rule also matches. So
   `Bash(git stash:*)` also blocks read-only `git stash list`, and
@@ -115,7 +120,102 @@ inside this repo. The canonical flow there is to edit `lib/hooks/` and re-run
 **Residual risk, accepted:** an agent working inside bootstrap-claude can still
 self-grant permissions by editing global settings. That is the deliberate cost of
 making this repo able to do its job — containment for that case is the OS sandbox
-(`/sandbox`), not this layer.
+(`/sandbox`), not this layer. `install-global.sh` can now scaffold a starter
+sandbox block on opt-in (step 7b, see
+[Sandbox scaffold notes](#sandbox-scaffold-notes)); that block is deliberately
+minimal and does not by itself close this gap. The profile built to close it — for
+unattended runs — ships as `templates/settings-sandbox-unattended.json` (see
+[Unattended-run sandbox profile](#unattended-run-sandbox-profile)): shipped, runtime
+proof pending in the UAT of TASK-031, so not yet verified closed.
+
+## Sandbox scaffold notes
+
+`install-global.sh` step 7b (`configure_sandbox`) offers to turn on Claude Code's
+OS-level sandbox. It sits between step 7 (skill-preference batch) and step 8 (MCP
+install); nothing was renumbered.
+
+- **Tty-only.** A non-interactive run prints "Non-interactive terminal: skipping
+  the sandbox question." and writes nothing.
+- **Asked only while `sandbox.scaffold` is unanswered.** The key is `global` scope,
+  `consumer: installer`, `askedBy: install-global.sh`, grammar `true | false`,
+  `default: null`. Choices are `[y]es` / `[n]o` / `[s]kip for now`: **no** records
+  `false` and is never re-asked; **skip** records nothing and is asked again on the
+  next sync.
+- **Platform guard (on yes).** Native Windows shells (MINGW/MSYS/CYGWIN) are skipped
+  with a note. The sandbox needs macOS Seatbelt, or Linux/WSL2 with `bubblewrap` +
+  `socat`; the step warns if those are absent.
+- **What it writes.** `templates/settings-sandbox.json` is merged into
+  `~/.claude/settings.json` via `merge-settings-deny.js --set-key sandbox --set-value`,
+  which never overwrites a pre-existing different `sandbox` key — it prints the
+  "already defines" warning and keeps the user's block. It then records
+  `sandbox.scaffold=true` and, when the key was newly set, prints a
+  restart-your-session reminder.
+- **Failure is non-fatal.** The step is wrapped so a failure warns and continues.
+
+**Sandboxing is incompatible with `docker` commands.** The template pre-lists
+`docker *` and `docker-compose *` in `sandbox.excludedCommands` so those keep
+working; `excludedCommands` is the escape hatch for any further tool that fails
+under the sandbox — add it there. Entries use `Bash(...)` rule syntax, e.g.
+`docker *`.
+
+Scope is user settings only, and the template is deliberately minimal: it sets no
+filesystem, network, or credentials policy. That policy, and the attempt to close
+the script-file settings-write gap, live in the separate unattended-run profile
+below, not in this step.
+
+## Unattended-run sandbox profile
+
+`templates/settings-sandbox-unattended.json` is a standalone settings file,
+`{"sandbox": {...}}`, for the runs where `--dangerously-skip-permissions` is used
+(`power-mode`, `uat-auto-plus`). It is stricter than the opt-in starter above and is
+delivered differently: **copied, never merged.**
+
+- **Install (step 6b).** `install-global.sh` copies it to
+  `~/.claude/templates/settings-sandbox-unattended.json` (same directory as the
+  preference schema from step 6) and prints the launcher command. A missing template
+  only warns. Nothing is written into `settings.json` at any scope, because a
+  user-scope `sandbox.enabled: true` would sandbox every session, including a
+  human's. The file is inert unless a launcher passes it, so it cannot affect
+  platforms with no sandbox backend.
+- **Launcher.** Applied per session where the unattended run starts (tmux, CI, cron):
+
+  ```
+  claude --settings ~/.claude/templates/settings-sandbox-unattended.json --dangerously-skip-permissions
+  ```
+
+  `--settings` writes no file, sits above user/project/local scope and below managed
+  scope, and is one of the scopes `network.strictAllowlist` is honored from.
+  Subagents inherit the parent session's sandbox. A skill cannot enable it — it must
+  be on when the session starts.
+- **Contents.** `enabled`, `failIfUnavailable` (fail closed rather than warn and run
+  unsandboxed), `allowUnsandboxedCommands: false`, `network.strictAllowlist: true`
+  (needs Claude Code v2.1.219 or later; without it bypass mode opens unlisted
+  hosts), `network.allowLocalBinding`, `filesystem.denyRead` for `~/.ssh` and
+  `~/.gnupg`, `credentials` deny entries, and a small `allowedDomains` list that
+  projects extend (arrays merge across scopes). **No `excludedCommands`**: a compound
+  command matching any exclusion runs wholly unsandboxed, so a docker exclusion would
+  re-open the script-file hole the profile is for.
+- **Coexistence with the starter.** The starter above carries `docker *` and
+  `docker-compose *` exclusions. Arrays merge across scopes, so a user who opted into
+  the starter carries those into an unattended run, and a compound command matching
+  one runs unsandboxed.
+- **Run the installer outside the sandbox.** `bootstrap install`, `setup`, and
+  `update` must be run from a normal shell, never through a sandboxed session's Bash
+  tool: the sandbox denies `~/.claude` writes, including `settings.json` at every
+  scope, and `allowWrite` cannot lift that. The nested-`claude` scripts
+  (`bootstrap-serena.sh`, `setup-strict-typechecks.sh`, `migrate-project.sh`) fail
+  the same way from a sandboxed Bash.
+- **Status.** Shipped; the runtime proof (a sandboxed `node <script>` write to
+  `settings.json` fails, succeeds outside, and holds under
+  `--dangerously-skip-permissions`) is **not yet done** and is deferred to the UAT of
+  TASK-031. That UAT must start the sandboxed session with
+  `CLAUDE_CONFIG_DIR=<scratch>/.claude`: protection follows the session's own config
+  directory, so a scratch `HOME` alone passes for the wrong reason.
+
+Limits and rationale — Bash-and-children only, credentials readable by default, no
+TLS termination, no native Windows or WSL1, the "not sufficient for fully unattended
+runs" caveat, and the managed-settings option — are in
+[`lib/hooks/README.md` § Tier 3: sandbox](../hooks/README.md#tier-3-sandbox).
 
 ## Preference helper notes
 
@@ -267,7 +367,7 @@ The shape contract for `templates/bootstrap-prefs-schema.json`. JSON cannot carr
 comments, so the file itself must stay bare — no `$comment` header, no explanatory
 keys — and everything a reader or a new consumer needs to know about its shape
 lives here instead. What each individual key *does* is a separate question, and
-it is answered by [The key registry — all 21 entries](#the-key-registry--all-21-entries)
+it is answered by [The key registry — all 26 entries](#the-key-registry--all-26-entries)
 at the end of this section.
 
 ### Flat key → entry, and eight fields
@@ -359,7 +459,7 @@ the fact, via `/bootstrap-config`.
 `/git-commit` does still prompt — but only once the key is already settled *to a
 value that means "keep asking"* (`confirm` for `versionBump`, `ask` for
 `autoPush`). That is a consumer honouring a stored answer, not the question being
-asked. The same is true of the other three: `/research`, `/uat-generate`, and
+asked. The same is true of the other three: `/research`, `/uat-create`, and
 `merge-gitignore.sh` each prompt in their key's `ask` state, and none of them is
 named in `askedBy` either.
 
@@ -373,7 +473,7 @@ real `lib/scripts/` file or one real `lib/skills/<name>/SKILL.md`, so
 `"install-global.sh, /git-commit"` fails the suite by construction. Where a
 run-time prompt exists, it is documented in the key's `detail`.
 
-### The key registry — all 25 entries
+### The key registry — all 26 entries
 
 Every key in `templates/bootstrap-prefs-schema.json`, grouped by `consumer` —
 `installer` first, then `skill` — which is the same grouping and the same order
@@ -382,7 +482,7 @@ schema's `default` field; `unset` in that column means `default: null`, i.e. the
 key resolves to `unset` until it is answered. This table is transcribed from the
 JSON; if the two ever disagree, the JSON is right and this table is a bug.
 
-#### `consumer: installer` — 17 entries, read by the setup/update scripts
+#### `consumer: installer` — 18 entries, read by the setup/update scripts
 
 | Key | Scope | Consumer | Values | Default | Asked by | What it does |
 |-----|-------|----------|--------|---------|----------|--------------|
@@ -403,6 +503,7 @@ JSON; if the two ever disagree, the JSON is right and this table is a bug.
 | `obsidian.plugins` | project | installer | `true \| false` | `unset` | `install-obsidian.sh` | Install the bundled Obsidian plugin set (Dataview, Graph Link Types, Breadcrumbs, Front Matter Title, Alias Linker) |
 | `obsidian.graphDefaults` | project | installer | `true \| false` | `unset` | `install-obsidian.sh` | Install default graph-view styling (`.obsidian/graph.json`) |
 | `skills.pruneOrphans` | global | installer | `true \| false` | `unset` | `install-global.sh` | Delete stale skill folders in `~/.claude/skills/` left by the wiki rename |
+| `sandbox.scaffold` | global | installer | `true \| false` | `unset` | `install-global.sh` | Whether `install-global.sh` merges the Claude Code sandbox block into `~/.claude/settings.json` |
 
 The two **(pattern)** rows carry `"dynamic": true` and are key *families*, not
 keys: they match one concrete key per optional guide and per titled `.gitignore`
@@ -422,7 +523,7 @@ above; `gitignore.section.*`'s deliberate one-value grammar is in
 | `packageInstall.consent` | project | skill | `true \| false \| ask` | `false` | `/bootstrap-config` | Whether `package-install-consent.js` allows package-manager installs for this project |
 | `research.persistToRaw` | either | skill | `true \| false \| ask` | `true` | `install-global.sh` | Whether `/research` writes its report and sources to `raw/research/` |
 | `research.autoIngest` | either | skill | `true \| false \| ask` | `false` | `install-global.sh` | Whether `/research` automatically wiki-ingests its saved report |
-| `uatGenerate.promoteTests` | either | skill | `sibling \| never \| dedicated` | `dedicated` | `install-global.sh` | Where `/uat-generate` writes the unit tests it promotes out of UAT cases |
+| `uatGenerate.promoteTests` | either | skill | `sibling \| never \| dedicated` | `dedicated` | `install-global.sh` | Where `/uat-create` writes the unit tests it promotes out of UAT cases |
 | `gitignore.offerSectionUpdates` | either | skill | `true \| false \| ask` | `true` | `install-global.sh` | Master gate for the `.gitignore` template section review pass |
 
 Seven of these eight are the entire `scope: either` population — a key that

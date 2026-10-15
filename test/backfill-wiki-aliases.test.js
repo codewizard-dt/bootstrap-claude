@@ -245,6 +245,7 @@ test('covers all 6 work families', () => {
   const fixtures = {
     'wiki/work/requirements/REQ-900-x.md': 'id: REQ-900',
     'wiki/work/decisions/0900-x.md': 'id: DEC-0900',
+    'wiki/work/decisions/ADR-0900-x.md': 'id: ADR-0900',
     'wiki/work/roadmaps/ROADMAP-900-x.md': 'id: ROADMAP-900',
     'wiki/work/tasks/TASK-900-x.md': 'id: TASK-900',
     'wiki/work/uat/UAT-900-x.md': 'id: UAT-900',

@@ -28,7 +28,7 @@ Build a complete file list.
 
 ### 2.0 Stranded terminal files (HIGH)
 
-For each work family, scan the active directory (excluding `lifecycle.md`, `index.md`, `.gitkeep`, and anything under `archive/`). For each file, read its `status:` frontmatter. If the status is in the terminal set for that family (read each family's `lifecycle.md` — do NOT hardcode), report it as a stranded file.
+For each **archiving** work family (`tasks`, `uat`, `bugs` only), scan the active directory (excluding `lifecycle.md`, `index.md`, `.gitkeep`, and anything under `archive/`). For each file, read its `status:` frontmatter. If the status is in the terminal set for that family (read each family's `lifecycle.md` — do NOT hardcode), report it as a stranded file. Roadmaps, decisions and requirements close in place — a terminal file in those families is correct where it is and is never reported here (check 2.1 verifies its index section instead).
 
 Report format:
 ```
@@ -41,21 +41,29 @@ These should have been auto-archived by the skill that set the terminal status.
 
 ### 2.1 Family-index drift (HIGH)
 
-For each work family (`requirements`, `decisions`, `roadmaps`, `tasks`, `uat`, `bugs`):
+For each work family (`requirements`, `decisions`, `roadmaps`, `tasks`, `uat`, `bugs`), branching on how the family closes items:
+
+**Archiving families (`tasks`, `uat`, `bugs`):**
 1. Read the family's `index.md`.
 2. For each row in the index: verify the linked file exists in the family directory; verify the file's `status:` frontmatter matches an **active** status for that family (read each family's `lifecycle.md` for the valid active statuses — do NOT hardcode them).
 3. For each file in the family directory (excluding `lifecycle.md`, `index.md`, `.gitkeep`, and anything under `archive/`): read its `status:` frontmatter; if the status is **not** in the active set, verify its row is absent from the active index. Files in `archive/` are terminal by definition — they should not appear in the active `index.md` but their presence in `archive/` is correct.
 
+**In-place families (`requirements`, `decisions`, `roadmaps`):** finished items stay in the family directory and the family `index.md` moves the row from `## Active` to `## Closed`.
+1. Read the family's `index.md`; each row must link to an existing file in the family directory.
+2. For each file in the family directory (excluding `lifecycle.md`, `index.md`, `.gitkeep`): read its `status:` frontmatter (for decisions, a group is Active while any block is `proposed`, otherwise Closed) and verify its row sits in the right section — `## Active` for active statuses, `## Closed` for terminal ones (read each family's `lifecycle.md`; do NOT hardcode) — and is absent from the wrong one.
+3. If `wiki/work/<family>/archive/` still exists and is non-empty, report it as `[MEDIUM] un-migrated archive/` — informational, leftover from the old archive model; the fix is `npx @codewizard-dt/bootstrap update`, not a manual move.
+
 Report:
-- Active item missing from index
-- Non-active item still listed in index
+- Active item missing from index (or in-place item missing from its correct section)
+- Non-active item still listed in index (or in-place item listed in the wrong section)
 - Index row pointing at a missing file
+- `[MEDIUM] un-migrated archive/ — wiki/work/<family>/archive/ still holds N files (run npx @codewizard-dt/bootstrap update to migrate)`
 
 ### 2.2 Two-domain violations (HIGH)
 
 - Any file under `wiki/knowledge/` that has a `status:` frontmatter key (stateful artifacts don't belong in knowledge)
 - Any file under `wiki/work/` that lacks a `status:` frontmatter key (work artifacts must be status-driven)
-- Any file under `wiki/knowledge/` whose name matches a work-family ID pattern (REQ-NNNN, TASK-NNNN, BUG-NNNN, etc.)
+- Any file under `wiki/knowledge/` whose name matches a work-family ID pattern (PRD-NNNN, REQ-NNNN, TASK-NNNN, BUG-NNNN, etc.)
 
 ### 2.3 ID / filename mismatch (MEDIUM)
 
@@ -109,30 +117,32 @@ Report-only — provenance is a human judgment (whether a page is genuinely `inf
 
 ### 2.11 Typed-link target resolution (MEDIUM)
 
-Scan all wiki pages for `keyword::[[target]]` patterns (vocabulary defined in `wiki/conventions.md` §3: `derived_from`, `supersedes`, `superseded_by`, `implements`, `uses`, `depends_on`, `contradicts`, `relates_to`, `caused`, `fixed`). For each match, resolve the target to confirm it exists:
+Reuse the `::[[` scan from 2.5 (`mcp__serena__search_for_pattern` across `wiki/`) rather than running a second scanner — 2.5 validates the keyword before `::` (vocabulary in `wiki/conventions.md` §3); this check validates the target after it. For each `keyword::[[target]]` match, resolve the target to confirm it exists:
 
 **Resolution logic:**
-- **Decision targets** (`DEC-NNNN` or `DEC-NNNN#DM`): Confirm the file exists in `wiki/work/decisions/` or `wiki/work/decisions/archive/`. If `#DM` anchor is present, confirm that decision block (`## <Title>` + `Status: <status>` pattern) exists in the file.
-- **Work-family targets** (`TASK-NNNN`, `BUG-NNNN`, `UAT-NNNN`, `REQ-NNNN`, `ROADMAP-NNNN`): Confirm the file exists in the respective family directory (`wiki/work/<family>/`) or `wiki/work/<family>/archive/`.
-- **Knowledge page targets** (bare slugs, e.g. `[[typed-wiki-links]]`): Confirm a page with a matching `id:` or entry in `aliases:` frontmatter exists under `wiki/knowledge/`.
+- **Decision targets** (`ADR-NNNN` or `ADR-NNNN#DM`, plus legacy `DEC-NNNN` or `DEC-NNNN#DM` until migrated — the number, not the prefix, selects the file): Confirm the file exists in `wiki/work/decisions/` or, for legacy un-migrated wikis, `wiki/work/decisions/archive/` (`mcp__serena__find_file`). If a `#DM` anchor is present, confirm that decision block exists in the file — an H2 matching `## DM.` (e.g. `## D2.`) with a `- **Status**: <status>` line.
+- **Work-family targets** (`TASK-NNNN`, `BUG-NNNN`, `UAT-NNNN`, `PRD-NNNN`, `REQ-NNNN`, `ROADMAP-NNNN`): Confirm the file exists in the respective family directory (`wiki/work/<family>/`) or `wiki/work/<family>/archive/` (`mcp__serena__find_file`; `archive/` is the normal location only for `tasks`, `uat` and `bugs` — for the other families it is a legacy-tolerance fallback).
+- **Knowledge page targets** (bare slugs, e.g. `[[typed-wiki-links]]`): Confirm a page with a matching `id:` or entry in `aliases:` frontmatter, or a matching filename, exists under `wiki/knowledge/`.
 
 **Reporting:**
 - **Unresolved targets** — report as `[MEDIUM] dangling typed link — <file>:<line> — <keyword>::[[<target>]] does not resolve to any existing page or work item`.
-- **Superseded decision targets** — if a target resolves to a decision block with `Status: superseded by DEC-N#DX`, report separately as `[LOW] typed link to superseded decision — <file>:<line> — consider updating to DEC-N#DX` (informational, not broken; the link still resolves).
+- **Superseded decision targets** — if a target resolves to a decision block whose status is `superseded by ADR-N#DX` (or legacy `superseded by DEC-N#DX`), report separately as `[LOW] typed link to superseded decision — <file>:<line> — consider updating to ADR-N#DX` (informational, not broken; the link still resolves).
 
 ### 2.12 Task-less accepted decisions (MEDIUM)
 
-For each decision file in `wiki/work/decisions/` (excluding `lifecycle.md`; include `archive/`), parse every `## D*` decision block — each H2 matching `## D\d+\.` is a decision block, collected in document order. For each block:
+For each decision file in `wiki/work/decisions/` (excluding `lifecycle.md`; include `archive/` for legacy un-migrated wikis), parse every `## D*` decision block — each H2 matching `## D\d+\.` is a decision block, collected in document order. For each block:
 
 - Skip unless `Status: accepted` — only accepted decisions need a follow-up task; skip `proposed`, `deprecated`, `superseded by …`.
 - A decision is task-less if its `### Links` section is absent, or has no `Source task(s):` line, or the `Source task(s):` line is blank / contains only a placeholder (e.g. "none yet").
 
-Unlike `/decision-next` (which stops at the first gap), report **every** task-less accepted decision found across all decision files — matching this skill's "report all, fix none without approval" contract.
+Unlike `/adr-next` (which stops at the first gap), report **every** task-less accepted decision found across all decision files — matching this skill's "report all, fix none without approval" contract.
 
 Report format:
 ```
-[MEDIUM] task-less accepted decision — DEC-NNNN#DM (<title>) has no Source task(s) link
+[MEDIUM] task-less accepted decision — ADR-NNNN#DM (<title>) has no Source task(s) link
 ```
+
+Report each file's own `id:` in place of `ADR-NNNN` (a not-yet-migrated file reports its legacy `DEC-NNNN`).
 
 ## Step 3: Report findings
 

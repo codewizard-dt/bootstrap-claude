@@ -243,7 +243,7 @@ Categories audited: [list]
 2. **Cite specific files and line numbers** for every PASS or FAIL — say where you looked; "no evidence found" alone is insufficient.
 3. **Serena for all code navigation** (`find_symbol`, `search_for_pattern`, `get_symbols_overview`) — no shell grep.
 4. **Flag NEEDS-REVIEW honestly** — controls needing runtime observation (e.g. live rate limiting) get flagged with what to verify manually.
-5. **Do not fix** — audit and report only; hand off fixes to the user or `/task-add`.
+5. **Do not fix** — audit and report only; hand off fixes to the user or `/task-create`.
 6. **Scope to the repo** — don't speculate about external infra unless config files are present.
 7. **One category at a time** — complete each fully before the next; don't interleave findings.
 8. **Persist the report** — write it to `wiki/reports/security-audit/` (see Reporting) in addition to printing it; a report that only lives in the chat leaves no trail for the next audit to compare against.

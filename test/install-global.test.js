@@ -231,7 +231,7 @@ test('a stale installed file-suggestion.sh is refreshed to match the live templa
   const liveTemplatePath = path.join(REAL_SCRIPTS, 'templates', 'file-suggestion.sh');
   const liveTemplate = fs.readFileSync(liveTemplatePath, 'utf8');
 
-  // A stale pre-fix copy: strip the --follow flag this task added to
+  // A stale pre-fix copy: strip the --follow flag that was added to
   // list_reincluded()'s rg call, so the seeded file is provably different
   // from the live template's content (not just older by mtime).
   const staleContent = liveTemplate.replace(

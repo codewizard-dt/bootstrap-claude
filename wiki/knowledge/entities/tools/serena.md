@@ -2,7 +2,7 @@
 id: serena
 title: Serena
 aliases: [Serena MCP, oraios/serena]
-updated: 2026-08-15
+updated: 2026-09-20
 sources:
   - ../../../../raw/research/gitignored-wiki-tool-visibility/index.md
   - ../../../../raw/research/serena-mcp-disconnect/index.md
@@ -11,6 +11,7 @@ sources:
   - ../../../../raw/research/mcp-one-process-per-user/index.md
   - ../../../../raw/research/serena-single-instance-transport/index.md
   - ../../../../raw/research/settings-editor-prior-art/index.md
+  - ../../../../raw/research/whats-next/index.md
 confidence: extracted
 tags: [mcp, lsp, code-navigation, security]
 ---
@@ -35,5 +36,7 @@ LSP-backed MCP server (oraios/serena) providing semantic code navigation, symbol
 **Security note** (2026-07-29 sandbox-escape research): Serena's `execute_shell_command` tool, when enabled, is a **Bash-equivalent execution surface that `Bash(...)` deny rules do not cover** — permission patterns are matched per-tool, so every command class blocked in relates_to::[[settings-deny-list]] is reachable through it unqualified. This is a direct instance of relates_to::[[deny-matches-a-spelling-not-a-capability]] (the same alternate-tool problem as Bash → PowerShell), and it means an MCP execution tool has to be covered at the hook layer or contained by uses::[[claude-code-sandbox]], not by the deny list. Bootstrap projects do not enable it by default; relates_to::[[agent-persistence-vectors]] applies in full if they do.
 
 Config schema note: newer versions renamed `languages:` → `language_servers:` in `project.yml`; bootstrap's `bootstrap-serena.sh` handles both. Health-tracking around Serena's failure modes lives in derived_from::[[serena-health-tracking-hook]] and the disconnect root-cause analysis in [[serena-mcp-disconnect]].
+
+**`search_for_pattern` frontmatter-sweep pitfalls** (empirical, derived_from::[[whats-next]], 2026-09-20): sweeping YAML frontmatter across a directory works well in one call, but three usage traps silently waste output or return nothing. (1) The default `multiline=true` makes `.` match newlines, so `^status:.*` returned 459,518 characters — use `[^\n]*`. (2) `multiline=false` with a `^`-anchored pattern returned `{}`, so leave multiline on and change the character class instead. (3) `paths_include_glob` matched only as a full repo-relative path (`wiki/work/tasks/TASK-*.md`); the bare basename glob `TASK-*.md` returned `{}`. An empty result on a family whose index is non-empty should therefore be treated as a query problem, not as "no work". Also exclude `archive/`, which still holds finished items with unchecked boxes.
 
 **The `open_dashboard` tool is a writable config/state editor, not just an observability view** (derived_from::[[settings-editor-prior-art]], 2026-09-13, correcting the "logs, token usage, tool stats"-only framing in `.serena/memories/tech/serena_tools_reference.md`): it is a Flask web app (`src/serena/dashboard.py`) that, beyond monitoring, exposes unauthenticated `POST`/`PUT` routes that mutate live state — `/save_serena_config` (writes the config file), `/add_language`/`/remove_language` (toggles active language servers live), `/save_memory`/`/delete_memory`/`/rename_memory`, and `/shutdown`. None of these routes have a session token, CSRF token, or Origin check; the only safeguard is the bind address. Default bind is `127.0.0.1`, but the project's own Docker image deliberately rebinds to `0.0.0.0` for port-forwarding convenience, and a maintainer has stated in a public security-audit discussion that this "really not an issue AFAIK." relates_to::[[localhost-server-security]] for why that tradeoff is not free — the sibling MCP ecosystem tool with the same architecture (MCP Inspector) shipped a Critical CVSS-9.4 RCE (CVE-2025-49596) from an identical no-auth-on-localhost pattern.

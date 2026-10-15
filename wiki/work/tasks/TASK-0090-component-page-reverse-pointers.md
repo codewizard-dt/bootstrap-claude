@@ -8,7 +8,7 @@ updated: 2026-09-13
 depends_on: []
 blocks: []
 parallel_safe_with: [TASK-0086, TASK-0087, TASK-0088, TASK-0089, TASK-0091, TASK-0092, TASK-0093]
-uat: ""
+uat: "[[UAT-0090]]"
 tags: [wiki-conventions, knowledge, components]
 ---
 

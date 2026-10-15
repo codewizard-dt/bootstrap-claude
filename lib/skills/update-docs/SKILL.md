@@ -41,7 +41,7 @@ In one pass, determine what shipped this session. Prefer `git status` / `git dif
 
 For each `wiki/work/tasks/NNN-slug.md` whose steps were implemented:
 - Flip `- [ ]` → `- [x]` for each completed step using **`Edit`** (one call per checkbox).
-- Never `sed` / `awk` / `perl -i` / `echo >>`.
+- Edit only — see `~/.claude/skills/_shared/SKILL-BOILERPLATE.md` § Edit hygiene (never `perl -i`).
 - Do **not** move the file. Task files stay in `wiki/work/tasks/` until `/uat-walk` archives them to `archive/`.
 
 ### Step 3: Update `PROJECT_STATUS.md` (if it exists)

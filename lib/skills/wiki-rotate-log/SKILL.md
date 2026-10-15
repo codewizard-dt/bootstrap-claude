@@ -59,7 +59,7 @@ Entry format (consistent prefix keeps the log greppable — `grep "^## \[" log.m
 1–3 sentences on what happened.
 ```
 
-Operations: `scaffold`, `ingest`, `query`, `lint`, `decision`, `task`, `bug`, `requirement`, `roadmap`, `archive`, `rotate`.
+Operations: `scaffold`, `ingest`, `query`, `lint`, `decision`, `task`, `bug`, `requirement`, `roadmap`, `archive`, `close`, `rotate`.
 
 > Archives: [2026_06_14_153012](log-2026_06_14_153012.md)
 

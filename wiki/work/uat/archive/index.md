@@ -8,6 +8,11 @@ Terminal UAT files (`passed`, `skipped`, or `trashed`) moved here by `/wiki-arch
 
 | ID                                             | Title                                                                                                          | Final Status | Archived   |
 | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------ | ---------- |
+| [[UAT-0104]] | UAT: Wire bootstrap-prefs-tui.js into bin/cli.js as a `config` subcommand | passed | 2026-09-19 |
+| [[UAT-0108]] | UAT: Create a /usage-report skill that locally parses Claude Code session logs for per-project token/cost rollups | passed | 2026-09-19 |
+| [[UAT-0098]] | UAT: Extract a shared ID/file-resolution reference doc and wire the consuming skills to it | passed | 2026-09-19 |
+| [[UAT-0115]] | UAT: Remove req-update and task-update entirely, with no replacement | passed | 2026-09-19 |
+| [[UAT-0116]] | UAT: Rename the requirements family's skills to PRD and issue new items as PRD-NNNN | passed | 2026-09-19 |
 | [[UAT-081]] | UAT: Remove deployment-strategy.md and strip every deploy/CI doc reference | passed | 2026-09-13 |
 | [[UAT-073]] | UAT: Wire a GitHub Actions CI job for the Docker fresh-machine harness | trashed | 2026-09-13 |
 | [[UAT-071-docker-harness-stale-mode\|UAT-071]] | UAT: Add a run.sh stale mode simulating an upgrade from an older bootstrap-claude release | passed | 2026-09-03 |
@@ -85,3 +90,11 @@ Terminal UAT files (`passed`, `skipped`, or `trashed`) moved here by `/wiki-arch
 | [[UAT-085-trash-task-073\|UAT-085]] | UAT: Trash TASK-073 and UAT-073 (descoped by GitHub Actions removal) | skipped | 2026-09-13 |
 | [[UAT-084]] | UAT: Mark the Docker harness wiki knowledge page as retired | passed | 2026-09-13 |
 | [[UAT-083]] | UAT: Close ROADMAP-009 with an explicit reverted-not-completed note | passed | 2026-09-13 |
+| [[UAT-0100]] | UAT: Shrink power-mode's Single-Task Executor mode to a pointer at /tackle → /uat-generate → /uat-auto | passed | 2026-09-19 |
+| [[UAT-0102]] | UAT: Point task-add, task-update, and task-audit at tasks/lifecycle.md's frontmatter-array dependency schema | passed | 2026-09-19 |
+| [[UAT-0111]] | UAT: Rename task-trash to task-close | passed | 2026-09-19 |
+| [[UAT-0106]] | UAT: Document `bootstrap config` as the non-Claude-Code path for editing preferences | passed | 2026-09-19 |
+| [[UAT-0112]] | UAT: Rename the task-add skill to task-create | passed | 2026-09-19 |
+| [[UAT-0113]] | UAT: Rename uat-generate to uat-create | passed | 2026-09-19 |
+| [[UAT-0094]] | UAT: Strip req-update's inline retire branch and redirect to /req-retire | trashed | 2026-09-19 |
+| [[UAT-0117]] | UAT: Rename the decisions family's skills to ADR and make ADR- the new-item prefix | passed | 2026-09-19 |

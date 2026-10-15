@@ -18,7 +18,7 @@ This skill is read-mostly with one deliberate exception: if any bug is still `st
 
 ## Step 1: Discover active bugs
 
-`list_dir` `wiki/work/bugs/` for `BUG-*.md` files **directly** in it (not `archive/`); skip `lifecycle.md`, `index.md`. None found → STOP: `No bugs found in wiki/work/bugs/. Use /bug-file <description> to file one.`
+`list_dir` `wiki/work/bugs/` for `BUG-*.md` files **directly** in it (not `archive/`); skip `lifecycle.md`, `index.md`. None found → STOP: `No bugs found in wiki/work/bugs/. Use /bug-create <description> to file one.`
 
 A single active bug is still worth assessing — the status update in Step 6d is useful on its own.
 
@@ -120,7 +120,7 @@ One block per bug, in ranked order:
 `Next` by status:
 
 - `open` → `/bug-triage BUG-NNNN`
-- `triaged` → `/bug-triage BUG-NNNN` to start work, or suggest `/task-add` for a fix task
+- `triaged` → `/bug-triage BUG-NNNN` to start work, or suggest `/task-create` for a fix task
 - `in-progress` → continue the fix; `/bug-close BUG-NNNN` when the fix commit and regression test land
 
 ### 6e. Warnings (omit if none found)
@@ -131,7 +131,7 @@ Flag, each as its own short block: dependency cycles (`BUG-NNNN → BUG-MMM → 
 
 ## Constraints
 
-- Read-only except the Step 3 batch-triage edits (status flip to `triaged`, triage fields, index row text, one combined log entry) — never flip to `in-progress` or a terminal status, never archive, never create task files. That is `/bug-triage`, `/bug-close`, and `/task-add`'s job once the user acts on this report.
+- Read-only except the Step 3 batch-triage edits (status flip to `triaged`, triage fields, index row text, one combined log entry) — never flip to `in-progress` or a terminal status, never archive, never create task files. That is `/bug-triage`, `/bug-close`, and `/task-create`'s job once the user acts on this report.
 - Permitted tools: `list_dir`, `find_file`, `Read`, `Edit`, `AskUserQuestion` (Step 3 confirmations only — otherwise this skill should run to completion without prompting).
 - Never bash reads (`cat`/`find`/`grep`/`sed`/`ls`).
 - Keep the report terse — no preamble, no closing summary beyond the tables above.

@@ -44,11 +44,19 @@ mkdir -p "$GLOBAL_SKILLS_DIR"
 # Rsync skills from the template to ~/.claude/skills/
 rsync -a --checksum --omit-dir-times --out-format='  + %n' --exclude='.DS_Store' "$TEMPLATE_DIR/lib/skills/" "$GLOBAL_SKILLS_DIR/"
 
-# Detect stale skill folders from the wiki rename
+# Detect stale skill folders from the wiki rename. A name that ships again in
+# the source tree just installed above is LIVE, not stale (a later rename can
+# reuse an old name, e.g. prd-*) — never list, prompt about, or remove it.
+SOURCE_SKILLS_DIR="$TEMPLATE_DIR/lib/skills"
 ORPHAN_FOUND=()
+ORPHAN_RM_ARGS=""
 for skill in "${ORPHAN_SKILLS[@]}"; do
+  if [ -f "$SOURCE_SKILLS_DIR/$skill/SKILL.md" ]; then
+    continue
+  fi
   if [ -d "$GLOBAL_SKILLS_DIR/$skill" ]; then
     ORPHAN_FOUND+=("$GLOBAL_SKILLS_DIR/$skill")
+    ORPHAN_RM_ARGS="$ORPHAN_RM_ARGS ~/.claude/skills/$skill"
   fi
 done
 
@@ -75,7 +83,7 @@ if [ ${#ORPHAN_FOUND[@]} -gt 0 ]; then
     done
     echo "Removed."
   else
-    echo "Skipped. To remove manually: rm -rf ~/.claude/skills/{adr-create,adr-finalize,adr-next,adr-walkthrough,prd-create,prd-finalize,prd-extract-decisions,prd-update,prd-trash,prd-compile}"
+    echo "Skipped. To remove manually: rm -rf$ORPHAN_RM_ARGS"
   fi
 fi
 
@@ -152,6 +160,27 @@ if [ -f "$SCRIPT_DIR/bootstrap-prefs.js" ] && [ -f "$SCRIPT_DIR/templates/bootst
   echo "  Installed. Skills read preferences with: node ~/.claude/bootstrap-prefs.js --get <key> --project ."
 else
   echo "Warning: bootstrap-prefs.js or its schema not found — skills will read every preference as unset (today's behavior)." >&2
+fi
+echo ""
+
+# 6b. Install the unattended-runs sandbox profile (TASK-031) into
+#     ~/.claude/templates/. COPIED ONLY — never merged into settings.json.
+#
+#     A user-scope `sandbox.enabled: true` would sandbox every session, human
+#     ones included, and the installer plus every nested-`claude` script break
+#     inside a sandboxed Bash by design. The profile is instead a standalone
+#     settings file a launcher passes per session with `claude --settings`, at the
+#     same place that passes --dangerously-skip-permissions (power-mode,
+#     uat-auto-plus). Nothing reads it unless a launcher opts in, so it is inert
+#     on platforms with no sandbox backend. A missing template only warns:
+#     `set -e` must not abort the local installs over an optional file.
+echo "Installing unattended-runs sandbox profile (~/.claude/templates/settings-sandbox-unattended.json)..."
+if [ -f "$SCRIPT_DIR/templates/settings-sandbox-unattended.json" ]; then
+  mkdir -p "$HOME/.claude/templates"
+  cp "$SCRIPT_DIR/templates/settings-sandbox-unattended.json" "$HOME/.claude/templates/settings-sandbox-unattended.json"
+  echo "  Installed. Start unattended runs with: claude --settings ~/.claude/templates/settings-sandbox-unattended.json"
+else
+  echo "Warning: settings-sandbox-unattended.json not found — the unattended-runs sandbox profile was not installed." >&2
 fi
 echo ""
 
@@ -260,7 +289,7 @@ else
   # back to the schema's value.
   if ! prefs_stored_global uatGenerate.promoteTests; then
     echo ""
-    echo "  Where should /uat-generate write the unit tests it promotes out of UAT cases?"
+    echo "  Where should /uat-create write the unit tests it promotes out of UAT cases?"
     echo "    A dedicated folder keeps the suite in one place; beside puts src/parse.ts's test at"
     echo "    src/parse.test.ts. A project's existing layout always wins over this answer."
     TEST_LOCATION_ANSWER="$(prompt_letter_choice skip \
@@ -306,6 +335,102 @@ else
 fi
 echo ""
 
+# 7b. Offer to scaffold the Claude Code sandbox block into ~/.claude/settings.json.
+#
+#     A separate step from 7 because it is not a `consumer: skill` key: the
+#     answer decides whether THIS INSTALLER edits settings.json, and `yes` runs a
+#     merge instead of only recording a value. Same store, same helpers, same
+#     rules though — the question is asked only while sandbox.scaffold has no
+#     STORED global answer (prefs_stored_global, not prefs_get: the key has no
+#     schema default, but the probe keeps this consistent with step 7), `skip`
+#     records nothing so a bare Enter or EOF leaves it open, and a non-interactive
+#     run prints one note and writes nothing.
+#
+#     THE MERGE NEVER OVERWRITES. `--set-key sandbox` keeps a pre-existing
+#     "sandbox" key that differs from the template and warns instead (the warning
+#     is on stderr; 2>&1 folds it into $SANDBOX_OUT so the user sees it). `yes`
+#     still records true in that case — the user's consent to scaffold is real,
+#     and the answer settles the question — but the restart reminder is printed
+#     only when the key was actually set, since nothing changed otherwise.
+#
+#     PLATFORM GUARD. The sandbox is macOS (Seatbelt) / Linux / WSL2 only. Native
+#     Windows shells (MINGW/MSYS/CYGWIN) are skipped with a note and record
+#     nothing, because writing a block the platform cannot honor would be a false
+#     "configured". Linux and WSL2 additionally need bubblewrap and socat; their
+#     absence only warns, since the user can install them after the merge.
+#
+#     GUARDED AS A WHOLE, like step 8: any failure warns and the install
+#     continues, because `set -euo pipefail` must not abort the local installs
+#     over an optional convenience. SANDBOX_CONFIGURED gates the summary token
+#     below (BUG-0010) so it names only what actually ran.
+SANDBOX_CONFIGURED=0
+
+configure_sandbox() {
+  local answer
+  echo "Checking Claude Code sandbox (sandbox.scaffold)..."
+  if ! has_tty; then
+    echo "  Non-interactive terminal: skipping the sandbox question."
+    return 0
+  fi
+  if prefs_stored_global sandbox.scaffold; then
+    echo "  Already answered — nothing to ask."
+    return 0
+  fi
+
+  echo ""
+  echo "  Enable Claude Code's sandbox in ~/.claude/settings.json?"
+  echo "    It adds OS-level containment for Bash and every process it spawns."
+  echo "    docker commands are incompatible with the sandbox, so docker and docker-compose are"
+  echo "    pre-listed under sandbox.excludedCommands. If another command fails under the sandbox,"
+  echo "    add it to excludedCommands. A \"sandbox\" key you already have is never overwritten."
+  answer="$(prompt_letter_choice skip "    [y]es / [n]o / [s]kip for now: " yes no skip)"
+  case "$answer" in
+    yes)
+      case "$(uname -s)" in
+        MINGW*|MSYS*|CYGWIN*)
+          echo "    The sandbox is not supported on native Windows (use WSL2) — skipping; you will be asked again next sync."
+          return 0
+          ;;
+        Linux*)
+          if ! command -v bwrap >/dev/null 2>&1 || ! command -v socat >/dev/null 2>&1; then
+            echo "    Warning: the sandbox on Linux/WSL2 needs bubblewrap and socat, and one or both are missing." >&2
+            echo "    Install them (e.g. sudo apt-get install bubblewrap socat, or sudo dnf install bubblewrap socat), then restart Claude Code." >&2
+          fi
+          ;;
+      esac
+      if [ ! -f "$SCRIPT_DIR/templates/settings-sandbox.json" ]; then
+        echo "    Warning: templates/settings-sandbox.json not found — sandbox not configured." >&2
+        return 1
+      fi
+      if ! SANDBOX_OUT="$(node "$SCRIPT_DIR/merge-settings-deny.js" --set-key sandbox --set-value "$(cat "$SCRIPT_DIR/templates/settings-sandbox.json")" 2>&1)"; then
+        echo "$SANDBOX_OUT" >&2
+        return 1
+      fi
+      echo "$SANDBOX_OUT"
+      prefs_set sandbox.scaffold --global true
+      echo "    sandbox.scaffold = true"
+      SANDBOX_CONFIGURED=1
+      case "$SANDBOX_OUT" in
+        *'"sandbox" set'*)
+          echo "    Restart Claude Code sessions to pick up the sandbox."
+          ;;
+      esac
+      ;;
+    no)
+      prefs_set sandbox.scaffold --global false
+      echo "    sandbox.scaffold = false"
+      ;;
+    *)
+      echo "    sandbox.scaffold left unanswered — settings.json is unchanged, and you will be asked again next sync."
+      ;;
+  esac
+}
+
+if ! configure_sandbox; then
+  echo "Warning: sandbox setup failed — hooks, skills, and settings were installed; re-run 'bootstrap install' to retry." >&2
+fi
+echo ""
+
 # 8. Ensure global MCP servers are installed (user scope, non-interactive) —
 #    LAST because it is the only network-dependent step, and guarded so a
 #    failure warns instead of aborting the local installs above.
@@ -325,8 +450,14 @@ fi
 # is skipped entirely under --skip-mcps and claiming it otherwise overstates
 # the summary's own job (evidence of what ran) on the most common invocation
 # path — both setup-project.sh and update-project.sh call this with --skip-mcps.
-if [ "$SKIP_MCPS" = false ]; then
-  echo "Global setup complete (hooks + skills + deny list + hooks wiring + file suggestion + preferences + MCPs)."
-else
-  echo "Global setup complete (hooks + skills + deny list + hooks wiring + file suggestion + preferences)."
+# "sandbox" is gated the same way on SANDBOX_CONFIGURED: step 7b only sets it
+# when the user answered yes and the merge actually ran, so a non-tty run, a
+# no/skip, or a platform skip never claims it.
+SUMMARY_TOKENS="hooks + skills + deny list + hooks wiring + file suggestion + preferences"
+if [ "$SANDBOX_CONFIGURED" -eq 1 ]; then
+  SUMMARY_TOKENS="$SUMMARY_TOKENS + sandbox"
 fi
+if [ "$SKIP_MCPS" = false ]; then
+  SUMMARY_TOKENS="$SUMMARY_TOKENS + MCPs"
+fi
+echo "Global setup complete ($SUMMARY_TOKENS)."

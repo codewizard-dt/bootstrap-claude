@@ -1,6 +1,6 @@
 # Skills Format and Model-Selection Convention
 
-_Verified against `lib/skills/*/SKILL.md` on 2026-09-02 (61 skills)._
+_Verified against `lib/skills/*/SKILL.md` on 2026-09-20 (66 skills)._
 
 ## File Layout
 Skills live at `lib/skills/<name>/SKILL.md` (directory format). Installed globally to `~/.claude/skills/` by `lib/scripts/install-global.sh`.
@@ -22,9 +22,9 @@ argument-hint: <preserve from original if present>
 
 ## Category Field
 
-- **researching** — gathers/analyzes information; deliverable is a report, answer, or diagnosis; read-mostly. (`research`, `research-company`, `company-align`, `gap-assess`, `security-audit`, `debug-logs`, `eval-gap`, `task-audit`, `flashcard`, `wiki-query`, `wiki-lint`, `wiki-ingest`, `primer`, `decision-next`, `roadmap-next`, `roadmap-assess`, `bug-assess`)
-- **planning** — creates or maintains planning artifacts and their lifecycle bookkeeping. (`port-feature`, `extract-feature`, `decision-create`, `decision-finalize`, `decision-walkthrough`, `req-create`, `req-finalize`, `req-update`, `req-retire`, `req-extract-decisions`, `roadmap-create`, `task-add`, `task-update`, `task-trash`, `uat-generate`, `uat-skip`, `bug-file`, `bug-triage`)
-- **executing** — changes code/docs/config, runs or verifies the system, or produces final deliverables. (`req-compile`, `power-mode`, `uat-auto-plus`, `now`, `tackle`, `uat-walk`, `uat-auto`, `eval-create`, `eval-run`, `lint`, `bug-close`, `simplify`, `update-docs`, `serena-config`, `git-commit`, `frontend-taste`, `demo`, `elevator-pitch`, `project-readme`, `marp-slideshow`, `mermaid-flowchart`, `anti-slop`)
+- **researching** — gathers/analyzes information; deliverable is a report, answer, or diagnosis; read-mostly. (`research`, `research-company`, `company-align`, `gap-assess`, `security-audit`, `debug-logs`, `eval-gap`, `task-assess`, `flashcard`, `wiki-query`, `wiki-lint`, `wiki-ingest`, `primer`, `adr-next`, `roadmap-next`, `roadmap-assess`, `bug-assess`, `prd-assess`, `adr-assess`, `uat-assess`, `whats-next`)
+- **planning** — creates or maintains planning artifacts and their lifecycle bookkeeping. (`port-feature`, `extract-feature`, `adr-create`, `adr-finalize`, `adr-walkthrough`, `prd-create`, `prd-finalize`, `req-update`, `prd-deprecate`, `adr-deprecate`, `adr-extract`, `roadmap-create`, `task-create`, `task-update`, `task-close`, `uat-create`, `uat-skip`, `bug-create`, `bug-triage`)
+- **executing** — changes code/docs/config, runs or verifies the system, or produces final deliverables. (`prd-compile`, `power-mode`, `autopilot`, `uat-auto-plus`, `now`, `tackle`, `uat-walk`, `uat-auto`, `eval-create`, `eval-run`, `lint`, `bug-close`, `simplify`, `update-docs`, `serena-config`, `git-commit`, `frontend-taste`, `demo`, `elevator-pitch`, `project-readme`, `marp-slideshow`, `mermaid-flowchart`, `anti-slop`)
 - **wiki** — wiki-maintenance operations. Only three skills use it: `wiki-archive`, `wiki-rotate-log`, `wiki-tidy`. Note the asymmetry: the other wiki skills (`wiki-query`, `wiki-lint`, `wiki-ingest`) are filed as **researching**, not `wiki`.
 
 ## Model Selection
@@ -33,9 +33,9 @@ Model is chosen by reasoning depth, not category — each category spans all thr
 
 | Tier | Model | Commands |
 |---|---|---|
-| **Deep reasoning / autonomous** | `claude-opus-5` | `decision-create`, `extract-feature`, `gap-assess`, `port-feature`, `req-compile`, `req-extract-decisions`, `security-audit` (7 total) |
+| **Deep reasoning / autonomous** | `claude-opus-5` | `adr-create`, `extract-feature`, `gap-assess`, `port-feature`, `prd-compile`, `adr-extract`, `security-audit` (7 total) |
 | **Default** (well-specified work needing judgment) | `claude-sonnet-5` | everything not listed in the other two tiers |
-| **Mechanical / bookkeeping** | `claude-haiku-4-5-20251001` | `decision-next`, `git-commit`, `primer`, `req-retire`, `roadmap-next`, `serena-config`, `task-trash`, `uat-skip` (8 total) |
+| **Mechanical / bookkeeping** | `claude-haiku-4-5-20251001` | `adr-deprecate`, `adr-next`, `git-commit`, `prd-deprecate`, `primer`, `roadmap-next`, `serena-config`, `task-close`, `uat-skip` (9 total) |
 
 **Watch the deep tier — it shrank.** `research`, `research-company`, `company-align`, `power-mode`, and `uat-auto-plus` were once top-tier and now run on `claude-sonnet-5`. Do not "restore" them to opus from an older reading of this table.
 

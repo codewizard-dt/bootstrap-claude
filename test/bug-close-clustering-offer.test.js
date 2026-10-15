@@ -12,7 +12,7 @@
 // closes sharing Tags) but discarded it, only printing an observation. The
 // risk this pins: (1) the >=2-related-closes branch must actually prompt via
 // AskUserQuestion with the exact templated question, (2) a "yes" answer must
-// invoke Skill task-add without --roadmap (no roadmap context exists here),
+// invoke Skill task-create without --roadmap (no roadmap context exists here),
 // (3) the <=1-related-close path must stay a silent no-op — this task must
 // not change the report's shape for the common case, and (4) the pre-existing
 // unconditional report bullets (Bug ID/title, status transition, resolution
@@ -52,7 +52,7 @@ test('bug-close/SKILL.md Step 10 keeps the base report bullets flat, uncondition
   const idxBugIdTitle = section.indexOf('- Bug ID, title');
   const idxStatusTransition = section.indexOf('- Old status');
   const idxResolutionSummary = section.indexOf('- Resolution summary');
-  const idxClusteringBullet = section.indexOf('For `verified`: a one-line clustering check');
+  const idxClusteringBullet = section.indexOf('For `closed`: a one-line clustering check');
 
   assert.ok(idxBugIdTitle !== -1, 'missing "Bug ID, title" bullet');
   assert.ok(idxStatusTransition !== -1, 'missing "Old status -> new status" bullet');
@@ -80,12 +80,12 @@ test('bug-close/SKILL.md Step 10 prompts for a regression-prevention task on 2+ 
   );
 });
 
-test('bug-close/SKILL.md Step 10 "yes" branch files a regression task via Skill task-add without --roadmap', () => {
+test('bug-close/SKILL.md Step 10 "yes" branch files a regression task via Skill task-create without --roadmap', () => {
   const section = step10Section(readSkill(BUG_CLOSE_SKILL));
   assert.match(
     section,
-    /On yes: invoke `Skill` `task-add` with a description referencing the clustered bug IDs and shared tag\(s\)/,
-    'yes branch must invoke Skill task-add with a description referencing the clustered bug IDs and shared tags'
+    /On yes: invoke `Skill` `task-create` with a description referencing the clustered bug IDs and shared tag\(s\)/,
+    'yes branch must invoke Skill task-create with a description referencing the clustered bug IDs and shared tags'
   );
   assert.ok(
     section.includes('Do not pass `--roadmap`'),
@@ -104,7 +104,7 @@ test('bug-close/SKILL.md Step 10 "no" branch (or <=1 related close) stays a sile
 test('bug-close/SKILL.md Step 10 new sub-bullets are nested under the verified clustering-check bullet, not top-level', () => {
   const section = step10Section(readSkill(BUG_CLOSE_SKILL));
   const lines = section.split('\n');
-  const clusteringLineIdx = lines.findIndex((l) => l.includes('For `verified`: a one-line clustering check'));
+  const clusteringLineIdx = lines.findIndex((l) => l.includes('For `closed`: a one-line clustering check'));
   assert.ok(clusteringLineIdx !== -1, 'clustering-check bullet line not found');
 
   const nextThree = lines.slice(clusteringLineIdx + 1, clusteringLineIdx + 4);

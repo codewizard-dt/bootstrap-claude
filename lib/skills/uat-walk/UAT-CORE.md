@@ -2,7 +2,7 @@
 
 Steps 1–5 and the closure procedure are identical (or near-identical) across `/uat-walk`, `/uat-auto`, and `/uat-auto-plus`. They live here once. Each SKILL.md defines only what differs for its mode; where a step varies, a **Mode differences** note names the deltas.
 
-**Pipeline:** `/task-add → /tackle → /uat-generate → {uat-walk | uat-auto | uat-auto-plus} → archive/`. Tasks stay at their stable path in `wiki/work/tasks/` until UAT passes; on all-pass this procedure flips the task to `done` and archives both files. Files never move except into `archive/`.
+**Pipeline:** `/task-create → /tackle → /uat-create → {uat-walk | uat-auto | uat-auto-plus} → archive/`. Tasks stay at their stable path in `wiki/work/tasks/` until UAT passes; on all-pass this procedure flips the task to `done` and archives both files. Files never move except into `archive/`.
 
 **Status vocabulary** (only the status line ever changes — never reformat anything else in a test block):
 
@@ -20,14 +20,9 @@ A UAT file is **complete** when no test has a blocking status (`[FAIL]` / `[FIXI
 
 ## Step 1 — Resolve & parse the UAT file
 
-Resolve `$ARGUMENTS` to one file in `wiki/work/uat/` (files never move — no `completed/` subdir; use Serena `list_dir`/`find_file`):
+Resolve `$ARGUMENTS` to one file in `wiki/work/uat/` (files never move — no `completed/` subdir):
 
-| Input | Action |
-|-------|--------|
-| File path (`wiki/work/uat/UAT-003-user-auth.md`) | use directly |
-| Number-slug (`UAT-003`, `003-user-auth`) | match in `wiki/work/uat/`; if none, STOP + report |
-| Number / description (`3`, `user auth`) | search `wiki/work/uat/`; if ambiguous, resolve per mode |
-| Empty / unresolved | auto-pick per mode |
+Resolve the file per ~/.claude/skills/_shared/ID-RESOLUTION.md — family: uat · scope: active · ambiguous: interactive for uat-walk, headless for uat-auto / uat-auto-plus · empty: per mode (below)
 
 **Mode differences (resolution):**
 - **uat-walk** — ambiguous input: list matches, ask the user to clarify. No auto-pick; empty/unresolved → STOP and report.
@@ -58,7 +53,7 @@ For each unchecked prerequisite: if it is a **runnable check** (server on a port
 | **UI** | `UAT-UI-*` prefix, or `Page:` / `Components:` metadata |
 | **Manual** | anything else (edge cases, concurrency, integration logic) |
 
-**Unit-backed** is an *attribute*, not a type — it cuts across all three. A test is unit-backed when it records `- **Repeatable Unit Test**: Created: \`<path>\`` (written by `/uat-generate` Step 2.5 when it promoted the case to a repeatable unit test). Note the path, and the `- **Unit Test Command**: \`<cmd>\`` line if present; Step 4 uses them as a machine-checkable evidence channel. The other three values of that field — `Not applicable:`, `Blocked:`, `Skipped by preference` — are **not** unit-backed: no test file exists to run.
+**Unit-backed** is an *attribute*, not a type — it cuts across all three. A test is unit-backed when it records `- **Repeatable Unit Test**: Created: \`<path>\`` (written by `/uat-create` Step 2.5 when it promoted the case to a repeatable unit test). Note the path, and the `- **Unit Test Command**: \`<cmd>\`` line if present; Step 4 uses them as a machine-checkable evidence channel. The other three values of that field — `Not applicable:`, `Blocked:`, `Skipped by preference` — are **not** unit-backed: no test file exists to run.
 
 ---
 
@@ -91,7 +86,8 @@ Judge each test on the **strongest evidence channel available to it**:
 |---|---------|--------------|----------------|
 | 1 | **Live command** | API/CLI test with an extractable `**Command**:` | run the command (below) |
 | 2 | **Unit-backed** | channel 1 unavailable **and** the test is unit-backed (Step 3) | run that unit test file (below) |
-| 3 | **Human** | neither — no machine-checkable oracle | fail-closed `[FAIL: auto-judge: ...]` |
+| 3 | **Browser (Playwright)** | UI test (Step 3) — `UAT-UI-*` / `Page:` / `Components:` | drive the page with the Playwright MCP (below) |
+| 4 | **Human** | none of the above yields a verdict — no machine-checkable oracle | fail-closed `[FAIL: auto-judge: ...]` |
 
 **Channel 1 outranks channel 2 and is never overridden by it.** A live command that fails is `[FAIL]` even when the test is unit-backed and its unit test passes — a green unit test beside a red live call means the live path is broken, and the narrower oracle does not get a vote. Channel 2 is reached only when channel 1 returns no verdict at all: a Manual/Edge case, or an API/CLI case whose body carries no extractable command or no machine-checkable Expected.
 
@@ -122,15 +118,32 @@ Pass requires **ALL**:
 
 On pass: `- [x] Pass <!-- YYYY-MM-DD -->`; record `via unit test <path>` in run tracking so the summary can count it.
 
-**UI** → always `[FAIL: auto-judge: UI test requires human verification — use /uat-walk]`, **even when unit-backed**. No navigation, screenshot, or browser interaction. A unit test cannot cover what a UI case exists to check (rendering, layout, flow timing) — `/uat-generate` Step 2.5 classifies exactly those as non-promotable, so a `Created:` on a UI case covers a fragment at best.
+**UI (channel 3 — Playwright)** — UI cases are run in a real browser through the Playwright MCP, never sent straight to a human. A unit test cannot cover what a UI case exists to check (rendering, flow timing) — `/uat-create` Step 2.5 classifies exactly those as non-promotable — so a `Created:` on a UI case does not substitute for the browser run, and the browser verdict is final.
 
-**Manual** → unit-backed goes to channel 2. Otherwise always `[FAIL: auto-judge: manual test requires human verification]`, with no heuristic evaluation — intentional fail-closed: `/uat-generate` produced a bare manual test because it expected a human.
+Setup:
+1. **Load the tools.** Playwright tools are deferred in most sessions — load them with `ToolSearch` (`query: "playwright browser"`, or `select:` the `browser_navigate`, `browser_snapshot`, `browser_click`, `browser_type`, `browser_fill_form`, `browser_press_key`, `browser_select_option`, `browser_wait_for`, `browser_evaluate`, `browser_console_messages`, `browser_take_screenshot`, `browser_close` names). The server name varies by project (`mcp__playwright__*`, or `mcp__playwright-shared__*` when the project ships its own `playwright`) — use whichever is connected. Serve mode on macOS is a shared HTTP service with an isolated browser context per session, so parallel `/uat-auto` agents do not collide.
+2. **Resolve the URL.** Absolute `Page:` URL as written. A bare route (`/strengths`) resolves against the base URL the UAT's prerequisites or the task establish (dev-server URL); none can be determined → `[FAIL: auto-judge: cannot resolve base URL for <route>]`. Never guess a port.
+3. **No Playwright tools available** (not installed, not connected, or the server does not respond after one attempt) → `[FAIL: auto-judge: Playwright MCP unavailable — use /uat-walk]`. That is the only case where a UI test falls back to a human because of tooling.
 
-`/uat-walk` does not auto-judge — the user issues every verdict. `/uat-auto-plus` enters its fix loop after a channel 1 or channel 2 `[FAIL]` (both have a machine-checkable signal that a fix worked); never after a channel 3 `[FAIL]`.
+Run: `browser_navigate` to the page → `browser_snapshot` (accessibility tree first, per `wiki/guides/mcp-tools.md`) → perform the test's Steps with `browser_click` / `browser_type` / `browser_fill_form` / `browser_select_option` / `browser_press_key`, re-snapshotting after each interaction (`browser_wait_for` for async UI) → assert the Expected Result. Credentials come only from `"$UAT_TEST_PASSWORD"`-style env references — never a literal.
+
+Pass requires **ALL**:
+1. Every navigation and interaction in Steps completed — a `ref` that cannot be found, a click that throws, or a page that fails to load is `[FAIL: auto-judge: <step> — <what happened>]`.
+2. **Every** observable in Expected is confirmed by a machine-readable source: text/role/label/visibility/enabled state/count from the snapshot, URL from the page, computed style or DOM property via `browser_evaluate`, request/response via `browser_network_requests`. Do not assert from the screenshot alone.
+3. No unexpected `error`-level `browser_console_messages` or failed network requests attributable to the flow, unless Expected says otherwise.
+4. Evidence screenshot saved via `browser_take_screenshot` to `wiki/work/uat/screenshots/<task-number>-<UAT-ID>.png` (created if the directory is missing) — kept on pass and fail alike.
+
+On pass: `- [x] Pass <!-- YYYY-MM-DD -->`; record `via browser` in run tracking so the summary can count it. Any criterion fails → `[FAIL: auto-judge: <criterion, actual vs expected>]` (final — the same never-overridden rule as channel 1).
+
+**Stay fail-closed on the genuinely subjective.** An Expected that no DOM/snapshot/evaluate check can decide — "looks balanced", "feels responsive", pixel-level layout or colour fidelity, animation quality — yields no verdict: `[FAIL: auto-judge: UI expected is visual-only — use /uat-walk]`. Do not judge those from a screenshot by eye. When Expected mixes checkable and visual-only observables, the whole case is visual-only (partial coverage is not a pass).
+
+**Manual** → unit-backed goes to channel 2. Otherwise always `[FAIL: auto-judge: manual test requires human verification]`, with no heuristic evaluation — intentional fail-closed: `/uat-create` produced a bare manual test because it expected a human.
+
+`/uat-walk` does not auto-judge — the user issues every verdict. `/uat-auto-plus` enters its fix loop after a channel 1, 2, or 3 `[FAIL]` that reports a real assertion or interaction failure (each has a machine-checkable signal that a fix worked); never after a channel 4 `[FAIL]`, and never after a tooling `[FAIL]` (Playwright unavailable, base URL unresolvable).
 
 ### Bash hygiene — API/CLI and unit-backed tests (all modes)
 
-**One program invocation per Bash call: one `curl` (as-is), optionally one `\| jq` stage. Nothing else.** If a generated `**Command**:` block violates this, rewrite it to the clean form before running (canonical style: `lib/skills/uat-generate/SKILL.md` "Curl command standards"). Never emit literal password/token values — only `"$UAT_AUTH_TOKEN"` / `"$UAT_TEST_PASSWORD"` references.
+**One program invocation per Bash call: one `curl` (as-is), optionally one `\| jq` stage. Nothing else.** If a generated `**Command**:` block violates this, rewrite it to the clean form before running (canonical style: `lib/skills/uat-create/SKILL.md` "Curl command standards"). Never emit literal password/token values — only `"$UAT_AUTH_TOKEN"` / `"$UAT_TEST_PASSWORD"` references.
 
 Forbidden (each triggers an approval prompt and obscures output): multiple `curl`s in one call · `&&` / `;` / `\|\|` chaining · `echo` banners · `-w` format strings · `-o /tmp/...` then re-read · defensive flags (`--max-time`) · pre-assigned `TOKEN=...` vars · `\` line-continuations · piping to `head`/`tee`/redirection. Capture per test: HTTP status, response body (truncate display to ~50 lines; never write a temp file to read it back), connection errors.
 
@@ -156,8 +169,8 @@ Runs once no test has a blocking status. Two outcomes.
 4. **Archive both** (`git mv` via Bash; index appends via `Edit`):
    - `git mv wiki/work/uat/<UAT>.md wiki/work/uat/archive/` → append `| [[UAT-NNNN]] | Title | passed | YYYY-MM-DD |` to `wiki/work/uat/archive/index.md`
    - `git mv wiki/work/tasks/<TASK>.md wiki/work/tasks/archive/` → append `| [[TASK-NNNN]] | Title | done | YYYY-MM-DD |` to `wiki/work/tasks/archive/index.md`
-5. **Roadmap auto-checkoff** — scan `wiki/work/roadmaps/` for `status: active` files. For each: Edit `- [ ] [[TASK-NNNN` → `- [x] [[TASK-NNNN`; then sweep remaining `- [ ]` free-text lines, checking the ones the completing task clearly accomplished (leave uncertain ones). If all items are now `[x]`: flip roadmap `status: done`, bump `updated:`, remove its row from `wiki/work/roadmaps/index.md`, `git mv` it to `archive/`, and append `| [[ROADMAP-NNNN]] | Title | done | YYYY-MM-DD |` to `wiki/work/roadmaps/archive/index.md`. Silent no-op if no roadmap references the task. `Edit` only (except `git mv`).
-6. **Decision annotation** — check the task body for `implements::[[DEC-NNNN#DM]]`. If found: open `wiki/work/decisions/NNNN-slug.md`, append `— implemented YYYY-MM-DD` to this task's `Source task(s):` line. Then check `wiki/work/tasks/` **and** `tasks/archive/` for other `todo|in-progress` tasks with the same `implements::[[DEC-NNNN#DM]]`; if none remain, append `— decision fully implemented YYYY-MM-DD` on a new line in the `## DM.` block. Sweep remaining `- [ ]` items in that block, checking the ones this task accomplished. `Read` then `Edit` only — never `sed`.
+5. **Roadmap auto-checkoff** — scan `wiki/work/roadmaps/` for `status: active` files. For each: Edit `- [ ] [[TASK-NNNN` → `- [x] [[TASK-NNNN`; then sweep remaining `- [ ]` free-text lines, checking the ones the completing task clearly accomplished (leave uncertain ones). If all items are now `[x]`: close the roadmap in place — read `~/.claude/skills/_shared/ARCHIVE-WORK-ITEM.md` and run its **In-place close (roadmaps, decisions, requirements)** section with `family: roadmaps`, `terminal_status: done` (status flip, `## Active` → `## Closed` index row move; no `git mv`, no `archive/`). Silent no-op if no roadmap references the task. `Edit` only (except the task/UAT `git mv` above).
+6. **Decision annotation** — check the task body for `implements::[[ADR-NNNN#DM]]` (or legacy `implements::[[DEC-NNNN#DM]]`). If found: open the decision file in `wiki/work/decisions/` (`ADR-NNNN-slug.md`, or legacy `DEC-NNNN-slug.md`), append `— implemented YYYY-MM-DD` to this task's `Source task(s):` line. Then check `wiki/work/tasks/` **and** `tasks/archive/` for other `todo|in-progress` tasks with the same `implements::[[ADR-NNNN#DM]]` (either prefix form); if none remain, append `— decision fully implemented YYYY-MM-DD` on a new line in the `## DM.` block. Sweep remaining `- [ ]` items in that block, checking the ones this task accomplished. `Read` then `Edit` only — never `sed`.
 7. **Log entry** — append to `wiki/log.md`:
    ```
    ## [YYYY-MM-DD] uat | UAT-NNNN passed<MODE-TAG> · TASK-NNNN done

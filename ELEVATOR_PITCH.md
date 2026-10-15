@@ -12,7 +12,7 @@ Developers who use Claude Code daily and rebuild the same scaffolding from scrat
 
 ### The best features
 
-- **47 slash commands** installed globally in a single rsync call, spanning the full dev lifecycle: requirements (`/prd-create`), architecture decisions (`/adr-create`), task tracking (`/task-add`), implementation delegation (`/tackle`), automated testing (`/uat-auto`), and documentation updates (`/update-docs`).
+- **47 slash commands** installed globally in a single rsync call, spanning the full dev lifecycle: requirements (`/prd-create`), architecture decisions (`/adr-create`), task tracking (`/task-create`), implementation delegation (`/tackle`), automated testing (`/uat-auto`), and documentation updates (`/update-docs`).
 - **`/tackle`** reads a structured task file and delegates each step to subagents sequentially — implementation, verification, and doc updates — so you can hand off a task and come back to a PR-ready result.
 - **`/uat-auto`** generates acceptance test specs from task files and runs them headlessly with auto-judged verdicts, closing the loop between spec and verification without any manual test writing.
 

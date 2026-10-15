@@ -12,12 +12,12 @@ Every `wiki/work/<family>/lifecycle.md` declares the same shape for its filename
 
 **Two of the six creation skills disagree with this spec in their own instructions**, despite it being settled everywhere else:
 
-- `lib/skills/bug-file/SKILL.md` (Steps 5/6/8) tells the agent to write/report `wiki/work/bugs/NNNN-<slug>.md` — bare, no `BUG-` prefix — one step before its own Step 7 links to the correctly-prefixed `BUG-NNNN-slug.md` in the index.
+- `lib/skills/bug-create/SKILL.md` (Steps 5/6/8) tells the agent to write/report `wiki/work/bugs/NNNN-<slug>.md` — bare, no `BUG-` prefix — one step before its own Step 7 links to the correctly-prefixed `BUG-NNNN-slug.md` in the index.
 - `lib/skills/roadmap-create/SKILL.md` (Steps 2/6/7/9) is internally consistent but entirely bare (`NNN-slug.md`) throughout, disagreeing with `wiki/work/roadmaps/lifecycle.md`, with `roadmap-next`/`roadmap-assess`/`power-mode`/`uat-walk` (all of which already assume the prefixed form), and with all 12 roadmap files on disk.
 
-Root cause (dated via `git log`): both skills predate the wiki2 migration commit (`a36905e`, 2026-06-11) that formalized `lifecycle.md` + the prefixed-filename convention across all six families. That migration updated `task-add`, `uat-generate`, `decision-create`, and `req-create` to match, but missed these two pre-existing skills. `roadmap-next/SKILL.md:42` still carries a stale example reflecting the old bare convention.
+Root cause (dated via `git log`): both skills predate the wiki2 migration commit (`a36905e`, 2026-06-11) that formalized `lifecycle.md` + the prefixed-filename convention across all six families. That migration updated `task-create`, `uat-generate`, `adr-create`, and the requirements-creation skill to match, but missed these two pre-existing skills. `roadmap-next/SKILL.md:42` still carries a stale example reflecting the old bare convention.
 
-**Fix is text-only, no data migration**: this repo's own `wiki/work/bugs/` and `wiki/work/roadmaps/` files are already correctly named — only `bug-file`'s and `roadmap-create`'s *instructions* need to catch up to what their own `lifecycle.md`, their sibling skills, and reality already agree on.
+**Fix is text-only, no data migration**: this repo's own `wiki/work/bugs/` and `wiki/work/roadmaps/` files are already correctly named — only `bug-create`'s and `roadmap-create`'s *instructions* need to catch up to what their own `lifecycle.md`, their sibling skills, and reality already agree on.
 
 ## A separate, undocumented asymmetry: ID width
 
@@ -28,7 +28,7 @@ Independent of the above bug, the six families do **not** agree on zero-pad widt
 | 3-digit (`NNN`) | tasks, UAT, requirements, roadmaps |
 | 4-digit (`NNNN`) | bugs, decisions |
 
-Each family is internally consistent, so this isn't broken — but it's a silent asymmetry a future skill author (e.g. copying `bug-file` as a template for a new family) could propagate without any documented reason to.
+Each family is internally consistent, so this isn't broken — but it's a silent asymmetry a future skill author (e.g. copying `bug-create` as a template for a new family) could propagate without any documented reason to.
 
 ## External prior art
 
@@ -36,6 +36,6 @@ ADR tooling converges on the same *shape* this repo uses but splits on whether t
 
 ## Recommended next step
 
-`/task-add` fix `bug-file`/`roadmap-create`/`roadmap-next` SKILL.md text to match their own `lifecycle.md` (see `raw/research/wiki-work-family-naming/index.md` for the exact line-level diffs). Optionally `/decision-create` to either document or collapse the 3-vs-4-digit split.
+`/task-create` fix `bug-create`/`roadmap-create`/`roadmap-next` SKILL.md text to match their own `lifecycle.md` (see `raw/research/wiki-work-family-naming/index.md` for the exact line-level diffs). Optionally `/adr-create` to either document or collapse the 3-vs-4-digit split.
 
 See also `source::[[wiki-work-family-naming]]`.

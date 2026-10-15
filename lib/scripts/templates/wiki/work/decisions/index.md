@@ -1,12 +1,20 @@
 ---
 title: Decisions Index
-updated: 2026-06-11
+updated: 2026-09-20
 ---
 
-# Decisions — Active Items
+# Decisions
 
-Lists **only active** Decision Groups — a group stays listed while at least one of its decisions is `proposed`. When every block is `accepted` or `superseded`, delete the group's line here — the file itself never moves; per-decision status lives in each block. See the [lifecycle](lifecycle.md).
+Lists every Decision Group in two sections: **Active** and **Closed**. A group stays Active while at least one of its decisions is `proposed`. When every block is `accepted`, `deprecated`, or `superseded`, move the group's line from Active to Closed — the file itself never moves; per-decision status lives in each block. See the [lifecycle](lifecycle.md).
 
-Entry format: `- [DEC-NNNN — Title](DEC-NNNN-slug.md) — one-line summary · D1 proposed, D2 accepted, …`
+## Active
+
+Entry format: `- [ADR-NNNN — Title](ADR-NNNN-slug.md) — one-line summary · D1 proposed, D2 accepted, …`
+
+_(none yet)_
+
+## Closed
+
+Entry format: `- [ADR-NNNN — Title](ADR-NNNN-slug.md) — one-line summary · D1 accepted, D2 superseded, …`
 
 _(none yet)_

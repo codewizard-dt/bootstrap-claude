@@ -4,7 +4,7 @@ aliases: [ROADMAP-0014]
 title: Wiki Skill De-duplication and Correctness Fixes
 status: active
 created: 2026-09-13
-updated: 2026-09-13
+updated: 2026-09-19
 owner: David Taylor
 derived_from: [wiki-skill-simplification, wiki-skill-boilerplate-duplication]
 linked_requirements: []
@@ -20,36 +20,38 @@ Every `wiki/work/` family skill either references shared mechanics instead of re
 
 ## Phase 1: Correctness Fixes
 
-- [ ] Fix `req-update`'s inline retire branch, which skips `req-retire`'s `git mv` archive step and leaves retired requirements in divergent end states — strip the branch and redirect to `/req-retire`
-- [ ] Fix `bug-file/SKILL.md` writing `Status: new` when `bugs/lifecycle.md`'s status enum starts at `open` — align `bug-file` with the documented schema
+- [ ] [[TASK-0095: Align bug-file with bugs/lifecycle.md: write status open, not new]]
 
 ## Phase 2: De-duplication Extraction
 
-- [ ] Rewrite `wiki-tidy` to reference `wiki-lint`/`wiki-archive`/`wiki-rotate-log`'s procedures instead of re-embedding them (already drifted from `wiki-archive`'s Step 3 prompt wording — largest single line-count cut)
-- [ ] Extract a shared "archive a work item" reference doc (status flip + `git mv` + dual-index edit + log append, parameterized by family + terminal status); wire `task-audit`, `task-trash`, `roadmap-next`, `bug-triage`, `bug-close`, `wiki-archive` to it
-- [ ] Extract a shared ID/file-resolution reference doc (accepted forms: path / `NNN-slug` / bare `NNN`); wire the ~10 consuming skills to it
-- [ ] Extract a shared boilerplate doc (prereqs line + `sed`/`awk`/`echo >>` hygiene rule + number-allocation algorithm), `UAT-CORE.md`-style; wire consuming skills to it
-- [ ] Shrink `power-mode`'s Single-Task Executor mode to a short pointer at `/tackle` → `/uat-generate` → `/uat-auto`; keep the Roadmap-to-Completion mode intact
+- [ ] [[TASK-0096: Rewrite wiki-tidy to reference wiki-lint/wiki-archive/wiki-rotate-log instead of re-embedding them]]
+- [ ] [[TASK-0097: Extract a shared 'archive a work item' reference doc and wire six skills to it]]
+- [x] [[TASK-0098: Extract a shared ID/file-resolution reference doc and wire the consuming skills to it]]
+- [ ] [[TASK-0099: Extract a shared skill-boilerplate doc (prereqs line, Edit-hygiene rule, number-allocation algorithm) and wire consuming skills to it]]
+- [x] [[TASK-0100: Shrink power-mode's Single-Task Executor mode to a pointer at /tackle → /uat-generate → /uat-auto]]
 
 ## Phase 3: Schema Formalization
 
-- [ ] `/decision-create` a new Decision Group consolidating the decision-supersession-scoring algorithm (duplicated between `decision-create` Step 2.5 and `decision-finalize` Step 2.5) into `decisions/lifecycle.md`
-- [ ] Once [[DEC-0001]]#D4 is finalized, remove the duplicate task-dependency-format restatements from `task-add`, `task-update`, and `task-audit`, and point them at `tasks/lifecycle.md`'s (updated) frontmatter-array schema
+- [ ] [[TASK-0101: Create a Decision Group consolidating the decision-supersession-scoring algorithm into decisions/lifecycle.md]]
+- [x] [[TASK-0102: Point task-add, task-update, and task-audit at tasks/lifecycle.md's frontmatter-array dependency schema]]
 
 ## Phase 4: Family & Action Vocabulary Standardization
 
-- [ ] Rename the `requirements` family to **PRD** (skill names, directory/doc labels, lifecycle references — e.g. `req-create` → `prd-create`); confirm before execution whether the `REQ-NNNN` ID prefix is in scope or only the family/skill label
-- [ ] Rename the `decisions` family to **ADR** (skill names, directory/doc labels, lifecycle references — e.g. `decision-create` → `adr-create`); confirm before execution whether the `DEC-NNNN` ID prefix is in scope or only the family/skill label
-- [ ] Rename `task-audit` → `task-assess`
-- [ ] Rename `req-retire` → `<PRD>-deprecate` (final name — supersedes the intermediate `req-close` naming considered during design)
-- [ ] Add a new `<ADR>-deprecate` skill — the decisions/ADR family has no prior terminal/deprecate action to rename
-- [ ] Rename `task-trash` → `task-close`
-- [ ] Rename `task-add` → `task-create`
-- [ ] Rename `uat-generate` → `uat-create`
-- [ ] Rename `bug-file` → `bug-create`
-- [ ] Remove `req-update` and `task-update` entirely, with no replacement — no other family has ever had an `update` action, and removal simplifies the vocabulary rather than extending it everywhere
-- [ ] Add `<PRD>-assess`, `<ADR>-assess`, and `uat-assess` so every family (Roadmaps/Tasks/Bugs already have one) shares a common `assess` action
-- [ ] Rename `req-extract-decisions` → `adr-extract`; change its source semantics from operating only within the requirements/PRD family to explicitly taking a PRD (or other document) as its source and producing ADR candidates from it — this moves the action from a PRD-side skill to an ADR-side skill
+- [ ] [[TASK-0110: Rename task-audit to task-assess]]
+- [x] [[TASK-0111: Rename task-trash to task-close]]
+- [x] [[TASK-0112: Rename the task-add skill to task-create]]
+- [x] [[TASK-0113: Rename uat-generate to uat-create]]
+- [ ] [[TASK-0114: Rename bug-file to bug-create and sweep every live reference]]
+- [x] [[TASK-0115: Remove req-update and task-update entirely, with no replacement]]
+- [x] [[TASK-0116: Rename the requirements family's skills to PRD and issue new items as PRD-NNNN]]
+- [x] [[TASK-0117: Rename the decisions family's skills to ADR and make ADR- the new-item prefix]]
+- [ ] [[TASK-0118: Rename req-extract-decisions to adr-extract and re-home it as an ADR-side skill that takes a PRD or any document as its source]]
+- [ ] [[TASK-0119: Rename req-retire to prd-deprecate and add a new status-only adr-deprecate]]
+- [ ] [[TASK-0120: Add prd-assess, adr-assess, and uat-assess skills mirroring roadmap-assess/bug-assess]]
+- [ ] [[TASK-0121: Remove archive/ from the roadmaps, decisions and requirements families (in-place close with Active/Closed index sections)]]
+- [ ] [[TASK-0122: Make install-global.sh prune stale skill directories from ~/.claude/skills/ via a maintained stale-skills.json]]
+- [ ] [[TASK-0123: Add an idempotent migrate-wiki-ids step to `bootstrap update` (REQ→PRD, DEC→ADR, un-archive)]]
+- [ ] [[TASK-0124: Run the PRD/ADR/un-archive migration on this repo's own wiki and verify it]]
 
 ## Notes
 
@@ -57,7 +59,14 @@ Every `wiki/work/` family skill either references shared mechanics instead of re
 - Phase 3's second item depends on [[DEC-0001]]#D4 (task-dependency-encoding standardization) being finalized — that decision is owned by [[ROADMAP-0013]], not this roadmap; this item should not be tackled until D4 is accepted.
 - The `req-*` → `requirement-*` skill rename was researched in the same session ([Research: Renaming req-* Skills to requirement-*](../../knowledge/sources/req-to-requirement-rename.md), [skill-family-rename-pattern](../../knowledge/concepts/skill-family-rename-pattern.md)) but is **superseded by Phase 4's `requirements` → `PRD` rename** — the user has confirmed PRD is the preferred label, not `requirement-*`. The research page remains as historical context for the rejected direction; no future roadmap should revive `requirement-*`.
 - Phase 4 was derived from an in-conversation design discussion (iterative action-matrix tables), not from the `wiki-skill-simplification`/`wiki-skill-boilerplate-duplication` sources behind Phases 1-3 — there is no `raw/` source backing it.
-- Phase 4's open questions have been resolved except one:
-  1. **Resolved** — `req-extract-decisions` renames to `adr-extract` (not `prd-extract-adrs`) and becomes an ADR-side skill that takes a PRD (or other document) as its source.
-  2. **Still open** — whether Roadmaps and UAT need their own terminal `deprecate`/`close`-equivalent action. After Phase 4, PRD/ADR use `deprecate` and Tasks/Bugs use `close`, but Roadmaps and UAT have no terminal action of their own; resolve before or while executing Phase 4.
+- Phase 4's open questions were all resolved in a Q&A on 2026-09-19 (recorded here in place of a Decision Group, by the owner's choice):
+  1. `req-extract-decisions` renames to `adr-extract` (not `prd-extract-adrs`) and becomes an ADR-side skill that takes a PRD (or other document) as its source.
+  2. **ID prefixes:** new items use `PRD-`/`ADR-`; existing `REQ-`/`DEC-` items are renamed by the `npx … update` migration (old ID kept in `aliases:`), not bulk-renamed by hand. The migration also renames the `linked_requirements`/`linked_decisions` frontmatter fields to `linked_prds`/`linked_adrs`.
+  3. **Directories keep their names** (`wiki/work/requirements/`, `wiki/work/decisions/`); only skills, IDs, docs and prose change.
+  4. **Old skill names are hard-renamed** with no redirect stubs; `install-global.sh` prunes the stale installed copies.
+  5. **Roadmaps, decisions and requirements are no longer archived**: no `archive/` folder and no `roadmap-close`; finished files stay in place and appear in a Closed section of the family index. Tasks, UAT and bugs keep `archive/`. This partly supersedes the archive behavior added by TASK-0097 (`ARCHIVE-WORK-ITEM.md`) for those three families.
+  6. **`prd-deprecate` and `adr-deprecate` are kept but status-only** (no file move). Roadmaps and UAT get no terminal action skill.
+  7. **`prd-assess`/`adr-assess`/`uat-assess` mirror `roadmap-assess`/`bug-assess`.**
+  8. The migration leaves `wiki/log.md` (append-only) and `raw/` (immutable) untouched, and is run on this repo's own wiki as its first real use.
+- Sequencing for Phase 4 (file overlap): do the single-skill renames and the `req-update`/`task-update` removal first, then the PRD and ADR family renames, then the `archive/` removal and `deprecate`/`assess` skills, then the installer prune, and the migration and its run on this repo last, since it depends on the final names and file layout. Tasks 0096 and 0101 (Phases 2 and 3) are unaffected.
 - All items are inline placeholders (no task files exist yet) — `/roadmap-next` will create them automatically.

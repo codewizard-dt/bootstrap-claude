@@ -8,7 +8,7 @@ updated: 2026-09-13
 depends_on: []
 blocks: []
 parallel_safe_with: [TASK-0086, TASK-0087, TASK-0088, TASK-0089, TASK-0090, TASK-0091]
-uat: ""
+uat: "[[UAT-0092]]"
 tags: [wiki-lint, wiki-conventions]
 ---
 
@@ -32,16 +32,18 @@ Extend the existing `::[[` pattern scan from 2.5 rather than writing a second in
 
 ## Steps
 
+<!-- Updated: 2026-09-19 -->
+
 ### 1. Add check 2.11 to wiki-lint <!-- agent: general-purpose -->
 
-- [ ] In `lib/skills/wiki-lint/SKILL.md`, immediately after "### 2.10 Provenance / confidence (LOW)", add "### 2.11 Typed-link target resolution (MEDIUM)".
-- [ ] For every `keyword::[[target]]` match found (reuse 2.5's `::[[` scan via `mcp__serena__search_for_pattern` across `wiki/`), resolve `target`:
+- [x] In `lib/skills/wiki-lint/SKILL.md`, immediately after "### 2.10 Provenance / confidence (LOW)", add "### 2.11 Typed-link target resolution (MEDIUM)".
+- [x] For every `keyword::[[target]]` match found (reuse 2.5's `::[[` scan via `mcp__serena__search_for_pattern` across `wiki/`), resolve `target`:
   - A `DEC-NNNN` or `DEC-NNNN#DM` target: confirm the decision file exists in `wiki/work/decisions/` or `archive/`, and if `#DM` is given, confirm that block exists in the file.
   - A `TASK-NNNN`/`BUG-NNNN`/`UAT-NNNN`/`REQ-NNNN`/`ROADMAP-NNNN` target: confirm the file exists in its family's active dir or `archive/` via `mcp__serena__find_file`.
   - A bare slug (knowledge page reference, e.g. `[[typed-wiki-links]]`): confirm a page with that `id:`/`aliases:` exists under `wiki/knowledge/`.
-- [ ] Report unresolved targets: `[MEDIUM] dangling typed link — <file>:<line> — <keyword>::[[<target>]] does not resolve to any existing page or work item`.
-- [ ] For a target resolving to a *superseded* decision block specifically (`Status: superseded by DEC-N#DX`), report separately as `[LOW] typed link to superseded decision — <file>:<line> — consider updating to DEC-N#DX` (informational, not broken).
+- [x] Report unresolved targets: `[MEDIUM] dangling typed link — <file>:<line> — <keyword>::[[<target>]] does not resolve to any existing page or work item`.
+- [x] For a target resolving to a *superseded* decision block specifically (`Status: superseded by DEC-N#DX`), report separately as `[LOW] typed link to superseded decision — <file>:<line> — consider updating to DEC-N#DX` (informational, not broken).
 
 ### 2. Wire it into Step 3's severity grouping and Step 4's fix proposals <!-- agent: general-purpose -->
 
-- [ ] Confirm "## Step 3: Report findings" and "## Step 4: Propose fixes" (which already iterate "for each HIGH finding") pick up 2.11's MEDIUM findings under the existing severity grouping — no structural change needed there, just confirm the new check's output format matches the `[SEVERITY] <finding-type> — <detail>` shape every other check uses.
+- [x] Confirm "## Step 3: Report findings" and "## Step 4: Propose fixes" (which already iterate "for each HIGH finding") pick up 2.11's MEDIUM findings under the existing severity grouping — no structural change needed there, just confirm the new check's output format matches the `[SEVERITY] <finding-type> — <detail>` shape every other check uses.

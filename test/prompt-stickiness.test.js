@@ -3038,7 +3038,7 @@ test('sync-wiki-scaffold.sh e2e: a stored `true` delivers the guide on a NON-INT
 test('install-global.sh e2e: a skills.pruneOrphans decline is remembered, and the second run neither prompts nor deletes', () => {
   withScratchEnv((S) => {
     const skillsDir = path.join(S.home, '.claude', 'skills');
-    const orphans = ['adr-create', 'prd-create'].map((n) => path.join(skillsDir, n));
+    const orphans = ['prd-trash', 'prd-extract-decisions'].map((n) => path.join(skillsDir, n));
     for (const o of orphans) {
       fs.mkdirSync(o, { recursive: true });
       fs.writeFileSync(path.join(o, 'SKILL.md'), '# stale\n');
@@ -3075,6 +3075,76 @@ test('install-global.sh e2e: a skills.pruneOrphans decline is remembered, and th
     for (const o of orphans) {
       assert.ok(fs.existsSync(o), `${o} was deleted on the second run — the remembered decline was ignored`);
     }
+  });
+});
+
+test('install-global.sh e2e: an ORPHAN_SKILLS name that is live in lib/skills is never listed, prompted about, or removed — a retired one still is', () => {
+  // ORPHAN_SKILLS still names prd-* (and, after the adr-* rename lands, adr-*),
+  // but those names are live skills again. The prune must key off the source
+  // tree, or it deletes the skills step 2 just installed and eats the piped
+  // answer meant for a later prompt.
+  const LIVE = 'prd-create';
+  const RETIRED = 'prd-trash';
+  assert.ok(
+    fs.existsSync(path.join(REPO, 'lib', 'skills', LIVE, 'SKILL.md')),
+    `${LIVE} is no longer a live skill in lib/skills — pick another live ORPHAN_SKILLS name for this test`
+  );
+  assert.ok(
+    !fs.existsSync(path.join(REPO, 'lib', 'skills', RETIRED)),
+    `${RETIRED} is live in lib/skills — pick another retired ORPHAN_SKILLS name for this test`
+  );
+
+  const run = (S, input) =>
+    spawnSync('bash', [INSTALL_GLOBAL, '--skip-mcps'], {
+      encoding: 'utf8',
+      env: { ...S.env, BOOTSTRAP_ASSUME_TTY: '1' },
+      cwd: S.home,
+      input,
+    });
+
+  // Live + retired together: only the retired one is offered, and 'y' removes only it.
+  withScratchEnv((S) => {
+    const skillsDir = path.join(S.home, '.claude', 'skills');
+    const marker = path.join(skillsDir, LIVE, 'INSTALLED-MARKER');
+    const retiredDir = path.join(skillsDir, RETIRED);
+    fs.mkdirSync(path.dirname(marker), { recursive: true });
+    fs.writeFileSync(marker, 'keep\n');
+    fs.mkdirSync(retiredDir, { recursive: true });
+    fs.writeFileSync(path.join(retiredDir, 'SKILL.md'), '# stale\n');
+
+    const r = run(S, 'y\n');
+    assert.equal(r.status, 0, `run failed:\nstdout:\n${r.stdout}\nstderr:\n${r.stderr}`);
+    assert.match(r.stdout, /Stale skill folders detected/, `the retired orphan was not detected:\n${r.stdout}`);
+    assert.ok(r.stdout.includes(retiredDir), 'the retired orphan is not listed');
+    assert.ok(
+      !r.stdout.includes(path.join(skillsDir, LIVE) + '\n'),
+      `the live skill ${LIVE} was listed as stale:\n${r.stdout}`
+    );
+    assert.ok(!fs.existsSync(retiredDir), 'the retired orphan was not removed after answering y');
+    assert.ok(fs.existsSync(marker), `the live skill ${LIVE} was removed`);
+    assert.ok(
+      fs.existsSync(path.join(skillsDir, LIVE, 'SKILL.md')),
+      `the live skill ${LIVE} is missing its SKILL.md after install`
+    );
+  });
+
+  // Live only: no stale block, no prompt, nothing recorded, nothing removed.
+  withScratchEnv((S) => {
+    const skillsDir = path.join(S.home, '.claude', 'skills');
+    const marker = path.join(skillsDir, LIVE, 'INSTALLED-MARKER');
+    fs.mkdirSync(path.dirname(marker), { recursive: true });
+    fs.writeFileSync(marker, 'keep\n');
+
+    const r = run(S, 'y\ny\ny\ny\ny\ny\ny\ny\ny\ny\n');
+    assert.equal(r.status, 0, `run failed:\nstdout:\n${r.stdout}\nstderr:\n${r.stderr}`);
+    assert.ok(!/Stale skill folders detected/.test(r.stdout), `a live-only run printed the stale block:\n${r.stdout}`);
+    assert.ok(!/skills\.pruneOrphans/.test(r.stdout), `a live-only run touched skills.pruneOrphans:\n${r.stdout}`);
+    assert.equal(
+      (readPrefs(S.home) || {})['skills.pruneOrphans'],
+      undefined,
+      'skills.pruneOrphans was recorded although nothing was stale'
+    );
+    assert.ok(fs.existsSync(marker), `the live skill ${LIVE} was removed`);
   });
 });
 
@@ -3509,6 +3579,12 @@ test('install-global.sh e2e: a re-run re-asks ONLY the unanswered key — stored
   // every line of run 2 is an answer that would visibly rewrite the store if any
   // settled question fired again.
   withScratchEnv((S) => {
+    // sandbox.scaffold (install-global.sh step 7b) asks AFTER the seven skill
+    // keys and would swallow a poisoned `y` below, so settle it first: this
+    // test is about the seven skill keys, not the sandbox question.
+    const sandboxSeed = prefsCli(['--set', 'sandbox.scaffold', '--value', 'false', '--global'], S.env);
+    assert.equal(sandboxSeed.status, 0, `could not pre-settle sandbox.scaffold: ${sandboxSeed.stderr}`);
+
     // Run 1: answer six, SKIP the seventh. `s` records nothing, so
     // gitignore.offerSectionUpdates stays genuinely unanswered.
     //
@@ -3530,6 +3606,7 @@ test('install-global.sh e2e: a re-run re-asks ONLY the unanswered key — stored
       'research.persistToRaw': false,
       'research.autoIngest': false,
       'uatGenerate.promoteTests': 'dedicated',
+      'sandbox.scaffold': false,
     };
     assert.deepEqual(
       readPrefs(S.home),

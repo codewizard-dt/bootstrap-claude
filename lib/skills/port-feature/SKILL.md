@@ -33,7 +33,7 @@ Assess a specific feature or area of functionality in an external (source) proje
    - Confirm the source directory exists: use `mcp__serena__find_file` or Bash `ls <source-path>` to verify it is accessible
 
 3. **Clarifying questions** (ask before proceeding if ambiguous):
-   - Is this port substantial enough to warrant a roadmap (multiple ordered steps spanning several files/integration points) via `/roadmap-create`, or small enough for a single task via `/task-add`? Default to a roadmap once Phase 3's porting steps exceed ~3 steps or touch more than one integration point.
+   - Is this port substantial enough to warrant a roadmap (multiple ordered steps spanning several files/integration points) via `/roadmap-create`, or small enough for a single task via `/task-create`? Default to a roadmap once Phase 3's porting steps exceed ~3 steps or touch more than one integration point.
    - Is there a preferred output level of detail (high-level steps vs. file-by-file implementation plan)?
    - Are there any known constraints (e.g., "must stay in TypeScript", "no new dependencies")?
 
@@ -218,7 +218,7 @@ Present the complete assessment in the conversation as structured tables/section
 
 ### 4b. Decide: Roadmap or Single Task
 
-- **≤3 porting steps, single integration point** → skip the roadmap. Go straight to `/task-add "Port <feature name> from <source-path>"`, carrying the full step detail (files affected, what to do, definition of done) into the task's steps, then skip to Phase 5.
+- **≤3 porting steps, single integration point** → skip the roadmap. Go straight to `/task-create "Port <feature name> from <source-path>"`, carrying the full step detail (files affected, what to do, definition of done) into the task's steps, then skip to Phase 5.
 - **>3 steps, multiple integration points, or the user asked for a roadmap in Phase 0** → continue to 4c.
 
 ### 4c. Delegate to `/roadmap-create`
@@ -234,7 +234,7 @@ Feed `/roadmap-create`'s own Socratic Q&A from the analysis already gathered, ra
 | Owner | Ask the user if not already known |
 | Linked PRD/ADRs | Any `wiki/work/requirements/` or `wiki/work/decisions/` entries found during Phase 2a/2c |
 
-Each Porting Step becomes one roadmap item — an inline placeholder (`- [ ] <step title>`) under its phase, per `/roadmap-create`'s item-format rules. **Do not embed the step's file list / what-to-do / definition-of-done in the roadmap item** — that detail belongs in the task file created for it via `/task-add --roadmap ROADMAP-NNNN <step title>` (or automatically when `/roadmap-next` runs).
+Each Porting Step becomes one roadmap item — an inline placeholder (`- [ ] <step title>`) under its phase, per `/roadmap-create`'s item-format rules. **Do not embed the step's file list / what-to-do / definition-of-done in the roadmap item** — that detail belongs in the task file created for it via `/task-create --roadmap ROADMAP-NNNN <step title>` (or automatically when `/roadmap-next` runs).
 
 ---
 

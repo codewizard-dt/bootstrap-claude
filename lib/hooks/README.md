@@ -32,6 +32,122 @@ cannot enumerate — and it can return a **message** explaining the block, which
 exiting 2 stops a call the rules would never see. Keep a matching `deny` entry
 too — defence in depth, and the rules keep working if a hook ever fails to fire.
 
+## Tier 3: sandbox
+
+The controls stack in three tiers, and each one covers what the one above it
+structurally cannot:
+
+1. **Deny rules match spellings.** `Bash(rm -rf ~*)` stops that string and nothing
+   phrased differently.
+2. **Hooks parse commands.** They read the actual command text, so they catch the
+   variants a pattern cannot enumerate — but only the *text*. No hook parses inside
+   a script file, so `node write-settings.js` reaches `~/.claude/settings.json`
+   even though `node -e`, a `>` redirect, and the `Edit` tool are all blocked (see
+   [`claude-settings-guard.js`](#claude-settings-guardjs) § Residual risk).
+3. **The sandbox confines the process.** The OS enforces it on the running
+   process, not on the command's text, so a script file gets no special treatment.
+   Claude Code denies a sandboxed command write access to `settings.json` at every
+   scope and to the managed settings directory — a sandboxed agent cannot rewrite
+   its own policy.
+
+**Status: shipped, runtime proof pending.** The configuration exists and its shape
+is covered by tests, but the proof that a sandboxed `node <script>` write to
+`settings.json` actually fails (and succeeds outside the sandbox, and holds under
+`--dangerously-skip-permissions`) has **not** been run. It is deferred to the UAT of
+TASK-031. Until that passes, treat the script-file gap as covered on paper, not as
+verified closed.
+
+**What shipped.** `lib/scripts/templates/settings-sandbox-unattended.json`, a
+standalone settings file (`{"sandbox": {...}}`). `install-global.sh` (block "6b")
+copies it to `~/.claude/templates/settings-sandbox-unattended.json` and does **not**
+merge it into `settings.json`. It is applied per session, at the launcher of an
+unattended run — the same place that passes `--dangerously-skip-permissions`:
+
+```
+claude --settings ~/.claude/templates/settings-sandbox-unattended.json --dangerously-skip-permissions
+```
+
+Subagents inherit the parent session's sandbox, so one flag covers every
+`power-mode` child. A skill cannot turn the sandbox on — it is read by an
+already-running session — so it must be on when the session starts. See
+`lib/scripts/README.md` § Unattended-run sandbox profile for the install and
+launcher details.
+
+**Scope: unattended runs only, on purpose.** A user-scope `sandbox.enabled: true`
+would sandbox every session, including the human's, and the installer
+(`install-global.sh`, `setup`, `update`) and every nested-`claude` script
+(`bootstrap-serena.sh`, `setup-strict-typechecks.sh`, `migrate-project.sh`) break
+inside a sandboxed Bash by design. Those are exactly the runs a human drives, and
+a sandboxed agent being unable to rewrite its own policy is the feature, not a
+defect. So the profile is a per-session `--settings` file rather than a merged key.
+It is also inert on a platform with no sandbox backend unless a launcher passes it.
+
+**What the profile sets, and why:**
+
+- `enabled` and `failIfUnavailable` — fail closed. Without the latter, Claude Code
+  warns and runs unsandboxed when the backend is missing.
+- `allowUnsandboxedCommands: false` — the `dangerouslyDisableSandbox` escape is
+  ignored.
+- `network.strictAllowlist: true` — without it, `bypassPermissions` opens every host
+  not on the allowlist, so `allowedDomains` would give no egress control at all.
+  Needs Claude Code v2.1.219 or later, and only takes effect from user, managed, or
+  `--settings` scope, which is why the profile is a `--settings` file.
+- **No `excludedCommands`.** When any part of a compound command matches an
+  exclusion, the whole command runs unsandboxed, so `docker ps && node
+  write-settings.js` escapes entirely. A `docker *` exclusion would re-open the
+  script-file hole this tier exists to close.
+- `network.allowLocalBinding` — the unattended workloads (`uat-auto-plus` dev
+  servers) bind localhost.
+- `filesystem.denyRead` for `~/.ssh` and `~/.gnupg`, plus `credentials` deny entries
+  (files and environment variables), because the default read policy is the whole
+  machine.
+- A small `network.allowedDomains` list (package registries and github.com).
+  Projects extend it; arrays merge across scopes.
+
+**Coexistence with the opt-in starter.** `bootstrap install` can separately offer
+the user-scope starter block (`settings-sandbox.json`, see `lib/scripts/README.md`
+§ Sandbox scaffold notes), which *does* carry `docker *` exclusions. Arrays merge
+across scopes, so a user who opted into the starter carries those `docker *`
+entries into an unattended run, and a compound command matching one runs wholly
+unsandboxed. The starter's docker trade is reasonable for interactive use; it is
+the wrong trade for the run this profile exists for. Know which you have.
+
+**The installer must run outside the sandbox.** Run `bootstrap install`, `setup`,
+and `update` from a normal shell, never through a sandboxed session's Bash tool:
+the sandbox denies writes under `~/.claude`, including `settings.json` at every
+scope, and no `allowWrite` entry lifts that. The nested-`claude` scripts
+(`bootstrap-serena.sh`, `setup-strict-typechecks.sh`, `migrate-project.sh`) fail
+the same way when launched from a sandboxed Bash.
+
+**Limits, stated plainly.** A reader who thinks the sandbox is total is worse off
+than one who knows its edges.
+
+- **Bash and its child processes only.** `Read`, `Edit`, and `Write`, Serena and
+  every other MCP server, and hooks all run outside the sandbox. The file-tool
+  guards ([`claude-settings-guard.js`](#claude-settings-guardjs),
+  [`protected-write-guard.js`](#protected-write-guardjs)) and the deny list stay
+  load-bearing; the sandbox does not replace them.
+- **Credentials are readable by default** unless configured. The profile closes a
+  specific list of paths and variables, not everything on the machine.
+- **The network proxy does not terminate TLS by default**, so domain fronting can
+  reach hosts that are not on the allowlist.
+- **Not available everywhere.** macOS uses Seatbelt; Linux and WSL2 use bubblewrap
+  plus socat; native Windows and WSL1 are unsupported. It therefore cannot be a hard
+  requirement of this template.
+- **Not sufficient on its own for fully unattended runs.** The Claude Code docs say
+  so themselves for bypass and auto modes and recommend a container or VM. This
+  profile narrows what a compromised agent can do on the host; it is not that.
+- **Runtime behaviour is unproven** — see the status note above.
+
+**The strict end of the range: managed settings.** A solo developer with `sudo` can
+apply managed settings on macOS (`/Library/Application Support/ClaudeCode/`); this is
+not MDM-only. Managed settings cannot be overridden by `--settings`. This is
+documented as an option and **not shipped**. Three managed keys are recorded
+footguns for this repo and are set nowhere: `disableBypassPermissionsMode` (breaks
+`uat-auto-plus`, `power-mode`, `setup-strict-typechecks.sh`, and
+`migrate-project.sh`), `allowManagedPermissionRulesOnly` (nullifies the whole deny
+list), and `allowManagedHooksOnly` (disables every hook this repo installs).
+
 ## Commenting standard
 
 **The repo-wide "no comments" default is suspended in `lib/hooks/`, and only
@@ -538,9 +654,14 @@ catches `node -e`, but a script written to disk and then executed is uncovered b
 design.
 
 So this is a guardrail, not a boundary: it closes the casual and accidental paths
-— which is most of them — and raises the cost of the deliberate one. The only
-real containment for a compromised agent is OS-level sandboxing (`/sandbox`).
-Do not read "unconditional" as "guaranteed".
+— which is most of them — and raises the cost of the deliberate one. The
+containment for a compromised agent is OS-level sandboxing (`/sandbox`).
+`bootstrap install` can now scaffold a minimal starter `sandbox` block on opt-in
+(see `lib/scripts/README.md` § Sandbox scaffold notes), which by itself does not
+close the script-file gap above. The profile built to close it is the shipped
+unattended-run profile described in [Tier 3: sandbox](#tier-3-sandbox) — shipped,
+runtime proof pending in the UAT of TASK-031, so not yet verified closed. Do not
+read "unconditional" as "guaranteed".
 
 **Not covered, deliberately:** project-level `.claude/settings.json` files (this
 hook is scoped to the user-global `~/.claude/` tree); and writing a script

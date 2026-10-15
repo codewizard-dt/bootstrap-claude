@@ -26,9 +26,11 @@ At a glance, the package entry point selects a script, scripts copy or generate 
 
 - **Responsibility:** Routes `bootstrap <command>` and `npx @codewizard-dt/bootstrap <command>` invocations to the appropriate setup script.
 - **Tech:** Node.js CommonJS, `child_process.execFileSync`
-- **Inputs:** Commands such as `setup`, `update`, `install`, `migrate`, `typechecks`, and `dashboard`, plus optional extra arguments for migration and dashboard (port override) flows.
+- **Inputs:** Commands such as `setup`, `update`, `install`, `migrate`, `typechecks`, `dashboard`, and `config`, plus optional extra arguments for migration, dashboard (port override), and config (`--get` / `--set` / `--unset` / `--list` passthrough, `--global` / `--project <dir>` scope) flows.
 - **Outputs:** Executes the selected script with inherited stdio and propagates the script exit status.
 - **Depends on:** Setup Scripts
+
+`bootstrap config` (`npx @codewizard-dt/bootstrap config`) is the non-Claude-Code way to view and edit `bootstrap-prefs.json`: with no arguments it opens an interactive menu, and with `--get` / `--set <key> --value <v>` / `--unset` / `--list` it passes straight through for scripting. `/bootstrap-config` is the in-session equivalent; both front ends delegate to `lib/scripts/bootstrap-prefs.js`, so they always agree. It manages `bootstrap-prefs.json` only, not Claude Code's own `settings.json`.
 
 #### Setup Scripts
 
@@ -64,10 +66,10 @@ At a glance, the package entry point selects a script, scripts copy or generate 
 
 #### Wiki Scaffold Templates
 
-- **Responsibility:** Defines the LLM Wiki directory structure, conventions, lifecycle specs, indexes, archive folders, and Claude guidance installed into target projects.
+- **Responsibility:** Defines the LLM Wiki directory structure, conventions, lifecycle specs, indexes (Active/Closed sections for roadmaps, decisions and requirements), archive folders (tasks, UAT and bugs only), and Claude guidance installed into target projects.
 - **Tech:** Markdown templates under `lib/scripts/templates/wiki/`, `CLAUDE.md` snippets, `.gitkeep` files
 - **Inputs:** Target project path and `sync-wiki-scaffold.sh` copy policy.
-- **Outputs:** `raw/`, `wiki/knowledge/`, `wiki/work/`, lifecycle files, family indexes, archive directories, `wiki/conventions.md`, `wiki/log.md`, and target-project `CLAUDE.md` additions.
+- **Outputs:** `raw/`, `wiki/knowledge/`, `wiki/work/`, lifecycle files, family indexes, archive directories (tasks, UAT, bugs), `wiki/conventions.md`, `wiki/log.md`, and target-project `CLAUDE.md` additions.
 - **Depends on:** Setup Scripts
 
 #### Guide Stubs
@@ -341,7 +343,13 @@ node bin/cli.js setup
 # Serves on http://localhost:4317 by default; pass a port to override
 node bin/cli.js dashboard
 node bin/cli.js dashboard 4400
+
+# Edit bootstrap preferences from a plain terminal (no Claude Code session needed)
+node bin/cli.js config
+node bin/cli.js config --set <key> --value <value> --global
 ```
+
+The dashboard also shows the local `/usage-report` rollup at `#/usage`, computed on demand from local transcripts and cached for 30 s.
 
 The setup command writes to the current project and to `~/.claude/`, so run it from a disposable test repository when validating a release candidate.
 

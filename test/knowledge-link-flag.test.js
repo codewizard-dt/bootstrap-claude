@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Contract checks for TASK-0091's new optional `--knowledge <slug>` flag on
-// /task-add (lib/skills/task-add/SKILL.md) and /bug-file
-// (lib/skills/bug-file/SKILL.md). Zero-dependency: node:test + node:assert
+// /task-create (lib/skills/task-create/SKILL.md) and /bug-create
+// (lib/skills/bug-create/SKILL.md). Zero-dependency: node:test + node:assert
 // only, mirroring the sibling skill-content suites
 // (test/bug-close-clustering-offer.test.js, test/task-typed-links.test.js).
 //
@@ -9,8 +9,8 @@
 //
 // WHY THIS IS TESTED AT ALL. TASK-0091 is a documentation-only change to two
 // SKILL.md files — the markdown IS the program a future agent executes.
-// Both /task-add and /bug-file already support a similar --decision-style
-// optional flag; this task adds a parallel --knowledge <slug> flag so a task
+// Both /task-create and /bug-create already support a similar --decision-style
+// optional flag; this feature introduces a parallel --knowledge <slug> flag so a task
 // or bug can cite a wiki/knowledge/concepts/ or wiki/knowledge/sources/ page
 // at creation time. This suite pins: (1) the flag-detection step exists in
 // both skills without renumbering pre-existing steps, (2) it searches both
@@ -21,7 +21,7 @@
 // argument-hint frontmatter lines advertise the new flag, and (6) CLAUDE.md's
 // Custom Commands table mentions it for both commands.
 //
-// SCOPE — lib/skills/task-add/SKILL.md, lib/skills/bug-file/SKILL.md, and
+// SCOPE — lib/skills/task-create/SKILL.md, lib/skills/bug-create/SKILL.md, and
 // CLAUDE.md only. Does not touch the machine-local ~/.claude/skills/
 // copies (install-global.sh overwrites those on next sync; this repo's
 // copies are the only source of truth).
@@ -36,8 +36,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const REPO = path.resolve(__dirname, '..');
-const TASK_ADD_SKILL = path.join(REPO, 'lib', 'skills', 'task-add', 'SKILL.md');
-const BUG_FILE_SKILL = path.join(REPO, 'lib', 'skills', 'bug-file', 'SKILL.md');
+const TASK_CREATE_SKILL = path.join(REPO, 'lib', 'skills', 'task-create', 'SKILL.md');
+const BUG_CREATE_SKILL = path.join(REPO, 'lib', 'skills', 'bug-create', 'SKILL.md');
 const CLAUDE_MD = path.join(REPO, 'CLAUDE.md');
 
 function readFile(p) {
@@ -52,21 +52,21 @@ function frontmatter(text) {
 }
 
 // ---------------------------------------------------------------------------
-// task-add/SKILL.md
+// task-create/SKILL.md
 // ---------------------------------------------------------------------------
 
-test('task-add/SKILL.md argument-hint frontmatter advertises --knowledge <slug>', () => {
-  const fm = frontmatter(readFile(TASK_ADD_SKILL));
+test('task-create/SKILL.md argument-hint frontmatter advertises --knowledge <slug>', () => {
+  const fm = frontmatter(readFile(TASK_CREATE_SKILL));
   const line = fm.split('\n').find((l) => l.startsWith('argument-hint:'));
   assert.ok(line, 'argument-hint line not found');
   assert.match(line, /\[--knowledge <slug>\]/, 'argument-hint must advertise [--knowledge <slug>]');
   // Existing flags must still be present — this is an addition, not a replacement.
-  assert.match(line, /\[--decision DEC-NNNN#DM\]/, 'existing --decision hint must be preserved');
+  assert.match(line, /\[--decision ADR-NNNN#DM\]/, 'existing --decision hint must be preserved');
   assert.match(line, /\[--roadmap ROADMAP-NNNN\]/, 'existing --roadmap hint must be preserved');
 });
 
-test('task-add/SKILL.md adds a knowledge-reference step without renumbering existing Steps 2-4', () => {
-  const text = readFile(TASK_ADD_SKILL);
+test('task-create/SKILL.md adds a knowledge-reference step without renumbering existing Steps 2-4', () => {
+  const text = readFile(TASK_CREATE_SKILL);
   assert.ok(text.includes('### Step 2: Parse and validate decision reference'), 'Step 2 heading must be unchanged');
   assert.ok(text.includes('### Step 3: Parse and validate roadmap reference'), 'Step 3 heading must be unchanged');
   assert.ok(text.includes('### Step 4: Determine the next task number'), 'Step 4 heading must be unchanged');
@@ -77,7 +77,7 @@ test('task-add/SKILL.md adds a knowledge-reference step without renumbering exis
   );
 });
 
-function taskAddStep2bSection(text) {
+function taskCreateStep2bSection(text) {
   const start = text.indexOf('### Step 2b: Parse and validate knowledge reference');
   assert.ok(start !== -1, 'Step 2b heading not found');
   const end = text.indexOf('### Step 4: Determine the next task number');
@@ -85,8 +85,8 @@ function taskAddStep2bSection(text) {
   return text.slice(start, end);
 }
 
-test('task-add/SKILL.md Step 2b detects --knowledge <slug> and bare slug forms', () => {
-  const section = taskAddStep2bSection(readFile(TASK_ADD_SKILL));
+test('task-create/SKILL.md Step 2b detects --knowledge <slug> and bare slug forms', () => {
+  const section = taskCreateStep2bSection(readFile(TASK_CREATE_SKILL));
   assert.ok(section.includes('`--knowledge <slug>`'), 'must detect the --knowledge <slug> flag form');
   assert.match(
     section,
@@ -95,15 +95,15 @@ test('task-add/SKILL.md Step 2b detects --knowledge <slug> and bare slug forms',
   );
 });
 
-test('task-add/SKILL.md Step 2b searches both wiki/knowledge/concepts/ and wiki/knowledge/sources/ via mcp__serena__find_file', () => {
-  const section = taskAddStep2bSection(readFile(TASK_ADD_SKILL));
+test('task-create/SKILL.md Step 2b searches both wiki/knowledge/concepts/ and wiki/knowledge/sources/ via mcp__serena__find_file', () => {
+  const section = taskCreateStep2bSection(readFile(TASK_CREATE_SKILL));
   assert.ok(section.includes('mcp__serena__find_file'), 'must use mcp__serena__find_file to locate the page');
   assert.ok(section.includes('wiki/knowledge/concepts/'), 'must search wiki/knowledge/concepts/');
   assert.ok(section.includes('wiki/knowledge/sources/'), 'must search wiki/knowledge/sources/');
 });
 
-test('task-add/SKILL.md Step 2b never blocks task creation on an unresolved knowledge slug', () => {
-  const section = taskAddStep2bSection(readFile(TASK_ADD_SKILL));
+test('task-create/SKILL.md Step 2b never blocks task creation on an unresolved knowledge slug', () => {
+  const section = taskCreateStep2bSection(readFile(TASK_CREATE_SKILL));
   assert.match(section, /\*\*If not found\*\*: warn the user/, 'unresolved slug must warn, not error');
   assert.ok(
     section.includes('never block task creation on a missing knowledge page'),
@@ -111,9 +111,9 @@ test('task-add/SKILL.md Step 2b never blocks task creation on an unresolved know
   );
 });
 
-test('task-add/SKILL.md Step 8 body template adds relates_to::[[<slug>]] alongside implements::', () => {
-  const text = readFile(TASK_ADD_SKILL);
-  const idxImplements = text.indexOf('implements::[[DEC-NNNN#DM]]');
+test('task-create/SKILL.md Step 8 body template adds relates_to::[[<slug>]] alongside implements::', () => {
+  const text = readFile(TASK_CREATE_SKILL);
+  const idxImplements = text.indexOf('implements::[[ADR-NNNN#DM]]');
   const idxRelatesTo = text.indexOf('relates_to::[[<slug>]]');
   const idxDependsOn = text.indexOf('depends_on::[[TASK-NNNN]]');
   assert.ok(idxImplements !== -1, 'implements:: line must still exist in the body template');
@@ -125,8 +125,8 @@ test('task-add/SKILL.md Step 8 body template adds relates_to::[[<slug>]] alongsi
   );
 });
 
-test('task-add/SKILL.md documents relates_to:: insertion position (after implements::, else after H1)', () => {
-  const text = readFile(TASK_ADD_SKILL);
+test('task-create/SKILL.md documents relates_to:: insertion position (after implements::, else after H1)', () => {
+  const text = readFile(TASK_CREATE_SKILL);
   assert.match(
     text,
     /\*\*Knowledge link\*\* \(only when Step 2b resolved a knowledge reference\): Insert `relates_to::\[\[<slug>\]\]` as a typed link in the same position — immediately after `implements::` when it's present, or immediately after the H1 when it isn't\./,
@@ -135,11 +135,11 @@ test('task-add/SKILL.md documents relates_to:: insertion position (after impleme
 });
 
 // ---------------------------------------------------------------------------
-// bug-file/SKILL.md
+// bug-create/SKILL.md
 // ---------------------------------------------------------------------------
 
-test('bug-file/SKILL.md argument-hint frontmatter advertises --knowledge <slug>', () => {
-  const fm = frontmatter(readFile(BUG_FILE_SKILL));
+test('bug-create/SKILL.md argument-hint frontmatter advertises --knowledge <slug>', () => {
+  const fm = frontmatter(readFile(BUG_CREATE_SKILL));
   const line = fm.split('\n').find((l) => l.startsWith('argument-hint:'));
   assert.ok(line, 'argument-hint line not found');
   assert.match(line, /\[--knowledge <slug>\]/, 'argument-hint must advertise [--knowledge <slug>]');
@@ -153,8 +153,8 @@ function bugFileStep3Section(text) {
   return text.slice(start, end);
 }
 
-test('bug-file/SKILL.md Step 3 gains an optional, non-required Knowledge exception', () => {
-  const section = bugFileStep3Section(readFile(BUG_FILE_SKILL));
+test('bug-create/SKILL.md Step 3 gains an optional, non-required Knowledge exception', () => {
+  const section = bugFileStep3Section(readFile(BUG_CREATE_SKILL));
   assert.match(
     section,
     /\*\*Knowledge exception\*\* \(optional, non-required\):/,
@@ -166,8 +166,8 @@ test('bug-file/SKILL.md Step 3 gains an optional, non-required Knowledge excepti
   assert.ok(section.includes('wiki/knowledge/sources/'), 'must search wiki/knowledge/sources/');
 });
 
-test('bug-file/SKILL.md Step 3 Knowledge exception never blocks bug filing on an unresolved slug', () => {
-  const section = bugFileStep3Section(readFile(BUG_FILE_SKILL));
+test('bug-create/SKILL.md Step 3 Knowledge exception never blocks bug filing on an unresolved slug', () => {
+  const section = bugFileStep3Section(readFile(BUG_CREATE_SKILL));
   assert.ok(
     section.includes('never block bug filing on a missing knowledge page'),
     'must explicitly state it never blocks bug filing'
@@ -178,8 +178,8 @@ test('bug-file/SKILL.md Step 3 Knowledge exception never blocks bug filing on an
   );
 });
 
-test('bug-file/SKILL.md Step 6 inserts relates_to::[[<slug>]] directly under the H1, omitted when unresolved', () => {
-  const text = readFile(BUG_FILE_SKILL);
+test('bug-create/SKILL.md Step 6 inserts relates_to::[[<slug>]] directly under the H1, omitted when unresolved', () => {
+  const text = readFile(BUG_CREATE_SKILL);
   const start = text.indexOf('### Step 6: Write the Bug File');
   assert.ok(start !== -1, 'Step 6 heading not found');
   const end = text.indexOf('### Step 7: Update the Bug Index');
@@ -216,25 +216,25 @@ test('bug-file/SKILL.md Step 6 inserts relates_to::[[<slug>]] directly under the
 // CLAUDE.md — Custom Commands table
 // ---------------------------------------------------------------------------
 
-test('CLAUDE.md Custom Commands table mentions --knowledge <slug> for /task-add and /bug-file', () => {
+test('CLAUDE.md Custom Commands table mentions --knowledge <slug> for /task-create and /bug-create', () => {
   const text = readFile(CLAUDE_MD);
-  const taskAddRow = text.split('\n').find((l) => l.includes('`/task-add <desc>`'));
-  const bugFileRow = text.split('\n').find((l) => l.includes('`/bug-file <description>`'));
-  assert.ok(taskAddRow, '/task-add row not found in CLAUDE.md');
-  assert.ok(bugFileRow, '/bug-file row not found in CLAUDE.md');
-  assert.match(taskAddRow, /--knowledge <slug>/, '/task-add row must mention --knowledge <slug>');
-  assert.match(bugFileRow, /--knowledge <slug>/, '/bug-file row must mention --knowledge <slug>');
+  const taskCreateRow = text.split('\n').find((l) => l.includes('`/task-create <desc>`'));
+  const bugFileRow = text.split('\n').find((l) => l.includes('`/bug-create <description>`'));
+  assert.ok(taskCreateRow, '/task-create row not found in CLAUDE.md');
+  assert.ok(bugFileRow, '/bug-create row not found in CLAUDE.md');
+  assert.match(taskCreateRow, /--knowledge <slug>/, '/task-create row must mention --knowledge <slug>');
+  assert.match(bugFileRow, /--knowledge <slug>/, '/bug-create row must mention --knowledge <slug>');
 });
 
 test('the machine-local ~/.claude/skills/ copies are never the edit target (source-of-truth note)', () => {
-  const taskAddSection = taskAddStep2bSection(readFile(TASK_ADD_SKILL));
-  const bugFileSection = bugFileStep3Section(readFile(BUG_FILE_SKILL));
+  const taskCreateSection = taskCreateStep2bSection(readFile(TASK_CREATE_SKILL));
+  const bugFileSection = bugFileStep3Section(readFile(BUG_CREATE_SKILL));
   assert.ok(
-    !taskAddSection.toLowerCase().includes('~/.claude/skills/'),
-    'task-add Step 2b must not reference editing the machine-local skill copy'
+    !taskCreateSection.toLowerCase().includes('~/.claude/skills/'),
+    'task-create Step 2b must not reference editing the machine-local skill copy'
   );
   assert.ok(
     !bugFileSection.toLowerCase().includes('~/.claude/skills/'),
-    'bug-file Step 3 must not reference editing the machine-local skill copy'
+    'bug-create Step 3 must not reference editing the machine-local skill copy'
   );
 });

@@ -137,7 +137,7 @@ For each viable approach, present:
 ### 4d. Next Steps
 
 Suggest concrete next steps:
-- If the user wants to proceed: `To create a task: /task-add <description based on findings>`
+- If the user wants to proceed: `To create a task: /task-create <description based on findings>`
 - If more research is needed: Identify specific areas that need deeper investigation
 - If a decision is needed: Frame the decision clearly with the trade-offs
 
@@ -268,13 +268,13 @@ node ~/.claude/bootstrap-prefs.js --get research.autoIngest --project . 2>/dev/n
 - A 2–4 bullet summary of the recommendation
 - **If Phase 5b ingested the report**: say so, and name the wiki pages it created or updated — do not also suggest `/wiki-ingest`, it already ran.
 - **Otherwise**: that the report is now a `raw/` ground-truth source: **"Run `/wiki-ingest raw/research/<slug>/index.md` to synthesize this research into the knowledge base."**
-- Any follow-on `/task-add` or `/decision-create` suggested by the findings
+- Any follow-on `/task-create` or `/adr-create` suggested by the findings
 
 **If nothing was persisted** (stored `false`, a per-run `--no-save`/`--no-persist` override, or a declined `ask`), tell the user:
 - That no files were written, and which of the three reasons applies
 - The same 2–4 bullet summary of the recommendation
 - Skip the `/wiki-ingest` suggestion entirely — there is no `raw/` file to ingest, and Phase 5b never ran either
-- Any follow-on `/task-add` or `/decision-create` suggested by the findings
+- Any follow-on `/task-create` or `/adr-create` suggested by the findings
 
 ---
 

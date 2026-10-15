@@ -11,7 +11,7 @@ user-invocable: true
 
 # /bootstrap-config — View, edit, and reset stored preferences
 
-Bootstrap remembers your answers to installer and skill prompts in two flat JSON files — the global `~/.claude/bootstrap-prefs.json` and the per-project `<project>/.claude/bootstrap-prefs.json` — and every read and write of them goes through the helper `lib/scripts/bootstrap-prefs.js`. This command is the front end to that store: it reads current state with the helper, explains each key from the registry at `lib/scripts/templates/bootstrap-prefs-schema.json`, and changes exactly what you confirm.
+Bootstrap remembers your answers to installer and skill prompts in two flat JSON files — the global `~/.claude/bootstrap-prefs.json` and the per-project `<project>/.claude/bootstrap-prefs.json` — and every read and write of them goes through the helper `lib/scripts/bootstrap-prefs.js`. This command is the front end to that store: it reads current state with the helper, explains each key from the registry at `lib/scripts/templates/bootstrap-prefs-schema.json`, and changes exactly what you confirm. Outside a Claude Code session, the same store is editable from a terminal with `npx @codewizard-dt/bootstrap config` (interactive menu, or flag passthrough such as `--get` / `--set <key> --value <v>` / `--unset` / `--list`); both front ends go through `bootstrap-prefs.js`, so results are identical.
 
 **CRITICAL ORDERING RULE**: Steps A and B (locate + read current state) MUST complete, and the Step B2 state summary MUST be printed, before any `AskUserQuestion` call. Never prompt against an unread store — the whole point of this command is that the user decides against real current state, not a guess.
 

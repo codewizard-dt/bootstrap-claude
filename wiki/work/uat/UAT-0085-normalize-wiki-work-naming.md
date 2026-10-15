@@ -26,9 +26,9 @@ implements::[[TASK-0085]]
 
 ## Test Cases
 
-### UAT-EDGE-001: bug-file filename fix and re-verify race guard
-- **Scenario**: `lib/skills/bug-file/SKILL.md` writes/reports the prefixed filename `BUG-NNNN-<slug>.md` (not the old bare `NNNN-<slug>.md`) and contains a "Step 5a: Re-verify next bug number" section mirroring the race-guard pattern used by `task-add`/`roadmap-create`.
-- **Steps**: Read `lib/skills/bug-file/SKILL.md`; confirm the "Present and Confirm", "Write the Bug File", and "Report Completion" steps all reference `wiki/work/bugs/BUG-NNNN-<slug>.md`; confirm a `### Step 5a: Re-verify next bug number` heading exists between the confirm and write steps.
+### UAT-EDGE-001: bug-create filename fix and re-verify race guard
+- **Scenario**: `lib/skills/bug-create/SKILL.md` writes/reports the prefixed filename `BUG-NNNN-<slug>.md` (not the old bare `NNNN-<slug>.md`) and contains a "Step 5a: Re-verify next bug number" section mirroring the race-guard pattern used by `task-add`/`roadmap-create`.
+- **Steps**: Read `lib/skills/bug-create/SKILL.md`; confirm the "Present and Confirm", "Write the Bug File", and "Report Completion" steps all reference `wiki/work/bugs/BUG-NNNN-<slug>.md`; confirm a `### Step 5a: Re-verify next bug number` heading exists between the confirm and write steps.
 - **Expected Result**: Every filename reference uses the `BUG-` prefix; the Step 5a re-verify section is present.
 - **Repeatable Unit Test**: Created: `test/wiki-work-naming-convention.test.js`
 - **Unit Test Command**: `node --test test/wiki-work-naming-convention.test.js`
@@ -59,16 +59,16 @@ implements::[[TASK-0085]]
 - [ ] Pass
 
 ### UAT-EDGE-005: req-create width, race guard, and index-format wording fix
-- **Scenario**: `lib/skills/req-create/SKILL.md` describes `REQ-NNNN` (4-digit), contains a "Step 5a: Re-verify next requirement number" section, and its index-update step describes the flat-bullet entry format (matching every other family's `index.md`) rather than the old, inaccurate "Row/columns" table wording.
-- **Steps**: Read `lib/skills/req-create/SKILL.md`; confirm `wiki/work/requirements/REQ-NNNN-slug.md` appears; confirm a `### Step 5a: Re-verify next requirement number` heading exists; confirm the index-update step's text reads `- [REQ-NNNN — Title](REQ-NNNN-slug.md) — one-line summary · status` and that the string "Row/columns" no longer appears anywhere in the file.
+- **Scenario**: `lib/skills/prd-create/SKILL.md` describes `PRD-NNNN` (4-digit), contains a "Step 5a: Re-verify next requirement number" section, and its index-update step describes the flat-bullet entry format (matching every other family's `index.md`) rather than the old, inaccurate "Row/columns" table wording.
+- **Steps**: Read `lib/skills/prd-create/SKILL.md`; confirm `wiki/work/requirements/PRD-NNNN-slug.md` appears; confirm a `### Step 5a: Re-verify next requirement number` heading exists; confirm the index-update step's text reads `- [PRD-NNNN — Title](PRD-NNNN-slug.md) — one-line summary · status` and that the string "Row/columns" no longer appears anywhere in the file.
 - **Expected Result**: 4-digit ID, race guard present, flat-bullet format documented, no stale "Row/columns" wording.
 - **Repeatable Unit Test**: Created: `test/wiki-work-naming-convention.test.js`
 - **Unit Test Command**: `node --test test/wiki-work-naming-convention.test.js`
 - [ ] Pass
 
 ### UAT-EDGE-006: decision-create race guard added, DEC-NNNN unchanged
-- **Scenario**: `lib/skills/decision-create/SKILL.md` contains a re-verify-before-write step ("Step 4.5: Re-verify next decision number") inserted between "Clarify with the user" and "Generate the file", and still describes `DEC-NNNN` — unchanged, since decisions were already 4-digit before this task.
-- **Steps**: Read `lib/skills/decision-create/SKILL.md`; confirm the `## Step 4.5: Re-verify next decision number` heading exists; confirm `DEC-NNNN` still appears throughout (frontmatter template, heading template, index/log formats).
+- **Scenario**: `lib/skills/adr-create/SKILL.md` contains a re-verify-before-write step ("Step 4.5: Re-verify next decision number") inserted between "Clarify with the user" and "Generate the file", and still describes `DEC-NNNN` — unchanged, since decisions were already 4-digit before this task.
+- **Steps**: Read `lib/skills/adr-create/SKILL.md`; confirm the `## Step 4.5: Re-verify next decision number` heading exists; confirm `DEC-NNNN` still appears throughout (frontmatter template, heading template, index/log formats).
 - **Expected Result**: Step 4.5 present; `DEC-NNNN` unchanged.
 - **Repeatable Unit Test**: Created: `test/wiki-work-naming-convention.test.js`
 - **Unit Test Command**: `node --test test/wiki-work-naming-convention.test.js`

@@ -23,16 +23,7 @@ Walk an existing bug through triage: confirm reproducibility, assign priority/as
 
 ### Step 1: Resolve the Bug File
 
-Parse `$ARGUMENTS` to find the bug. Accepted forms:
-- `BUG-NNNN` (e.g. `BUG-0042`)
-- `NNNN` (e.g. `0042` or `42`)
-- `NNNN-slug` (e.g. `0042-csv-export`)
-- Full path (e.g. `wiki/work/bugs/BUG-0042-csv-export.md`)
-
-Resolution order:
-1. If full path: confirm with `mcp__serena__find_file`.
-2. Otherwise normalize to a `BUG-NNNN*` pattern and search `wiki/work/bugs/` via `mcp__serena__find_file`.
-3. If not found, STOP and report the error.
+Resolve the file per ~/.claude/skills/_shared/ID-RESOLUTION.md — family: bugs · scope: active · ambiguous: interactive · empty: not found → STOP and report the error
 
 Read the bug file in full.
 
@@ -87,7 +78,7 @@ If the required field is absent, ask via `AskUserQuestion` and refuse to proceed
 
 ### Step 6: Apply Updates
 
-Edit the bug file using `Edit` (never `sed`/`echo`/`awk`):
+Edit the bug file (Edit only — see `~/.claude/skills/_shared/SKILL-BOILERPLATE.md` § Edit hygiene):
 
 1. Flip `status:` to the new value.
 2. Set `priority:`, `assignee:`, `tags:`, `impact:`, `workaround:` as gathered.
@@ -99,23 +90,18 @@ Edit the bug file using `Edit` (never `sed`/`echo`/`awk`):
 Read `wiki/work/bugs/index.md`. Apply changes with `Edit`:
 
 - **Start work / Defer**: find the row for this bug and update the `Status` column text. Do not move the file.
-- **Reject**: remove the entire row from the active index. Then run the archive-move sequence (Step 7a below).
+- **Reject**: the active-index row removal is performed by Step 7a.
 
 #### Step 7a: Archive-Move for Reject Outcomes
 
-For `wontfix`, `duplicate`, and `cannot-reproduce` outcomes only (`Bash` only for `git mv`):
-
-1. `Bash`: `git mv wiki/work/bugs/NNNN-slug.md wiki/work/bugs/archive/NNNN-slug.md`
-2. `Edit`: (active index row already removed in Step 7 above)
-3. `Edit`: append to `wiki/work/bugs/archive/index.md`: `| [[BUG-NNNN]] | <title> | <status> | YYYY-MM-DD |`
-4. `Edit`: append to `wiki/log.md`
+For `wontfix`, `duplicate`, and `cannot-reproduce` outcomes only. Read `~/.claude/skills/_shared/ARCHIVE-WORK-ITEM.md` now, then run its Procedure: `family: bugs`, `terminal_status: <wontfix|duplicate|cannot-reproduce>`, `log: skip` — Step 9 writes the single log entry. Step 6 has already flipped the status (the bug file needed its `## Resolution`/`## Related` edits before the move), so the procedure's status flip is a no-op.
 
 For active outcomes (Start work / Defer), skip this step entirely — the file stays at `wiki/work/bugs/NNNN-slug.md`.
 
 ### Step 8: Cross-Linking
 
 - If outcome is **Duplicate**: open the canonical bug file and append a line to its `## Related → Related bugs:` section listing this bug ID. Use `Edit`.
-- If outcome is **Start work now**: ask whether to spawn a fix task via `/task-add`. If yes, suggest the command — do not invoke it automatically.
+- If outcome is **Start work now**: ask whether to spawn a fix task via `/task-create`. If yes, suggest the command — do not invoke it automatically.
 
 ### Step 9: Append Log Entry
 

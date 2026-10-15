@@ -36,51 +36,51 @@ const path = require('node:path');
 
 const REPO = path.resolve(__dirname, '..');
 
-const TASK_ADD_SKILL = path.join(REPO, 'lib', 'skills', 'task-add', 'SKILL.md');
-const UAT_GENERATE_SKILL = path.join(REPO, 'lib', 'skills', 'uat-generate', 'SKILL.md');
-const REQ_CREATE_SKILL = path.join(REPO, 'lib', 'skills', 'req-create', 'SKILL.md');
-const BUG_FILE_SKILL = path.join(REPO, 'lib', 'skills', 'bug-file', 'SKILL.md');
+const TASK_CREATE_SKILL = path.join(REPO, 'lib', 'skills', 'task-create', 'SKILL.md');
+const UAT_CREATE_SKILL = path.join(REPO, 'lib', 'skills', 'uat-create', 'SKILL.md');
+const PRD_CREATE_SKILL = path.join(REPO, 'lib', 'skills', 'prd-create', 'SKILL.md');
+const BUG_CREATE_SKILL = path.join(REPO, 'lib', 'skills', 'bug-create', 'SKILL.md');
 const ROADMAP_CREATE_SKILL = path.join(REPO, 'lib', 'skills', 'roadmap-create', 'SKILL.md');
-const DECISION_CREATE_SKILL = path.join(REPO, 'lib', 'skills', 'decision-create', 'SKILL.md');
+const ADR_CREATE_SKILL = path.join(REPO, 'lib', 'skills', 'adr-create', 'SKILL.md');
 
 function readSkill(p) {
   assert.ok(fs.existsSync(p), `${p} does not exist`);
   return fs.readFileSync(p, 'utf8');
 }
 
-test('task-add/SKILL.md frontmatter template inserts aliases: [TASK-NNN] directly after id: TASK-NNN', () => {
-  const text = readSkill(TASK_ADD_SKILL);
+test('task-create/SKILL.md frontmatter template inserts aliases: [TASK-NNN] directly after id: TASK-NNN', () => {
+  const text = readSkill(TASK_CREATE_SKILL);
   assert.match(
     text,
     /id: TASK-NNN\naliases: \[TASK-NNN\]\ntitle: "<task title>"/,
-    'task-add/SKILL.md must render aliases: [TASK-NNN] between id: TASK-NNN and title:'
+    'task-create/SKILL.md must render aliases: [TASK-NNN] between id: TASK-NNN and title:'
   );
 });
 
-test('uat-generate/SKILL.md frontmatter template inserts aliases: [UAT-NNN] directly after id: UAT-NNN', () => {
-  const text = readSkill(UAT_GENERATE_SKILL);
+test('uat-create/SKILL.md frontmatter template inserts aliases: [UAT-NNN] directly after id: UAT-NNN', () => {
+  const text = readSkill(UAT_CREATE_SKILL);
   assert.match(
     text,
     /id: UAT-NNN\naliases: \[UAT-NNN\]\ntitle: "UAT: \[Task Title\]"/,
-    'uat-generate/SKILL.md must render aliases: [UAT-NNN] between id: UAT-NNN and title:'
+    'uat-create/SKILL.md must render aliases: [UAT-NNN] between id: UAT-NNN and title:'
   );
 });
 
-test('req-create/SKILL.md frontmatter template inserts aliases: [REQ-NNN] directly after id: REQ-NNN', () => {
-  const text = readSkill(REQ_CREATE_SKILL);
+test('prd-create/SKILL.md frontmatter template inserts aliases: [PRD-NNN] directly after id: PRD-NNN', () => {
+  const text = readSkill(PRD_CREATE_SKILL);
   assert.match(
     text,
-    /id: REQ-NNN\naliases: \[REQ-NNN\]\ntype: requirement/,
-    'req-create/SKILL.md must render aliases: [REQ-NNN] between id: REQ-NNN and type:'
+    /id: PRD-NNN\naliases: \[PRD-NNN\]\ntype: requirement/,
+    'prd-create/SKILL.md must render aliases: [PRD-NNN] between id: PRD-NNN and type:'
   );
 });
 
-test('bug-file/SKILL.md Step 6 field list carries an aliases: [BUG-NNNN] bullet after Last updated', () => {
-  const text = readSkill(BUG_FILE_SKILL);
+test('bug-create/SKILL.md Step 6 field list carries an aliases: [BUG-NNNN] bullet after Last updated', () => {
+  const text = readSkill(BUG_CREATE_SKILL);
   assert.match(
     text,
     /- `Last updated`: today's date\n- `aliases: \[BUG-NNNN\]` — mirrors this file's own id: field so Obsidian's wikilink resolver can find it by short ID \(ROADMAP-008\)/,
-    'bug-file/SKILL.md must document writing an aliases: [BUG-NNNN] bullet in the Step 6 field list'
+    'bug-create/SKILL.md must document writing an aliases: [BUG-NNNN] bullet in the Step 6 field list'
   );
 });
 
@@ -93,23 +93,23 @@ test('roadmap-create/SKILL.md Step 6 field table carries an aliases row after St
   );
 });
 
-test('decision-create/SKILL.md Step 5 template opens with a new frontmatter block carrying aliases: [DEC-NNNN]', () => {
-  const text = readSkill(DECISION_CREATE_SKILL);
+test('adr-create/SKILL.md Step 5 template opens with a new frontmatter block carrying aliases: [ADR-NNNN]', () => {
+  const text = readSkill(ADR_CREATE_SKILL);
   assert.match(
     text,
-    /```markdown\n---\nid: DEC-NNNN\naliases: \[DEC-NNNN\]\n---\n\n# DEC-NNNN: <Decision-Group Title>/,
-    'decision-create/SKILL.md must open its generated-file template with a --- id: DEC-NNNN / aliases: [DEC-NNNN] / --- frontmatter block before the H1'
+    /```markdown\n---\nid: ADR-NNNN\naliases: \[ADR-NNNN\]\n---\n\n# ADR-NNNN: <Decision-Group Title>/,
+    'adr-create/SKILL.md must open its generated-file template with a --- id: ADR-NNNN / aliases: [ADR-NNNN] / --- frontmatter block before the H1'
   );
 });
 
-test('decision-create/SKILL.md new frontmatter block does not add title/created/updated/tags keys', () => {
-  const text = readSkill(DECISION_CREATE_SKILL);
+test('adr-create/SKILL.md new frontmatter block does not add title/created/updated/tags keys', () => {
+  const text = readSkill(ADR_CREATE_SKILL);
   const blockMatch = text.match(/```markdown\n---\n([\s\S]*?)\n---\n/);
-  assert.ok(blockMatch, 'decision-create/SKILL.md must have a --- delimited frontmatter block inside the Step 5 fence');
+  assert.ok(blockMatch, 'adr-create/SKILL.md must have a --- delimited frontmatter block inside the Step 5 fence');
   const blockLines = blockMatch[1].split('\n');
   assert.deepEqual(
     blockLines,
-    ['id: DEC-NNNN', 'aliases: [DEC-NNNN]'],
+    ['id: ADR-NNNN', 'aliases: [ADR-NNNN]'],
     'the new block must contain only id: and aliases: — no title/created/updated/tags keys (out of scope for TASK-065)'
   );
 });

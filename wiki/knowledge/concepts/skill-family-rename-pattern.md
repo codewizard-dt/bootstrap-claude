@@ -17,7 +17,7 @@ tags: [skill-design, install-scripts, rename, work-families]
 3. Update every file that documents the command by name: `lib/skills/README.md`'s command table (plus its "directory name matches slash-command name" invariant example), `CLAUDE.md`'s command table, and any other skill's example mentions.
 4. Update the **template source** for any touched `lifecycle.md` prose (`lib/scripts/templates/wiki/work/<family>/lifecycle.md`), never the local `wiki/` copy alone — it is always-refreshed and would silently lose a hand-edit.
 5. Add a new batch of old names to `ORPHAN_SKILLS` in `lib/scripts/install-global.sh`, matching the existing `adr`/`prd` entries' shape exactly.
-6. Update any test file that hardcodes the old name or path (two were found hardcoding `req-create` ahead of this rename).
+6. Update any test file that hardcodes the old name or path (two were found hardcoding the requirements-creation skill's name ahead of this rename).
 7. Run the full test suite as the final check — a reference sweep this way catches stragglers no grep pass guarantees.
 
 **Not a packaging concern**: `package.json`'s `files` field ships `lib/` as a whole directory rather than listing individual skill paths, so a rename inside `lib/skills/` never requires an npm-manifest edit — only the `ORPHAN_SKILLS` step matters for already-installed consumers.

@@ -33,15 +33,15 @@ pending ──▶ in-progress ──▶ passed
                  │              ▲
                  ├──▶ failed ───┘ (rerun after fixes)
 pending ──▶ skipped   (/uat-skip — intentional skip, skeleton documents why)
-any     ──▶ trashed   (/task-trash — task abandoned; reason recorded)
+any     ──▶ trashed   (/task-close — task abandoned; reason recorded)
 ```
 
-- **pending** — created by `/uat-generate`; not yet executed.
+- **pending** — created by `/uat-create`; not yet executed.
 - **in-progress** — being walked (`/uat-walk`) or run headlessly (`/uat-auto`).
 - **passed** — every test `[x]`; the matching task flips to `done`.
 - **failed** — one or more `[FAIL: …]` markers after a full run; flips back to `in-progress` on rerun.
 - **skipped** — UAT deliberately not run (`/uat-skip`); the file records why.
-- **trashed** — terminal; the task was trashed (`/task-trash`); reason recorded in the file.
+- **trashed** — terminal; the task was trashed (`/task-close`); reason recorded in the file.
 
 A task reaches **done** only when its UAT is `passed` or `skipped`. See the [tasks lifecycle](../tasks/lifecycle.md).
 

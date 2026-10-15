@@ -18,7 +18,7 @@ This skill is read-mostly: it never upgrades inline placeholders to task files a
 
 ## Step 1: Discover active roadmaps
 
-`list_dir` `wiki/work/roadmaps/` for `.md` files **directly** in it (not `archive/`); skip `lifecycle.md`, `index.md`, `README.md`. None found → STOP: `No roadmaps found in wiki/work/roadmaps/. Use /roadmap-create <topic> to draft one.`
+`list_dir` `wiki/work/roadmaps/` for `.md` files **directly** in it; skip `lifecycle.md`, `index.md`, `README.md`, and ignore any legacy `archive/` directory. Finished roadmaps stay in the directory, so `Read` each file's frontmatter and keep only those with `status: active` — closed (`status: done`) roadmaps are skipped. None found → STOP: `No roadmaps found in wiki/work/roadmaps/. Use /roadmap-create <topic> to draft one.`
 
 A single active roadmap is still worth assessing — don't short-circuit to `/roadmap-next`; the status update in Step 6d is useful on its own.
 
@@ -26,31 +26,31 @@ A single active roadmap is still worth assessing — don't short-circuit to `/ro
 
 For each file, run the **Parse a roadmap** procedure defined in `lib/skills/roadmap-next/SKILL.md` — do not restate it here, follow it as written. In addition to what that procedure captures, also extract from frontmatter: `owner`, `tags`, `linked_requirements`, `linked_decisions`, `created`, `updated`.
 
-Also scan the roadmap body for inline typed links referencing decisions (e.g. `rel::[[DEC-0003#D2]]`, `implements::[[DEC-0003]]`) — a decision can gate a roadmap without being listed in `linked_decisions`. Merge these into the same per-roadmap decision-reference set.
+Also scan the roadmap body for inline typed links referencing decisions (e.g. `rel::[[ADR-0003#D2]]`, `implements::[[ADR-0003]]`, or the legacy `DEC-` forms) — a decision can gate a roadmap without being listed in `linked_decisions`. Merge these into the same per-roadmap decision-reference set.
 
 Do **not** run the Upgrade-inline-items or Parallelism-analysis procedures from that same file — those materialize task files, which is out of scope here. This step only reads.
 
-## Step 3: Auto-archive fully-complete roadmaps
+## Step 3: Auto-close fully-complete roadmaps
 
-For any roadmap where `total > 0` and `done == total`: run the **Archive a fully-complete roadmap** procedure defined in `lib/skills/roadmap-next/SKILL.md` — do not restate it here, follow it as written. Record the filename in `archived`. Drop it from the set being ranked — a `done` roadmap has no priority left to weigh.
+For any roadmap where `total > 0` and `done == total`: run the **Close a fully-complete roadmap** procedure defined in `lib/skills/roadmap-next/SKILL.md` — do not restate it here, follow it as written. Record the filename in `closed`. Drop it from the set being ranked — a `done` roadmap has no priority left to weigh.
 
-If every discovered roadmap was archived this step, STOP and report: `All roadmaps complete — archived: <list>. Nothing active to assess.`
+If every discovered roadmap was closed this step, STOP and report: `All roadmaps complete — closed: <list>. Nothing active to assess.`
 
 ## Step 4: Outstanding decision check
 
 Before weighing priority or dependencies, check whether any remaining roadmap is gated on a decision that hasn't been finalized yet — an unresolved decision means the roadmap isn't truly ready to work, regardless of how it otherwise ranks.
 
-For every remaining roadmap, take its merged decision-reference set from Step 2 (`linked_decisions` frontmatter + inline `rel::[[DEC-...]]` links). Each reference is a Decision Group file (`DEC-NNNN`) and, ideally, a specific decision block within it (`DEC-NNNN#DM`, e.g. `#D2`). For each unique reference:
+For every remaining roadmap, take its merged decision-reference set from Step 2 (`linked_decisions` frontmatter + inline `rel::[[ADR-...]]` / legacy `rel::[[DEC-...]]` links). Each reference is a Decision Group file (`ADR-NNNN`, or legacy `DEC-NNNN`) and, ideally, a specific decision block within it (`ADR-NNNN#DM` or legacy `DEC-NNNN#DM`, e.g. `#D2`). For each unique reference:
 
-1. `find_file` / `Read` the Decision Group file in `wiki/work/decisions/` (check `archive/` too if not found active). Missing file → note as a broken reference, don't block on it.
-2. Find the `## DM. <title>` block matching the referenced `#DM`. If the roadmap referenced only `DEC-NNNN` with no `#DM`, treat every `proposed` block in that group as a separate outstanding decision.
+1. `find_file` / `Read` the Decision Group file in `wiki/work/decisions/` (if not found in the directory, fall back to a legacy `archive/` per the ID-RESOLUTION.md legacy-fallback rule). Missing file → note as a broken reference, don't block on it.
+2. Find the `## DM. <title>` block matching the referenced `#DM`. If the roadmap referenced only `ADR-NNNN` (or legacy `DEC-NNNN`) with no `#DM`, treat every `proposed` block in that group as a separate outstanding decision.
 3. Read that block's `Status:` field (`proposed | accepted | superseded`).
-4. If `Status: superseded`, the block is annotated `superseded by DEC-NNNN#DM` — follow that pointer to the current decision's block and re-check its status instead of stopping at the superseded one.
-5. If the resolved status is `proposed` (not yet `accepted`), record it as an **outstanding decision** blocking that roadmap: `{roadmap, DEC-NNNN#DM, title, file path}`.
+4. If `Status: superseded`, the block is annotated `superseded by ADR-NNNN#DM` (or legacy `superseded by DEC-NNNN#DM`) — follow that pointer to the current decision's block and re-check its status instead of stopping at the superseded one.
+5. If the resolved status is `proposed` (not yet `accepted`), record it as an **outstanding decision** blocking that roadmap: `{roadmap, ADR-NNNN#DM, title, file path}` (use the resolved file's own `id:`).
 
 Deduplicate by decision so a shared unresolved decision blocking multiple roadmaps is only reported once per roadmap it actually gates.
 
-This step is read-only — never run `/decision-finalize` yourself; surface the blockers so the user can resolve them (or explicitly choose to proceed anyway).
+This step is read-only — never run `/adr-finalize` yourself; surface the blockers so the user can resolve them (or explicitly choose to proceed anyway).
 
 ## Step 5: Cross-roadmap dependency analysis
 
@@ -78,10 +78,10 @@ An outstanding decision (Step 4) does **not** change a roadmap's rank — it cha
 
 Print, in this order:
 
-### 6a. Archived this run (omit if `archived` is empty)
+### 6a. Closed this run (omit if `closed` is empty)
 
 ```
-Archived to wiki/work/roadmaps/archive/ (fully complete):
+Moved to Closed in wiki/work/roadmaps/index.md (fully complete):
   • <filename> — done
 ```
 
@@ -90,11 +90,11 @@ Archived to wiki/work/roadmaps/archive/ (fully complete):
 ```
 ## Warning: Outstanding Decisions
 
-These roadmaps are gated on decisions still `proposed` — resolve via `/decision-finalize <file>#<DM>` before treating the roadmap as ready to work:
+These roadmaps are gated on decisions still `proposed` — resolve via `/adr-finalize <file>#<DM>` before treating the roadmap as ready to work:
 
 | Decision | Status | Blocks Roadmap | Title |
 |----------|--------|-----------------|-------|
-| DEC-0003#D2 | proposed | ROADMAP-009 — <title> | <decision title> |
+| ADR-0003#D2 | proposed | ROADMAP-009 — <title> | <decision title> |
 ```
 
 ### 6c. Prioritized Roadmaps
@@ -108,7 +108,7 @@ These roadmaps are gated on decisions still `proposed` — resolve via `/decisio
 | 2 | ROADMAP-MMM — <title> | M/N | <one sentence> | ROADMAP-NNNN (Phase X blocks it) |
 ```
 
-`Depends on` lists the hard-edge blockers found in Step 5, or `—` if none. A roadmap with an outstanding decision also gets `Blocked by DEC-NNNN#DM` appended here even if it has no roadmap-to-roadmap dependency.
+`Depends on` lists the hard-edge blockers found in Step 5, or `—` if none. A roadmap with an outstanding decision also gets `Blocked by ADR-NNNN#DM` appended here even if it has no roadmap-to-roadmap dependency.
 
 ### 6d. Status update per roadmap
 
@@ -124,10 +124,10 @@ One block per roadmap, in ranked order:
 
 Base `Status` on progress momentum and whether items remain `inline` (unmaterialized) vs `task-link` — call out roadmaps that are still mostly inline placeholders, since `/roadmap-next` needs to run on them before real progress can be tracked.
 
-If the roadmap has an outstanding decision from Step 4, set `Status: blocked — awaiting decision(s): DEC-NNNN#DM` and replace `Next` with the decision-resolution action instead of `/roadmap-next`:
+If the roadmap has an outstanding decision from Step 4, set `Status: blocked — awaiting decision(s): ADR-NNNN#DM` and replace `Next` with the decision-resolution action instead of `/roadmap-next`:
 
 ```
-- Next: `/decision-finalize wiki/work/decisions/NNNN-slug.md#DM`
+- Next: `/adr-finalize wiki/work/decisions/ADR-NNNN-slug.md#DM`
 ```
 
 ### 6e. Dependency cycles (omit if none found)
@@ -143,7 +143,7 @@ These roadmaps block each other — resolve the cycle manually before treating e
 
 ## Constraints
 
-- Read-only except the Step 3 auto-archive procedure (status flip + `git mv` + index/log updates) — never flip checkboxes, never upgrade inline items, never create task files, never finalize decisions. That is `/roadmap-next`'s and `/decision-finalize`'s job once the user acts on this report.
-- Permitted tools: `list_dir`, `find_file`, `Read`, `Edit`, `Bash` (only for `git mv` during archiving), `AskUserQuestion` (only if genuinely needed to disambiguate — this skill should normally run to completion without prompting).
+- Read-only except the Step 3 auto-close procedure (status flip + index/log updates) — never flip checkboxes, never upgrade inline items, never create task files, never finalize decisions. That is `/roadmap-next`'s and `/adr-finalize`'s job once the user acts on this report.
+- Permitted tools: `list_dir`, `find_file`, `Read`, `Edit`, `AskUserQuestion` (only if genuinely needed to disambiguate — this skill should normally run to completion without prompting).
 - Never bash reads (`cat`/`find`/`grep`/`sed`/`ls`).
 - Keep the report terse — no preamble, no closing summary beyond the tables above.

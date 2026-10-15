@@ -2637,7 +2637,7 @@ test('schema: the consumer:"skill" population is exactly the eight behavior-chan
   // COUNT AND MEMBERSHIP, both. These eight are the keys that change what a
   // slash command or hook DOES at run time — whether /git-commit pushes,
   // whether /git-commit lints, whether /research writes to raw/, whether
-  // /research folds a saved report into the wiki, whether /uat-generate
+  // /research folds a saved report into the wiki, whether /uat-create
   // promotes tests, whether package-install-consent.js allows an install.
   // They are read mid-session with no installer in the loop and no diff to
   // review, so adding another is a decision about the blast radius of the
@@ -2699,7 +2699,7 @@ const CITATION_PINS = {
   // A data declaration, not a prompt: the list that generates the guides.* keys.
   'sync-wiki-scaffold.sh:87': 'OPTIONAL_GUIDES=',
   'lib.sh:410': 'Scope for $name',
-  'install-global.sh:72': 'Delete these',
+  'install-global.sh:80': 'Delete these',
 };
 
 test('schema: every script:line citation in a detail still points at the line it claims', () => {
@@ -3399,7 +3399,7 @@ test('scripts -> schema: every key literal passed to bootstrap-prefs.js resolves
 //                             a recognized wrapper form) + lib/skills/git-commit/SKILL.md
 //   gitCommit.autoPush        lib/skills/git-commit/SKILL.md, Step 0 and Step 6
 //   research.persistToRaw     lib/skills/research/SKILL.md, the Phase 5 gate
-//   uatGenerate.promoteTests  lib/skills/uat-generate/SKILL.md, the Step 2.5 gate
+//   uatGenerate.promoteTests  lib/skills/uat-create/SKILL.md, the Step 2.5 gate
 //
 // The three guards below are kept rather than deleted with the entries. They
 // cost nothing while the array is empty (every loop is a no-op) and they are
@@ -3509,7 +3509,7 @@ const SKILL_CONSUMERS = {
   'gitCommit.autoPush': 'lib/skills/git-commit/SKILL.md',
   'research.persistToRaw': 'lib/skills/research/SKILL.md',
   'research.autoIngest': 'lib/skills/research/SKILL.md',
-  'uatGenerate.promoteTests': 'lib/skills/uat-generate/SKILL.md',
+  'uatGenerate.promoteTests': 'lib/skills/uat-create/SKILL.md',
 };
 
 test('consumer: skill — every consuming skill reads its key with --project . and degrades to `unset`', () => {

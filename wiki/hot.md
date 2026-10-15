@@ -1,39 +1,35 @@
 ---
 title: Hot Cache
-updated: 2026-09-13
+updated: 2026-09-20
 ---
 
 # Hot Cache
 
 Session-handoff summary of what changed most recently — the small file an agent reads first to get oriented fast. **Fully regenerated at the end of every wiki-writing session, never appended to.** Keep it under ~500 words; if a fact stops being "recent", it drops off (its durable form lives in a knowledge or work page).
 
-_Last updated: 2026-09-13_
+_Last updated: 2026-09-20_
 
 ## Key Recent Facts
 
-- **ROADMAP-0014 created (2026-09-13)**: `wiki/work/roadmaps/ROADMAP-0014-wiki-skill-deduplication-fixes.md`, 3 phases / 9 inline placeholder items, executing the `wiki-skill-boilerplate-duplication` fix list. Phase 1 (req-update/req-retire bug fix, bug-file schema-drift fix), Phase 2 (wiki-tidy rewrite, shared archive-item + ID-resolution docs, shared boilerplate doc, power-mode shrink), Phase 3 (new Decision Group for the decision-supersession-algorithm consolidation, plus a task-dependency-format cleanup **gated on `DEC-0001#D4`** — do not tackle that item until D4 is accepted). `linked_decisions: [DEC-0001]`. **The `req-*`→`requirement-*` rename was deliberately excluded** — the user chose to defer it after reviewing the research; it remains available at `raw/research/req-to-requirement-rename/` and `knowledge/concepts/skill-family-rename-pattern.md` for a future roadmap. Next: `/roadmap-next wiki/work/roadmaps/ROADMAP-0014-wiki-skill-deduplication-fixes.md` to materialize its items into task files.
-- **`req-*` → `requirement-*` rename researched but deferred (2026-09-13)**: this repo already executed this exact class of rename twice (`adr-*`→`decision-*`, `prd-*`→`req-*`) via `install-global.sh`'s `ORPHAN_SKILLS` array — a known-working 7-step pattern, not novel risk, whenever it's picked back up. Found a pre-existing, unrelated doc-drift bug along the way: `CLAUDE.md`'s command table is missing a `/req-retire` row (not yet fixed — was going to be bundled into the now-deferred rename).
-- **ROADMAP-0013 in active execution via `/power-mode` (2026-09-13, concurrent session)**: materialized to `TASK-0086`–`TASK-0093`. Last known: `TASK-0086`, `TASK-0089`, `TASK-0090`, `TASK-0091` were `pending-uat`/UAT-generated; `TASK-0088` blocked on `DEC-0001#D1`. Check `wiki/work/tasks/index.md` for current state.
-- **DEC-0001 (D1-D4, all `proposed`)**: blocks `TASK-0088` and ROADMAP-0014's task-dependency-format item. Next: `/decision-finalize` per block.
-- **TASK-0085 (`status: todo`)**: fixes `bug-file`/`roadmap-create` stale bare-filename instructions + 4-digit ID standardization. Not yet confirmed tackled.
-- **`wiki/log.md` is well past the ~500-line rotation threshold (now 980+)** — `/wiki-rotate-log` increasingly overdue.
-- **Local branch remains ahead of `origin/main`** (uncommitted work across today's sessions) — a `/git-commit` is due.
+- **`/whats-next` researched (2026-09-20, not built)**: `raw/research/whats-next/` → `knowledge/sources/whats-next.md` + `knowledge/concepts/cross-family-work-prioritization.md`. Recommends a new **read-only cross-family advisor** ranking ALL open work (tasks in or out of a roadmap, UATs, bugs, ADR blocks, PRDs) by tiers (fix broken → finish in-flight → unblock → start ready → triage) then downstream dependency depth, with an explicit `--go` handoff to `power-mode` (which needs a new task-ID-list dispatch). Live measure: 14 of 40 open tasks+bugs are outside every roadmap. Build after ROADMAP-0014 Phase 4 lands and `install-global.sh` runs; suggested `depends_on: [TASK-0114, TASK-0120]`.
+- **Tasks filed from that research (2026-09-20)**: `TASK-0125` (document `pending-uat` — missing from both `tasks/lifecycle.md` copies, index headers, `/primer`'s check and the dashboard tone map, so 24 tasks render unbadged; blocks 0126) and `TASK-0126` (build `/whats-next` v1, report-only; `depends_on` 0114, 0120, 0125; `--go` deferred until `/power-mode` takes a task-ID list). Both `todo`, off any roadmap.
+- **Serena sweep gotchas** recorded on `entities/tools/serena.md`: use `[^\n]*` not `.*`, no `multiline=false` with `^`, full repo-relative include globs.
+- **ROADMAP-0014 Phase 4 is in flight**: renames done through TASK-0117; TASK-0118/0119/0120 `pending-uat`, TASK-0121 `in-progress`, TASK-0122/0123/0124 `todo`. Family index progress figures are stale (ROADMAP-0014 shows 0/9; the file has 9 of 23 task-links checked).
+- **Active work snapshot (2026-09-20, before TASK-0125/0126)**: 31 active tasks (24 `pending-uat`, 6 `todo`, 1 `in-progress`), 24 pending UATs (none walked), 9 open untriaged bugs, 5 active roadmaps, 0 active PRDs/ADRs.
+- **`wiki/log.md` is far past the ~500-line rotation threshold (1,240+)** — `/wiki-rotate-log` overdue.
+- **Local branch is well ahead of `origin/main`** (large uncommitted working tree from ROADMAP-0014) — a `/git-commit` is due.
 
 ## Recent Changes
 
-- Created (2026-09-13): `wiki/work/roadmaps/ROADMAP-0014-wiki-skill-deduplication-fixes.md`; `raw/research/req-to-requirement-rename/{index,sources}.md`; `knowledge/sources/req-to-requirement-rename.md`; `knowledge/concepts/skill-family-rename-pattern.md`. Updated: `wiki/work/roadmaps/index.md` (+1 row), `wiki/index.md` (Sources + Concepts), `wiki/log.md`.
-- Concurrently (2026-09-13, separate session): ROADMAP-0013's `TASK-0086` fix-forward + disclosure; `TASK-0089`/`TASK-0090` finalized after an orchestration interruption; `TASK-0091` implemented + `UAT-0091` generated.
-- Earlier same day: skill-simplification research ingested; cross-family synergy research ingested; `ROADMAP-0013` + `DEC-0001` (first Decision Group) created and materialized to 8 tasks; `ROADMAP-010` completed and archived.
+- Created (2026-09-20): `wiki/work/tasks/TASK-0125-document-pending-uat-task-status.md`, `TASK-0126-build-whats-next-skill.md` (+ `tasks/index.md`, `log.md`); `raw/research/whats-next/{index,sources}.md`; `knowledge/sources/whats-next.md`; `knowledge/concepts/cross-family-work-prioritization.md`. Updated: `knowledge/entities/tools/serena.md`, `knowledge/entities/components/power-mode-skill.md`, `wiki/index.md`, `wiki/log.md`.
+- 2026-09-19/20: ROADMAP-0014 Phase 4 tasks created and UATs generated (`UAT-0116`–`UAT-0120`); `TASK-0116`/`0117` done; shared `_shared/ARCHIVE-WORK-ITEM.md`, `ID-RESOLUTION.md`, `SKILL-BOILERPLATE.md` landed.
+- 2026-09-19: `DEC-0001` D1–D4 all accepted and archived; `power-mode` gained the Agent Lifecycle reap-sweep (reap rules cover only agents the orchestrator itself spawned, not nested children).
 
 ## Active Threads
 
-- **ROADMAP-0014 (0/9, active, just created)**: not yet started. Next: `/roadmap-next wiki/work/roadmaps/ROADMAP-0014-wiki-skill-deduplication-fixes.md` to materialize tasks; its Phase 3 dependency-format item must wait on `DEC-0001#D4`.
-- **ROADMAP-0013 (in progress, being driven by a concurrent session)**: re-check `wiki/work/tasks/index.md` before acting.
-- **DEC-0001 (D1-D4, all `proposed`)**: blocks `TASK-0088` and ROADMAP-0014's dependency-format item. Next: `/decision-finalize` per block.
-- **req-* → requirement-* rename**: researched, deliberately deferred — not on any roadmap. Revisit via a future `/roadmap-create` or `/task-add` when wanted.
-- **TASK-0085 (todo)**: not yet confirmed tackled — check for an in-progress teammate session first.
-- **ROADMAP-012 (0/3, active)** and **ROADMAP-011 (0/4, active)**: not yet started.
-- **Not yet on any roadmap**: worktree isolation, a PostToolUse prompt-injection scanner, a statusline, plugin-marketplace candidate (awaits `/decision-create`); an observability guide.
-- **ROADMAP-010 (done, archived)**, **ROADMAP-009 (closed, archived)**, **ROADMAP-001 (11/12, active, sole item deliberately deferred)**.
-- **TASK-031 (todo)**, **TASK-074 (todo)**, **TASK-067 (pending-uat)**, **TASK-039 (pending-uat)**, **BUG-0001–0008 (open, older, unrelated)**.
-- **`wiki/log.md` rotation overdue** — run `/wiki-rotate-log`.
+- **ROADMAP-0014 (active, Phase 4)**: drive the rename chain to completion; run UATs for `0118`→`0120`, continue `0121`.
+- **ROADMAP-0013 (0/8)**: `TASK-0086`–`0093` all `pending-uat`.
+- **ROADMAP-011 (2/4)** and **ROADMAP-012 (1/3)**: index says 0/4 and 0/3 — files are ahead.
+- **ROADMAP-001 (11/12)**: sole remaining item deliberately deferred.
+- **Not on any roadmap**: `TASK-031`, `-039`, `-074`, `-075`, `-0085`; `BUG-0001`–`0008`, `0012` (all `open`, untriaged); worktree isolation, PostToolUse prompt-injection scanner, statusline, plugin-marketplace candidate.
+- **`TASK-0125` → `TASK-0126` (`/whats-next`)**: created, `todo`, not on any roadmap.

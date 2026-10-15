@@ -8,3 +8,4 @@ Decision group files where all decisions are `accepted` or `superseded`, moved h
 
 | ID | Title | Final Status | Archived |
 |----|-------|--------------|----------|
+| [[DEC-0001]] | Wiki Cross-Family Linking Schema | accepted | 2026-09-18 |

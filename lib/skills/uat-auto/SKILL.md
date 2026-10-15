@@ -25,7 +25,7 @@ Headless variant of `/uat-walk`: run every eligible test, auto-judge from determ
 
 **Never auto-pass a test you cannot verify with hard evidence.** Pass requires a machine-checkable match (UAT-CORE Step 4 "Auto-judge criteria"). On any doubt, uncertainty, or missing evidence → `[FAIL: auto-judge: <reason>]`. **Never** `[SKIP: ...]` (a human verdict). **Never** `[x] Pass` unless the criteria are met exactly. A false pass ships a broken feature; a false fail merely gets re-triaged in the next `/uat-walk` — so this is the single most important rule.
 
-Fail-closed means *no oracle*, not *no curl*. A **unit-backed** test (UAT-CORE Step 3 — carries `Repeatable Unit Test: Created: <path>`) has a real machine-checkable oracle even with no `Endpoint:`/`Command:` field, so run it and judge it rather than sending it to a human. What stays human is the genuinely unverifiable: bare Manual cases with no test file, and every UI case.
+Fail-closed means *no oracle*, not *no curl*. A **unit-backed** test (UAT-CORE Step 3 — carries `Repeatable Unit Test: Created: <path>`) has a real machine-checkable oracle even with no `Endpoint:`/`Command:` field, so run it and judge it rather than sending it to a human. UI cases likewise have a real oracle — a browser run through the Playwright MCP (UAT-CORE Step 4 channel 3). What stays human is the genuinely unverifiable: bare Manual cases with no test file, UI cases whose Expected is visual-only, and UI cases when Playwright is unavailable.
 
 ---
 
@@ -36,7 +36,7 @@ Run UAT-CORE as written, headless throughout:
 1. **Step 1** — resolve/parse (auto/plus resolution rules: never prompt; auto-pick lowest-numbered pending on empty/unresolved).
 2. **Step 2** — prerequisites as a **hard gate**: any failed or unverifiable prerequisite aborts → `[FAIL: auto-judge: prerequisite not satisfied — <which>]` on every untested test, then Closure. No repair attempt (that's `/uat-auto-plus`).
 3. **Step 3 + 3.5** — classify all eligible tests, then stub-detect (leave stubs `- [ ] Pass`, do not execute).
-4. **Step 4** — auto-judge each non-stub test in document order by its strongest evidence channel: **live command** (API/CLI with an extractable `**Command**:`) → **unit-backed** (run the recorded `Repeatable Unit Test` file, all 7 criteria) → **human** (`[FAIL: auto-judge: ... requires human verification]` for bare Manual cases and every UI case — no browser automation, no heuristics). Channel 1 is never overridden by channel 2: a failing live command is a `[FAIL]` regardless of a green unit test. Eligibility = pending + previously-failed.
+4. **Step 4** — auto-judge each non-stub test in document order by its strongest evidence channel: **live command** (API/CLI with an extractable `**Command**:`) → **unit-backed** (run the recorded `Repeatable Unit Test` file, all 7 criteria) → **browser** (UI cases: load the Playwright MCP tools, drive the page, assert Expected from the snapshot/DOM/network, save an evidence screenshot — UAT-CORE channel 3) → **human** (`[FAIL: auto-judge: ... requires human verification]` for bare Manual cases, visual-only UI Expected, and Playwright-unavailable — no heuristics). Channel 1 is never overridden by channel 2: a failing live command is a `[FAIL]` regardless of a green unit test. Likewise a browser verdict is final regardless of unit-backing. Eligibility = pending + previously-failed.
 5. **Step 5** — write each verdict **immediately** via `Edit` (no buffering/batching).
 6. **Closure** — archive on all-pass; on any fail leave the file in place and **exit 0** (the orchestrator treats exit as its task done; the pipeline decides what to do with fail markers). This mode keeps screenshots and uses log tag ` (auto)`.
 
@@ -49,13 +49,15 @@ There is **no fix workflow** — record evidence and exit; re-run `/uat-walk` (o
 ```
 ━━━ UAT AUTO COMPLETE ━━━
 File: wiki/work/uat/UAT-005-positions.md  ·  Source: wiki/work/tasks/TASK-005-positions.md  ·  Mode: headless
-✅ Passed 6 (live command 4 · unit-backed 2) · ⚠️ Skipped 1 (pre-existing, untouched) · ❌ Failed 2 (auto-judge-uncertain: 1)
+✅ Passed 8 (live command 4 · unit-backed 2 · browser 2) · ⚠️ Skipped 1 (pre-existing, untouched) · ❌ Failed 2 (auto-judge-uncertain: 1)
 ❔ Pending 0 · 🔲 Stub-detected 0 (left untouched — implement first) · Total 9
 Unit-backed:
   • UAT-EDGE-002: Rate Limit Window — `node --test test/rate-limit.test.js` (7 tests, 0 fail)
+Browser-verified:
+  • UAT-UI-001: Strength Panel Layout — /strengths, panel visible, 3 rows (screenshot: wiki/work/uat/screenshots/005-UAT-UI-001.png)
 Failed:
   • UAT-API-003: Delete Position — "auto-judge: HTTP 500 expected 204"
-    → /bug-file "UAT-API-003: HTTP 500 received, expected 204"
+    → /bug-create "UAT-API-003: HTTP 500 received, expected 204"
   • UAT-EDGE-001: Empty Positions — "auto-judge: manual test requires human verification"
 Next action: /uat-walk wiki/work/uat/UAT-005-positions.md
 ```
@@ -66,10 +68,10 @@ On all-pass, replace `Next action` with the task/UAT IDs and their new `done`/`p
 
 ## Rules
 
-- **No user interaction, ever** — no `AskUserQuestion`, no inline prompts, no clarifying questions. Ambiguity → record fail / exit with a diagnostic summary. Bug-file suggestions in the summary are informational text only — never call `/bug-file` itself.
-- **Verdict discipline** — `[x] Pass` only on concrete machine-verified evidence: a matching live command, or a unit-backed run meeting all 7 criteria. `[FAIL: auto-judge: <reason>]` for everything else (uncertainty, missing command with no unit test, non-verifiable Expected, UI, bare manual); **never** `[SKIP]`.
+- **No user interaction, ever** — no `AskUserQuestion`, no inline prompts, no clarifying questions. Ambiguity → record fail / exit with a diagnostic summary. Bug-create suggestions in the summary are informational text only — never call `/bug-create` itself.
+- **Verdict discipline** — `[x] Pass` only on concrete machine-verified evidence: a matching live command, a unit-backed run meeting all 7 criteria, or a Playwright browser run meeting all 4 UI criteria. `[FAIL: auto-judge: <reason>]` for everything else (uncertainty, missing command with no unit test, non-verifiable Expected, visual-only UI Expected, Playwright unavailable, bare manual); **never** `[SKIP]`.
 - **A green exit code is not a pass** — for unit-backed tests, always confirm the run actually executed tests from the recorded file (UAT-CORE Step 4 criterion 3). Exit 0 with 0 tests collected is the one failure mode that looks exactly like success.
-- **No browser automation** — UI tests always fail-closed to human verification, unit test or not.
+- **Playwright is allowed and expected for UI tests** — use the Playwright MCP (load its deferred tools via `ToolSearch`) for every `UAT-UI-*` case. Never mark a UI case `[FAIL: ... requires human verification]` without first attempting the browser run, unless Playwright is unavailable or the Expected is visual-only (UAT-CORE Step 4 channel 3). Never pass a UI case from a screenshot alone.
 - **File integrity + Bash hygiene + MCP compliance** — per UAT-CORE Step 5 and "Bash hygiene". Serena for all listing/search; `Edit` for every status flip; no `sed`/`awk`/`ls`/`find`/`grep`/`cat`; never emit literal secrets (only `"$UAT_AUTH_TOKEN"` / `"$UAT_TEST_PASSWORD"`).
 
 **Start now — read UAT-CORE.md, resolve the UAT file, and begin.**

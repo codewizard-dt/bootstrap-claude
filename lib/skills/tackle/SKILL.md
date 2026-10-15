@@ -19,15 +19,13 @@ Execute a pre-planned task file step-by-step. **The task file IS the plan — no
 
 ## Step 0: Resolve the task file
 
-Resolve `$ARGUMENTS` (use Serena `find_file`/`list_dir`):
+Resolve the file per ~/.claude/skills/_shared/ID-RESOLUTION.md — family: tasks · scope: active · ambiguous: interactive (list + ask) · empty: run **Roadmap Auto-Discovery** (0a) first; only then the task survey
+
+A missing path or no match is not a resolution error here — fall through:
 
 | Input | Action |
 |-------|--------|
-| File path (`wiki/work/tasks/3-user-auth.md`) | confirm exists; else fall through |
-| Number-slug (`3-user-auth`) | match in `wiki/work/tasks/`; else fall through |
-| Number / description (`3`, `user auth`) | search `wiki/work/tasks/`; ambiguous → list + ask; no match → fall through |
-| Empty | run **Roadmap Auto-Discovery** (0a) first; only then the task survey |
-| Non-empty but unresolved | task survey — recommend, never auto-pick |
+| Non-empty but unresolved (missing path, no match, or free-text description) | task survey — recommend, never auto-pick |
 
 Use the resolved path as the outline for all later steps.
 
@@ -37,8 +35,8 @@ Use the resolved path as the outline for all later steps.
 
 Zero-click: find the first actionable roadmap item and tackle it, **no prompts**.
 
-1. `mcp__serena__list_dir("wiki/work/roadmaps/", recursive=false)` — root `.md` files only (exclude `archive/`, `README.md`). None → task survey.
-2. `Read` each roadmap (markdown). Select the one with the most `[x]` items (furthest along); tie/single → use it. No prompt.
+1. `mcp__serena__list_dir("wiki/work/roadmaps/", recursive=false)` — root `.md` files only (exclude `archive/`, `README.md`, `index.md`, `lifecycle.md`). None → task survey.
+2. `Read` each roadmap (markdown); keep only those with frontmatter `status: active` (closed roadmaps stay in the directory). Select the one with the most `[x]` items (furthest along); tie/single → use it. No prompt.
 3. Scan top-to-bottom for the first `## Phase N` (or flat list) containing a `- [ ]` item. None unchecked → roadmap done → task survey.
 4. Take the first `- [ ]` line in that phase:
    - **Task link** (markdown link into `wiki/work/tasks/`) → extract path, use as outline. Announce: `Roadmap auto-selected: <roadmap> → Phase <N>: <name> → <link text>`.
@@ -47,15 +45,15 @@ Zero-click: find the first actionable roadmap item and tackle it, **no prompts**
 ### Task survey (empty OR unresolved)
 
 Recommend from the index; **do not auto-pick**.
-- **Read only `wiki/work/tasks/index.md`** (canonical active list: bullet lines `- [TASK-NNNN — Title](TASK-NNNN-slug.md) — one-line summary · status`). Do NOT read individual task files, `grep`, `bash`, or aggregate across `wiki/work/tasks/` — the index exists to prevent exactly that. The only per-file read is the chosen task in Step 1.
-- Missing `index.md` / no active-item bullets → STOP: `Task index at wiki/work/tasks/index.md is empty or missing. Add tasks with /task-add, or invoke /tackle <path-or-slug> directly.` Do not scan every file.
+- **Read only `wiki/work/tasks/index.md`** (canonical active list: bullet lines `- [TASK-NNNN — Title](TASK-NNNN-slug.md) — one-line summary · status`; if a family index has `## Active` / `## Closed` sections, read only under `## Active`). Do NOT read individual task files, `grep`, `bash`, or aggregate across `wiki/work/tasks/` — the index exists to prevent exactly that. The only per-file read is the chosen task in Step 1.
+- Missing `index.md` / no active-item bullets → STOP: `Task index at wiki/work/tasks/index.md is empty or missing. Add tasks with /task-create, or invoke /tackle <path-or-slug> directly.` Do not scan every file.
 - `index.md` carries no progress columns — it lists title + one-line summary + `status` only, and `status` now directly distinguishes `todo` / `in-progress` / `pending-uat` (see [lifecycle](../tasks/lifecycle.md)) — no need to infer UAT-awaiting state from file existence. If a bullet points at a task file that no longer exists (moved/archived), note the drift in one sentence and skip it — don't pre-emptively fix the index.
 - Empty active list → STOP: "No active tasks to tackle".
 - Present the active items as a compact table (`TASK-NNNN` · title · status). Below it, a **Recommendation** ranking top 1–3 by priority, using `status` alone:
   1. `status: in-progress` — finish what's started.
   2. `status: todo`, lowest-numbered first.
-  - Tasks at `status: pending-uat` are excluded from recommendations and listed under `**Awaiting UAT**:` — `mcp__serena__list_dir` on `wiki/work/uat/` for the matching `UAT-NNNN-*` file; if found, suggest `/uat-walk wiki/work/uat/UAT-NNNN-<slug>.md`; if none found (implementation finished but `/uat-generate` never ran), suggest `/uat-generate wiki/work/tasks/TASK-NNNN-<slug>.md` instead.
-  - Progress counts, `[BLOCKED]`/`[FAILED]` flags, and per-step state are **not** in `index.md` by design — they live in the task files. This no-args survey deliberately ranks on `status` + UAT presence alone rather than re-reading every task file; use `/task-audit` when the full progress/blocker picture is needed. (Design note: the survey was simplified to `index.md`'s real bullet schema rather than expanding `index.md` with Progress/UAT/Flags columns, which would violate the "active items only, flat list" convention in `wiki/conventions.md`.)
+  - Tasks at `status: pending-uat` are excluded from recommendations and listed under `**Awaiting UAT**:` — `mcp__serena__list_dir` on `wiki/work/uat/` for the matching `UAT-NNNN-*` file; if found, suggest `/uat-walk wiki/work/uat/UAT-NNNN-<slug>.md`; if none found (implementation finished but `/uat-create` never ran), suggest `/uat-create wiki/work/tasks/TASK-NNNN-<slug>.md` instead.
+  - Progress counts, `[BLOCKED]`/`[FAILED]` flags, and per-step state are **not** in `index.md` by design — they live in the task files. This no-args survey deliberately ranks on `status` + UAT presence alone rather than re-reading every task file; use `/task-assess` when the full progress/blocker picture is needed. (Design note: the survey was simplified to `index.md`'s real bullet schema rather than expanding `index.md` with Progress/UAT/Flags columns, which would violate the "active items only, flat list" convention in `wiki/conventions.md`.)
 - Use `AskUserQuestion` (top rec first, labelled `(Recommended)`; up to 2 more; `header` = number-slug). If input was unresolved, prefix one line noting it. Do NOT proceed to Step 1 until the user chooses.
 
 ---
@@ -89,7 +87,7 @@ Standard Read/Edit/Write are allowed for markdown and config (JSON, YAML, `.env`
 
 **Delegate to the agent type named in that section's annotation.** All implementation runs in a sub-agent, never the main context. Next-step priority: (1) fix blockers, (2) continue WIP, (3) start first incomplete section.
 
-**Delegate directly — no re-planning.** Pass the step's checkboxes and sub-details verbatim. Do not research, re-plan, or ask questions (that was `/task-add`'s job).
+**Delegate directly — no re-planning.** Pass the step's checkboxes and sub-details verbatim. Do not research, re-plan, or ask questions (that was `/task-create`'s job).
 
 **CRITICAL:** max **3** sub-processes at a time; **always terminate** processes when done (dev servers, type checkers, long-running commands).
 
@@ -105,7 +103,7 @@ Every sub-agent prompt MUST include:
 
 ⛔ **HARD RULE — update immediately, never batch.** The moment a Step 2 sub-agent returns, the *next thing you do* is flip that step's checkboxes on disk. Do not dispatch the next sub-agent, continue the cycle, or defer updates. Step N's update lands before step N+1 begins.
 
-1. Use **`Edit`** — one call per checkbox line. **Never** `sed`/`awk`/`perl -i`/`echo` on task files, however many flip (ten `Edit`s right; one `sed` wrong + triggers approval). Markers: `[x]` done · `[WIP]` partial · `[BLOCKED: reason]` · `[FAILED: reason]`.
+1. Edit only — see `~/.claude/skills/_shared/SKILL-BOILERPLATE.md` § Edit hygiene — one call per checkbox line, however many flip. Markers: `[x]` done · `[WIP]` partial · `[BLOCKED: reason]` · `[FAILED: reason]`.
 2. Add `<!-- Updated: YYYY-MM-DD HH:MM -->`.
 3. Add any subtasks discovered during execution.
 4. **Keep `wiki/work/tasks/index.md` in sync** — `index.md` has no progress or flags columns, so there is nothing to recount there. The one thing to maintain is the `· status` suffix on this task's bullet line: if this cycle flips the task's frontmatter `status` (e.g. `todo` → `in-progress`), update the matching `· status` on its `index.md` line with a single `Edit` (skip if unchanged). Progress and flags live only in the task file.
@@ -136,7 +134,7 @@ Before anything else: `Edit` the task's frontmatter `status` → `pending-uat` (
 This is a real state, not a formality — `/roadmap-next` uses it to recommend `/uat-walk`/`/uat-auto` instead of `/tackle` for this task going forward. Do this even if you're about to immediately answer "No" to the UAT-generation gate below — a task with no UAT still needs `pending-uat` recorded (an explicit skip is `/uat-skip`'s job, not silence).
 
 ### Step 6: UAT generation gate — ⛔ HARD STOP (never skip or reorder)
-Ask via `AskUserQuestion`: **"Generate UAT tests for this task?"** — **Yes** → run `/uat-generate wiki/work/tasks/<filename>` (creates the matching UAT file); **No** → skip. **Wait** for the answer (and for `/uat-generate` to finish, if invoked) before Step 6b.
+Ask via `AskUserQuestion`: **"Generate UAT tests for this task?"** — **Yes** → run `/uat-create wiki/work/tasks/<filename>` (creates the matching UAT file); **No** → skip. **Wait** for the answer (and for `/uat-create` to finish, if invoked) before Step 6b.
 
 ### Step 6b: Type-check gate
 Try in order, stop at the first that runs (exit 0 or type errors); skip to next only if not found / target missing: (1) `Skill(typecheck)`, (2) `make typecheck`. Suppress output from not-found/missing-target commands — surface only real type errors. None available → skip silently.

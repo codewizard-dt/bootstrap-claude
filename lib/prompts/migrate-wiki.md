@@ -36,9 +36,9 @@ This prompt runs headlessly. **Only these tools are available:**
 | `.docs/uat/skipped/NNN-slug.uat.md` | `wiki/work/uat/UAT-NNN-slug.md` | `skipped` |
 | `.docs/uat/trashed/NNN-slug.uat.md` | `wiki/work/uat/UAT-NNN-slug.md` | `trashed` |
 | `.docs/uat/screenshots/*` | `wiki/work/uat/screenshots/` | — (binary assets, just `git mv`) |
-| `.docs/adr/NNNN-slug.md` and `.docs/adr/completed/NNNN-slug.md` | `wiki/work/decisions/DEC-NNNN-slug.md` | no file-level status — each `## DM.` block keeps its own `Status` field verbatim |
-| `.docs/prd/NNN-slug.md` | `wiki/work/requirements/REQ-NNN-slug.md` | from old frontmatter/body (`draft` or `approved`) |
-| `.docs/prd/archived/NNN-slug.md` | `wiki/work/requirements/REQ-NNN-slug.md` | `retired` |
+| `.docs/adr/NNNN-slug.md` and `.docs/adr/completed/NNNN-slug.md` | `wiki/work/decisions/ADR-NNNN-slug.md` | no file-level status — each `## DM.` block keeps its own `Status` field verbatim |
+| `.docs/prd/NNN-slug.md` | `wiki/work/requirements/PRD-NNN-slug.md` | from old frontmatter/body (`draft` or `approved`) |
+| `.docs/prd/archived/NNN-slug.md` | `wiki/work/requirements/PRD-NNN-slug.md` | `retired` |
 | `.docs/bugs/NNNN-slug.md` | `wiki/work/bugs/BUG-NNNN-slug.md` | `open` |
 | `.docs/bugs/in-progress/NNNN-slug.md` | `wiki/work/bugs/BUG-NNNN-slug.md` | `in-progress` |
 | `.docs/bugs/closed/NNNN-slug.md` | `wiki/work/bugs/BUG-NNNN-slug.md` | `closed` |
@@ -54,14 +54,14 @@ For every artifact file, in this order:
 
 1. **`git mv`** to its new path (per the mapping table).
 2. **Normalize frontmatter.** Add a YAML frontmatter block if missing; if one exists, update it in place, preserving any extra keys:
-   - `id:` — from the new filename prefix (e.g. `TASK-014`, `DEC-0007`)
+   - `id:` — from the new filename prefix (e.g. `TASK-014`, `ADR-0007`)
    - `title:` — from the first H1 heading; fall back to a humanized filename slug
    - `status:` — per the mapping table (decisions: no file-level status)
    - `created:` / `updated:` — from `git log --follow --format=%ad --date=short -- <file>`; oldest commit date = created, newest = updated; fall back to today's date if no history
 3. **Rewrite in-body links and references:**
    - Relative artifact links in any form (`../tasks/NNN-slug.md`, `completed/NNN-slug.md`, `.docs/tasks/NNN-slug.md`, etc.) → the flat new path with the new ID-prefixed filename (e.g. `../tasks/TASK-014-slug.md` from a UAT file, `TASK-014-slug.md` from a sibling task)
-   - `**Implements**: ADR-NNNN#DM` → `implements::[[DEC-NNNN#DM]]`
-   - All other `ADR-NNNN` mentions → `DEC-NNNN`
+   - `**Implements**: ADR-NNNN#DM` → `implements::[[ADR-NNNN#DM]]`
+   - All other `ADR-NNNN` mentions → unchanged (`ADR-NNNN` is the current decision ID form)
    - `.uat.md` link suffixes → the new `UAT-NNN-slug.md` form
 
 ## Cross-links (UAT ↔ task)
@@ -82,7 +82,7 @@ If the same number exists in two source dirs of one family (e.g. `.docs/tasks/00
 
 After all files have landed, build each `wiki/work/<family>/index.md` (replace the `_(none yet)_` placeholder) listing **only active items**, per each family's `lifecycle.md`:
 
-- requirements: `draft`, `approved` · decisions: groups with ≥1 `proposed` block · roadmaps: `active` · tasks: `todo`, `in-progress` · uat: `pending`, `in-progress`, `failed` · bugs: `open`, `triaged`, `in-progress`
+- requirements: `draft`, `approved` · decisions: groups with ≥1 `proposed` block · roadmaps: `active` · tasks: `todo`, `in-progress`, `pending-uat` · uat: `pending`, `in-progress`, `failed` · bugs: `open`, `triaged`, `in-progress`
 
 Entry format is documented in each index stub. Non-active items are simply not listed — their files stay put.
 

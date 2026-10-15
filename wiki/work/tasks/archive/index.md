@@ -8,6 +8,12 @@ Terminal task files (`done` or `trashed`) moved here by `/wiki-archive` to reduc
 
 | ID | Title | Final Status | Archived |
 |----|-------|--------------|----------|
+| [[TASK-0117]] | Rename the decisions family's skills to ADR and make ADR- the new-item prefix | done | 2026-09-19 |
+| [[TASK-0104]] | Wire bootstrap-prefs-tui.js into bin/cli.js as a `config` subcommand | done | 2026-09-19 |
+| [[TASK-0108]] | Create a /usage-report skill that locally parses Claude Code session logs for per-project token/cost rollups | done | 2026-09-19 |
+| [[TASK-0098]] | Extract a shared ID/file-resolution reference doc and wire the consuming skills to it | done | 2026-09-19 |
+| [[TASK-0115]] | Remove req-update and task-update entirely, with no replacement | done | 2026-09-19 |
+| [[TASK-0116]] | Rename the requirements family's skills to PRD and issue new items as PRD-NNNN | done | 2026-09-19 |
 | [[TASK-081]] | Remove deployment-strategy.md and strip every deploy/CI doc reference | done | 2026-09-13 |
 | [[TASK-073]] | Wire a GitHub Actions CI job for the Docker fresh-machine harness | trashed | 2026-09-13 |
 | [[TASK-071]] | Add a run.sh stale mode simulating an upgrade from an older bootstrap-claude release | done | 2026-09-03 |
@@ -87,3 +93,10 @@ Terminal task files (`done` or `trashed`) moved here by `/wiki-archive` to reduc
 | [[TASK-082]] | Trash TASK-073 and UAT-073 (descoped by GitHub Actions removal) | done | 2026-09-13 |
 | [[TASK-084]] | Mark the Docker harness wiki knowledge page as retired | done | 2026-09-13 |
 | [[TASK-083]] | Close ROADMAP-009 with an explicit reverted-not-completed note | done | 2026-09-13 |
+| [[TASK-0100]] | Shrink power-mode's Single-Task Executor mode to a pointer at /tackle → /uat-generate → /uat-auto | done | 2026-09-19 |
+| [[TASK-0102]] | Point task-add, task-update, and task-audit at tasks/lifecycle.md's frontmatter-array dependency schema | done | 2026-09-19 |
+| [[TASK-0111]] | Rename task-trash to task-close | done | 2026-09-19 |
+| [[TASK-0106]] | Document `bootstrap config` as the non-Claude-Code path for editing preferences | done | 2026-09-19 |
+| [[TASK-0112]] | Rename the task-add skill to task-create | done | 2026-09-19 |
+| [[TASK-0113]] | Rename uat-generate to uat-create | done | 2026-09-19 |
+| [[TASK-0094]] | Strip req-update's inline retire branch and redirect to /req-retire | trashed | 2026-09-19 |

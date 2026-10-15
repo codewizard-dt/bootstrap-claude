@@ -4,7 +4,7 @@ aliases: [ROADMAP-012]
 title: Sandbox Config Scaffolding and Local Usage Visibility
 status: active
 created: 2026-09-13
-updated: 2026-09-13
+updated: 2026-09-19
 owner: David Taylor
 derived_from: [claude-code-ecosystem-2026]
 linked_requirements: []
@@ -20,12 +20,12 @@ Close two of the concrete gaps the Claude Code ecosystem research found against 
 
 ## Phase 1: Sandbox Config Scaffolding
 
-- [ ] Add an opt-in sandbox-config prompt to install-global.sh / setup-project.sh (interactive, like the existing MCP install step — not a forced default), documenting the docker-incompatibility caveat and the excludedCommands escape hatch
+- [ ] [[TASK-0107: Add an opt-in sandbox-config prompt to install-global.sh / setup-project.sh]]
 
 ## Phase 2: Local Usage Report
 
-- [ ] Create a /usage-report skill that locally parses ~/.claude/projects/**/*.jsonl (ccusage-style: no API key, no network call) for token/cost rollups scoped to the current project
-- [ ] Surface the usage-report output in lib/scripts/wiki-dashboard-server.js alongside the existing wiki/work/ state
+- [x] [[TASK-0108: Create a /usage-report skill that locally parses Claude Code session logs for per-project token/cost rollups]]
+- [ ] [[TASK-0109: Surface the /usage-report JSON in the wiki dashboard (read-only /api/usage endpoint + #/usage panel)]]
 
 ## Notes
 
